@@ -71,19 +71,36 @@ DASH and HLS reference the same segment URLs.
 
 ### Manifests
 
-- DASH VOD: static MPD, `SegmentTemplate` with `$Number$`, `startNumber="1"`, `minBufferTime`, `mediaPresentationDuration`.
+Built by the media pipeline (`MediaStore.dashVod | dashLive | hlsMaster | hlsMediaVod | hlsMediaLive`, interface in
+[`src/server/media/types.ts`](../src/server/media/types.ts)) from the **real** timing of the generated files.
+
+- Every URL inside a manifest is **relative to the manifest's own URL** (`../seg/v240/$Number$.m4s`, `../seg/v240/init.mp4`): the layout works
+  behind any prefix and manifests need no session id.
+- Segment timing is the real timing (`SourceSegment.start` / `duration`), never the nominal 2 s. DASH uses `SegmentTemplate` with `$Number$`
+  addressing **and** a `SegmentTimeline` (`startNumber` = first listed segment number, `t` = its real start in ticks, `r` for repeats); HLS uses
+  `EXTINF` from the real durations. Why: AAC frames are 1024 samples, so 2 s of 48 kHz audio is 93.75 frames and audio segments hold 93 or 94
+  frames. A manifest that claims uniform 2.000 s audio segments is wrong by up to one frame per segment, and players stall or skip.
+- DASH VOD: static MPD, `minBufferTime`, `mediaPresentationDuration`.
 - DASH live: dynamic MPD, `availabilityStartTime`, `timeShiftBufferDepth`, `minimumUpdatePeriod="PT2S"`, `suggestedPresentationDelay`,
   `publishTime`, `<UTCTiming schemeIdUri="urn:mpeg:dash:utc:http-iso:2014" value="/api/time">` (the client clock is not trusted).
 - HLS: fMP4 (`#EXT-X-MAP`), `#EXT-X-VERSION:7`, `#EXT-X-INDEPENDENT-SEGMENTS`, audio as a media group. Live: sliding window with
-  `#EXT-X-MEDIA-SEQUENCE`, `#EXT-X-TARGETDURATION`, `#EXT-X-PROGRAM-DATE-TIME`, no `#EXT-X-ENDLIST`.
+  `#EXT-X-MEDIA-SEQUENCE` (= the first listed segment number), `#EXT-X-TARGETDURATION`, `#EXT-X-PROGRAM-DATE-TIME`, no `#EXT-X-ENDLIST`.
+- HLS media playlists are requested as `/hls/<rep>.m3u8`. In the request log and for fault matching they are `kind: 'manifest'` with `rep` set.
 
 ### Live simulation
 
-- A live session has a virtual clock: segment `n` (n >= 1) covers `[(n-1)*d, n*d)` of the stream timeline, `t = 0` is `availabilityStartTime`,
-  and the segment is published at `t0 + n*d`. At session creation the stream is already `startOffsetSec` (default 30) "on air".
-- The source is `segmentCount` pre-encoded segments. Live segment `n` is source segment `((n-1) mod segmentCount) + 1` with the
-  `tfdt` (baseMediaDecodeTime) of every fragment rewritten to the live timeline, so the loop never shows up as a timestamp jump
-  and the stream can run for as long as a soak test needs. Initialization segments are unchanged.
+Let `d` = `segmentDurationSec` (2 s) and `AST` = `availabilityStartTime`.
+
+- A live session has a virtual clock. At creation the stream has been "on air" `startOffsetSec` (default 30) seconds: `AST = createdAt - startOffsetSec`.
+  Live segment `n` (n >= 1) covers `[(n-1)*d, n*d)` of the stream timeline and is published at `AST + n*d`. The published edge at wall-clock `t` is
+  `edge(t) = floor((t - AST) / d)` (15 at creation with the defaults).
+- The source is `segmentCount` pre-encoded segments, looped. Live segment `n` is source segment `k = ((n-1) mod segmentCount) + 1` with loop index
+  `L = floor((n-1) / segmentCount)`. The decode time (`tfdt`) of every fragment is moved by `L * loopTicks` of **its own track**, so each live
+  representation has a monotonic timeline across the loop, the loop never shows up as a timestamp jump, and a soak test can run as long as it
+  needs. Initialization segments are unchanged. Invariant: `loopTicks / timescale` is the same for all tracks of the stream, so audio and video
+  cannot drift apart over many loops.
+- Manifest window at edge `e`: `lastNumber = e`, `firstNumber = max(1, e - windowSegments + 1)`. Segment availability: `n > e` is 404 (not yet
+  published), `n < firstNumber - 2` is 404 (gone), otherwise 200.
 - Defaults: 2 s segments, `windowSegments` 15 (30 s DVR), `presentationDelaySec` 6.
 - `live-stall` and `manifest-stale` faults (section 5) model the two origin failure modes: the origin stops publishing and then catches up
   (timeline continuous), and a CDN/origin serving a stale manifest.
@@ -109,6 +126,12 @@ Base URL `http://127.0.0.1:${PB_PORT}` (default 4600). Types: `src/shared/api.ts
 - Unknown session: 404. Expired sessions (TTL) are garbage collected.
 - The request log is the second observation channel for tests: besides asking the player what it did (`window.__qa`) a test can ask the
   server what the player fetched (which segment numbers after a seek, which rung after a throttle, how often a 404 was retried).
+- Everything under `/s/<session>/` is logged (`RequestLogEntry`); `/api` and `/health` are not. The log of a session keeps its last 5000 entries.
+- `GET /player/*` serves the built player (`dist/player`, produced by `npm run build:player`); `HealthInfo.player` says whether it exists.
+  Static serving cannot leave that directory (path traversal is rejected, not sanitised). `HEAD` and `OPTIONS` (CORS preflight) work on every path.
+- Programmatic entry: `startServer(options)` in `src/server/index.ts` returns `{ origin, port, close() }` and is what the harnesses and tests use;
+  `tools/serve.ts` (`npm run serve`) is the CLI: it reads `PB_PORT` (default 4600) and `PB_HOST` (default `127.0.0.1`), fails fast with a clear message
+  when a stream is missing (`npm run generate:streams` creates it: idempotent, content-addressed), and closes cleanly on SIGINT/SIGTERM.
 
 ## 5. Faults (see `src/shared/faults.ts`)
 
@@ -116,6 +139,27 @@ A fault rule is data: `{ type, match?, times?, afterMs?, forMs?, ...parameters }
 measured from the session's first media request. Several rules can fire on one request (throttle + latency). `throttle` is a single
 token bucket per session shared by concurrent responses (audio and video compete like on a real link). Jitter is drawn from a PRNG seeded
 with the session id, so a rerun with the same request order sees the same delays.
+
+Exact semantics (the service implements them as written and its tests pin them):
+
+- **Rule clock.** `afterMs` and `forMs` count from the session's first *media* request (an init or a segment; manifests do not start the clock).
+  A rule is active in `[origin + afterMs, origin + afterMs + forMs)`. Until the first media request exists, a rule with `afterMs = 0` is active
+  and a rule with `afterMs > 0` is not. `times` counts the matching requests while the rule is active.
+- **Matching.** Every field present in `match` must match, an absent field matches anything. Manifests (DASH MPD, HLS master and media playlists)
+  have kind `manifest`; `media` means init + segment. Default `kind`: `media` for throttle, latency, stall and abort; `status` requires it.
+- **throttle** limits the response *body* (headers excluded). One token bucket per rule and session, shared by all the concurrent responses the rule
+  matches; a response matched by several throttle rules is limited by all of them (so by the slowest). Burst allowance: at most one chunk (16 KB).
+  Contract: measured goodput within +-10 % of `kbps` for transfers of at least 500 KB.
+- **latency** delays the first byte by `ms` plus a repeatable jitter drawn from a PRNG seeded with the session id and the request sequence number.
+- **status** answers with that status and an empty body. **stall** sends `afterBytes`, pauses `ms`, finishes. **abort** sends `afterBytes` (default 0), then destroys the socket.
+- **live-stall** (`atNumber`, `ms`) is timed by the live clock: `afterMs` and `forMs` are rejected. It starts at `S = max(AST + atNumber*d, installTime)`
+  (the publication instant of segment `atNumber`, or now when installed late) and freezes the edge at `edge(S)` until `S + ms`: manifests keep
+  listing the frozen window with the frozen `publishTime`, segments above the frozen edge are 404. At `S + ms` the origin catches up: the edge jumps
+  to `edge(now)` and the timeline is unchanged (no discontinuity). A segment that was published is never unpublished.
+- **manifest-stale** (`ms`) is active in `[origin + afterMs, origin + afterMs + ms)` (`forMs` is rejected). While active, every manifest and playlist
+  request is answered with the last body served before the rule became active. Segments are not affected.
+- **Validation.** Invalid rules are rejected with 400 and a list of the problems: unknown `type`, non-finite or negative numbers, `kbps <= 0`,
+  `status` outside 100-599, a `live-stall` or `manifest-stale` rule on a VOD session, `status` without `match.kind`.
 
 ## 6. The player page and `window.__qa`
 
