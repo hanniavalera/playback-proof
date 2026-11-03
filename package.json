@@ -1,0 +1,58 @@
+{
+  "name": "playback-proof",
+  "version": "0.1.0",
+  "description": "A test lab for a web video player (Shaka Player, MSE): deterministic streams with fault injection, cross-browser Playwright suites, performance baselines, A/B comparison, live-event readiness, flake tracking and failure triage.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "author": "Hannia Valera",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "docs:check": "tsx tools/check-docs.ts",
+    "build:player": "tsx tools/build-player.ts",
+    "generate:streams": "tsx src/server/media/cli.ts generate",
+    "serve": "tsx src/server/main.ts",
+    "codec-matrix": "tsx tools/codec-matrix.ts",
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test",
+    "test:merge": "playwright test --grep @merge",
+    "test:release": "playwright test --grep @release",
+    "perf": "tsx perf/run.ts",
+    "perf:gate": "tsx perf/gate.ts",
+    "perf:baseline": "tsx perf/run.ts --write-baseline",
+    "flake:report": "tsx flake/report.ts",
+    "flake:gate": "tsx flake/gate.ts",
+    "ab": "tsx ab/run.ts",
+    "readiness": "tsx live/readiness.ts",
+    "soak": "tsx live/soak.ts",
+    "triage": "tsx triage/cli.ts",
+    "gate:static": "npm run typecheck && npm run lint && npm run format:check && npm run docs:check",
+    "gate:unit": "npm run test:unit",
+    "gate:merge": "playwright test --grep @merge",
+    "gate:perf": "npm run perf:gate",
+    "gate:flake": "npm run flake:gate",
+    "gate:triage": "npm run triage -- --from-ci"
+  },
+  "dependencies": {
+    "shaka-player": "5.3.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "1.64.1",
+    "@types/node": "^22.20.5",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.14.0",
+    "globals": "^17.0.0",
+    "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.72.1",
+    "vitest": "^5.1.0"
+  }
+}

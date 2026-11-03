@@ -1,0 +1,15 @@
+node_modules/
+dist/
+reports/
+test-results/
+playwright-report/
+coverage/
+.cache/
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
+# local scratch, never committed
+.tmp/
+.jenkins-home/

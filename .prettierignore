@@ -1,0 +1,12 @@
+node_modules
+dist
+reports
+test-results
+.cache
+coverage
+package-lock.json
+docs/results
+perf/results
+flake/history
+playwright-report
+*.md
