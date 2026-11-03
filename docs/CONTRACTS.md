@@ -144,7 +144,8 @@ with the session id, so a rerun with the same request order sees the same delays
 
 ## 9. Commands (names are fixed; implementations arrive with their phase)
 
-`npm run typecheck | lint | format:check | docs:check | build:player | generate:streams | serve | codec-matrix | test:unit | test:e2e | test:merge | test:release | perf | perf:gate | perf:baseline | flake:report | flake:gate | ab | readiness | soak | triage`
+`npm run typecheck | lint | format:check | docs:check | build:player | generate:streams | serve | codec-matrix | docker:pw | test:unit | test:e2e | test:merge | test:release | perf | perf:gate | perf:baseline | flake:report | flake:gate | ab | readiness | soak | triage`
+(`docker:pw -- <command>` runs a command inside the Playwright Linux image that matches the pinned `@playwright/test`, with the repository mounted: this is how Firefox runs on a macOS host and how the Linux CI environment is reproduced locally.)
 and the CI gate stages `gate:static | gate:unit | gate:merge | gate:perf | gate:flake | gate:triage`, which both GitHub Actions and the Jenkinsfile call.
 
 ## 10. Rules of engagement for contributors (including the agents that build this)

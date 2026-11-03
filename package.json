@@ -19,6 +19,7 @@
     "generate:streams": "tsx src/server/media/cli.ts generate",
     "serve": "tsx src/server/main.ts",
     "codec-matrix": "tsx tools/codec-matrix.ts",
+    "docker:pw": "bash tools/docker/pw.sh",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
     "test:merge": "playwright test --grep @merge",
