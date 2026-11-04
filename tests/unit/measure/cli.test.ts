@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { writeBaseline } from '../../../src/lab/measure/baseline.ts';
 import { buildGateReport, serializeReport } from '../../../src/lab/measure/report.ts';
+import { detectEnvId } from '../../../src/shared/env.ts';
 import { HOST, STARTUP, REBUFFERING, baselineOf, rebufferBatch, startupBatch } from './fixtures.ts';
 
 // The three commands of part 2 (perf/quiet.ts, perf/aa.ts, perf/derive.ts) run as the processes they are, against files in the
@@ -182,5 +183,63 @@ describe('PB-PERF perf/derive.ts: deriving the thresholds from the baselines on 
       expect(result.stderr, dir).toMatch(/no baseline under/);
     }
     expect(existsSync(join(SCRATCH, 'derive-none'))).toBe(false);
+  });
+});
+
+describe('PB-PERF perf/gate.ts --paired: a control that cannot be had is exit code 2, before anything is measured', () => {
+  const reports = join(SCRATCH, 'paired-reports');
+  const gate = (...args: string[]) =>
+    tsx('perf/gate.ts', [...args, '--profile', 'chromium', '--reports-dir', reports]);
+  const written = () =>
+    JSON.parse(readFileSync(join(reports, detectEnvId(), 'chromium.json'), 'utf8')) as {
+      exitCode: number;
+      verdict: string;
+      baseline: unknown;
+      scenarios: unknown[];
+      paired: { line: string; controlCommit: string | null; aa: boolean };
+    };
+
+  it('lists the paired options in --help', () => {
+    const result = tsx('perf/gate.ts', ['--help']);
+    expect(result.status).toBe(0);
+    for (const flag of ['--paired', '--control-ref', '--control-dir']) expect(result.stdout).toContain(flag);
+  });
+
+  it('says how to fix a ref that is not in this checkout, and writes the report of a gate that judged nothing', () => {
+    rmSync(reports, { recursive: true, force: true });
+    const result = gate('--paired', '--control-ref', 'no-such-ref-for-the-test');
+    expect(result.status).toBe(2);
+    expect(result.stdout.split('\n')[0]).toBe(
+      'paired: no control was measured on this machine; the committed baselines of this environment were not used',
+    );
+    expect(result.stdout).toMatch(
+      /PROBLEM: the control ref "no-such-ref-for-the-test" does not name a commit in this checkout\. Fetch it \(git fetch origin main\)/,
+    );
+    expect(result.stdout).toContain('verdict: PROBLEM (exit code 2)');
+    const report = written();
+    expect(report).toMatchObject({ exitCode: 2, verdict: 'problem', baseline: null, scenarios: [] });
+    expect(report.paired).toMatchObject({ controlCommit: null, aa: false });
+  });
+
+  it('exits with 2 for a control checkout that is not there, and for a directory that is not the top of a checkout', () => {
+    const inside = join(SCRATCH, 'not-a-checkout');
+    mkdirSync(inside, { recursive: true });
+    for (const [dir, message] of [
+      [join(SCRATCH, 'nowhere'), /does not exist/],
+      [inside, /is not the top of a git checkout/],
+    ] as const) {
+      const result = gate('--paired', '--control-dir', dir);
+      expect(result.status, dir).toBe(2);
+      expect(result.stdout, dir).toMatch(message);
+      expect(result.stdout, dir).toContain('verdict: PROBLEM (exit code 2)');
+    }
+  });
+
+  it('refuses at the command line what cannot be paired, and leaves no report', () => {
+    rmSync(reports, { recursive: true, force: true });
+    const result = tsx('perf/gate.ts', ['--paired', '--scenario', 'PB-PERF-001']);
+    expect(result.status).toBe(2);
+    expect(result.stderr).toMatch(/cannot be combined with --scenario/);
+    expect(existsSync(reports)).toBe(false);
   });
 });
