@@ -1,0 +1,97 @@
+[
+  {
+    "index": 0,
+    "t": 96.80000001192093,
+    "name": "load-requested",
+    "mediaTime": 0,
+    "detail": {
+      "uri": "/s/c9aaf10528bb/vod-cmaf/dash/manifest.mpd"
+    }
+  },
+  {
+    "index": 1,
+    "t": 97.69999998807907,
+    "name": "buffering-start",
+    "mediaTime": 0
+  },
+  {
+    "index": 2,
+    "t": 107.5,
+    "name": "manifest-loaded",
+    "mediaTime": 0
+  },
+  {
+    "index": 3,
+    "t": 115.30000001192093,
+    "name": "buffering-start",
+    "mediaTime": 0
+  },
+  {
+    "index": 4,
+    "t": 115.69999998807907,
+    "name": "variant-changed",
+    "mediaTime": 0,
+    "detail": {
+      "from": null,
+      "to": 2,
+      "bandwidth": 1845302,
+      "height": 720,
+      "reason": "start"
+    }
+  },
+  {
+    "index": 5,
+    "t": 116.60000002384186,
+    "name": "loaded",
+    "mediaTime": 0
+  },
+  {
+    "index": 6,
+    "t": 288.30000001192093,
+    "name": "playing",
+    "mediaTime": 0.000322
+  },
+  {
+    "index": 7,
+    "t": 288.5,
+    "name": "buffering-end",
+    "mediaTime": 0.00052
+  },
+  {
+    "index": 8,
+    "t": 298.69999998807907,
+    "name": "firstframe",
+    "mediaTime": 0.010786,
+    "detail": {
+      "source": "requestVideoFrameCallback"
+    }
+  },
+  {
+    "index": 9,
+    "t": 883.3999999761581,
+    "name": "error",
+    "mediaTime": 0.552183,
+    "detail": {
+      "code": 1001,
+      "codeName": "BAD_HTTP_STATUS",
+      "category": 1,
+      "severity": 2,
+      "message": "NETWORK.BAD_HTTP_STATUS: Shaka Error 1001",
+      "data": [
+        "http://127.0.0.1:4740/s/c9aaf10528bb/vod-cmaf/seg/v720/3.m4s",
+        404,
+        "",
+        "{\"access-control-allow-origin\":\"*\",\"cache-control\":\"no-store\",\"connection\":\"keep-alive\",\"content-length\":\"0\",\"date\":\"Wed, 04 Nov 2026 16:12:07 GMT\",\"keep-alive\":\"timeout=5\"}",
+        1,
+        "http://127.0.0.1:4740/s/c9aaf10528bb/vod-cmaf/seg/v720/3.m4s"
+      ],
+      "source": "shaka"
+    }
+  },
+  {
+    "index": 10,
+    "t": 6305.899999976158,
+    "name": "buffering-start",
+    "mediaTime": 5.973736
+  }
+]

@@ -1,0 +1,7 @@
+[
+  {
+    "type": "error",
+    "text": "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+    "location": "http://127.0.0.1:4740/player/?manifest=%2Fs%2Ff3572103eb01%2Fvod-cmaf%2Fdash%2Fmanifest.mpd:0"
+  }
+]

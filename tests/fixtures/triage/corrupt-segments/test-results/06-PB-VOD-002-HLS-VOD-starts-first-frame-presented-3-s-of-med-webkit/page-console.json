@@ -1,0 +1,26 @@
+[
+  {
+    "type": "warning",
+    "text": "Unable to determine bitstream format for CEA parsing!",
+    "location": "http://127.0.0.1:4740/player/shaka.js:66"
+  },
+  {
+    "type": "warning",
+    "text": "Unable to determine bitstream format for CEA parsing!",
+    "location": "http://127.0.0.1:4740/player/shaka.js:66"
+  },
+  {
+    "type": "warning",
+    "text": "Unable to determine bitstream format for CEA parsing!",
+    "location": "http://127.0.0.1:4740/player/shaka.js:66"
+  },
+  {
+    "type": "pageerror",
+    "text": "shaka.util.Error {\n  \"severity\": 2,\n  \"category\": 3,\n  \"code\": 3024,\n  \"data\": [\n    \"audio\"\n  ],\n  \"handled\": false,\n  \"message\": \"Shaka Error 3024\",\n  \"stack\": \"R@http://127.0.0.1:4740/player/shaka...."
+  },
+  {
+    "type": "error",
+    "text": "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+    "location": "http://127.0.0.1:4740/player/?manifest=%2Fs%2F09a541e18d2d%2Fvod-cmaf%2Fhls%2Fmaster.m3u8:0"
+  }
+]

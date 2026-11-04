@@ -1,0 +1,20 @@
+{
+  "id": "a1d4d06c6384",
+  "stream": "vod-cmaf",
+  "protocol": "dash",
+  "label": "PB-VOD-006 seek forward inside the buffered range: seeked fires and playback continues from the target with no rebuffer",
+  "createdAt": "2026-11-04T16:02:53.694Z",
+  "ttlSec": 900,
+  "manifestUrl": "/s/a1d4d06c6384/vod-cmaf/dash/manifest.mpd",
+  "faults": [],
+  "counters": {
+    "requests": 20,
+    "bytes": 5480,
+    "errors": 14,
+    "byKind": {
+      "manifest": 1,
+      "init": 5,
+      "segment": 14
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "7f8d99d19e31",
+  "stream": "vod-cmaf",
+  "protocol": "dash",
+  "label": "PB-ENV-001 the engine plays the selected flavour through the player, or the engine and OS pair is a documented gap",
+  "createdAt": "2026-11-04T15:57:07.491Z",
+  "ttlSec": 900,
+  "manifestUrl": "/s/7f8d99d19e31/vod-cmaf/dash/manifest.mpd",
+  "faults": [],
+  "counters": {
+    "requests": 0,
+    "bytes": 0,
+    "errors": 0,
+    "byKind": {}
+  }
+}

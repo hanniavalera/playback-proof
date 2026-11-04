@@ -1,0 +1,32 @@
+{
+  "id": "b04562b246a3",
+  "stream": "vod-cmaf",
+  "protocol": "dash",
+  "label": "PB-REC-002 5xx burst on one segment: playback continues by retry or rung switch, with no critical error and at most one rebuffer",
+  "createdAt": "2026-11-04T16:13:51.873Z",
+  "ttlSec": 900,
+  "manifestUrl": "/s/b04562b246a3/vod-cmaf/dash/manifest.mpd",
+  "faults": [
+    {
+      "type": "status",
+      "match": {
+        "kind": "segment",
+        "track": "video",
+        "number": 3
+      },
+      "times": 3,
+      "status": 503,
+      "id": "f1"
+    }
+  ],
+  "counters": {
+    "requests": 9,
+    "bytes": 364558,
+    "errors": 1,
+    "byKind": {
+      "manifest": 1,
+      "init": 2,
+      "segment": 6
+    }
+  }
+}

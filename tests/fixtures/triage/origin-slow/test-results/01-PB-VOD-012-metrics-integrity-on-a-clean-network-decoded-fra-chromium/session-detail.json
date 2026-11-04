@@ -1,0 +1,20 @@
+{
+  "id": "841c069e3646",
+  "stream": "vod-cmaf",
+  "protocol": "dash",
+  "label": "PB-VOD-012 metrics integrity on a clean network: decoded frames above zero, dropped no more than decoded, presented frames agree with decoded, no rebuffer, startup defined, no error",
+  "createdAt": "2026-11-04T16:14:59.978Z",
+  "ttlSec": 900,
+  "manifestUrl": "/s/841c069e3646/vod-cmaf/dash/manifest.mpd",
+  "faults": [],
+  "counters": {
+    "requests": 11,
+    "bytes": 1049518,
+    "errors": 0,
+    "byKind": {
+      "manifest": 1,
+      "init": 3,
+      "segment": 7
+    }
+  }
+}

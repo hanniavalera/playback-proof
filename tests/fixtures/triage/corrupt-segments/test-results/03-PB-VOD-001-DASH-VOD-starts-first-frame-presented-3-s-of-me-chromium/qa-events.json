@@ -1,0 +1,102 @@
+[
+  {
+    "index": 0,
+    "t": 74.80000001192093,
+    "name": "load-requested",
+    "mediaTime": 0,
+    "detail": {
+      "uri": "/s/4baeb6aabb1d/vod-cmaf/dash/manifest.mpd"
+    }
+  },
+  {
+    "index": 1,
+    "t": 75.69999998807907,
+    "name": "buffering-start",
+    "mediaTime": 0
+  },
+  {
+    "index": 2,
+    "t": 82.60000002384186,
+    "name": "manifest-loaded",
+    "mediaTime": 0
+  },
+  {
+    "index": 3,
+    "t": 85.89999997615814,
+    "name": "buffering-start",
+    "mediaTime": 0
+  },
+  {
+    "index": 4,
+    "t": 86.30000001192093,
+    "name": "variant-changed",
+    "mediaTime": 0,
+    "detail": {
+      "from": null,
+      "to": 2,
+      "bandwidth": 1845302,
+      "height": 720,
+      "reason": "start"
+    }
+  },
+  {
+    "index": 5,
+    "t": 87,
+    "name": "loaded",
+    "mediaTime": 0
+  },
+  {
+    "index": 6,
+    "t": 192.89999997615814,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 3016,
+      "codeName": "VIDEO_ERROR",
+      "category": 3,
+      "severity": 2,
+      "message": "MEDIA.VIDEO_ERROR: Shaka Error 3016",
+      "data": [3, "undefined", "PipelineStatus::PIPELINE_ERROR_DECODE"],
+      "source": "shaka"
+    }
+  },
+  {
+    "index": 7,
+    "t": 193,
+    "name": "paused",
+    "mediaTime": 0
+  },
+  {
+    "index": 8,
+    "t": 193.10000002384186,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 0,
+      "category": 0,
+      "severity": 1,
+      "message": "AbortError: The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22",
+      "source": "play",
+      "codeName": "AbortError"
+    }
+  },
+  {
+    "index": 9,
+    "t": 1807.3999999761581,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 3015,
+      "codeName": "MEDIA_SOURCE_OPERATION_THREW",
+      "category": 3,
+      "severity": 2,
+      "message": "MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015",
+      "data": [
+        "{\"name\":\"InvalidStateError\",\"message\":\"Failed to execute 'appendBuffer' on 'SourceBuffer': The HTMLMediaElement.error attribute is not null.\"}",
+        "{\"code\":3,\"message\":\"PipelineStatus::PIPELINE_ERROR_DECODE\"}",
+        "http://127.0.0.1:4740/s/4baeb6aabb1d/vod-cmaf/seg/a-aac/3.m4s"
+      ],
+      "source": "shaka"
+    }
+  }
+]

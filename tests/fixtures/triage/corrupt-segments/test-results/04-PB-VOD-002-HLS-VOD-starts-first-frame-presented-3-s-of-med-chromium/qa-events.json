@@ -1,0 +1,159 @@
+[
+  {
+    "index": 0,
+    "t": 69.59999996423721,
+    "name": "load-requested",
+    "mediaTime": 0,
+    "detail": {
+      "uri": "/s/160a2694f24a/vod-cmaf/hls/master.m3u8"
+    }
+  },
+  {
+    "index": 1,
+    "t": 70.39999997615814,
+    "name": "buffering-start",
+    "mediaTime": 0
+  },
+  {
+    "index": 2,
+    "t": 92.09999996423721,
+    "name": "manifest-loaded",
+    "mediaTime": 0
+  },
+  {
+    "index": 3,
+    "t": 101.5,
+    "name": "buffering-start",
+    "mediaTime": 0
+  },
+  {
+    "index": 4,
+    "t": 101.89999997615814,
+    "name": "variant-changed",
+    "mediaTime": 0,
+    "detail": {
+      "from": null,
+      "to": 11,
+      "bandwidth": 1845302,
+      "height": 720,
+      "reason": "start"
+    }
+  },
+  {
+    "index": 5,
+    "t": 102.69999998807907,
+    "name": "loaded",
+    "mediaTime": 0
+  },
+  {
+    "index": 6,
+    "t": 200.30000001192093,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 3016,
+      "codeName": "VIDEO_ERROR",
+      "category": 3,
+      "severity": 2,
+      "message": "MEDIA.VIDEO_ERROR: Shaka Error 3016",
+      "data": [3, "undefined", "PipelineStatus::PIPELINE_ERROR_DECODE"],
+      "source": "shaka"
+    }
+  },
+  {
+    "index": 7,
+    "t": 200.5,
+    "name": "paused",
+    "mediaTime": 0
+  },
+  {
+    "index": 8,
+    "t": 200.5999999642372,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 0,
+      "category": 0,
+      "severity": 1,
+      "message": "AbortError: The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22",
+      "source": "play",
+      "codeName": "AbortError"
+    }
+  },
+  {
+    "index": 9,
+    "t": 1761.199999988079,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 3015,
+      "codeName": "MEDIA_SOURCE_OPERATION_THREW",
+      "category": 3,
+      "severity": 1,
+      "message": "MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015",
+      "data": [
+        "{\"name\":\"InvalidStateError\",\"message\":\"Failed to execute 'appendBuffer' on 'SourceBuffer': The HTMLMediaElement.error attribute is not null.\"}",
+        "{\"code\":3,\"message\":\"PipelineStatus::PIPELINE_ERROR_DECODE\"}",
+        "http://127.0.0.1:4740/s/160a2694f24a/vod-cmaf/seg/v720/7.m4s"
+      ],
+      "source": "shaka"
+    }
+  },
+  {
+    "index": 10,
+    "t": 1761.199999988079,
+    "name": "variant-changed",
+    "mediaTime": 0,
+    "detail": {
+      "from": 11,
+      "to": 8,
+      "bandwidth": 746778,
+      "height": 360,
+      "reason": "abr"
+    }
+  },
+  {
+    "index": 11,
+    "t": 1765.3999999761581,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": 0,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 12,
+    "t": 1770.5999999642372,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 0,
+      "codeName": "MEDIA_SOURCE_RECOVERED",
+      "category": 0,
+      "severity": 1,
+      "message": "Shaka reset the MediaSource to recover from a media error that it did not report",
+      "source": "shaka"
+    }
+  },
+  {
+    "index": 13,
+    "t": 1874.199999988079,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 3015,
+      "codeName": "MEDIA_SOURCE_OPERATION_THREW",
+      "category": 3,
+      "severity": 2,
+      "message": "MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015",
+      "data": [
+        "{\"name\":\"InvalidStateError\",\"message\":\"Failed to execute 'appendBuffer' on 'SourceBuffer': The HTMLMediaElement.error attribute is not null.\"}",
+        "{\"code\":3,\"message\":\"PipelineStatus::PIPELINE_ERROR_DECODE\"}",
+        "http://127.0.0.1:4740/s/160a2694f24a/vod-cmaf/seg/a-aac/6.m4s"
+      ],
+      "source": "shaka"
+    }
+  }
+]

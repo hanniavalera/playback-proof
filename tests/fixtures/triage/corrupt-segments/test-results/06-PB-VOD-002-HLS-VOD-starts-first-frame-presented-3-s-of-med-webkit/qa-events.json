@@ -1,0 +1,459 @@
+[
+  {
+    "index": 0,
+    "t": 131,
+    "name": "load-requested",
+    "mediaTime": 0,
+    "detail": {
+      "uri": "/s/09a541e18d2d/vod-cmaf/hls/master.m3u8"
+    }
+  },
+  {
+    "index": 1,
+    "t": 139,
+    "name": "buffering-start",
+    "mediaTime": 0
+  },
+  {
+    "index": 2,
+    "t": 176,
+    "name": "manifest-loaded",
+    "mediaTime": 0
+  },
+  {
+    "index": 3,
+    "t": 217,
+    "name": "buffering-start",
+    "mediaTime": 0
+  },
+  {
+    "index": 4,
+    "t": 217,
+    "name": "variant-changed",
+    "mediaTime": 0,
+    "detail": {
+      "from": null,
+      "to": 8,
+      "bandwidth": 746778,
+      "height": 360,
+      "reason": "start"
+    }
+  },
+  {
+    "index": 5,
+    "t": 219,
+    "name": "loaded",
+    "mediaTime": 0
+  },
+  {
+    "index": 6,
+    "t": 309,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 0,
+      "category": 0,
+      "severity": 1,
+      "message": "shaka.util.Error {\n  \"severity\": 2,\n  \"category\": 3,\n  \"code\": 3024,\n  \"data\": [\n    \"audio\"\n  ],\n  \"handled\": false,\n  \"message\": \"Shaka Error 3024\",\n  \"stack\": \"R@http://127.0.0.1:4740/player/shaka.js:74:564\\nYn@http://127.0.0.1:4740/player/shaka.js:535:239\\nGn@http://127.0.0.1:4740/player/shaka.js:532:270\\n@http://127.0.0.1:4740/player/shaka.js:520:195\\nEa@http://127.0.0.1:4740/player/shaka.js:25:41\\n@http://127.0.0.1:4740/player/shaka.js:26:93\\n@http://127.0.0.1:4740/player/shaka.js:26:488\\n…",
+      "source": "unhandledrejection"
+    }
+  },
+  {
+    "index": 7,
+    "t": 309,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 0,
+      "category": 0,
+      "severity": 1,
+      "message": "shaka.util.Error {\n  \"severity\": 2,\n  \"category\": 3,\n  \"code\": 3024,\n  \"data\": [\n    \"audio\"\n  ],\n  \"handled\": false,\n  \"message\": \"Shaka Error 3024\",\n  \"stack\": \"R@http://127.0.0.1:4740/player/shaka.js:74:564\\nYn@http://127.0.0.1:4740/player/shaka.js:535:239\\nGn@http://127.0.0.1:4740/player/shaka.js:532:270\\n@http://127.0.0.1:4740/player/shaka.js:520:235\\nEa@http://127.0.0.1:4740/player/shaka.js:25:41\\n@http://127.0.0.1:4740/player/shaka.js:26:93\\n@http://127.0.0.1:4740/player/shaka.js:26:488\\n…",
+      "source": "unhandledrejection"
+    }
+  },
+  {
+    "index": 8,
+    "t": 310,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 0,
+      "category": 0,
+      "severity": 1,
+      "message": "AbortError: The operation was aborted.",
+      "source": "play",
+      "codeName": "AbortError"
+    }
+  },
+  {
+    "index": 9,
+    "t": 1320,
+    "name": "variant-changed",
+    "mediaTime": 0,
+    "detail": {
+      "from": 8,
+      "to": 11,
+      "bandwidth": 1845302,
+      "height": 720,
+      "reason": "abr"
+    }
+  },
+  {
+    "index": 10,
+    "t": 1321,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": null,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 11,
+    "t": 1333,
+    "name": "seeked",
+    "mediaTime": 0,
+    "detail": {
+      "readyState": 3,
+      "paused": false
+    }
+  },
+  {
+    "index": 12,
+    "t": 1333,
+    "name": "buffering-end",
+    "mediaTime": 0
+  },
+  {
+    "index": 13,
+    "t": 1333,
+    "name": "playing",
+    "mediaTime": 0
+  },
+  {
+    "index": 14,
+    "t": 1351,
+    "name": "buffering-start",
+    "mediaTime": 0
+  },
+  {
+    "index": 15,
+    "t": 1564,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": 0,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 16,
+    "t": 1593,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": 0,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 17,
+    "t": 2559,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 3015,
+      "codeName": "MEDIA_SOURCE_OPERATION_THREW",
+      "category": 3,
+      "severity": 1,
+      "message": "MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015",
+      "data": [
+        "{\"name\":\"InvalidStateError\",\"message\":\"The object is in an invalid state.\"}",
+        "{\"code\":3,\"message\":\"Media failed to decode\"}",
+        "http://127.0.0.1:4740/s/09a541e18d2d/vod-cmaf/seg/v720/3.m4s"
+      ],
+      "source": "shaka"
+    }
+  },
+  {
+    "index": 18,
+    "t": 2559,
+    "name": "variant-changed",
+    "mediaTime": 0,
+    "detail": {
+      "from": 11,
+      "to": 8,
+      "bandwidth": 746778,
+      "height": 360,
+      "reason": "abr"
+    }
+  },
+  {
+    "index": 19,
+    "t": 2569,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": 0,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 20,
+    "t": 2594,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": 0,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 21,
+    "t": 2612,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": 0,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 22,
+    "t": 2634,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": 0,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 23,
+    "t": 2655,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": 0,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 24,
+    "t": 2678,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": 0,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 25,
+    "t": 2777,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 3015,
+      "codeName": "MEDIA_SOURCE_OPERATION_THREW",
+      "category": 3,
+      "severity": 2,
+      "message": "MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015",
+      "data": [
+        "{\"name\":\"InvalidStateError\",\"message\":\"The object is in an invalid state.\"}",
+        "{\"code\":3,\"message\":\"Media failed to decode\"}",
+        "http://127.0.0.1:4740/s/09a541e18d2d/vod-cmaf/seg/a-aac/3.m4s"
+      ],
+      "source": "shaka"
+    }
+  },
+  {
+    "index": 26,
+    "t": 3569,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 3015,
+      "codeName": "MEDIA_SOURCE_OPERATION_THREW",
+      "category": 3,
+      "severity": 1,
+      "message": "MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015",
+      "data": [
+        "{\"name\":\"InvalidStateError\",\"message\":\"The object is in an invalid state.\"}",
+        "{\"code\":3,\"message\":\"Media failed to decode\"}",
+        "http://127.0.0.1:4740/s/09a541e18d2d/vod-cmaf/seg/v360/4.m4s"
+      ],
+      "source": "shaka"
+    }
+  },
+  {
+    "index": 27,
+    "t": 3569,
+    "name": "variant-changed",
+    "mediaTime": 0,
+    "detail": {
+      "from": 8,
+      "to": 5,
+      "bandwidth": 341878,
+      "height": 240,
+      "reason": "abr"
+    }
+  },
+  {
+    "index": 28,
+    "t": 3579,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": 0,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 29,
+    "t": 3599,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": 0,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 30,
+    "t": 4129,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": 0,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 31,
+    "t": 4147,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": 0,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 32,
+    "t": 4165,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": 0,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 33,
+    "t": 4184,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": 0,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 34,
+    "t": 4202,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": 0,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 35,
+    "t": 4222,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": 0,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 36,
+    "t": 4247,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": 0,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 37,
+    "t": 4267,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": 0,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 38,
+    "t": 5008,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 3015,
+      "codeName": "MEDIA_SOURCE_OPERATION_THREW",
+      "category": 3,
+      "severity": 2,
+      "message": "MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015",
+      "data": [
+        "{\"name\":\"InvalidStateError\",\"message\":\"The object is in an invalid state.\"}",
+        "{\"code\":3,\"message\":\"Media failed to decode\"}",
+        "http://127.0.0.1:4740/s/09a541e18d2d/vod-cmaf/seg/a-aac/3.m4s"
+      ],
+      "source": "shaka"
+    }
+  },
+  {
+    "index": 39,
+    "t": 5556,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 3015,
+      "codeName": "MEDIA_SOURCE_OPERATION_THREW",
+      "category": 3,
+      "severity": 2,
+      "message": "MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015",
+      "data": [
+        "{\"name\":\"InvalidStateError\",\"message\":\"The object is in an invalid state.\"}",
+        "{\"code\":3,\"message\":\"Media failed to decode\"}",
+        "http://127.0.0.1:4740/s/09a541e18d2d/vod-cmaf/seg/v240/3.m4s"
+      ],
+      "source": "shaka"
+    }
+  }
+]

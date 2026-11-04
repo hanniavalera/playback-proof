@@ -1,0 +1,12 @@
+[
+  {
+    "type": "error",
+    "text": "Loading the script 'http://127.0.0.1:4740/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+    "location": "http://127.0.0.1:4740/player/?manifest=%2Fs%2F7f8d99d19e31%2Fvod-cmaf%2Fdash%2Fmanifest.mpd:0"
+  },
+  {
+    "type": "error",
+    "text": "Loading the script 'http://127.0.0.1:4740/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+    "location": "http://127.0.0.1:4740/player/?manifest=%2Fs%2F7f8d99d19e31%2Fvod-cmaf%2Fdash%2Fmanifest.mpd:0"
+  }
+]

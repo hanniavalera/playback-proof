@@ -1,0 +1,118 @@
+[
+  {
+    "index": 0,
+    "t": 154.20000004768372,
+    "name": "load-requested",
+    "mediaTime": 0,
+    "detail": {
+      "uri": "/s/841c069e3646/vod-cmaf/dash/manifest.mpd"
+    }
+  },
+  {
+    "index": 1,
+    "t": 156.30000001192093,
+    "name": "buffering-start",
+    "mediaTime": 0
+  },
+  {
+    "index": 2,
+    "t": 174.60000002384186,
+    "name": "manifest-loaded",
+    "mediaTime": 0
+  },
+  {
+    "index": 3,
+    "t": 186.80000001192093,
+    "name": "buffering-start",
+    "mediaTime": 0
+  },
+  {
+    "index": 4,
+    "t": 187.60000002384186,
+    "name": "variant-changed",
+    "mediaTime": 0,
+    "detail": {
+      "from": null,
+      "to": 2,
+      "bandwidth": 1845302,
+      "height": 720,
+      "reason": "start"
+    }
+  },
+  {
+    "index": 5,
+    "t": 189.5,
+    "name": "loaded",
+    "mediaTime": 0
+  },
+  {
+    "index": 6,
+    "t": 2704,
+    "name": "playing",
+    "mediaTime": 0.001406
+  },
+  {
+    "index": 7,
+    "t": 2704.100000023842,
+    "name": "buffering-end",
+    "mediaTime": 0.001537
+  },
+  {
+    "index": 8,
+    "t": 2706.7000000476837,
+    "name": "firstframe",
+    "mediaTime": 0.004121,
+    "detail": {
+      "source": "requestVideoFrameCallback"
+    }
+  },
+  {
+    "index": 9,
+    "t": 4709.600000023842,
+    "name": "buffering-start",
+    "mediaTime": 1.962736
+  },
+  {
+    "index": 10,
+    "t": 5205,
+    "name": "variant-changed",
+    "mediaTime": 1.962736,
+    "detail": {
+      "from": 2,
+      "to": 0,
+      "bandwidth": 341878,
+      "height": 240,
+      "reason": "abr"
+    }
+  },
+  {
+    "index": 11,
+    "t": 7712.900000035763,
+    "name": "playing",
+    "mediaTime": 2.005333
+  },
+  {
+    "index": 12,
+    "t": 7713,
+    "name": "buffering-end",
+    "mediaTime": 2.005333
+  },
+  {
+    "index": 13,
+    "t": 9719.900000035763,
+    "name": "buffering-start",
+    "mediaTime": 3.968056
+  },
+  {
+    "index": 14,
+    "t": 10710.400000035763,
+    "name": "playing",
+    "mediaTime": 4.010776
+  },
+  {
+    "index": 15,
+    "t": 10710.5,
+    "name": "buffering-end",
+    "mediaTime": 4.010801
+  }
+]

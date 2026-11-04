@@ -1,0 +1,64 @@
+{
+  "state": "playing",
+  "startupMs": 5029.099999964237,
+  "startup": {
+    "manifestMs": 7.5,
+    "loadedMs": 11.799999952316284
+  },
+  "rebuffer": {
+    "count": 0,
+    "totalMs": 0,
+    "ratio": 0,
+    "events": []
+  },
+  "frames": {
+    "decoded": 60,
+    "dropped": 0,
+    "droppedRatio": 0,
+    "presented": 60
+  },
+  "bitrate": {
+    "switches": 1,
+    "current": {
+      "id": 1,
+      "bandwidth": 746778,
+      "width": 640,
+      "height": 360,
+      "videoCodec": "vp09.00.21.08",
+      "audioCodec": "mp4a.40.2"
+    },
+    "history": [
+      {
+        "t": 87.19999998807907,
+        "from": null,
+        "to": 2,
+        "height": 720,
+        "reason": "start"
+      },
+      {
+        "t": 2594.199999988079,
+        "from": 2,
+        "to": 1,
+        "height": 360,
+        "reason": "abr"
+      }
+    ]
+  },
+  "live": {
+    "isLive": false,
+    "latencyMs": null,
+    "latencyMaxMs": null,
+    "presentationDelayMs": null,
+    "edgeSeeks": 0
+  },
+  "errors": [],
+  "playback": {
+    "currentTime": 2.164434,
+    "duration": 60,
+    "paused": false,
+    "ended": false,
+    "playbackRate": 1,
+    "bufferedAheadSec": 0,
+    "readyState": 4
+  }
+}

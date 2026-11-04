@@ -1,0 +1,17 @@
+[
+  {
+    "type": "warning",
+    "text": "Unable to determine bitstream format for CEA parsing!",
+    "location": "http://127.0.0.1:4740/player/shaka.js:66"
+  },
+  {
+    "type": "warning",
+    "text": "Unable to determine bitstream format for CEA parsing!",
+    "location": "http://127.0.0.1:4740/player/shaka.js:66"
+  },
+  {
+    "type": "warning",
+    "text": "Unable to determine bitstream format for CEA parsing!",
+    "location": "http://127.0.0.1:4740/player/shaka.js:66"
+  }
+]

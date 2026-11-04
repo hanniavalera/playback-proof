@@ -1,0 +1,20 @@
+{
+  "id": "7c06e0c7db20",
+  "stream": "vod-cmaf",
+  "protocol": "dash",
+  "label": "PB-VOD-001 DASH VOD starts: first frame presented, 3 s of media time reached, no error",
+  "createdAt": "2026-11-04T16:03:25.280Z",
+  "ttlSec": 900,
+  "manifestUrl": "/s/7c06e0c7db20/vod-cmaf/dash/manifest.mpd",
+  "faults": [],
+  "counters": {
+    "requests": 20,
+    "bytes": 5480,
+    "errors": 14,
+    "byKind": {
+      "manifest": 1,
+      "init": 5,
+      "segment": 14
+    }
+  }
+}

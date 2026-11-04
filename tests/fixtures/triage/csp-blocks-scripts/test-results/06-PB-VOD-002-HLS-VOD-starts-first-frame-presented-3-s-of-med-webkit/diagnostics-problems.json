@@ -1,0 +1,5 @@
+{
+  "qa-events.json": "TypeError: undefined is not an object (evaluating 'window.__qa.events')",
+  "qa-metrics.json": "TypeError: undefined is not an object (evaluating 'window.__qa.metrics')",
+  "qa-info.json": "TypeError: undefined is not an object (evaluating 'window.__qa.info')"
+}

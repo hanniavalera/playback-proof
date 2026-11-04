@@ -1,0 +1,20 @@
+{
+  "id": "d9b12fd44965",
+  "stream": "vod-cmaf",
+  "protocol": "hls",
+  "label": "PB-VOD-002 HLS VOD starts: first frame presented, 3 s of media time reached, no error",
+  "createdAt": "2026-11-04T16:03:56.908Z",
+  "ttlSec": 900,
+  "manifestUrl": "/s/d9b12fd44965/vod-cmaf/hls/master.m3u8",
+  "faults": [],
+  "counters": {
+    "requests": 6,
+    "bytes": 3897,
+    "errors": 2,
+    "byKind": {
+      "manifest": 3,
+      "init": 1,
+      "segment": 2
+    }
+  }
+}

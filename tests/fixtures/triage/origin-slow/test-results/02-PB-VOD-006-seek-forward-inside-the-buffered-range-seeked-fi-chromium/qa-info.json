@@ -1,0 +1,20 @@
+{
+  "shakaVersion": "v5.3.3",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+  "config": "A",
+  "configOverrides": {},
+  "configDefaults": {},
+  "configured": [],
+  "manifestUri": "/s/1603bb67cec9/vod-cmaf/dash/manifest.mpd",
+  "supported": true,
+  "loadMode": "media-source",
+  "params": {
+    "config": "A",
+    "autoplay": true,
+    "muted": true,
+    "start": null,
+    "abr": true,
+    "hud": false
+  },
+  "paramProblems": []
+}

@@ -1,0 +1,32 @@
+{
+  "id": "c9aaf10528bb",
+  "stream": "vod-cmaf",
+  "protocol": "dash",
+  "label": "PB-REC-001 transient segment 404: the failed request is retried and succeeds, playback continues with no critical error and at most one rebuffer",
+  "createdAt": "2026-11-04T16:12:07.085Z",
+  "ttlSec": 900,
+  "manifestUrl": "/s/c9aaf10528bb/vod-cmaf/dash/manifest.mpd",
+  "faults": [
+    {
+      "type": "status",
+      "match": {
+        "kind": "segment",
+        "track": "video",
+        "number": 3
+      },
+      "times": 1,
+      "status": 404,
+      "id": "f1"
+    }
+  ],
+  "counters": {
+    "requests": 9,
+    "bytes": 899198,
+    "errors": 1,
+    "byKind": {
+      "manifest": 1,
+      "init": 2,
+      "segment": 6
+    }
+  }
+}
