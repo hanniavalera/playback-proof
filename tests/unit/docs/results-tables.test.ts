@@ -658,23 +658,63 @@ describe('PB-LAB-006 results tables: the Jenkins block', () => {
   });
 
   it('names the stages of the Jenkinsfile that no committed build ran, and notices when all of them did', () => {
-    const jenkinsfile = "stage('Checks') {\n}\nstage('Flake') {\n}\n";
+    const jenkinsfile = "stage('Checks') {\n}\nstage('Deploy') {\n}\n";
     const withFile = real.with('Jenkinsfile', jenkinsfile);
     const unseen = renderJenkins(withFile);
-    expect(unseen.markdown).toContain('that no committed build ran: `Flake`.');
+    expect(unseen.markdown).toContain('that no committed build ran: `Deploy`.');
     const seen = renderJenkins(real.with('Jenkinsfile', "stage('Checks') {\n}\n"));
     expect(seen.markdown).toContain(
       'Every stage of the [Jenkinsfile](Jenkinsfile) ran in at least one committed build.',
     );
   });
 
+  it('writes Perf, Flake and Triage as stages of their own, with the time of the ones that ran', () => {
+    expect(
+      describeStages([
+        stage('Checks', null, 'SUCCESS', 140_700),
+        stage('Merge gate', null, 'FAILED', 181_500),
+        stage('chromium', 'Merge gate', 'FAILED', 78_000),
+        stage('Perf', null, 'SUCCESS', 737_700),
+        stage('Flake', null, 'SUCCESS', 3_300),
+        stage('Triage', null, 'NOT_EXECUTED', 100),
+      ]),
+    ).toBe(
+      'Checks 141 s; Merge gate FAILED 182 s (chromium FAILED 78 s); Perf 738 s; Flake 3 s; not run: Triage',
+    );
+  });
+
+  it('writes the label of a build whole, however long it is, and counts the builds it renders', () => {
+    const label = `A negative run ${'with a long explanation, '.repeat(20)}that ends here`;
+    expect(label.length).toBeGreaterThan(340);
+    const long = changed(real, 'docs/results/jenkins/build-3.json', (r) => {
+      r.label = label;
+    });
+    expect(renderJenkins(long).markdown).toContain(label);
+    const count = real.list('docs/results/jenkins', /^build-\d+\.json$/).length;
+    expect(renderJenkins(real).markdown).toContain(`${count} builds are committed`);
+    const more = real.with(
+      'docs/results/jenkins/build-99.json',
+      JSON.stringify({
+        ...(JSON.parse(real.text('docs/results/jenkins/build-3.json')) as object),
+        build: 99,
+      }),
+    );
+    expect(renderJenkins(more).markdown).toContain(`${count + 1} builds are committed`);
+  });
+
+  it('says that every stage of the real Jenkinsfile ran in a committed build, because it computes it', () => {
+    expect(renderJenkins(real).markdown).toContain(
+      'Every stage of the [Jenkinsfile](Jenkinsfile) ran in at least one committed build.',
+    );
+  });
+
   it('refuses a build file that is not named after its build', () => {
     const moved = real.with(
-      'docs/results/jenkins/build-9.json',
+      'docs/results/jenkins/build-99.json',
       real.text('docs/results/jenkins/build-3.json'),
     );
     expect(() => renderJenkins(moved)).toThrow(
-      /build-9\.json: \$\.build: says build 3, so the file must be build-3\.json/,
+      /build-99\.json: \$\.build: says build 3, so the file must be build-3\.json/,
     );
   });
 

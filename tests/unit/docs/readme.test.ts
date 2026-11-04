@@ -6,8 +6,9 @@ import { checkReadmeFile } from '../../../tools/check-docs.ts';
 import { parseCatalog } from '../../../tools/catalog.ts';
 import { RESULT_BLOCKS, loadResultFiles } from '../../../tools/results-tables.ts';
 import { readCollections } from '../../../tools/results/flake.ts';
-import { fixed as digits } from '../../../tools/results/format.ts';
+import { fixed as digits, seconds } from '../../../tools/results/format.ts';
 import { parseLegs, parsePerfLegs } from '../../../tools/results/suites.ts';
+import { DEFAULT_LIMITS } from '../../../flake/stats.ts';
 import { configFor, flattenPatch } from '../../../src/player/configs.ts';
 import { parseResultFile } from '../../../src/lab/probe/report.ts';
 import type { Loose } from '../support/results-files.ts';
@@ -301,21 +302,172 @@ describe('PB-LAB-006 README: the prose against the files it stands on', () => {
     expect(slow.size).toBe(2);
   });
 
-  it('says the committed Jenkins builds predate the Perf, Flake and Triage stages (What this proves)', () => {
-    const ran = real
+  describe('Jenkins: the prose against the committed builds', () => {
+    type Stage = { name: string; group: string | null; status: string; durationMs: number };
+    type Build = {
+      result: string;
+      asExpected: boolean;
+      commit: string;
+      branch: string;
+      durationMs: number;
+      stages: Stage[];
+      failure?: { stage: string; group: string | null };
+    };
+    const numbers = real
       .list('docs/results/jenkins', /^build-\d+\.json$/)
-      .flatMap((path) =>
-        (JSON.parse(real.text(path)) as { stages: Array<{ name: string; status: string }> }).stages
-          .filter((s) => s.status !== 'NOT_EXECUTED')
-          .map((s) => s.name),
-      );
-    for (const stage of ['Perf', 'Flake', 'Triage']) {
+      .map((path) => Number(/build-(\d+)\.json$/.exec(path)?.[1]))
+      .sort((a, b) => a - b);
+    const build = (n: number): Build =>
+      JSON.parse(real.text(`docs/results/jenkins/build-${n}.json`)) as Build;
+    const consoleOf = (n: number): string => real.text(`docs/results/jenkins/build-${n}-console.txt`);
+    const stage = (n: number, name: string): Stage => {
+      const found = build(n).stages.find((s) => s.name === name);
+      if (found === undefined) throw new Error(`build ${n} has no stage ${name}`);
+      return found;
+    };
+    const count = (text: string, part: string): number => text.split(part).length - 1;
+    const oneLine = (text: string): string => text.replace(/\s+/g, ' ');
+    const whole = (ms: number): number => Math.round(ms / 1000);
+
+    it('counts the builds as the claims row says: nine, four green, two red on purpose, three red in Unit', () => {
+      expect(numbers).toStrictEqual([2, 3, 4, 5, 6, 7, 8, 9, 10]);
+      const which = (keep: (b: Build) => boolean): number[] => numbers.filter((n) => keep(build(n)));
+      expect(which((b) => b.result === 'SUCCESS')).toStrictEqual([3, 4, 8, 10]);
+      expect(which((b) => b.result === 'FAILURE' && b.asExpected)).toStrictEqual([6, 9]);
       expect(
-        ran,
-        `a committed Jenkins build ran ${stage}: the README says none did (What this proves, Jenkins)`,
-      ).not.toContain(stage);
-      expect(real.text('Jenkinsfile')).toContain(`stage('${stage}')`);
-    }
+        which((b) => b.result === 'FAILURE' && !b.asExpected && b.failure?.stage === 'Unit'),
+      ).toStrictEqual([2, 5, 7]);
+      for (const n of [6, 9]) expect(build(n).failure?.group, `build ${n}`).toBe('Merge gate');
+      for (const sentence of [
+        'nine builds, each with its evidence: four green (3, 4, 8, 10), two red on purpose in the merge gate (6, 9) and three red in `Unit`, not as planned (2, 5, 7)',
+        'with the evidence of nine real builds committed',
+        'Jenkins builds 6 and 9 turn red engine by engine (three of the four engines)',
+      ]) {
+        expect(readme, sentence).toContain(sentence);
+      }
+    });
+
+    it('says builds 8 and 10 ran the whole pipeline on main, green, in the times shown, and what each stage did', () => {
+      expect(build(8).commit).toBe(build(10).commit);
+      for (const n of [8, 10]) {
+        expect(build(n).branch, `build ${n}`).toBe('main');
+        for (const name of ['Checks', 'Merge gate', 'Perf', 'Flake']) {
+          expect(stage(n, name).status, `build ${n}, ${name}`).toBe('SUCCESS');
+        }
+        expect(stage(n, 'Triage').status, `build ${n}, Triage`).toBe('NOT_EXECUTED');
+        expect(count(consoleOf(n), 'verdict: PASS (exit code 0)'), `build ${n}`).toBe(2);
+        expect(consoleOf(n), `build ${n}`).toContain('paired: creating the control checkout of 4f794701c8ac');
+      }
+      expect(`${seconds(build(8).durationMs)} and ${seconds(build(10).durationMs)}`).toBe(
+        '1,082 s and 1,072 s',
+      );
+      expect(readme).toContain('both green, in 1,082 s and 1,072 s');
+      expect(readme).toContain('were green in 1,082 s and 1,072 s');
+      expect(readme).toContain('a green build of the whole pipeline took 1,072 to 1,082 s');
+      expect(consoleOf(8)).toContain('4 runs in this build, 4 runs judged');
+      expect(consoleOf(10)).toContain('4 runs in this build, 8 runs judged');
+      expect(oneLine(read('jenkins/README.md'))).toContain(
+        'appended** its four runs to the file (eight lines',
+      );
+      expect(readme).toContain('build 8 wrote four runs and build 10 appended four, a file of eight lines');
+      // builds 3 and 4 had none of the later stages, which is why the quick start gives two times
+      expect(build(3).stages.map((s) => s.name)).not.toContain('Perf');
+      expect(`${whole(build(4).durationMs)} to ${whole(build(3).durationMs)} s`).toBe('261 to 371 s');
+      expect(readme).toContain('took 261 to 371 s');
+    });
+
+    it('says what the red build 9 did to the stages after the merge gate', () => {
+      expect(build(9).branch).not.toBe('main');
+      expect(stage(9, 'Merge gate').status).toBe('FAILED');
+      for (const name of ['Perf', 'Flake', 'Triage']) expect(stage(9, name).status, name).toBe('SUCCESS');
+      const log = consoleOf(9);
+      expect(count(log, 'A/A by construction: the control is this very commit')).toBe(2);
+      expect(count(log, 'verdict: PASS (exit code 0)')).toBe(2);
+      expect(log).toContain('4 runs in this build, 8 runs judged');
+      expect(log).toContain('failure triage: 3 failed in 4 reports became 1 cluster');
+      expect(log).toContain('category  unknown  (rule no-rule-matched)  ·  class Needs a person');
+      const page = oneLine(read('jenkins/README.md'));
+      expect(page).toContain(
+        'together with the four of build 8 in the history (`4 runs in this build, 8 runs judged`)',
+      );
+      expect(page).toContain('**recorded nothing**: the file still had the four lines of build 8');
+      for (const sentence of [
+        'together with the four of build 8 and recorded nothing',
+        'one cluster of 3 failures in 4 reports, category `unknown` (no rule matched), class "Needs a person"',
+      ]) {
+        expect(readme, sentence).toContain(sentence);
+      }
+    });
+
+    it('says what the builds do not show, and the files agree', () => {
+      for (const n of [8, 9, 10]) {
+        const log = consoleOf(n);
+        const verdicts = [...log.matchAll(/^\[[^\]]+\] verdict: (.+)$/gm)].map((m) => m[1]);
+        expect(verdicts, `build ${n}: every performance verdict`).toStrictEqual([
+          'PASS (exit code 0)',
+          'PASS (exit code 0)',
+        ]);
+        expect(log, `build ${n}`).toContain('this machine: unknown');
+        const rows = [
+          ...log.matchAll(
+            /^\[[^\]]+\] \| (chromium|chromium-cpu4x|firefox|webkit \(experimental\)) \| (\d+) \| \d+ \| \d+ \| [\d.]+% \| [\d.]+% \| (\S+) \|/gm,
+          ),
+        ];
+        expect(rows, `build ${n}: engine rows of the flake table`).toHaveLength(4);
+        for (const row of rows) {
+          expect(row[3], `build ${n}, ${row[1]}`).toBe('not-enough-data');
+          expect(Number(row[2]), `build ${n}, ${row[1]}`).toBeLessThan(DEFAULT_LIMITS.minRunsToJudge);
+        }
+      }
+      expect(DEFAULT_LIMITS.minRunsToJudge).toBe(20);
+      expect([...consoleOf(9).matchAll(/category\s+(\S+)/g)].map((m) => m[1])).toStrictEqual(['unknown']);
+      for (const bullet of [
+        '**A regression failing the `Perf` stage in Jenkins.**',
+        '**A rate judged by the flake gate in Jenkins.**',
+        '**A root cause named by `Triage` there.**',
+        '**The CPU model of the agent.**',
+        '**Jenkins as a hosted service.**',
+        'the history is two builds deep and a rate is judged from 20',
+      ]) {
+        expect(readme, bullet).toContain(bullet);
+      }
+    });
+
+    it('does not say that Perf, Flake and Triage have not run in Jenkins, now that committed builds ran them', () => {
+      const ran = new Set(
+        numbers.flatMap((n) =>
+          build(n)
+            .stages.filter((s) => s.status !== 'NOT_EXECUTED')
+            .map((s) => s.name),
+        ),
+      );
+      for (const name of ['Perf', 'Flake', 'Triage']) {
+        expect(ran.has(name), `${name} ran in no committed build: the README says it did`).toBe(true);
+        expect(real.text('Jenkinsfile')).toContain(`stage('${name}')`);
+      }
+      for (const file of ['README.md', 'docs/CI.md']) {
+        expect(read(file), file).not.toMatch(/not yet run in a Jenkins|[Nn]o Jenkins build has run/);
+      }
+      expect(readme).not.toContain('Results that are not committed yet');
+      const ci = read('docs/CI.md');
+      const times = (name: string): string =>
+        [8, 9, 10].map((n) => whole(stage(n, name).durationMs)).join(', ');
+      expect(ci).toContain(`The \`Perf\` stage took ${times('Perf').replace(/, (\d+)$/, ' and $1')} s`);
+      expect(ci).toContain(
+        `the whole build ${[8, 9, 10]
+          .map((n) => whole(build(n).durationMs).toLocaleString('en-US'))
+          .join(', ')
+          .replace(/, ([\d,]+)$/, ' and $1')} s`,
+      );
+    });
+
+    it('says only what is known of the cause of build 5, in the README and in jenkins/README.md', () => {
+      const page = oneLine(read('jenkins/README.md'));
+      expect(page).toContain('The second one is likely the helper defect fixed in pull request #22');
+      expect(page).toContain('that was not checked for build 5');
+      expect(page).not.toContain('had a cause, found afterwards');
+      expect(readme).toContain('whether the same cause explains it was not checked');
+    });
   });
 
   it('says there are five merge-gate legs and that Linux WebKit is the experimental one (What this proves)', () => {
@@ -601,6 +753,33 @@ describe('PB-LAB-006 README: the prose against the files it stands on', () => {
     expect(runs.filter((r) => r.task === 'soak' && (r.batch ?? 'first') === 'first')).toHaveLength(14);
   });
 
+  it('says A is NO-GO on PB-RDY-003 only and live-sync GO on every readiness check, in every committed report (Readiness and soak)', () => {
+    type Report = {
+      configurations: Array<{ id: string; checks: Array<{ id: string; verdict: string }> }>;
+    };
+    const verdicts = (report: Report, configuration: string): Array<[string, string]> =>
+      (report.configurations.find((c) => c.id === configuration)?.checks ?? []).map((c) => [c.id, c.verdict]);
+    const paths = real.list('docs/results/readiness', /^[^/]+\.json$/);
+    expect(paths).toHaveLength(6);
+    for (const path of paths) {
+      const report = JSON.parse(real.text(path)) as Report;
+      expect(verdicts(report, 'A'), path).toStrictEqual([
+        ['PB-RDY-001', 'GO'],
+        ['PB-RDY-002', 'GO'],
+        ['PB-RDY-003', 'NO-GO'],
+        ['PB-RDY-004', 'GO'],
+      ]);
+      expect(verdicts(report, 'live-sync'), path).toStrictEqual([
+        ['PB-RDY-001', 'GO'],
+        ['PB-RDY-002', 'GO'],
+        ['PB-RDY-003', 'GO'],
+        ['PB-RDY-004', 'GO'],
+      ]);
+    }
+    expect(paths.filter((path) => path.endsWith('-hls.json'))).toHaveLength(2);
+    expect(readme).toContain('and the two HLS runs give the same verdicts as the DASH ones');
+  });
+
   it('names the two unit flakes and the apt mirror check where the repository records them (Limitations)', () => {
     expect(read('docs/results/flake/README.md')).toContain('tests/unit/probe/media.test.ts');
     const label = (build: number): string =>
@@ -616,7 +795,7 @@ describe('PB-LAB-006 README: the prose against the files it stands on', () => {
     expect(hevc).toContain('encoded the same clip 12 times idle and 12 times with eight busy loops');
     expect(hevc).toContain('every series produced one hash (the committed one) in 12 of 12');
     expect(readme).toContain(
-      'encoded the clip 12 times idle and 12 times under load and got the committed hash every time',
+      'encoded the HEVC clip 12 times idle and 12 times under load and got the committed hash every time',
     );
     expect(existsSync(join(ROOT, '.github/actions/setup/apt-mirror.sh'))).toBe(true);
     expect(read('docs/decisions/ci.md')).toContain(

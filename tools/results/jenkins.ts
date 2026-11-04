@@ -3,7 +3,7 @@
 // long each stage took. The pipeline has grown since (the file says which stages a build ran): a build proves the stages it shows.
 import { data, emptyState } from './files.ts';
 import type { FileSet, Node, Rendered } from './files.ts';
-import { code, day, link, listOf, mdTable, plural, seconds, shorten } from './format.ts';
+import { code, day, link, listOf, mdTable, plural, seconds } from './format.ts';
 
 export const JENKINS_DIR = 'docs/results/jenkins';
 export const JENKINSFILE = 'Jenkinsfile';
@@ -138,7 +138,7 @@ export function renderJenkins(files: FileSet): Rendered {
     builds.map((b) => [
       link(String(b.build), b.path),
       `${day(b.startedAt)}, ${code(b.branch)}, ${code(b.commit.slice(0, 7))}`,
-      shorten(b.label, 340),
+      b.label,
       resultText(b),
       seconds(b.durationMs),
       describeStages(b.stages),

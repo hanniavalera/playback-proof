@@ -104,8 +104,11 @@ describe('PB-LAB-006 results tables: mutation checks on a copy of the real files
 
   it('catches a new build, a leg taken out of a workflow, and a test that no catalog row names', () => {
     const build = real.with(
-      'docs/results/jenkins/build-7.json',
-      JSON.stringify({ ...(JSON.parse(real.text('docs/results/jenkins/build-3.json')) as object), build: 7 }),
+      'docs/results/jenkins/build-11.json',
+      JSON.stringify({
+        ...(JSON.parse(real.text('docs/results/jenkins/build-3.json')) as object),
+        build: 11,
+      }),
     );
     expect(failing(build)).toMatch(/generated block RESULTS_JENKINS is out of date/);
     const workflow = real.text('.github/workflows/ci.yml');
