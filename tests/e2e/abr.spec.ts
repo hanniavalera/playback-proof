@@ -2,10 +2,12 @@ import { profile } from '../../src/shared/profiles.ts';
 import { compareHistoryWithLog, rungRuns } from './abr/agreement.ts';
 import {
   SHAKA_SWITCH_INTERVAL_S,
+  droppedFramesNote,
   settleWindowSeconds,
   throttleOf,
   upshiftBoundSeconds,
 } from './abr/conditions.ts';
+import { orExplain } from './abr/explain.ts';
 import { bestRungCarriedBy, ladderOf, rungOf } from './abr/ladder.ts';
 import { describeSegments, fromFirstOf, videoSegmentRequests } from './abr/log.ts';
 import { startupBound } from './abr/startup.ts';
@@ -61,10 +63,10 @@ test(
     // Where the start rung matters: Chromium starts on the top rung (Shaka takes `navigator.connection.downlink` for its first
     // estimate), so for it "climbs" is satisfied by the initial selection and the claim that counts is "stays"; WebKit and Firefox start
     // on 360p and climb as soon as Shaka has sampled 128 kB. The wait takes either: the first time the active rung is the top one.
-    const top = await qa.waitFor('variant-changed', {
-      detail: { height: ladder.top.height },
-      timeoutMs: WAIT_MS,
-    });
+    const top = await orExplain(
+      qa.waitFor('variant-changed', { detail: { height: ladder.top.height }, timeoutMs: WAIT_MS }),
+      `the player never reached ${ladder.top.height}p on a ${UNCONSTRAINED_LINK_KBPS} kbps link within ${WAIT_MS / 1000} s: members on a good connection watch lower quality than they could.`,
+    );
     // Shaka's first decision comes with its first good estimate, and no later than one switch interval after the start: the climb
     // is due in the first 8 s of playback plus the segment in which the decision is made.
     const climbBound = SHAKA_SWITCH_INTERVAL_S + stream.segmentDurationSec;
@@ -96,7 +98,7 @@ test(
     );
     expect(
       describeVariantChanges(variantChanges(await qa.events(top.index + 1))),
-      `rung changes in the ${window} s after reaching ${ladder.top.height}p (qa.events()): none (Shaka also leaves a rung when over 15 % of the frames of 2 s are dropped: ${metrics.frames.dropped} of ${metrics.frames.decoded} were)`,
+      `rung changes in the ${window} s after reaching ${ladder.top.height}p (qa.events()): none. ${droppedFramesNote(metrics.frames)}`,
     ).toBe('none');
     expect(metrics.bitrate.current?.height, 'active rung (metrics.bitrate.current) at the end').toBe(
       ladder.top.height,
@@ -149,10 +151,13 @@ test(
     // estimate still holds the fast samples of the first 8 s at the first decision. The segment in flight when the link weakens takes
     // about 6 s at 600 kbps. So the step to 240p comes between 10 and 26 s into the playback in the runs measured; the wait is a
     // bound for a failure (8 s + two decisions 8 s apart + one 6 s segment + margin), never the pace of the test.
-    const down = await qa.waitFor('variant-changed', {
-      detail: { reason: 'abr', height: settle.height },
-      timeoutMs: DOWNSHIFT_WAIT_MS,
-    });
+    const down = await orExplain(
+      qa.waitFor('variant-changed', {
+        detail: { reason: 'abr', height: settle.height },
+        timeoutMs: DOWNSHIFT_WAIT_MS,
+      }),
+      `the player did not step down to ${settle.height}p, the rung a ${throttle.kbps} kbps link carries, within ${DOWNSHIFT_WAIT_MS / 1000} s of the start (the link weakens 8 s in): members on a weakening connection get stall after stall instead of lower quality.`,
+    );
     expect(down.detail?.bandwidth, 'bandwidth declared by the variant the player stepped down to').toBe(
       settle.variantBandwidth,
     );
@@ -161,12 +166,12 @@ test(
     const window = settleWindowSeconds(stream.segmentDurationSec);
     await qa.waitForMediaTime(down.mediaTime + window, { timeoutMs: WAIT_MS });
 
+    const metrics = await qa.metrics();
     const afterDown = await qa.events(down.index + 1);
     expect(
       describeVariantChanges(variantChanges(afterDown)),
-      `rung changes in the ${window} s after the step down to ${settle.height}p (qa.events()): none`,
+      `rung changes in the ${window} s after the step down to ${settle.height}p (qa.events()): none. ${droppedFramesNote(metrics.frames)}`,
     ).toBe('none');
-    const metrics = await qa.metrics();
     testInfo.annotations.push({
       type: 'measured',
       description: `rungs: ${describeVariantChanges(variantChanges(await qa.events()))}; rebuffers ${metrics.rebuffer.count}`,
@@ -217,10 +222,13 @@ test(
     const qa = await player(session).open();
     await qa.waitFor('firstframe');
     // The downshift first (PB-ABR-002 has the arithmetic of this wait): the recovery is the end of the drop the player answered.
-    await qa.waitFor('variant-changed', {
-      detail: { reason: 'abr', height: settle.height },
-      timeoutMs: DOWNSHIFT_WAIT_MS,
-    });
+    await orExplain(
+      qa.waitFor('variant-changed', {
+        detail: { reason: 'abr', height: settle.height },
+        timeoutMs: DOWNSHIFT_WAIT_MS,
+      }),
+      `the player did not step down to ${settle.height}p within ${DOWNSHIFT_WAIT_MS / 1000} s of the start, so there is no drop for it to recover from (PB-ABR-002 is the test of the drop).`,
+    );
 
     // The link recovers to a link of its own: the rule is replaced, in one call, by a finite one. Removing the rule would leave the
     // player a link on which a segment arrives in under a millisecond, and Shaka (`abr.cacheLoadThreshold`, 5 ms) takes a download
@@ -232,7 +240,10 @@ test(
     await session.service.setFaults(session.id, [{ type: 'throttle', kbps: RECOVERED_LINK_KBPS }]);
 
     const [up] = variantChanges([
-      await qa.waitFor('variant-changed', { since: eventsSince, timeoutMs: WAIT_MS }),
+      await orExplain(
+        qa.waitFor('variant-changed', { since: eventsSince, timeoutMs: WAIT_MS }),
+        `the player stayed on ${settle.height}p for ${WAIT_MS / 1000} s after the link recovered to ${RECOVERED_LINK_KBPS} kbps, which carries every rung: members stay at low quality after the network recovers.`,
+      ),
     ]);
     if (!up) throw new Error('the hook recorded no variant change');
     const elapsed = up.mediaTime - recoveredAt;
@@ -484,14 +495,27 @@ test(
 
     // Settled on the lowest rung: the step down may come before the first frame (it does when the start rung is cut off), so
     // wait for the rung, whatever its reason, then watch it past the switch interval; and the first 10 s of playback are covered.
-    const low = await qa.waitFor('variant-changed', {
-      detail: { height: ladder.lowest.height },
-      timeoutMs: WAIT_MS,
-    });
+    const low = await orExplain(
+      qa.waitFor('variant-changed', { detail: { height: ladder.lowest.height }, timeoutMs: WAIT_MS }),
+      `the player never settled on ${ladder.lowest.height}p within ${WAIT_MS / 1000} s on a ${link} kbps link, the only rung it carries: members on slow connections wait too long or stall at the start.`,
+    );
     const window = settleWindowSeconds(stream.segmentDurationSec);
     await qa.waitForMediaTime(Math.max(EARLY_PLAYBACK_S, low.mediaTime + window), { timeoutMs: WAIT_MS });
 
     const metrics = await qa.metrics();
+    testInfo.annotations.push({
+      type: 'measured',
+      description: `rungs: ${describeVariantChanges(variantChanges(await qa.events()))}; dropped frames ${metrics.frames.dropped} of ${metrics.frames.decoded}`,
+    });
+    // The rung comes first: a rebuffer on this link is what follows from leaving the one rung it carries, so it is the rung that is the
+    // cause to report (and the dropped frames, the one non-network reason Shaka has to leave it).
+    expect(
+      describeVariantChanges(variantChanges(await qa.events(low.index + 1))),
+      `rung changes after settling on ${ladder.lowest.height}p (qa.events()): none. ${droppedFramesNote(metrics.frames)}`,
+    ).toBe('none');
+    expect(metrics.bitrate.current?.height, 'active rung (metrics.bitrate.current) at the end').toBe(
+      ladder.lowest.height,
+    );
     const early = metrics.rebuffer.events.filter((event) => event.mediaTime <= EARLY_PLAYBACK_S);
     const earlyList = early.map(
       (event) => `at media time ${event.mediaTime.toFixed(2)} s for ${Math.round(event.durationMs)} ms`,
@@ -500,13 +524,6 @@ test(
       early.length,
       `rebuffers in the first ${EARLY_PLAYBACK_S} s of playback (metrics.rebuffer.events): at most one, saw ${early.length}${early.length > 0 ? `: ${earlyList.join('; ')}` : ''}`,
     ).toBeLessThanOrEqual(1);
-    expect(
-      describeVariantChanges(variantChanges(await qa.events(low.index + 1))),
-      `rung changes after settling on ${ladder.lowest.height}p (qa.events()): none`,
-    ).toBe('none');
-    expect(metrics.bitrate.current?.height, 'active rung (metrics.bitrate.current) at the end').toBe(
-      ladder.lowest.height,
-    );
     expectHealthyPlayback(metrics);
 
     // The origin's account: from the first segment of the lowest rung on nothing else is asked for, and it is what was delivered last.
@@ -541,10 +558,13 @@ test(
     await qa.waitFor('firstframe');
     // The history to compare is the whole of a drop: the start rung (Shaka's choice, per engine), the step down (in one or two
     // decisions, PB-ABR-002), and a few segments of the rung it ends on, so that a player that kept fetching the old rung shows.
-    const down = await qa.waitFor('variant-changed', {
-      detail: { reason: 'abr', height: settle.height },
-      timeoutMs: DOWNSHIFT_WAIT_MS,
-    });
+    const down = await orExplain(
+      qa.waitFor('variant-changed', {
+        detail: { reason: 'abr', height: settle.height },
+        timeoutMs: DOWNSHIFT_WAIT_MS,
+      }),
+      `the player did not step down to ${settle.height}p within ${DOWNSHIFT_WAIT_MS / 1000} s of the start, so there is no drop in its history to compare with the origin's log (PB-ABR-002 is the test of the drop).`,
+    );
     await waitForRequest(session, (entry) => entry.kind === 'segment' && entry.rep === settle.rep, {
       timeoutMs: WAIT_MS,
     });

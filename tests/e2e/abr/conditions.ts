@@ -39,3 +39,16 @@ export function settleWindowSeconds(segmentDurationSec: number): number {
 export function upshiftBoundSeconds(segmentDurationSec: number): number {
   return SHAKA_SWITCH_INTERVAL_S + 3 * segmentDurationSec;
 }
+
+/**
+ * Shaka's other reason to leave a rung, unrelated to the network: with `abr.droppedFrames` on (the default) it disables the variant that
+ * is playing for 30 s when 15 % or more of the frames of a 2 s window were dropped, and chooses another. A machine that is busy
+ * decoding in software can trigger it, and a spec that sees a rung change it cannot explain by the link must say so.
+ */
+export function droppedFramesNote(frames: { decoded: number; dropped: number }): string {
+  const ratio = frames.decoded === 0 ? 0 : (100 * frames.dropped) / frames.decoded;
+  return (
+    `Shaka also leaves a rung, whatever the link, when 15 % of the frames of a 2 s window are dropped (it disables that variant for 30 s); ` +
+    `dropped frames in this load: ${frames.dropped} of ${frames.decoded} (${ratio.toFixed(1)} %)`
+  );
+}
