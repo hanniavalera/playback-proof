@@ -184,8 +184,10 @@ describe('JS heap growth', () => {
   });
 
   it('measures from the end of the warm-up, not from the start: what the player allocates while it starts is not a leak', () => {
-    const startup = heapSeries(5, 30, (sec) => (sec < 60 ? 5 + sec / 3 : 25));
+    // 90 MB allocated while the player starts, then flat: measured from the first reading that is a 45 MB "growth", from the end of the warm-up none.
+    const startup = heapSeries(5, 30, (sec) => (sec < 60 ? 2 + sec * 1.5 : 92));
     expect(evaluateHeapGrowth(soak({ heap: startup })).verdict).toBe('GO');
+    expect(evaluateHeapGrowth(soak({ heap: startup })).value).toBe(0);
   });
 
   it('needs enough readings after the warm-up to say anything', () => {
