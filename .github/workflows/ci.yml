@@ -1,0 +1,48 @@
+name: ci
+
+# The merge gate. Each job is one stage of the pipeline that the Jenkinsfile also runs: the stage names are the
+# `npm run gate:*` scripts, so the two CI systems cannot drift apart (a unit test compares them).
+# This is the first version (static and unit). The browser jobs, the performance gate and the flake and triage stages
+# are added as the lab grows; see TEST_STRATEGY.md section 6.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: static
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run gate:static
+
+  unit:
+    name: unit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      # The media tests run the real ffmpeg (the version Ubuntu ships is the one the pipeline is verified against).
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - run: npm ci
+      - run: npm run gate:unit
