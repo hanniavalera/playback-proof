@@ -148,14 +148,28 @@ describe("the soak through the command line's driver", () => {
     expect(minute).toBeLessThan(2.6);
   });
 
-  it('applies the candidate configuration after the page boots and before the first frame, and the evidence says it was applied', async () => {
+  it('applies the candidate configuration to an idle page BEFORE it loads and plays, and the evidence says it was applied', async () => {
     const candidate = candidateById('live-sync');
     const { fp, run } = soakOf({ patch: candidate?.patch as Record<string, unknown> });
     const result = await run();
     const calls = fp.service.calls;
+    // The page is opened without a manifest (Shaka reads liveSync in load()), configured, and only then told to load and play.
     expect(calls.indexOf('goto')).toBeLessThan(calls.indexOf('qa.configure'));
+    expect(calls.indexOf('qa.configure')).toBeLessThan(calls.indexOf('qa.load'));
+    expect(calls.indexOf('qa.load')).toBeLessThan(calls.indexOf('qa.play'));
+    expect(fp.env.pages[0]?.gotoUrls).toEqual([`${fp.service.origin}/player/`]);
+    expect(fp.observed.runs[0]?.calls).toEqual(['openIdle', 'configure', 'load', 'play']);
+    expect(fp.observed.runs[0]?.liveSyncAtLoad).toBe(true);
     expect(fp.observed.runs[0]?.configured).toEqual([candidate?.patch]);
     expect(result.start.player?.configured).toEqual([candidate?.patch]);
+  });
+
+  it('opens the page for the defaults with the manifest, as a viewer does, and configures nothing', async () => {
+    const { fp, run } = soakOf({});
+    await run();
+    expect(fp.observed.runs[0]?.calls).toEqual(['open']);
+    expect(fp.env.pages[0]?.gotoUrls[0]).toContain('/player/?manifest=');
+    expect(fp.service.calls).not.toContain('qa.configure');
   });
 
   it('creates the session for the length of the soak and a quarter of an hour, and says what it is for', async () => {

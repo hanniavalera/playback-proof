@@ -156,17 +156,23 @@ export class FakePage {
     this.guard('page.goto');
     this.gotoUrls.push(url);
     this.env.service.calls.push('goto');
-    const manifest = new URL(url, 'http://127.0.0.1').searchParams.get('manifest') ?? '';
-    const id = /^\/s\/([^/]+)\//.exec(manifest)?.[1];
+    const manifest = new URL(url, 'http://127.0.0.1').searchParams.get('manifest');
+    // A page opened without a manifest is idle and belongs to the session the harness made for its run: the latest one no page has opened.
+    const id =
+      manifest === null
+        ? this.env.service.claimLatest()
+        : this.env.service.claim(/^\/s\/([^/]+)\//.exec(manifest)?.[1]);
     const model = id === undefined ? undefined : this.env.service.model(id);
-    if (!model) throw new Error(`page.goto: the fake service has no session for the manifest "${manifest}"`);
+    if (!model || id === undefined)
+      throw new Error(`page.goto: the fake service has no session for the manifest "${manifest ?? ''}"`);
     try {
-      model.open();
+      if (manifest === null) model.openIdle();
+      else model.open();
     } catch (error) {
       throw new Error(`page.goto: net::ERR_CONNECTION_REFUSED at ${url}`, { cause: error });
     }
     (this.window.location as { href: string }).href = url;
-    this.window.__qa = hookOf(model, (what) => this.env.service.calls.push(what));
+    this.window.__qa = hookOf(model, id, (what) => this.env.service.calls.push(what));
     return null;
   }
 
@@ -220,7 +226,11 @@ export class FakePage {
 }
 
 /** The part of the hook the readiness code reads, with the synchronous members of the real one. */
-function hookOf(model: FakeModel, record: (what: string) => void): Record<string, unknown> {
+function hookOf(
+  model: FakeModel,
+  sessionId: string,
+  record: (what: string) => void,
+): Record<string, unknown> {
   return {
     version: 1,
     ready: Promise.resolve(),
@@ -231,6 +241,16 @@ function hookOf(model: FakeModel, record: (what: string) => void): Record<string
     configure: (patch: Record<string, unknown>) => {
       record('qa.configure');
       model.configure(patch);
+    },
+    load: async (manifestUri: string) => {
+      record('qa.load');
+      if (!manifestUri.includes(`/s/${sessionId}/`))
+        throw new Error(`qa.load(): the fake page belongs to session ${sessionId}, not to ${manifestUri}`);
+      model.load(manifestUri);
+    },
+    play: async () => {
+      record('qa.play');
+      model.play();
     },
     waitFor: async (
       name: Parameters<FakeModel['waitFor']>[0],
@@ -331,11 +351,24 @@ export class FakeService implements WorldService {
   readonly calls: string[] = [];
   readonly deleted: string[] = [];
   private readonly sessions = new Map<string, { run: ReadinessRun; model: FakeModel }>();
+  private readonly claimed = new Set<string>();
 
   constructor(private readonly built: { world: ReturnType<typeof fakeWorld>['world']; observed: Observed }) {}
 
   model(id: string): FakeModel | undefined {
     return this.sessions.get(id)?.model;
+  }
+
+  /** The page of `id` opened (it was given the session's manifest). */
+  claim(id: string | undefined): string | undefined {
+    if (id !== undefined) this.claimed.add(id);
+    return id;
+  }
+
+  /** An idle page opened: it is the one of the latest session that has none yet. */
+  claimLatest(): string | undefined {
+    const free = [...this.sessions.keys()].filter((id) => !this.claimed.has(id));
+    return this.claim(free.at(-1));
   }
 
   private session(id: string): { run: ReadinessRun; model: FakeModel } {

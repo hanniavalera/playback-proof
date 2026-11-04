@@ -3,7 +3,7 @@ import type { ShakaConfigPatch } from '../../player/configs.ts';
 import { LIVE_LIMITS } from '../../shared/criteria.ts';
 import type { FaultRule } from '../../shared/faults.ts';
 import { originStall, staleManifest } from '../../shared/profiles.ts';
-import { evidenceOf, JOIN_TIMEOUT_MS, refreshSeries } from './checks.ts';
+import { bootPlayer, JOIN_TIMEOUT_MS, refreshSeries } from './checks.ts';
 import type { PlayerEvidence } from './checks.ts';
 import { enableHeapProbe, exposeGc, readChromiumHeap, readHarnessMemory } from './heap.ts';
 import type { HarnessSample, RequestDigest } from './report.ts';
@@ -32,7 +32,7 @@ export interface SoakDriverOptions {
   stallAtMinutes: number | null;
   /** When the manifest goes stale, in minutes from the first media request; null: never. */
   staleAtMinutes: number | null;
-  /** The configuration under test, applied with `qa.configure()` after the page boots; null: A. */
+  /** The configuration under test, in force before Shaka loads (`bootPlayer`: an idle page, `qa.configure()`, then the load); null: A. */
   patch: ShakaConfigPatch | null;
   /** The pid of the service the harness started, for its resident memory. */
   servicePid: number | null;
@@ -96,9 +96,7 @@ export function playwrightSoakDriver(world: PlaywrightWorld, options: SoakDriver
       if (staleAfterMs !== null) rules.push(...staleManifest(limits.injectedStallMs, staleAfterMs));
       if (rules.length > 0) await session.service.addFaults(session.id, rules);
 
-      await player.open();
-      if (options.patch) await player.configure(options.patch as Record<string, unknown>);
-      evidence = evidenceOf(await player.info());
+      evidence = await bootPlayer(run, options.patch);
       const frame = await player.waitFor('firstframe', { timeoutMs: JOIN_TIMEOUT_MS });
       timeOrigin = await player.evaluate<number>('performance.timeOrigin', 'performance.timeOrigin');
       if (world.engine === 'chromium') {

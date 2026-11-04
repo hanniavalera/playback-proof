@@ -28,12 +28,15 @@ const worldOf = (fp: FakePlaywright, browser: LaunchedBrowser = fp.browser) =>
     now: fp.harness.now,
   });
 
-async function openPlayer(fp: FakePlaywright): Promise<{ player: ReadinessPage; page: FakePage }> {
+async function openPlayer(
+  fp: FakePlaywright,
+): Promise<{ player: ReadinessPage; page: FakePage; manifestUrl: string }> {
   const info = await fp.service.createSession({ stream: 'live-cmaf', protocol: 'dash', label: 'test' });
   const run = await fp.browser.newRun();
   return {
     player: new ReadinessPage(run.page, fp.service.origin, info.manifestUrl),
     page: pageOf(run),
+    manifestUrl: info.manifestUrl,
   };
 }
 
@@ -70,6 +73,15 @@ describe('the fake page is as strict as the browser, or nothing below proves any
     expect(await page.evaluate('Promise.resolve(5)')).toBe(5);
     expect(await page.evaluate('var a = 3; a * 2')).toBe(6);
     expect(await page.evaluate('performance.timeOrigin')).toBeGreaterThan(1_000_000_000_000);
+  });
+
+  it('models what Shaka does with live sync: a patch that arrives after the load started is not in force', async () => {
+    const fp = fakePlaywright();
+    const { player } = await openPlayer(fp);
+    await player.open();
+    await player.configure({ streaming: { liveSync: { enabled: true } } });
+    expect(fp.observed.runs[0]?.configured).toHaveLength(1);
+    expect(fp.observed.runs[0]?.liveSyncAtLoad).toBe(false);
   });
 
   it('says what Playwright says of a page that crashed or was closed', async () => {
@@ -109,6 +121,40 @@ describe('ReadinessPage over the fake page', () => {
     expect(await player.cursor()).toBe(1);
     expect((await player.events()).map((event) => event.name)).toEqual(['firstframe']);
     expect(await player.events(1)).toEqual([]);
+  });
+
+  it('opens a page without a manifest, which loads nothing, and starts the load and the play in ONE call into the page', async () => {
+    const fp = fakePlaywright();
+    const { player, page, manifestUrl } = await openPlayer(fp);
+    const info = await player.openIdle();
+    expect(info.supported).toBe(true);
+    expect(page.gotoUrls).toEqual([`${fp.service.origin}/player/`]);
+    // Nothing was loaded, so nothing is presented: an idle page that nothing starts must not look like a slow join.
+    await expect(player.waitFor('firstframe', { timeoutMs: 800 })).rejects.toThrow(/timed out/);
+    const patch = { streaming: { liveSync: { enabled: true } } };
+    await player.configure(patch);
+    const sentBefore = page.sent.length;
+    await player.loadAndPlay(manifestUrl);
+    // One round trip, not two: the startup of the join must not include the harness's own latency between the load and the play.
+    expect(page.sent.length - sentBefore).toBe(1);
+    expect(fp.observed.runs[0]?.calls).toEqual(['openIdle', 'configure', 'load', 'play']);
+    expect(fp.observed.runs[0]?.liveSyncAtLoad).toBe(true);
+    expect((await player.waitFor('firstframe')).name).toBe('firstframe');
+  });
+
+  it('leaves a failure of the load to the timeline of the page, as the page does for the manifest it was given, and does not wait for it', async () => {
+    const fp = fakePlaywright();
+    const { player } = await openPlayer(fp);
+    await player.openIdle();
+    // The fake page refuses a manifest of another session inside the page; the harness must not see it as a throw.
+    await expect(player.loadAndPlay('/s/another/live-cmaf/dash/manifest.mpd')).resolves.toBeUndefined();
+    expect(fp.observed.runs[0]?.calls).toEqual(['openIdle']);
+    await expect(player.waitFor('firstframe', { timeoutMs: 800 })).rejects.toThrow(/timed out/);
+  });
+
+  it('says why an idle page did not boot in the words of the navigation error', async () => {
+    const { player } = await openPlayer(fakePlaywright({ openFails: true }));
+    await expect(player.openIdle()).rejects.toThrow(/net::ERR_CONNECTION_REFUSED/);
   });
 
   it('sends a configuration patch across the boundary intact, and labels a failure with the call that made it', async () => {
@@ -252,12 +298,17 @@ describe("the four checks through the command line's world", () => {
     const direct = await runReadinessChecks(fakeWorld().world, { ...options, checks: [...options.checks] });
     expect(summary(viaPlaywright)).toEqual(summary(direct));
     expect(viaPlaywright.find((r) => r.id === 'PB-RDY-003')?.verdict).toBe('NO-GO');
+    // The defaults are opened as a viewer's page opens: with the manifest, which the page loads by itself, and nothing configured.
+    expect(fp.observed.runs.every((run) => run.calls.join() === 'open' && run.configured.length === 0)).toBe(
+      true,
+    );
+    for (const page of fp.env.pages) expect(page.gotoUrls[0]).toContain('/player/?manifest=');
     // Every run was closed: no context and no session left behind.
     expect(fp.env.contexts.every((context) => context.closed)).toBe(true);
     expect(fp.service.deleted).toHaveLength(fp.env.contexts.length);
   });
 
-  it('apply the candidate through the hook before the outage: the patch reaches the page whole, and the player catches up', async () => {
+  it('apply the candidate BEFORE the player loads: an idle page, the patch whole, then the load and the play; and the player catches up', async () => {
     const fp = fakePlaywright();
     const candidate = candidateById('live-sync');
     const results = await runReadinessChecks(worldOf(fp), {
@@ -268,6 +319,15 @@ describe("the four checks through the command line's world", () => {
     expect(results[0]?.verdict).toBe('GO');
     expect(fp.observed.runs.every((run) => run.configured.length === 1)).toBe(true);
     expect(fp.observed.runs[0]?.configured[0]).toEqual(candidate?.patch);
+    // Shaka reads `streaming.liveSync.enabled` in load(): the page was opened without a manifest, configured, and only then told to load.
+    for (const run of fp.observed.runs) {
+      expect(run.calls).toEqual(['openIdle', 'configure', 'load', 'play']);
+      expect(run.liveSyncAtLoad).toBe(true);
+    }
+    for (const page of fp.env.pages) expect(page.gotoUrls).toEqual([`${fp.service.origin}/player/`]);
+    expect(fp.service.calls.filter((call) => call.startsWith('qa.'))).toEqual(
+      fp.observed.runs.flatMap(() => ['qa.configure', 'qa.load', 'qa.play']),
+    );
   });
 
   it("report a page that cannot boot as a check that could not run, with the browser's words, and close what they opened", async () => {

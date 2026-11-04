@@ -1,7 +1,8 @@
 import type { ShakaConfigPatch } from '../../player/configs.ts';
 
 // The configurations a readiness run can evaluate besides the build as it ships (A, Shaka's own defaults, which is always evaluated first).
-// A candidate is "A plus one knob", applied through `qa.configure()` after the page has booted, so that the effect can be attributed to
+// A candidate is "A plus one knob", applied through `qa.configure()` to a page that is still idle and loaded afterwards (`bootPlayer` in
+// checks.ts: Shaka reads some options, `streaming.liveSync.enabled` among them, when it loads), so that the effect can be attributed to
 // the knob (docs/decisions/player.md, ADR-064) and so that a readiness check can answer the question it exists for: does a change fix
 // what the defaults fail, and does it show GO?
 

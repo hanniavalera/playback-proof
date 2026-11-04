@@ -13,8 +13,9 @@ import type {
 
 // A scripted live origin and player on a virtual clock, for the procedures of the readiness checks. It is a model of the behaviours the
 // checks have to tell apart, not of Shaka: a join that takes a given time, a latency that is steady, an outage that drains the buffer and
-// leaves the playhead 4 s further behind, a configuration that does or does not bring it back (only if the candidate patch was really
-// applied through `configure`), a manifest that keeps being asked for or stops, a clock that hangs.
+// leaves the playhead 4 s further behind, a configuration that does or does not bring it back (only if live sync was on when the player
+// LOADED, as in Shaka 5.3.3, which registers its rate control inside `load()`: a patch configured after the load changes nothing), a
+// manifest that keeps being asked for or stops, a clock that hangs, and a page that shows no first frame until something has loaded and played.
 
 export interface Script {
   /** `startupMs` of each join in the order the world makes them; 15,000 or more is a join that never presents a frame. */
@@ -48,9 +49,14 @@ const TIMEOUT_ERROR = (what: string, ms: number): Error =>
  * return, or throw the timeout, at once: nothing in the model waits.
  */
 export interface FakeModel {
+  /** The page opens with the session's manifest and loads and plays by itself, as the real one does. */
   open(): void;
+  /** The page opens without a manifest: it builds the player and waits. */
+  openIdle(): void;
   info(): QAInfo;
   configure(patch: Record<string, unknown>): void;
+  load(manifestUri: string): void;
+  play(): void;
   metrics(): QAMetrics;
   cursor(): number;
   events(): QAEvent[];
@@ -64,6 +70,10 @@ export interface Observed {
     request: NewRunRequest;
     closed: boolean;
     configured: Array<Record<string, unknown>>;
+    /** What the page was asked to do, in order: `open`, `openIdle`, `configure`, `load`, `play`. */
+    calls: string[];
+    /** `streaming.liveSync.enabled` as it stood when the load started: what Shaka read, and so whether it controls the rate. */
+    liveSyncAtLoad: boolean | null;
     faults: FaultRule[];
     model: FakeModel;
   }>;
@@ -87,6 +97,8 @@ export function fakeWorld(script: Script = {}): {
       request,
       closed: false,
       configured: [],
+      calls: [],
+      liveSyncAtLoad: null,
       faults: [],
       model: undefined as unknown as FakeModel,
     };
@@ -104,6 +116,15 @@ export function fakeWorld(script: Script = {}): {
     let resumedAt: number | null = null;
     let lostMs = 0;
     let liveSync = false;
+    // Shaka registers the rate control when it loads, and only if live sync is on at that moment; configuring it later changes nothing.
+    let rateControl = false;
+    let loadStarted = false;
+    let playRequested = false;
+    const startLoad = (): void => {
+      loadStarted = true;
+      rateControl = liveSync;
+      record.liveSyncAtLoad = liveSync;
+    };
 
     const edgeNumber = (): number => {
       const frozen = outage && clock.now >= outage.start && clock.now < outage.end ? outage.start : clock.now;
@@ -112,7 +133,7 @@ export function fakeWorld(script: Script = {}): {
     const hung = (): boolean => script.hangAfterMediaSec !== undefined && media >= script.hangAfterMediaSec;
     const stalledNow = (): boolean => dryAt !== null && resumedAt === null && clock.now >= dryAt;
     const rateNow = (): number => {
-      if (resumedAt === null || !liveSync) return 1;
+      if (resumedAt === null || !rateControl) return 1;
       return lostMs - 0.1 * (clock.now - resumedAt) > 0 ? 1.1 : 1;
     };
     const sync = (): void => {
@@ -127,7 +148,7 @@ export function fakeWorld(script: Script = {}): {
     };
     const latencyNow = (): number => {
       if (resumedAt === null) return base + (stalledNow() ? clock.now - (dryAt ?? clock.now) : 0);
-      const decayed = liveSync ? 0.1 * (clock.now - resumedAt) : 0;
+      const decayed = rateControl ? 0.1 * (clock.now - resumedAt) : 0;
       return base + Math.max(0, lostMs - decayed);
     };
     const history: QAEvent[] = [];
@@ -246,9 +267,21 @@ export function fakeWorld(script: Script = {}): {
 
     const model: FakeModel = {
       open() {
+        record.calls.push('open');
         if (script.openFails)
           throw new Error(
             'the player page did not boot (http://127.0.0.1/player/?manifest=...): net::ERR_CONNECTION_REFUSED',
+          );
+        advance(200);
+        // The page was given the manifest: it loads and plays by itself, with Shaka as it is configured at that moment (the defaults).
+        startLoad();
+        playRequested = true;
+      },
+      openIdle() {
+        record.calls.push('openIdle');
+        if (script.openFails)
+          throw new Error(
+            'the player page did not boot (http://127.0.0.1/player/): net::ERR_CONNECTION_REFUSED',
           );
         advance(200);
       },
@@ -264,10 +297,19 @@ export function fakeWorld(script: Script = {}): {
         } as unknown as QAInfo;
       },
       configure(patch) {
+        record.calls.push('configure');
         record.configured.push(patch);
         const sync = (patch as { streaming?: { liveSync?: { enabled?: boolean } } }).streaming?.liveSync
           ?.enabled;
         if (sync !== undefined) liveSync = sync;
+      },
+      load() {
+        record.calls.push('load');
+        startLoad();
+      },
+      play() {
+        record.calls.push('play');
+        playRequested = true;
       },
       metrics() {
         sync();
@@ -304,7 +346,8 @@ export function fakeWorld(script: Script = {}): {
       waitFor(name, options) {
         const timeoutMs = options?.timeoutMs ?? 15_000;
         if (name === 'firstframe') {
-          if (startupMs >= timeoutMs) {
+          // A page that was never told to load and play (an idle page that nothing started) presents no frame, as a real one does not.
+          if (!loadStarted || !playRequested || startupMs >= timeoutMs) {
             advance(timeoutMs);
             throw TIMEOUT_ERROR("qa.waitFor('firstframe')", timeoutMs);
           }
@@ -360,6 +403,11 @@ export function fakeWorld(script: Script = {}): {
     // The async members of the interface the checks are written against: the model's, one microtask later.
     const player: ReadinessPlayer = {
       open: async () => model.open(),
+      openIdle: async () => model.openIdle(),
+      loadAndPlay: async (manifestUri) => {
+        model.load(manifestUri);
+        model.play();
+      },
       info: async () => model.info(),
       configure: async (patch) => model.configure(patch),
       metrics: async () => model.metrics(),

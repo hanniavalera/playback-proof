@@ -71,15 +71,26 @@ describe('PB-RDY-001 stream start', () => {
     expect((await runStartCheck(world, { joins: 3 })).verdict).toBe('INCONCLUSIVE');
   });
 
-  it('applies the configuration under test after the page boots, and the result says it did', async () => {
+  it('applies the configuration under test BEFORE the player loads, and the result says it did', async () => {
     const { world, observed } = fakeWorld();
     const candidate = candidateById('live-sync');
     const result = await runStartCheck(world, { joins: 5, patch: candidate?.patch ?? null });
     expect(observed.runs.every((run) => run.configured.length === 1)).toBe(true);
     expect(observed.runs[0]?.configured[0]).toEqual({ streaming: { liveSync: { enabled: true } } });
     expect(result.player?.configured).toEqual([{ streaming: { liveSync: { enabled: true } } }]);
-    const plain = await runStartCheck(fakeWorld().world, { joins: 5 });
-    expect(plain.player?.configured).toEqual([]);
+    // Shaka reads `streaming.liveSync.enabled` in load(): an idle page, then the configuration, then the load and the play.
+    for (const run of observed.runs) {
+      expect(run.calls).toEqual(['openIdle', 'configure', 'load', 'play']);
+      expect(run.liveSyncAtLoad).toBe(true);
+    }
+    const plain = fakeWorld();
+    const defaults = await runStartCheck(plain.world, { joins: 5 });
+    expect(defaults.player?.configured).toEqual([]);
+    // The defaults are opened as a viewer's page opens: with the manifest, and nothing is configured.
+    for (const run of plain.observed.runs) {
+      expect(run.calls).toEqual(['open']);
+      expect(run.liveSyncAtLoad).toBe(false);
+    }
   });
 });
 

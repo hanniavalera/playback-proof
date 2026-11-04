@@ -5,21 +5,35 @@ import type { Protocol, StreamId, StreamInfo } from '../../shared/streams.ts';
 import type { Engine } from './soak-evaluators.ts';
 
 // What the readiness checks need from the outside world, as interfaces: a player, the test data service and a way to open a fresh
-// session with a fresh browser context. The Playwright support library's `PlayerHandle` satisfies `ReadinessPlayer` as it is (the
-// spec passes it), the command line gives the same checks a player of its own (`page.ts`), and the unit tests give them a scripted
-// one: the procedures are written once and are the same in all three places (docs/decisions/readiness.md, ADR-150).
+// session with a fresh browser context. The Playwright support library's `PlayerHandle` has most of `ReadinessPlayer` as it is (the
+// spec wraps it and adds the two members it lacks, tests/live/support.ts), the command line gives the same checks a player of its own
+// (`page.ts`), and the unit tests give them a scripted one: the procedures are written once and are the same in all three places
+// (docs/decisions/readiness.md, ADR-150).
 
-/** The part of the hook the checks use. `PlayerHandle` (tests/e2e/support/player.ts) has every one of these members with these signatures. */
+/** The part of the hook the checks use. `PlayerHandle` (tests/e2e/support/player.ts) has every member but `openIdle` and `loadAndPlay`, with these signatures. */
 export interface ReadinessPlayer {
-  /** Navigates to the player page for the session's manifest and resolves when the player is built (`qa.ready`). Does not wait for the load. */
+  /** Navigates to the player page for the session's manifest and resolves when the player is built (`qa.ready`). Does not wait for the load: the page starts it by itself. */
   open(params?: PlayerPageParams): Promise<unknown>;
+  /**
+   * Navigates to the player page WITHOUT a manifest and resolves when the player is built: it waits, loading nothing, until `loadAndPlay`.
+   * It exists for the configurations that Shaka reads when it loads (`streaming.liveSync.enabled` is one: ADR-153), which can only
+   * reach it between the build of the player and its load.
+   */
+  openIdle(): Promise<unknown>;
+  /**
+   * What the page does by itself when it is opened with a manifest, done for a page opened idle: `qa.load(manifestUri)` and then `qa.play()`,
+   * started inside the page one after the other (no round trip between the two, so the startup of a join is the one of the page's own start)
+   * and not waited for: the first frame is what the check waits on, with its own timeout, and a failure of either is on the player's timeline
+   * (an `error` event), where the checks read it, as it is when the page starts itself.
+   */
+  loadAndPlay(manifestUri: string): Promise<void>;
   metrics(): Promise<QAMetrics>;
   info(): Promise<QAInfo>;
   cursor(): Promise<number>;
   events(since?: number): Promise<QAEvent[]>;
   waitFor(name: QAEventName, options?: { since?: number; timeoutMs?: number }): Promise<QAEvent>;
   waitForMediaTime(seconds: number, options?: { timeoutMs?: number }): Promise<number>;
-  /** Shaka's `player.configure()`; rejects a key Shaka does not know. */
+  /** Shaka's `player.configure()`; rejects a key Shaka does not know. What Shaka reads when it loads has to be set before `loadAndPlay`. */
   configure(patch: Record<string, unknown>): Promise<void>;
 }
 

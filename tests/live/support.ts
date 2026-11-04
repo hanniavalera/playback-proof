@@ -3,8 +3,9 @@ import type { LaunchedBrowser } from '../../src/lab/measure/browser.ts';
 import type { CheckResult } from '../../src/lab/readiness/checks.ts';
 import { candidateById } from '../../src/lab/readiness/candidates.ts';
 import type { Candidate } from '../../src/lab/readiness/candidates.ts';
+import { loadAndPlayInPage, openIdlePage } from '../../src/lab/readiness/page.ts';
 import type { Engine } from '../../src/lab/readiness/soak-evaluators.ts';
-import type { ReadinessRun, ReadinessWorld } from '../../src/lab/readiness/world.ts';
+import type { ReadinessPlayer, ReadinessRun, ReadinessWorld } from '../../src/lab/readiness/world.ts';
 import type { ServiceClient } from '../../src/lab/service-client.ts';
 import type { SessionRequest } from '../../src/shared/api.ts';
 import type { Protocol, StreamId } from '../../src/shared/streams.ts';
@@ -53,11 +54,37 @@ export function specWorld(args: SpecWorldArgs): ReadinessWorld {
       const page = await fresh.newPage();
       return {
         session,
-        player: player(session, page),
+        player: specPlayer(player(session, page), service.origin),
         // The session is the fixture's: it is deleted when the test ends, after the diagnostics have read it.
         close: () => fresh.close(),
       };
     },
+  };
+}
+
+/**
+ * The support library's `PlayerHandle` as the player of the checks: every member it has, and the two it lacks, which are the page's own
+ * (`openIdlePage` and `loadAndPlayInPage`, shared with the command line's player): a handle always opens the page with a manifest, and a
+ * configuration that Shaka reads when it loads has to arrive before that. The handle is the one the fixtures registered, so a failing
+ * spec still carries the timeline and the console of the page.
+ */
+export function specPlayer(handle: PlayerHandle, origin: string): ReadinessPlayer {
+  const consoleSummary = (): string => {
+    const last = handle.consoleEntries().slice(-5);
+    if (last.length === 0) return '';
+    return `\nThe browser console said:\n${last.map((entry) => `  ${entry.type}: ${entry.text}`).join('\n')}`;
+  };
+  return {
+    open: (params) => handle.open(params),
+    openIdle: () => openIdlePage(handle.page, origin, consoleSummary),
+    loadAndPlay: (manifestUri) => loadAndPlayInPage(handle.page, manifestUri),
+    metrics: () => handle.metrics(),
+    info: () => handle.info(),
+    cursor: () => handle.cursor(),
+    events: (since) => handle.events(since),
+    waitFor: (name, options) => handle.waitFor(name, options),
+    waitForMediaTime: (seconds, options) => handle.waitForMediaTime(seconds, options),
+    configure: (patch) => handle.configure(patch),
   };
 }
 

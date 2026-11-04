@@ -33,7 +33,7 @@ export const CHECK_TITLES: Record<CheckId, string> = {
   'PB-RDY-005': 'Soak',
 };
 
-/** A join that has presented no first frame after this long has failed: startup takes about a second on localhost (docs/decisions/e2e-live.md), so this is a hang, not a slow join. */
+/** A join that has presented no first frame after this long has failed: startup is 0.06 to 1.6 s on localhost in the engines of docs/decisions/e2e-live.md (ADR-100), so this is a hang, not a slow join. */
 export const JOIN_TIMEOUT_MS = 15_000;
 /** One latency read per second of media time, as PB-LIVE-002 takes them. */
 export const LATENCY_STEP_SEC = 1;
@@ -88,7 +88,7 @@ export interface CheckResult {
 }
 
 export interface CheckOptions {
-  /** Applied with `qa.configure()` right after the page boots: the candidate configuration. null evaluates A, the defaults. */
+  /** The candidate configuration, in force before Shaka loads (`bootPlayer`): applied with `qa.configure()` to an idle page that is then told to load. null evaluates A, the defaults. */
   patch?: ShakaConfigPatch | null;
   limits?: Limits;
   log?: (line: string) => void;
@@ -124,10 +124,26 @@ function finish(
   };
 }
 
-/** Boots the page for the run, applies the configuration under test, and reports what the page said it applied. */
-async function boot(run: ReadinessRun, options: CheckOptions): Promise<PlayerEvidence> {
-  await run.player.open();
-  if (options.patch) await run.player.configure(options.patch as Record<string, unknown>);
+/**
+ * Boots the page for the run and reports what the page said it applied. A candidate configuration has to be in place before Shaka loads:
+ * Shaka 5.3.3 registers the `timeupdate` listener that holds the live-sync target (`Player.onTimeUpdate_`) inside `load()`, and only when
+ * `streaming.liveSync.enabled` is on at that moment (lib/player.js, the two places that call `loadEventManager_.listen(mediaElement,
+ * 'timeupdate', onTimeUpdate)`); `configure()` does not add it later. A page that is given the manifest loads at once, so a candidate
+ * applied to it afterwards runs the defaults whatever the page says it applied, which is what the first plumbing run of this phase did
+ * (ADR-153). A candidate is therefore opened idle, configured, and only then told to load and play; the defaults are opened the way a
+ * viewer's page opens, with the manifest.
+ */
+export async function bootPlayer(
+  run: Pick<ReadinessRun, 'player' | 'session'>,
+  patch: ShakaConfigPatch | null | undefined,
+): Promise<PlayerEvidence> {
+  if (patch) {
+    await run.player.openIdle();
+    await run.player.configure(patch as Record<string, unknown>);
+    await run.player.loadAndPlay(run.session.manifestUrl);
+  } else {
+    await run.player.open();
+  }
   return evidenceOf(await run.player.info());
 }
 
@@ -174,7 +190,7 @@ export async function runStartCheck(world: ReadinessWorld, options: StartOptions
       live: { startOffsetSec: BASE_OFFSET_SEC + phaseSec },
     });
     try {
-      player = await boot(run, options);
+      player = await bootPlayer(run, options.patch);
       const frame = await firstFrame(run);
       if ('failure' in frame) {
         joins.push({ join, startupMs: null, failure: frame.failure });
@@ -231,7 +247,7 @@ export async function runLatencyCheck(world: ReadinessWorld, options: LatencyOpt
   const limits = options.limits ?? LIVE_LIMITS;
   const run = await world.newRun({ label: `PB-RDY-002 latency over ${options.windowSec} s` });
   try {
-    const player = await boot(run, options);
+    const player = await bootPlayer(run, options.patch);
     const frame = await firstFrame(run);
     if ('failure' in frame) {
       return finish('PB-RDY-002', world, began, {
@@ -325,7 +341,7 @@ async function runStallOnce(
   });
   const run = await world.newRun({ label: `PB-RDY-003 outage ${index} of ${options.runs}` });
   try {
-    const player = await boot(run, options);
+    const player = await bootPlayer(run, options.patch);
     const frame = await firstFrame(run);
     if ('failure' in frame)
       return {
@@ -517,7 +533,7 @@ export async function runCadenceCheck(world: ReadinessWorld, options: CadenceOpt
   const limits = options.limits ?? LIVE_LIMITS;
   const run = await world.newRun({ label: `PB-RDY-004 cadence over ${options.refreshes} refreshes` });
   try {
-    const player = await boot(run, options);
+    const player = await bootPlayer(run, options.patch);
     const frame = await firstFrame(run);
     if ('failure' in frame) {
       return finish('PB-RDY-004', world, began, {
