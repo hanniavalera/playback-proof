@@ -753,6 +753,11 @@ function openDescriptors(): number {
   return readdirSync('/dev/fd').length;
 }
 
+/** Waits `count` turns of the event loop (never a duration). */
+async function nextTurns(count: number): Promise<void> {
+  for (let i = 0; i < count; i++) await new Promise<void>((resolve) => setImmediate(resolve));
+}
+
 /** The descriptor count once it has stopped changing from one turn of the event loop to the next (bounded). */
 async function stableCount(): Promise<number> {
   let previous = openDescriptors();
@@ -794,6 +799,31 @@ function stalledDownload(): Promise<net.Socket> {
 }
 
 describe.skipIf(!countsDescriptors)('file handles', () => {
+  // A FileHandle that is never closed is closed by the garbage collector, which warns. That can hide a leak from a
+  // descriptor count taken after the collection, so the warning is a failure of its own.
+  const collected: string[] = [];
+  const onWarning = (warning: Error): void => {
+    if (warning.message.includes('on garbage collection')) collected.push(warning.message);
+  };
+
+  beforeAll(() => {
+    process.on('warning', onWarning);
+  });
+
+  afterAll(async () => {
+    await nextTurns(2);
+    process.off('warning', onWarning);
+    expect(collected, 'handles closed by the garbage collector during the file').toEqual([]);
+  });
+
+  /** The process holds no more descriptors than `baseline`, and the garbage collector had no handle to close. */
+  async function expectNoLeak(baseline: number, when: string): Promise<void> {
+    expect(await settleTo(baseline), `descriptors ${when}`).toBeLessThanOrEqual(baseline);
+    // The warning is emitted a turn after the collection that closed the handle.
+    await nextTurns(2);
+    expect(collected, `handles closed by the garbage collector ${when}`).toEqual([]);
+  }
+
   /** Closes the idle connections earlier tests left behind and returns the descriptor count of the quiet process. */
   async function quietBaseline(): Promise<number> {
     server.closeAllConnections();
@@ -819,7 +849,7 @@ describe.skipIf(!countsDescriptors)('file handles', () => {
     let peak = 0;
     for (let round = 1; round <= 5; round++) {
       peak = Math.max(peak, await abandonDownloads(downloads));
-      expect(await settleTo(baseline), `descriptors after round ${round}`).toBeLessThanOrEqual(baseline);
+      await expectNoLeak(baseline, `after round ${round}`);
     }
     // Calibration: while stalled, every download holds a file and two sockets (client and server side) in this process,
     // so the counter does see the files. Without it, "no growth" above could mean "the counter sees nothing".
@@ -842,7 +872,7 @@ describe.skipIf(!countsDescriptors)('file handles', () => {
         await raw(target, method, method === 'POST' ? ['Content-Length: 0'] : []);
     }
     await quiet();
-    expect(await settleTo(baseline)).toBeLessThanOrEqual(baseline);
+    await expectNoLeak(baseline, 'after HEAD, refusals and redirects');
   });
 
   it('releases the file when the client is already gone before the response starts', async () => {
@@ -864,7 +894,7 @@ describe.skipIf(!countsDescriptors)('file handles', () => {
       await new Promise<void>((resolve) => gone.close(() => resolve()));
     }
     // ... and none kept its file.
-    expect(await settleTo(baseline)).toBeLessThanOrEqual(baseline);
+    await expectNoLeak(baseline, 'after downloads whose client was already gone');
   });
 
   it('never throws, and closes the file it opened, when the response cannot be written', async () => {
@@ -883,7 +913,7 @@ describe.skipIf(!countsDescriptors)('file handles', () => {
     const req = { method: 'GET', url: `${MOUNT}app.js` } as IncomingMessage;
     await expect(serveStatic(req, res, root, MOUNT)).resolves.toEqual({ status: 404 });
     expect(destroyed).toBe(1);
-    expect(await settleTo(baseline)).toBeLessThanOrEqual(baseline);
+    await expectNoLeak(baseline, 'after a response that could not be written');
   });
 });
 
