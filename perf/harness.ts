@@ -9,12 +9,13 @@ import { launchProfile } from '../src/lab/measure/browser.ts';
 import type { BaselineBrowser } from '../src/lab/measure/baseline.ts';
 import type { PerfOptions } from '../src/lab/measure/args.ts';
 import { runBatch } from '../src/lab/measure/runner.ts';
+import type { Attempt } from '../src/lab/measure/gate.ts';
 import type { BatchProgress } from '../src/lab/measure/runner.ts';
 import type { Scenario } from '../src/lab/measure/scenarios.ts';
 import { startService } from '../src/lab/measure/service.ts';
 import type { RunningService } from '../src/lab/measure/service.ts';
 import type { BatchMeasurement, PerfProfile, RunRecord } from '../src/lab/measure/types.ts';
-import { engineOf } from '../src/lab/measure/types.ts';
+import { cpuThrottleOf, engineOf } from '../src/lab/measure/types.ts';
 import { currentEnvironment } from '../src/lab/gaps.ts';
 import { collectHostInfo } from '../src/lab/probe/host-info.ts';
 import type { HostInfo } from '../src/lab/probe/host-info.ts';
@@ -35,8 +36,8 @@ export interface Harness {
   ffmpeg: string;
   /** What was launched, by profile, once the profile has been measured. */
   browsers: Map<PerfProfile, BaselineBrowser>;
-  /** One batch of `scenario` on `profile`: the warm-up and the measured runs, in one browser process. */
-  measure(profile: PerfProfile, scenario: Scenario): Promise<BatchMeasurement>;
+  /** One batch of `scenario` on `profile`: the warm-up and the measured runs, in one browser process. `attempt` tells an injection scoped to the first batch which one this is. */
+  measure(profile: PerfProfile, scenario: Scenario, attempt?: Attempt): Promise<BatchMeasurement>;
   stop(): Promise<void>;
 }
 
@@ -90,14 +91,15 @@ export async function startHarness(options: PerfOptions): Promise<Harness> {
   for (const stream of streams) streamHashes[stream.id] = stream.contentHash;
 
   const browsers = new Map<PerfProfile, BaselineBrowser>();
-  const launch: typeof launchProfile = async (profile) => {
-    const browser = await launchProfile(profile);
+  const launch: typeof launchProfile = async (profile, launchOptions) => {
+    const browser = await launchProfile(profile, launchOptions);
     if (!browsers.has(profile)) {
       browsers.set(profile, {
         name: browser.engine,
         version: browser.version,
         userAgent: await browser.userAgent().catch(() => null),
-        cpuThrottleRate: browser.cpuThrottleRate,
+        // What the profile is, not what an injection made of it (the batch records an injection itself).
+        cpuThrottleRate: cpuThrottleOf(profile),
       });
     }
     return browser;
@@ -110,8 +112,10 @@ export async function startHarness(options: PerfOptions): Promise<Harness> {
     streamHashes,
     ffmpeg: service.health.ffmpeg,
     browsers,
-    measure: (profile, scenario) =>
-      runBatch({
+    measure: (profile, scenario, attempt = 'first') => {
+      // An injection reaches every batch, or only the first one of each scenario: a disturbance that the fresh batch must not see.
+      const inject = options.injectOn === 'all' || attempt === 'first';
+      return runBatch({
         scenario,
         profile,
         runs: options.runs,
@@ -120,9 +124,13 @@ export async function startHarness(options: PerfOptions): Promise<Harness> {
         service: { origin: service.origin, client: service.client },
         launch,
         runTimeoutMs: options.runTimeoutMs,
-        extraFaults: options.injectFaults,
+        ...(inject ? { extraFaults: options.injectFaults } : {}),
+        ...(inject && options.injectCpuThrottle !== null
+          ? { cpuThrottleRate: options.injectCpuThrottle }
+          : {}),
         onProgress: (event) => log(progressLine(event)),
-      }),
+      });
+    },
     stop: async () => {
       process.removeListener('SIGINT', onSignal);
       process.removeListener('SIGTERM', onSignal);

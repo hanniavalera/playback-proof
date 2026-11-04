@@ -40,13 +40,20 @@ const DEVICE: Record<PerfEngine, string> = {
   webkit: 'Desktop Safari',
 };
 
-export type Launcher = (profile: PerfProfile) => Promise<LaunchedBrowser>;
+export interface LaunchOptions {
+  /** Replaces the CPU slowdown of the profile (Chromium only): a regression injected on purpose, never part of a baseline. */
+  cpuThrottleRate?: number;
+}
+
+export type Launcher = (profile: PerfProfile, options?: LaunchOptions) => Promise<LaunchedBrowser>;
 
 /** Launches the engine of `profile`. Playwright is imported here, so that nothing that only judges numbers ever loads it. */
-export const launchProfile: Launcher = async (profile) => {
+export const launchProfile: Launcher = async (profile, options = {}) => {
   const playwright = await import('@playwright/test');
   const engine = engineOf(profile);
-  const rate = cpuThrottleOf(profile);
+  if (options.cpuThrottleRate !== undefined && engine !== 'chromium')
+    throw new Error(`a CPU throttle is a Chromium DevTools command: ${profile} cannot be given one`);
+  const rate = options.cpuThrottleRate ?? cpuThrottleOf(profile);
   const descriptor = playwright.devices[DEVICE[engine]];
   if (!descriptor) throw new Error(`Playwright has no device descriptor called ${DEVICE[engine]}`);
   const browser: Browser = await playwright[engine].launch();

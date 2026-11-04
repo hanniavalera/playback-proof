@@ -10,6 +10,7 @@ import { PERF_USAGE, PerfUsageError, parsePerfArgs } from '../src/lab/measure/ar
 import type { PerfOptions } from '../src/lab/measure/args.ts';
 import { BaselineError, buildBaseline, writeBaseline } from '../src/lab/measure/baseline.ts';
 import { gatingStatus } from '../src/lab/measure/decide.ts';
+import { loadAround, machineFacts } from '../src/lab/measure/machine.ts';
 import { busyWarning, renderBatchSummary } from '../src/lab/measure/report.ts';
 import { HarnessError } from '../src/lab/measure/runner.ts';
 import { scenariosFor } from '../src/lab/measure/scenarios.ts';
@@ -45,8 +46,11 @@ function writeRunReport(
       warmupRuns: options.warmupRuns,
       scenarios: options.scenarios,
       injectedFaults: options.injectFaults,
+      injectedCpuThrottle: options.injectCpuThrottle,
+      injectOn: options.injectOn,
     },
     host: harness.host,
+    machine: machineFacts(process.env, loadAround(measured.map((m) => m.batch))),
     browser: harness.browsers.get(profile) ?? null,
     ffmpeg: harness.ffmpeg,
     streams: Object.fromEntries(
@@ -99,6 +103,7 @@ function recordBaseline(
       profile,
       generatedAt: new Date().toISOString(),
       host: harness.host,
+      machine: machineFacts(process.env, loadAround(measured.map((m) => m.batch))),
       browser: { ...browser, cpuThrottleRate: cpuThrottleOf(profile) },
       ffmpeg: harness.ffmpeg,
       streams,

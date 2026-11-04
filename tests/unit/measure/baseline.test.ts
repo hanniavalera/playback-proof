@@ -154,6 +154,13 @@ describe('PB-PERF baseline: building it from measured batches', () => {
     expect(() => baselineOf([{ spec: STARTUP, batch: injected }])).toThrow(/faults were injected on purpose/);
   });
 
+  it('refuses a batch whose CPU throttle was replaced on purpose, for the same reason', () => {
+    const injected = { ...startupBatch(STARTUPS), injectedCpuThrottle: 8 };
+    expect(() => baselineOf([{ spec: STARTUP, batch: injected }])).toThrow(
+      /CPU throttle was overridden on purpose \(8x\)/,
+    );
+  });
+
   it('lists every reason at once', () => {
     const batch = startupBatch(STARTUPS);
     batch.runs[0] = run({ startupMs: null, manifestMs: 1 }, 360);
@@ -177,6 +184,60 @@ describe('PB-PERF baseline: the file', () => {
     const text = serializeBaseline(startupBaseline());
     expect(text.endsWith('}\n')).toBe(true);
     expect(text).toContain('\n  "scenarios": {');
+  });
+
+  it('keeps how the profile was started and the load around it, and stays valid without them', () => {
+    const machine = {
+      invokedVia: 'docker:pw' as const,
+      dockerCpus: 4,
+      quiet: { maxLoad: 3, hostLoad: 1.4, waitedMs: 65_000 },
+      loadBeforeProfile: 0.8,
+      loadAfterProfile: 2.1,
+    };
+    const recorded = baselineOf([{ spec: STARTUP, batch: startupBatch(STARTUPS) }], { machine });
+    expect(recorded.machine).toStrictEqual(machine);
+    expect(parseBaseline(serializeBaseline(recorded), 'x.json')).toStrictEqual(recorded);
+
+    const unknown = parseBaseline(serializeBaseline(startupBaseline()), 'x.json');
+    expect(unknown).not.toHaveProperty('machine');
+    const direct = baselineOf([{ spec: STARTUP, batch: startupBatch(STARTUPS) }], {
+      machine: { ...machine, invokedVia: 'direct', dockerCpus: null, quiet: null },
+    });
+    expect(parseBaseline(serializeBaseline(direct), 'x.json').machine?.quiet).toBeNull();
+  });
+
+  it.each([
+    [
+      'an unknown way of starting',
+      (m: Record<string, unknown>) => (m.invokedVia = 'ssh'),
+      /\$\.machine\.invokedVia/,
+    ],
+    [
+      'a load that is not a number',
+      (m: Record<string, unknown>) => (m.loadAfterProfile = null),
+      /loadAfterProfile/,
+    ],
+    [
+      'a wait without its duration',
+      (m: Record<string, unknown>) => (m.quiet = { maxLoad: 3, hostLoad: 1 }),
+      /\$\.machine\.quiet\.waitedMs/,
+    ],
+  ])('refuses a machine record with %s', (_name, damage, message) => {
+    const file = JSON.parse(
+      serializeBaseline(
+        baselineOf([{ spec: STARTUP, batch: startupBatch(STARTUPS) }], {
+          machine: {
+            invokedVia: 'direct',
+            dockerCpus: null,
+            quiet: { maxLoad: 3, hostLoad: 1, waitedMs: 0 },
+            loadBeforeProfile: 0.5,
+            loadAfterProfile: 0.6,
+          },
+        }),
+      ),
+    ) as { machine: Record<string, unknown> };
+    damage(file.machine);
+    expect(() => parseBaseline(JSON.stringify(file), 'x.json')).toThrow(message);
   });
 
   it.each([
