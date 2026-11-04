@@ -5,6 +5,7 @@ import {
   excerptConsole,
   groupStages,
   parseSkippedStages,
+  parseStageParents,
   parseToolVersions,
   parseWorkspaces,
   redact,
@@ -135,6 +136,83 @@ describe('excerptConsole', () => {
     expect(kept).not.toContain('\u001b');
   });
 
+  it('keeps the verdicts of the Perf, Flake and Triage stages and none of the progress of the measurement', () => {
+    const later = [
+      '[Pipeline] { (Perf)',
+      stamp('paired: creating the control checkout of 9df85d83da21'),
+      stamp(
+        '[PB-PERF-004]   run 10/11: startupMs=262.4 manifestMs=110 loadedMs=157 droppedRatio=0 fps=30 start 720p, 7.9 s',
+      ),
+      stamp(
+        'performance gate: chromium-cpu4x in gha-linux-x64, baseline of 2026-11-04 (commit 9df85d8, 10 runs per scenario)',
+      ),
+      stamp(
+        'PB-PERF-004 low-end (chromium-cpu4x): 10 runs after a warm-up, stream vod-cmaf, clean, start rung 720p',
+      ),
+      stamp(
+        'metric         baseline median / tail  current median / tail  change  threshold                      verdict',
+      ),
+      stamp(
+        'startupMs      261.5 ms / 272.4 ms     247.4 ms / 283.1 ms    -5.4 %  median +30 %, and more than 20 ms  pass',
+      ),
+      stamp('verdict: PASS (exit code 0)'),
+      stamp(
+        'rebufferCount  0 / 0                   0 / 0                  +0      median +0, p90 +0                          pass',
+      ),
+      '[Pipeline] { (Flake)',
+      stamp(
+        'flake gate: FAIL (1 failure)  [gha-macos-arm64, 2026-11-04, 1 run in this build, 40 runs judged]',
+      ),
+      stamp(
+        '| engine job | builds | executions | flaky | rate | budget | verdict | left out (quarantined) |',
+      ),
+      stamp('| chromium | 2 | 30 | 0 | 0.0% | 2.0% | not-enough-data | 0 |'),
+      stamp('| PB-VOD-001 | chromium | 2 | 0 | 0 | 0.0% | not-enough-data | no |'),
+      stamp('| PB-VOD-002 | chromium | 2 | 0 | 1 | 0.0% | not-enough-data | no |'),
+      stamp('| PB-ABR-001 | webkit | 16 | 30 | 53.3% | 40.0% | over-invalid-budget | no |'),
+      stamp(
+        '1. [over-invalid-budget] PB-ABR-001 on webkit was an invalid run in 16 of 30 of its last scheduled executions',
+      ),
+      stamp('   Decision: Fix the machine (load, decode), or declare the leg a documented gap with evidence'),
+      '[Pipeline] { (Triage)',
+      stamp(
+        'failure triage: 31 failed in 7 reports became 12 clusters of 8 root causes (clustering is deterministic)',
+      ),
+      stamp(
+        'root cause: the origin answered 503 on segment to requests no fault rule named (10 failures in the clusters #1, #6)',
+      ),
+      stamp('#1  6 failures in chromium, webkit  ·  PB-VOD-001, PB-VOD-002, PB-VOD-006'),
+      stamp('    category  unknown  (rule no-rule-matched)  ·  class Needs a person'),
+      stamp('    evidence  no rule matched “Error: HLS media playlists requested (request log)”'),
+      'Finished: FAILURE',
+    ].join('\n');
+    const kept = excerptConsole(later).text;
+    for (const needle of [
+      'paired: creating the control checkout of 9df85d83da21',
+      'performance gate: chromium-cpu4x in gha-linux-x64',
+      '10 runs after a warm-up',
+      'startupMs      261.5 ms',
+      'verdict: PASS (exit code 0)',
+      'rebufferCount  0 / 0',
+      'flake gate: FAIL (1 failure)',
+      '| engine job | builds |',
+      '| chromium | 2 | 30 |',
+      '| PB-VOD-002 | chromium | 2 | 0 | 1 |',
+      '| PB-ABR-001 | webkit | 16 |',
+      '1. [over-invalid-budget] PB-ABR-001 on webkit',
+      'Decision: Fix the machine',
+      'failure triage: 31 failed in 7 reports became 12 clusters',
+      'root cause: the origin answered 503',
+      '#1  6 failures in chromium, webkit',
+      'category  unknown  (rule no-rule-matched)',
+      'evidence  no rule matched',
+    ])
+      expect(kept, needle).toContain(needle);
+    expect(kept).not.toContain('run 10/11');
+    // A test with no flake and no failure is a row of zeros, and the gate prints one for every test and engine.
+    expect(kept).not.toContain('| PB-VOD-001 | chromium |');
+  });
+
   it('produces just the newline for a log with nothing in it', () => {
     expect(excerptConsole('')).toEqual({ text: '\n', kept: 0, omitted: 0 });
   });
@@ -184,6 +262,71 @@ describe('parseToolVersions and parseSkippedStages', () => {
       '/home/jenkins/agent/workspace/playback-proof@2',
     ]);
     expect(parseWorkspaces('nothing ran')).toEqual([]);
+  });
+});
+
+describe('parseStageParents', () => {
+  // The markers of the pipeline of this lab as build 8 printed them: Install and Static in Checks, four stages in the parallel block
+  // of Merge gate, then Perf at the top level, and Triage skipped by its condition (no marker at all).
+  const log = [
+    '[Pipeline] stage',
+    '[Pipeline] { (Checks)',
+    '[Pipeline] stage',
+    '[Pipeline] { (Install)',
+    stamp('Running on playwright-1 in /home/jenkins/agent/workspace/playback-proof'),
+    '[Pipeline] }',
+    '[Pipeline] // stage',
+    '[Pipeline] stage',
+    '[Pipeline] { (Static)',
+    '[Pipeline] }',
+    '[Pipeline] // stage',
+    '[Pipeline] }',
+    '[Pipeline] // stage',
+    '[Pipeline] stage',
+    '[Pipeline] { (Merge gate)',
+    '[Pipeline] parallel',
+    '[Pipeline] { (Branch: chromium)',
+    '[Pipeline] { (Branch: firefox)',
+    '[Pipeline] stage',
+    '[Pipeline] { (chromium)',
+    '[Pipeline] stage',
+    '[Pipeline] { (firefox)',
+    '[Pipeline] }',
+    '[Pipeline] // stage',
+    '[Pipeline] }',
+    '[Pipeline] // stage',
+    '[Pipeline] }',
+    '[Pipeline] // parallel',
+    '[Pipeline] }',
+    '[Pipeline] // stage',
+    '[Pipeline] stage',
+    '[Pipeline] { (Perf)',
+    '[Pipeline] }',
+    '[Pipeline] // stage',
+    '[Pipeline] stage',
+    'Stage "Triage" skipped due to when conditional',
+    '[Pipeline] // stage',
+  ].join('\n');
+
+  it('says which stage each stage opened in: the parallel stages in the one that holds the block, the next stage at the top', () => {
+    expect([...parseStageParents(log)]).toEqual([
+      ['Checks', null],
+      ['Install', 'Checks'],
+      ['Static', 'Checks'],
+      ['Merge gate', null],
+      ['chromium', 'Merge gate'],
+      ['firefox', 'Merge gate'],
+      ['Perf', null],
+    ]);
+  });
+
+  it('knows nothing of a log without markers', () => {
+    expect(parseStageParents('Started by user admin\nFinished: SUCCESS').size).toBe(0);
+  });
+
+  it('reads the markers through the timestamps and the colour codes', () => {
+    const stamped = stamp('\u001b[0m[Pipeline] { (Perf)');
+    expect([...parseStageParents(stamped)]).toEqual([['Perf', null]]);
   });
 });
 
@@ -250,6 +393,47 @@ describe('groupStages', () => {
     // From the start of the group (4 000) to the end of the last branch (4 080 + 7 800 and 4 090 + 7 800).
     expect(gate).toMatchObject({ startMs: 4_000, durationMs: 7_890 });
     expect(out.find((s) => s.name === 'Checks')).toMatchObject({ startMs: 1_000, durationMs: 2_200 });
+  });
+
+  it('keeps the stages that come after a group out of it when the console says where each one opened', () => {
+    const later = [
+      ...stages,
+      stage('60', 'Perf', 'SUCCESS', 12_000, 5_000),
+      stage('62', 'Flake', 'SUCCESS', 17_100, 300),
+      // Skipped by its condition: the stage view reports it NOT_EXECUTED, and the log has no marker for it.
+      stage('64', 'Triage', 'NOT_EXECUTED', 17_500, 0),
+    ];
+    const laterSteps = new Map(steps).set('60', ran(12_020)).set('62', ran(17_110)).set('64', ran(17_510));
+    const parents = new Map<string, string | null>([
+      ['Checks', null],
+      ['Install', 'Checks'],
+      ['Static', 'Checks'],
+      ['Merge gate', null],
+      ['chromium', 'Merge gate'],
+      ['firefox', 'Merge gate'],
+      ['chromium-cpu4x', 'Merge gate'],
+      ['webkit', 'Merge gate'],
+      ['Perf', null],
+      ['Flake', null],
+    ]);
+    const out = groupStages(later, laterSteps, T0, new Set(), parents);
+    expect(out.map((s) => [s.name, s.group])).toEqual([
+      ['Checks', null],
+      ['Install', 'Checks'],
+      ['Static', 'Checks'],
+      ['Merge gate', null],
+      ['chromium', 'Merge gate'],
+      ['firefox', 'Merge gate'],
+      ['chromium-cpu4x', 'Merge gate'],
+      ['webkit', 'Merge gate'],
+      ['Perf', null],
+      ['Flake', null],
+      ['Triage', null],
+    ]);
+    // The wall-clock of the merge gate ends with its last branch; Perf, which ran after it, is not part of it.
+    expect(out.find((s) => s.name === 'Merge gate')).toMatchObject({ startMs: 4_000, durationMs: 7_890 });
+    // Without the console, the order of the stage view is all there is, and a stage after a group is taken for one of its own.
+    expect(groupStages(later, laterSteps, T0).find((s) => s.name === 'Perf')?.group).toBe('Merge gate');
   });
 
   it('separates the wait for an executor from the time a stage ran', () => {

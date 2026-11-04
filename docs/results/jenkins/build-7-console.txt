@@ -1,0 +1,77 @@
+Console log of build 7 of playback-proof, cut down to the stage markers, the tool versions and the summary of each gate.
+The full log stays in Jenkins; 525 lines of progress output were left out. Credentials are redacted. Times are UTC.
+
+Started by user admin
+Obtained Jenkinsfile from git file:///repo
+[... 11 lines left out ...]
+[Pipeline] { (Checks)
+[2026-11-04T21:28:52.120Z] Running on playwright-1 in /home/jenkins/agent/workspace/playback-proof
+[Pipeline] { (Install)
+[... 14 lines left out ...]
+[2026-11-04T21:28:56.994Z] Checking out Revision 9df85d83da21b8b0509173b8f8abc770aa95c80b (refs/remotes/origin/main)
+[... 7 lines left out ...]
+[2026-11-04T21:29:04.107Z] added 136 packages in 6s
+[... 7 lines left out ...]
+[2026-11-04T21:29:04.434Z] tool-version node v24.22.1
+[2026-11-04T21:29:04.434Z] tool-version npm 11.19.1
+[2026-11-04T21:29:04.712Z] tool-version ffmpeg ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers
+[2026-11-04T21:29:04.977Z] tool-version java openjdk version "21.0.12.1" 2026-08-18
+[2026-11-04T21:29:05.550Z] tool-version playwright Version 1.64.1
+[Pipeline] { (Static)
+[... 11 lines left out ...]
+[2026-11-04T21:29:21.863Z] All matched files use Prettier code style!
+[2026-11-04T21:29:21.864Z] docs:check ok (105 markdown files, 57 catalog rows, generated blocks up to date)
+[... 19 lines left out ...]
+[2026-11-04T21:29:22.118Z] codec matrix ok: docs/CODEC_MATRIX.md is what the committed results render to
+[Pipeline] { (Unit)
+[... 228 lines left out ...]
+[2026-11-04T21:30:04.205Z]      × makes a worktree at the control commit, links the head's dependencies, builds, runs the control's script, and leaves nothing behind 167ms
+[... 66 lines left out ...]
+[2026-11-04T21:30:15.476Z]      × does not carry the name of the person or of the host that ran the experiments 8ms
+[... 45 lines left out ...]
+[2026-11-04T21:31:17.850Z]  FAIL  tests/unit/measure/paired-real.test.ts > PB-PERF paired, for real: the control of two commits made ready and measured > makes a worktree at the control commit, links the head's dependencies, builds, runs the control's script, and leaves nothing behind
+[2026-11-04T21:31:17.850Z] AssertionError: expected '/cache/streams' to be '/home/jenkins/agent/workspace/playbac…' // Object.is equality
+[2026-11-04T21:31:17.850Z] Expected: "/home/jenkins/agent/workspace/playback-proof/.tmp/pb-paired-real-test/head/.cache/streams"
+[2026-11-04T21:31:17.850Z] Received: "/cache/streams"
+[... 8 lines left out ...]
+[2026-11-04T21:31:17.850Z]  FAIL  tests/unit/triage/committed-files.test.ts > PB-LAB-005 triage: what is committed holds no secret and nothing of a machine > does not carry the name of the person or of the host that ran the experiments
+[2026-11-04T21:31:17.850Z] AssertionError: a name of this machine: expected [ 'docs/TRIAGE.md', …(7) ] to strictly equal []
+[... 21 lines left out ...]
+[2026-11-04T21:31:17.851Z]  Test Files  2 failed | 164 passed (166)
+[2026-11-04T21:31:17.851Z]       Tests  2 failed | 4004 passed (4006)
+[2026-11-04T21:31:17.851Z]    Start at  21:29:22
+[2026-11-04T21:31:17.851Z]    Duration  107.95s (tests 94%, import 5%, transform 2%)
+[... 5 lines left out ...]
+[Pipeline] { (Streams)
+Stage "Streams" skipped due to earlier failure(s)
+[... 7 lines left out ...]
+[2026-11-04T21:31:18.327Z] Archiving artifacts
+[... 14 lines left out ...]
+[Pipeline] { (Merge gate)
+Stage "Merge gate" skipped due to earlier failure(s)
+[... 7 lines left out ...]
+[Pipeline] { (chromium)
+[Pipeline] { (firefox)
+[Pipeline] { (chromium-cpu4x)
+[Pipeline] { (webkit)
+Stage "chromium" skipped due to earlier failure(s)
+Stage "firefox" skipped due to earlier failure(s)
+Stage "chromium-cpu4x" skipped due to earlier failure(s)
+Stage "webkit" skipped due to earlier failure(s)
+[... 7 lines left out ...]
+[2026-11-04T21:31:19.442Z] Failed in branch chromium
+[2026-11-04T21:31:19.447Z] Failed in branch firefox
+[2026-11-04T21:31:19.455Z] Failed in branch chromium-cpu4x
+[2026-11-04T21:31:19.458Z] Failed in branch webkit
+[... 4 lines left out ...]
+[Pipeline] { (Perf)
+Stage "Perf" skipped due to earlier failure(s)
+[... 4 lines left out ...]
+[Pipeline] { (Flake)
+Stage "Flake" skipped due to earlier failure(s)
+[... 5 lines left out ...]
+[Pipeline] { (Triage)
+Stage "Triage" skipped due to earlier failure(s)
+[... 12 lines left out ...]
+ERROR: script returned exit code 1
+Finished: FAILURE

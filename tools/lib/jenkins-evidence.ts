@@ -54,6 +54,22 @@ const KEPT: readonly RegExp[] = [
   /^stream\s+status\s/,
   /^(vod|live)-[a-z0-9-]+\s+(generated|cached|regenerated)\s/,
   /^total: \d+ files/,
+  // The stages after the engines: the performance gate (the control it made and its verdict table), the flake gate and triage.
+  /^paired: /,
+  /^performance gate: /,
+  /^baseline machine: /,
+  /^PB-PERF-\d+ .+: \d+ runs after a warm-up/,
+  /^(metric|startupMs|manifestMs|loadedMs|droppedRatio|fps|decodedFrames|droppedFrames|rebufferCount|rebufferMs|rebufferRatio)\s{2,}/,
+  /^verdict: /,
+  /^flake gate: /,
+  // The tables of the flake gate: the engine rows, and a test that flaked or failed; a row of zeros for a test is progress output.
+  /^\|(?! PB-\S+ \| \S+ \| \d+ \| 0 \| 0 \| )/,
+  /^\d+\. \[[a-z-]+\] /,
+  /^\s+Decision: /,
+  /^failure triage: /,
+  /^root cause: /,
+  /^#\d+\s+\d+ failures? in /,
+  /^\s{2,}(category|root cause shared|signature|error|evidence|first)\s/,
   /^\s+(✓|✘|-)\s+\d+ \[/,
   /^\s+\d+ (passed|failed|flaky|skipped|did not run)\b/,
   /^\s+\d+\) \[/,
@@ -206,17 +222,57 @@ export function parseSkippedStages(log: string): Set<string> {
 }
 
 /**
+ * Which stage each stage was opened in, read from the markers the pipeline prints: `[Pipeline] { (Name)` opens a stage and
+ * `[Pipeline] // stage` closes it. The stage view lists every stage in one flat list, so it cannot say that `Perf` follows `Merge gate`
+ * instead of belonging to it. A stage of a parallel block belongs to the stage that holds the block (the branches open before any of them
+ * closes, and a closing marker does not name its stage, so those stages are not nested into one another). A stage that is not inside
+ * another maps to null. A stage that never started (skipped by a condition) prints no marker and is not in the map.
+ */
+export function parseStageParents(log: string): Map<string, string | null> {
+  type Frame = { kind: 'stage'; name: string } | { kind: 'parallel'; holder: string | null };
+  const parents = new Map<string, string | null>();
+  const stack: Frame[] = [];
+  const holder = (): string | null => {
+    for (let i = stack.length - 1; i >= 0; i--) {
+      const frame = stack[i];
+      if (frame?.kind === 'stage') return frame.name;
+      if (frame?.kind === 'parallel') return frame.holder;
+    }
+    return null;
+  };
+  for (const raw of log.split('\n')) {
+    const line = stripAnsi(stripTimestamp(raw)).trim();
+    const opened = /^\[Pipeline\] \{ \((.+)\)$/.exec(line)?.[1];
+    if (opened !== undefined) {
+      if (opened.startsWith('Branch: ')) continue;
+      parents.set(opened, holder());
+      if (stack[stack.length - 1]?.kind !== 'parallel') stack.push({ kind: 'stage', name: opened });
+    } else if (line === '[Pipeline] parallel') {
+      stack.push({ kind: 'parallel', holder: holder() });
+    } else if (line === '[Pipeline] // parallel') {
+      if (stack[stack.length - 1]?.kind === 'parallel') stack.pop();
+    } else if (line === '[Pipeline] // stage') {
+      if (stack[stack.length - 1]?.kind === 'stage') stack.pop();
+    }
+  }
+  return parents;
+}
+
+/**
  * The stages of a build as the evidence lists them. The stage view reports a stage that only groups others (`Checks`, `Merge gate`)
  * with its own milliseconds and its own status, so a red branch inside `Merge gate` leaves `Merge gate` green there; here a group
  * takes the worst status of its stages and the wall-clock from the first of them to the end of the last. A group is a stage that ran
- * no step itself; the stages after it, up to the next group, belong to it. A stage that was skipped belongs to no group and
- * is not a group (the stage view gives it a step of its own, and the status and the error of the stage that really failed).
+ * no step itself. Which stages belong to it is read from the nesting in the console (`parents`, see `parseStageParents`); a log
+ * without any marker falls back to the order of the stage view: the stages after a group, up to the next group, belong to it. A stage
+ * that was skipped belongs to no group and is not a group (the stage view gives it a step of its own, and the status and the error of
+ * the stage that really failed).
  */
 export function groupStages(
   stages: readonly RawStage[],
   steps: ReadonlyMap<string, StageSteps>,
   buildStartMs: number,
   skipped: ReadonlySet<string> = new Set(),
+  parents: ReadonlyMap<string, string | null> = new Map(),
 ): EvidenceStage[] {
   const out: EvidenceStage[] = [];
   let group: string | null = null;
@@ -231,7 +287,7 @@ export function groupStages(
         : 0;
     const entry: EvidenceStage = {
       name: stage.name,
-      group: isGroup || wasSkipped ? null : group,
+      group: isGroup || wasSkipped ? null : parents.size > 0 ? (parents.get(stage.name) ?? null) : group,
       status: wasSkipped ? 'NOT_EXECUTED' : stage.status,
       startMs: Math.max(0, stage.startTimeMillis - buildStartMs),
       durationMs: stage.durationMillis,
