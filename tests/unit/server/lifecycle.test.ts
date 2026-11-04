@@ -332,6 +332,29 @@ describe('failures inside the media pipeline', () => {
     );
     expect((await call(h.origin, 'GET', `/s/${s.id}/${s.stream}/seg/a-aac/init.mp4`)).status).toBe(200);
   });
+
+  it('checks what it hands to deliver(): a header value that cannot be written is a 500 JSON, not a dropped connection', async () => {
+    h = await startHarness({
+      decorate: (media) => ({
+        ...media,
+        streams: () =>
+          media.streams().map((info) => ({
+            ...info,
+            reps: info.reps.map((rep) => ({
+              ...rep,
+              mimeType: 'video/mp4\r\nX-Injected: 1' as typeof rep.mimeType,
+            })),
+          })),
+      }),
+    });
+    const s = await createSession(h, { stream: FAKE_VOD });
+    const reply = await call(h.origin, 'GET', segmentPath(s.id, s.stream, FAKE_VIDEO, 1, 'm4s'));
+    expect(reply.status).toBe(500);
+    expect(reply.headers.get('x-injected')).toBeNull();
+    expect(reply.json()).toEqual({ error: 'internal error' });
+    expect(h.lines.some((line) => line.includes('invalid value for header Content-Type'))).toBe(true);
+    expect((await logOf(h, s.id))[0]).toMatchObject({ status: 500, pending: false });
+  });
 });
 
 describe('the access log (PB_LOG)', () => {
@@ -365,5 +388,23 @@ describe('the access log (PB_LOG)', () => {
     );
     expect(lines).toContainEqual(expect.stringMatching(/^GET \/nope 404 \d+\.\dms$/));
     expect(h.lines.every((line) => /^\d{4}-\d\d-\d\dT[\d:.]+Z /.test(line))).toBe(true);
+  });
+
+  it('keeps answering when the log itself fails (a closed pipe, a callback that throws)', async () => {
+    const broken = await startServer({
+      media: createFakeMedia(),
+      log: () => {
+        throw new Error('stderr is closed');
+      },
+    });
+    try {
+      const s = await createSession(broken, { stream: FAKE_VOD });
+      expect(
+        (await call(broken.origin, 'GET', segmentPath(s.id, s.stream, FAKE_VIDEO, 1, 'm4s'))).status,
+      ).toBe(200);
+      expect((await call(broken.origin, 'GET', '/nope')).status).toBe(404);
+    } finally {
+      await broken.close();
+    }
   });
 });

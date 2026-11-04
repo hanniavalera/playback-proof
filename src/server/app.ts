@@ -91,12 +91,22 @@ export function createApp(options: AppOptions): App {
   const sessions = new SessionStore({ clock });
   const startedAtMs = clock.now();
   const version = readVersion();
-  const sink =
+  const target =
     typeof options.log === 'function'
       ? options.log
       : options.log === true
         ? (line: string): void => void process.stderr.write(`${line}\n`)
         : undefined;
+  // A log that fails (a closed pipe, a throwing callback) must not take a request down with it.
+  const sink = target
+    ? (line: string): void => {
+        try {
+          target(line);
+        } catch {
+          // nothing else to report it to
+        }
+      }
+    : undefined;
 
   function report(what: string, err: unknown): void {
     sink?.(

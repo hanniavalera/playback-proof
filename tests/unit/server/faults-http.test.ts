@@ -81,17 +81,19 @@ describe('faults on the VOD pipeline', () => {
         { type: 'abort', afterBytes: 0, match: { kind: 'segment' } },
         { type: 'throttle', kbps: 1, match: { kind: 'segment' } },
       ]);
-      const reply = await download(h.port, seg(s, 1), { keepBody: true });
+      // a keep-alive client, like a browser: it does not hang up when it has the head of a response without a body, so a stall
+      // or a cut on that response would be visible in the log (a client that closes the connection would hide them)
+      const started = performance.now();
+      const reply = await call(h.origin, 'GET', seg(s, 1));
+      const answeredMs = performance.now() - started;
       expect(reply.status).toBe(500);
-      expect(reply.complete).toBe(true);
-      expect(reply.bytes).toBe(0);
-      expect(reply.headAt - reply.startedAt).toBeGreaterThanOrEqual(150);
-      expect(reply.headAt - reply.startedAt).toBeLessThan(2000);
-      expect((await logOf(h, s.id))[0]).toMatchObject({
-        status: 500,
-        faults: ['f1', 'f2', 'f3', 'f4', 'f5'],
-        bytes: 0,
-      });
+      expect(reply.bytes.length).toBe(0);
+      expect(answeredMs).toBeGreaterThanOrEqual(150);
+      expect(answeredMs).toBeLessThan(2000);
+      const [entry] = await waitForLog(h, s.id, (entries) => entries[0]?.pending === false, 1500);
+      expect(entry).toMatchObject({ status: 500, faults: ['f1', 'f2', 'f3', 'f4', 'f5'], bytes: 0 });
+      expect(entry?.aborted).toBeUndefined();
+      expect(entry?.totalMs).toBeLessThan(1500);
     });
 
     it('answers a HEAD request with the status too', async () => {
