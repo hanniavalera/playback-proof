@@ -62,7 +62,8 @@ export interface MachineLoad {
 /**
  * A machine is busy when its 1-minute load average is above its CPU count: more work is runnable than there are processors to run it,
  * so a latency, a stall or a start that is measured then is partly the machine's. A fresh macOS runner of GitHub started its jobs at 60 to
- * 80 on 3 CPUs (docs/READINESS.md); a quiet Linux one at 0.3 to 2.4 on 4.
+ * 90 on 3 CPUs (docs/READINESS.md); a quiet Linux one at 0.3 to 1.9 on 4. Nothing waits for a quiet machine and no verdict depends on it
+ * (ADR-159e, docs/decisions/readiness-evidence.md).
  */
 export const BUSY_LOAD_PER_CPU = 1;
 export const loadPerCpu = (reading: LoadReading): number => reading.load1 / Math.max(1, reading.cpus);

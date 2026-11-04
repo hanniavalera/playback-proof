@@ -107,7 +107,7 @@ const describeCommit = (commit: { hash: string | null; dirty: boolean | null }):
  * `machine load average (1, 5, 15 min) before 4.89 3.43 2.29, after 5.12 3.9 2.6, on 12 CPUs`, or nothing for a file that has none; and a
  * line when the machine was busy at the start (a 1-minute load above the number of CPUs), because what is measured then is partly the
  * machine's. Only the start is judged: at the end the load includes the run's own browser, service and harness, which is no reason to doubt
- * the run. The harness records the load and says so; it does not wait for the machine to be quiet and no verdict depends on it.
+ * the run. The harness records the load and says so; it does not wait for the machine to be quiet and no verdict depends on it (ADR-159e).
  */
 function describeLoad(load: MachineLoad | undefined): string[] {
   if (!load) return [];
