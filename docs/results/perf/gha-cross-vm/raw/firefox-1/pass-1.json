@@ -1,0 +1,2083 @@
+{
+  "schemaVersion": 1,
+  "kind": "perf-gate-report",
+  "envId": "gha-linux-x64",
+  "profile": "firefox",
+  "generatedAt": "2026-11-04T16:49:29.628Z",
+  "verdict": "pass",
+  "exitCode": 0,
+  "baseline": {
+    "file": "/home/runner/work/playback-proof/playback-proof/perf/baselines/gha-linux-x64/firefox.json",
+    "generatedAt": "2026-11-04T16:42:59.448Z",
+    "commit": "5a2cb3e",
+    "browserVersion": "157.0",
+    "runsPerScenario": 10
+  },
+  "current": {
+    "host": {
+      "os": {
+        "platform": "linux",
+        "arch": "x64",
+        "release": "7.0.0-1014-aws",
+        "name": "Ubuntu 24.04.5 LTS"
+      },
+      "cpus": 4,
+      "memoryGiB": 15.3,
+      "node": "v22.23.4",
+      "playwright": "1.64.1",
+      "git": {
+        "commit": "6ab5e98",
+        "dirty": false
+      }
+    },
+    "machine": {
+      "invokedVia": "direct",
+      "dockerCpus": null,
+      "quiet": null,
+      "loadBeforeProfile": 0.78,
+      "loadAfterProfile": 0.08
+    },
+    "browser": {
+      "name": "firefox",
+      "version": "157.0",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:157.0) Gecko/20100101 Firefox/157.0",
+      "cpuThrottleRate": null
+    },
+    "ffmpeg": "6.1.1-3ubuntu5"
+  },
+  "policy": {
+    "limits": {
+      "runs": 10,
+      "warmupRuns": 1,
+      "maxBaselineCv": 0.15,
+      "startupMedianRel": 0.3,
+      "startupTailRel": 0.3,
+      "startupFloorMs": 5,
+      "lowEndStartupMedianRel": 0.3,
+      "lowEndStartupTailRel": 0.3,
+      "lowEndStartupFloorMs": 20,
+      "fpsMedianRel": 0.05,
+      "fpsTailRel": 0.1,
+      "fpsFloor": 1,
+      "frameDroppedMedianBudget": 0.01,
+      "frameDroppedTailBudget": 0.03,
+      "lowEndDroppedMedianBudget": 0.02,
+      "lowEndDroppedTailBudget": 0.05,
+      "rebufferCountMedianBudget": 0,
+      "rebufferCountTailBudget": 1,
+      "rebufferMsMedianBudget": 250,
+      "rebufferMsTailBudget": 1000,
+      "rebufferRatioMedianBudget": 0.01,
+      "rebufferRatioTailBudget": 0.05
+    },
+    "rules": {
+      "startup": {
+        "kind": "relative",
+        "worse": "higher",
+        "medianShare": 0.3,
+        "tailShare": 0.3,
+        "floor": 5
+      },
+      "lowEndStartup": {
+        "kind": "relative",
+        "worse": "higher",
+        "medianShare": 0.3,
+        "tailShare": 0.3,
+        "floor": 20
+      },
+      "fps": {
+        "kind": "relative",
+        "worse": "lower",
+        "medianShare": 0.05,
+        "tailShare": 0.1,
+        "floor": 1
+      },
+      "frameDropped": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 0.01,
+        "tailBudget": 0.03
+      },
+      "lowEndDropped": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 0.02,
+        "tailBudget": 0.05
+      },
+      "rebufferCount": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 0,
+        "tailBudget": 1
+      },
+      "rebufferMs": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 250,
+        "tailBudget": 1000
+      },
+      "rebufferRatio": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 0.01,
+        "tailBudget": 0.05
+      }
+    }
+  },
+  "warnings": [],
+  "problems": [],
+  "scenarios": [
+    {
+      "id": "PB-PERF-001",
+      "name": "startup",
+      "title": "Startup baseline (vod-cmaf, clean): load-requested to the first frame presented",
+      "status": "pass",
+      "remeasured": false,
+      "stream": "vod-cmaf",
+      "metrics": [
+        {
+          "metric": "startupMs",
+          "verdict": "pass",
+          "first": {
+            "metric": "startupMs",
+            "label": "Startup time",
+            "unit": "ms",
+            "rule": {
+              "kind": "relative",
+              "worse": "higher",
+              "medianShare": 0.3,
+              "tailShare": 0.3,
+              "floor": 5
+            },
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.1410711125703493,
+            "median": {
+              "statistic": "median",
+              "baseline": 86.5,
+              "current": 68,
+              "change": -18.5,
+              "changeShare": -0.2138728323699422,
+              "worseBy": -18.5,
+              "allowed": 25.95,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 96.1,
+              "current": 79.4,
+              "change": -16.69999999999999,
+              "changeShare": -0.17377731529656598,
+              "worseBy": -16.69999999999999,
+              "allowed": 28.83,
+              "exceeded": false
+            },
+            "verdict": "pass",
+            "reason": "within the limits (median +30 %, p90 +30 %, and more than 5 ms)"
+          },
+          "remeasure": null
+        },
+        {
+          "metric": "manifestMs",
+          "verdict": "tracked",
+          "first": {
+            "metric": "manifestMs",
+            "label": "Manifest time",
+            "unit": "ms",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.052502694230126344,
+            "median": {
+              "statistic": "median",
+              "baseline": 26,
+              "current": 23,
+              "change": -3,
+              "changeShare": -0.11538461538461539,
+              "worseBy": -3,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 28,
+              "current": 25.1,
+              "change": -2.8999999999999986,
+              "changeShare": -0.10357142857142852,
+              "worseBy": -2.8999999999999986,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          },
+          "remeasure": null
+        },
+        {
+          "metric": "loadedMs",
+          "verdict": "tracked",
+          "first": {
+            "metric": "loadedMs",
+            "label": "Load time",
+            "unit": "ms",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.07116981402097233,
+            "median": {
+              "statistic": "median",
+              "baseline": 36.5,
+              "current": 31,
+              "change": -5.5,
+              "changeShare": -0.1506849315068493,
+              "worseBy": -5.5,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 39,
+              "current": 33.1,
+              "change": -5.899999999999999,
+              "changeShare": -0.15128205128205124,
+              "worseBy": -5.899999999999999,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          },
+          "remeasure": null
+        }
+      ],
+      "problems": [],
+      "first": {
+        "startedAt": "2026-11-04T16:49:29.631Z",
+        "finishedAt": "2026-11-04T16:49:36.783Z",
+        "loadAverage": {
+          "before": 0.78,
+          "after": 0.81
+        },
+        "startRungHeight": 360,
+        "warmup": {
+          "values": {
+            "startupMs": 100,
+            "manifestMs": 31,
+            "loadedMs": 40
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 222,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 239,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 560
+        },
+        "runs": [
+          {
+            "values": {
+              "startupMs": 83,
+              "manifestMs": 25,
+              "loadedMs": 32
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 154,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 168,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 379
+          },
+          {
+            "values": {
+              "startupMs": 66,
+              "manifestMs": 23,
+              "loadedMs": 29
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 143,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 154,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 344
+          },
+          {
+            "values": {
+              "startupMs": 74,
+              "manifestMs": 22,
+              "loadedMs": 33
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 153,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 164,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 359
+          },
+          {
+            "values": {
+              "startupMs": 64,
+              "manifestMs": 22,
+              "loadedMs": 30
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 145,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 159,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 337
+          },
+          {
+            "values": {
+              "startupMs": 59,
+              "manifestMs": 23,
+              "loadedMs": 30
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 150,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 161,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 340
+          },
+          {
+            "values": {
+              "startupMs": 64,
+              "manifestMs": 24,
+              "loadedMs": 30
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 146,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 161,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 356
+          },
+          {
+            "values": {
+              "startupMs": 71,
+              "manifestMs": 23,
+              "loadedMs": 31
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 153,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 165,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 378
+          },
+          {
+            "values": {
+              "startupMs": 79,
+              "manifestMs": 24,
+              "loadedMs": 31
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 164,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 176,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 420
+          },
+          {
+            "values": {
+              "startupMs": 68,
+              "manifestMs": 26,
+              "loadedMs": 34
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 155,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 168,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 370
+          },
+          {
+            "values": {
+              "startupMs": 68,
+              "manifestMs": 23,
+              "loadedMs": 31
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 153,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 166,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 354
+          }
+        ],
+        "summaries": {
+          "startupMs": {
+            "n": 10,
+            "median": 68,
+            "p10": 63.5,
+            "p90": 79.4,
+            "min": 59,
+            "max": 83,
+            "mad": 4,
+            "cv": 0.10518968515932832
+          },
+          "manifestMs": {
+            "n": 10,
+            "median": 23,
+            "p10": 22,
+            "p90": 25.1,
+            "min": 22,
+            "max": 26,
+            "mad": 1,
+            "cv": 0.05401257521889296
+          },
+          "loadedMs": {
+            "n": 10,
+            "median": 31,
+            "p10": 29.9,
+            "p90": 33.1,
+            "min": 29,
+            "max": 34,
+            "mad": 1,
+            "cv": 0.04899948317540175
+          }
+        },
+        "comparisons": [
+          {
+            "metric": "startupMs",
+            "label": "Startup time",
+            "unit": "ms",
+            "rule": {
+              "kind": "relative",
+              "worse": "higher",
+              "medianShare": 0.3,
+              "tailShare": 0.3,
+              "floor": 5
+            },
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.1410711125703493,
+            "median": {
+              "statistic": "median",
+              "baseline": 86.5,
+              "current": 68,
+              "change": -18.5,
+              "changeShare": -0.2138728323699422,
+              "worseBy": -18.5,
+              "allowed": 25.95,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 96.1,
+              "current": 79.4,
+              "change": -16.69999999999999,
+              "changeShare": -0.17377731529656598,
+              "worseBy": -16.69999999999999,
+              "allowed": 28.83,
+              "exceeded": false
+            },
+            "verdict": "pass",
+            "reason": "within the limits (median +30 %, p90 +30 %, and more than 5 ms)"
+          },
+          {
+            "metric": "manifestMs",
+            "label": "Manifest time",
+            "unit": "ms",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.052502694230126344,
+            "median": {
+              "statistic": "median",
+              "baseline": 26,
+              "current": 23,
+              "change": -3,
+              "changeShare": -0.11538461538461539,
+              "worseBy": -3,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 28,
+              "current": 25.1,
+              "change": -2.8999999999999986,
+              "changeShare": -0.10357142857142852,
+              "worseBy": -2.8999999999999986,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          },
+          {
+            "metric": "loadedMs",
+            "label": "Load time",
+            "unit": "ms",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.07116981402097233,
+            "median": {
+              "statistic": "median",
+              "baseline": 36.5,
+              "current": 31,
+              "change": -5.5,
+              "changeShare": -0.1506849315068493,
+              "worseBy": -5.5,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 39,
+              "current": 33.1,
+              "change": -5.899999999999999,
+              "changeShare": -0.15128205128205124,
+              "worseBy": -5.899999999999999,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          }
+        ],
+        "problems": []
+      },
+      "remeasure": null
+    },
+    {
+      "id": "PB-PERF-002",
+      "name": "frame-rate",
+      "title": "Steady-state frame rate and dropped frames (vod-cmaf, clean, pinned 720p, a 5 s window)",
+      "status": "pass",
+      "remeasured": false,
+      "stream": "vod-cmaf",
+      "metrics": [
+        {
+          "metric": "fps",
+          "verdict": "pass",
+          "first": {
+            "metric": "fps",
+            "label": "Effective frame rate",
+            "unit": "fps",
+            "rule": {
+              "kind": "relative",
+              "worse": "lower",
+              "medianShare": 0.05,
+              "tailShare": 0.1,
+              "floor": 1
+            },
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 6.839705145538053e-8,
+            "median": {
+              "statistic": "median",
+              "baseline": 30,
+              "current": 30,
+              "change": 0,
+              "changeShare": 0,
+              "worseBy": 0,
+              "allowed": 1.5,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p10",
+              "baseline": 29.999996026490592,
+              "current": 30,
+              "change": 0.00000397350940772867,
+              "changeShare": 1.3245033113404358e-7,
+              "worseBy": -0.00000397350940772867,
+              "allowed": 2.9999996026490594,
+              "exceeded": false
+            },
+            "verdict": "pass",
+            "reason": "within the limits (median -5 %, p10 -10 %, and more than 1 fps)"
+          },
+          "remeasure": null
+        },
+        {
+          "metric": "droppedRatio",
+          "verdict": "pass",
+          "first": {
+            "metric": "droppedRatio",
+            "label": "Dropped-frame ratio",
+            "unit": "ratio",
+            "rule": {
+              "kind": "budget",
+              "worse": "higher",
+              "medianBudget": 0.01,
+              "tailBudget": 0.03
+            },
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": 0.01,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": 0.03,
+              "exceeded": false
+            },
+            "verdict": "pass",
+            "reason": "within the limits (median +0.01, p90 +0.03)"
+          },
+          "remeasure": null
+        },
+        {
+          "metric": "decodedFrames",
+          "verdict": "tracked",
+          "first": {
+            "metric": "decodedFrames",
+            "label": "Frames decoded in the window",
+            "unit": "count",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.004490675700003679,
+            "median": {
+              "statistic": "median",
+              "baseline": 150,
+              "current": 150,
+              "change": 0,
+              "changeShare": 0,
+              "worseBy": 0,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 151,
+              "current": 150.1,
+              "change": -0.9000000000000057,
+              "changeShare": -0.005960264900662289,
+              "worseBy": -0.9000000000000057,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          },
+          "remeasure": null
+        },
+        {
+          "metric": "droppedFrames",
+          "verdict": "tracked",
+          "first": {
+            "metric": "droppedFrames",
+            "label": "Frames dropped in the window",
+            "unit": "count",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          },
+          "remeasure": null
+        }
+      ],
+      "problems": [],
+      "first": {
+        "startedAt": "2026-11-04T16:49:36.784Z",
+        "finishedAt": "2026-11-04T16:50:59.881Z",
+        "loadAverage": {
+          "before": 0.81,
+          "after": 0.43
+        },
+        "startRungHeight": 360,
+        "warmup": {
+          "values": {
+            "fps": 30,
+            "droppedRatio": 0,
+            "decodedFrames": 151,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 290,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 342,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "manual"
+            }
+          ],
+          "errors": [],
+          "durationMs": 8011
+        },
+        "runs": [
+          {
+            "values": {
+              "fps": 30,
+              "droppedRatio": 0,
+              "decodedFrames": 150,
+              "droppedFrames": 0
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 150,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 162,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "manual"
+              }
+            ],
+            "errors": [],
+            "durationMs": 7431
+          },
+          {
+            "values": {
+              "fps": 30,
+              "droppedRatio": 0,
+              "decodedFrames": 150,
+              "droppedFrames": 0
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 153,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 163,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "manual"
+              }
+            ],
+            "errors": [],
+            "durationMs": 7426
+          },
+          {
+            "values": {
+              "fps": 30,
+              "droppedRatio": 0,
+              "decodedFrames": 150,
+              "droppedFrames": 0
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 150,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 162,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "manual"
+              }
+            ],
+            "errors": [],
+            "durationMs": 7427
+          },
+          {
+            "values": {
+              "fps": 30,
+              "droppedRatio": 0,
+              "decodedFrames": 150,
+              "droppedFrames": 0
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 150,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 168,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "manual"
+              }
+            ],
+            "errors": [],
+            "durationMs": 7448
+          },
+          {
+            "values": {
+              "fps": 30,
+              "droppedRatio": 0,
+              "decodedFrames": 150,
+              "droppedFrames": 0
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 156,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 168,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "manual"
+              }
+            ],
+            "errors": [],
+            "durationMs": 7451
+          },
+          {
+            "values": {
+              "fps": 30,
+              "droppedRatio": 0,
+              "decodedFrames": 150,
+              "droppedFrames": 0
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 150,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 161,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "manual"
+              }
+            ],
+            "errors": [],
+            "durationMs": 7435
+          },
+          {
+            "values": {
+              "fps": 30,
+              "droppedRatio": 0,
+              "decodedFrames": 150,
+              "droppedFrames": 0
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 152,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 167,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "manual"
+              }
+            ],
+            "errors": [],
+            "durationMs": 7426
+          },
+          {
+            "values": {
+              "fps": 30,
+              "droppedRatio": 0,
+              "decodedFrames": 150,
+              "droppedFrames": 0
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 139,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 150,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "manual"
+              }
+            ],
+            "errors": [],
+            "durationMs": 7408
+          },
+          {
+            "values": {
+              "fps": 30,
+              "droppedRatio": 0,
+              "decodedFrames": 150,
+              "droppedFrames": 0
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 136,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 146,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "manual"
+              }
+            ],
+            "errors": [],
+            "durationMs": 7406
+          },
+          {
+            "values": {
+              "fps": 30,
+              "droppedRatio": 0,
+              "decodedFrames": 151,
+              "droppedFrames": 0
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 146,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 152,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "manual"
+              }
+            ],
+            "errors": [],
+            "durationMs": 7409
+          }
+        ],
+        "summaries": {
+          "fps": {
+            "n": 10,
+            "median": 30,
+            "p10": 30,
+            "p90": 30,
+            "min": 30,
+            "max": 30,
+            "mad": 0,
+            "cv": 0
+          },
+          "droppedRatio": {
+            "n": 10,
+            "median": 0,
+            "p10": 0,
+            "p90": 0,
+            "min": 0,
+            "max": 0,
+            "mad": 0,
+            "cv": null
+          },
+          "decodedFrames": {
+            "n": 10,
+            "median": 150,
+            "p10": 150,
+            "p90": 150.1,
+            "min": 150,
+            "max": 151,
+            "mad": 0,
+            "cv": 0.0021067805863879945
+          },
+          "droppedFrames": {
+            "n": 10,
+            "median": 0,
+            "p10": 0,
+            "p90": 0,
+            "min": 0,
+            "max": 0,
+            "mad": 0,
+            "cv": null
+          }
+        },
+        "comparisons": [
+          {
+            "metric": "fps",
+            "label": "Effective frame rate",
+            "unit": "fps",
+            "rule": {
+              "kind": "relative",
+              "worse": "lower",
+              "medianShare": 0.05,
+              "tailShare": 0.1,
+              "floor": 1
+            },
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 6.839705145538053e-8,
+            "median": {
+              "statistic": "median",
+              "baseline": 30,
+              "current": 30,
+              "change": 0,
+              "changeShare": 0,
+              "worseBy": 0,
+              "allowed": 1.5,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p10",
+              "baseline": 29.999996026490592,
+              "current": 30,
+              "change": 0.00000397350940772867,
+              "changeShare": 1.3245033113404358e-7,
+              "worseBy": -0.00000397350940772867,
+              "allowed": 2.9999996026490594,
+              "exceeded": false
+            },
+            "verdict": "pass",
+            "reason": "within the limits (median -5 %, p10 -10 %, and more than 1 fps)"
+          },
+          {
+            "metric": "droppedRatio",
+            "label": "Dropped-frame ratio",
+            "unit": "ratio",
+            "rule": {
+              "kind": "budget",
+              "worse": "higher",
+              "medianBudget": 0.01,
+              "tailBudget": 0.03
+            },
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": 0.01,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": 0.03,
+              "exceeded": false
+            },
+            "verdict": "pass",
+            "reason": "within the limits (median +0.01, p90 +0.03)"
+          },
+          {
+            "metric": "decodedFrames",
+            "label": "Frames decoded in the window",
+            "unit": "count",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.004490675700003679,
+            "median": {
+              "statistic": "median",
+              "baseline": 150,
+              "current": 150,
+              "change": 0,
+              "changeShare": 0,
+              "worseBy": 0,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 151,
+              "current": 150.1,
+              "change": -0.9000000000000057,
+              "changeShare": -0.005960264900662289,
+              "worseBy": -0.9000000000000057,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          },
+          {
+            "metric": "droppedFrames",
+            "label": "Frames dropped in the window",
+            "unit": "count",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          }
+        ],
+        "problems": []
+      },
+      "remeasure": null
+    },
+    {
+      "id": "PB-PERF-003",
+      "name": "rebuffering",
+      "title": "Rebuffering on a changing network (bandwidth-drop): count, duration and ratio over 18 s of media",
+      "status": "pass",
+      "remeasured": false,
+      "stream": "vod-cmaf",
+      "metrics": [
+        {
+          "metric": "rebufferCount",
+          "verdict": "pass",
+          "first": {
+            "metric": "rebufferCount",
+            "label": "Rebuffers",
+            "unit": "count",
+            "rule": {
+              "kind": "budget",
+              "worse": "higher",
+              "medianBudget": 0,
+              "tailBudget": 1
+            },
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": 0,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": 1,
+              "exceeded": false
+            },
+            "verdict": "pass",
+            "reason": "within the limits (median +0, p90 +1)"
+          },
+          "remeasure": null
+        },
+        {
+          "metric": "rebufferMs",
+          "verdict": "pass",
+          "first": {
+            "metric": "rebufferMs",
+            "label": "Rebuffer time",
+            "unit": "ms",
+            "rule": {
+              "kind": "budget",
+              "worse": "higher",
+              "medianBudget": 250,
+              "tailBudget": 1000
+            },
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": 250,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": 1000,
+              "exceeded": false
+            },
+            "verdict": "pass",
+            "reason": "within the limits (median +250 ms, p90 +1000 ms)"
+          },
+          "remeasure": null
+        },
+        {
+          "metric": "rebufferRatio",
+          "verdict": "pass",
+          "first": {
+            "metric": "rebufferRatio",
+            "label": "Rebuffer ratio",
+            "unit": "ratio",
+            "rule": {
+              "kind": "budget",
+              "worse": "higher",
+              "medianBudget": 0.01,
+              "tailBudget": 0.05
+            },
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": 0.01,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": 0.05,
+              "exceeded": false
+            },
+            "verdict": "pass",
+            "reason": "within the limits (median +0.01, p90 +0.05)"
+          },
+          "remeasure": null
+        },
+        {
+          "metric": "switches",
+          "verdict": "tracked",
+          "first": {
+            "metric": "switches",
+            "label": "Rung switches",
+            "unit": "count",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0,
+            "median": {
+              "statistic": "median",
+              "baseline": 2,
+              "current": 2,
+              "change": 0,
+              "changeShare": 0,
+              "worseBy": 0,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 2,
+              "current": 2,
+              "change": 0,
+              "changeShare": 0,
+              "worseBy": 0,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          },
+          "remeasure": null
+        }
+      ],
+      "problems": [],
+      "first": {
+        "startedAt": "2026-11-04T16:50:59.882Z",
+        "finishedAt": "2026-11-04T16:54:22.871Z",
+        "loadAverage": {
+          "before": 0.43,
+          "after": 0.08
+        },
+        "startRungHeight": 360,
+        "warmup": {
+          "values": {
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 268,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 285,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 16648,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 18856
+        },
+        "runs": [
+          {
+            "values": {
+              "rebufferCount": 0,
+              "rebufferMs": 0,
+              "rebufferRatio": 0,
+              "switches": 2
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 145,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 158,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              },
+              {
+                "t": 16318,
+                "from": 2,
+                "to": 1,
+                "height": 360,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 18363
+          },
+          {
+            "values": {
+              "rebufferCount": 0,
+              "rebufferMs": 0,
+              "rebufferRatio": 0,
+              "switches": 2
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 142,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 156,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              },
+              {
+                "t": 16307,
+                "from": 2,
+                "to": 1,
+                "height": 360,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 18328
+          },
+          {
+            "values": {
+              "rebufferCount": 0,
+              "rebufferMs": 0,
+              "rebufferRatio": 0,
+              "switches": 2
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 141,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 152,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              },
+              {
+                "t": 16302,
+                "from": 2,
+                "to": 1,
+                "height": 360,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 18357
+          },
+          {
+            "values": {
+              "rebufferCount": 0,
+              "rebufferMs": 0,
+              "rebufferRatio": 0,
+              "switches": 2
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 147,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 159,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              },
+              {
+                "t": 16326,
+                "from": 2,
+                "to": 1,
+                "height": 360,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 18338
+          },
+          {
+            "values": {
+              "rebufferCount": 0,
+              "rebufferMs": 0,
+              "rebufferRatio": 0,
+              "switches": 2
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 148,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 158,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              },
+              {
+                "t": 16319,
+                "from": 2,
+                "to": 1,
+                "height": 360,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 18373
+          },
+          {
+            "values": {
+              "rebufferCount": 0,
+              "rebufferMs": 0,
+              "rebufferRatio": 0,
+              "switches": 2
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 144,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 157,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              },
+              {
+                "t": 16284,
+                "from": 2,
+                "to": 1,
+                "height": 360,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 18374
+          },
+          {
+            "values": {
+              "rebufferCount": 0,
+              "rebufferMs": 0,
+              "rebufferRatio": 0,
+              "switches": 2
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 144,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 156,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              },
+              {
+                "t": 16260,
+                "from": 2,
+                "to": 1,
+                "height": 360,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 18326
+          },
+          {
+            "values": {
+              "rebufferCount": 0,
+              "rebufferMs": 0,
+              "rebufferRatio": 0,
+              "switches": 2
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 141,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 152,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              },
+              {
+                "t": 16257,
+                "from": 2,
+                "to": 1,
+                "height": 360,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 18343
+          },
+          {
+            "values": {
+              "rebufferCount": 0,
+              "rebufferMs": 0,
+              "rebufferRatio": 0,
+              "switches": 2
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 147,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 158,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              },
+              {
+                "t": 16517,
+                "from": 2,
+                "to": 1,
+                "height": 360,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 18339
+          },
+          {
+            "values": {
+              "rebufferCount": 0,
+              "rebufferMs": 0,
+              "rebufferRatio": 0,
+              "switches": 2
+            },
+            "startRungHeight": 360,
+            "rungs": [
+              {
+                "t": 140,
+                "from": null,
+                "to": 1,
+                "height": 360,
+                "reason": "start"
+              },
+              {
+                "t": 150,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              },
+              {
+                "t": 16247,
+                "from": 2,
+                "to": 1,
+                "height": 360,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 18347
+          }
+        ],
+        "summaries": {
+          "rebufferCount": {
+            "n": 10,
+            "median": 0,
+            "p10": 0,
+            "p90": 0,
+            "min": 0,
+            "max": 0,
+            "mad": 0,
+            "cv": null
+          },
+          "rebufferMs": {
+            "n": 10,
+            "median": 0,
+            "p10": 0,
+            "p90": 0,
+            "min": 0,
+            "max": 0,
+            "mad": 0,
+            "cv": null
+          },
+          "rebufferRatio": {
+            "n": 10,
+            "median": 0,
+            "p10": 0,
+            "p90": 0,
+            "min": 0,
+            "max": 0,
+            "mad": 0,
+            "cv": null
+          },
+          "switches": {
+            "n": 10,
+            "median": 2,
+            "p10": 2,
+            "p90": 2,
+            "min": 2,
+            "max": 2,
+            "mad": 0,
+            "cv": 0
+          }
+        },
+        "comparisons": [
+          {
+            "metric": "rebufferCount",
+            "label": "Rebuffers",
+            "unit": "count",
+            "rule": {
+              "kind": "budget",
+              "worse": "higher",
+              "medianBudget": 0,
+              "tailBudget": 1
+            },
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": 0,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": 1,
+              "exceeded": false
+            },
+            "verdict": "pass",
+            "reason": "within the limits (median +0, p90 +1)"
+          },
+          {
+            "metric": "rebufferMs",
+            "label": "Rebuffer time",
+            "unit": "ms",
+            "rule": {
+              "kind": "budget",
+              "worse": "higher",
+              "medianBudget": 250,
+              "tailBudget": 1000
+            },
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": 250,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": 1000,
+              "exceeded": false
+            },
+            "verdict": "pass",
+            "reason": "within the limits (median +250 ms, p90 +1000 ms)"
+          },
+          {
+            "metric": "rebufferRatio",
+            "label": "Rebuffer ratio",
+            "unit": "ratio",
+            "rule": {
+              "kind": "budget",
+              "worse": "higher",
+              "medianBudget": 0.01,
+              "tailBudget": 0.05
+            },
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": 0.01,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": 0.05,
+              "exceeded": false
+            },
+            "verdict": "pass",
+            "reason": "within the limits (median +0.01, p90 +0.05)"
+          },
+          {
+            "metric": "switches",
+            "label": "Rung switches",
+            "unit": "count",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0,
+            "median": {
+              "statistic": "median",
+              "baseline": 2,
+              "current": 2,
+              "change": 0,
+              "changeShare": 0,
+              "worseBy": 0,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 2,
+              "current": 2,
+              "change": 0,
+              "changeShare": 0,
+              "worseBy": 0,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          }
+        ],
+        "problems": []
+      },
+      "remeasure": null
+    }
+  ]
+}

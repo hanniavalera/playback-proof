@@ -1,0 +1,17 @@
+measure: perf-aa, engine chromium, runner ubuntu-24.04
+label: paa-chromium-4
+started: 2026-11-04T17:56:18Z
+commit: b971ed3f223fe0883ec4762aa1476932cdbc3532 (integ/paired)
+environment id: gha-linux-x64
+runner: Linux X64, github-hosted, image ubuntu24 20261101.114.1
+cpus: 4
+cpu: Intel(R) Xeon(R) 6975P-C
+memory: 15701 MiB
+os: Ubuntu 24.04.5 LTS
+uptime:  17:56:19 up 1 min,  0 user,  load average: 0.79, 0.33, 0.12
+node: v22.23.4, npm: 10.9.9
+playwright: Version 1.64.1
+ffmpeg: not installed (the streams come from the streams job)
+
+finished: 2026-11-04T18:24:46Z
+uptime:  18:24:46 up 30 min,  0 user,  load average: 0.03, 0.18, 0.23
