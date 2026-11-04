@@ -5,6 +5,8 @@ test-results/
 playwright-report/
 coverage/
 .cache/
+# The flake history of this machine (flake/store.ts, file store): data, not source. CI keeps its own on the ci-data branch.
+flake/history/
 *.log
 .DS_Store
 .env
