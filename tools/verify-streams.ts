@@ -132,7 +132,7 @@ async function probePackets(target: string, extra: string[] = []): Promise<Probe
     'packet=stream_index,pts,dts,duration,size,pos,flags',
     target,
   ]);
-  return ((json.packets as RawPacket[] | undefined) ?? []).map((p) => ({
+  const packets = ((json.packets as RawPacket[] | undefined) ?? []).map((p) => ({
     streamIndex: p.stream_index ?? 0,
     pts: p.pts ?? Number.NaN,
     dts: p.dts ?? Number.NaN,
@@ -141,6 +141,29 @@ async function probePackets(target: string, extra: string[] = []): Promise<Probe
     pos: Number(p.pos ?? Number.NaN),
     key: (p.flags ?? '').includes('K'),
   }));
+  fillFirstDurations(packets);
+  return packets;
+}
+
+/**
+ * ffprobe 6.1 leaves the duration of the first packet of a stream out (its parser has not seen a frame yet; 9.0 prints it) while the
+ * packets after it carry theirs. That one value is the distance to the next packet of the stream, so it is filled in from there.
+ * Any other missing duration stays NaN, and the checks that need it fail.
+ */
+function fillFirstDurations(packets: ProbePacket[]): void {
+  const seen = new Set<number>();
+  packets.forEach((p, i) => {
+    if (seen.has(p.streamIndex)) return;
+    seen.add(p.streamIndex);
+    if (!Number.isNaN(p.duration)) return;
+    const next = packets.slice(i + 1).find((q) => q.streamIndex === p.streamIndex);
+    if (next && !Number.isNaN(next.duration)) {
+      p.duration = next.pts - p.pts;
+      note(
+        `ffprobe left out the duration of the first packet of stream #${p.streamIndex}: ${p.duration} from the pts spacing`,
+      );
+    }
+  });
 }
 
 async function probeStreams(
@@ -170,12 +193,28 @@ function reason(e: unknown): string {
   return (e as Error).message.split('\n')[0] ?? 'failed';
 }
 
-/** Decodes everything with ffmpeg (`-xerror`: the first decode error is fatal). Returns '' when clean, else the reason. */
-async function decodeErrors(target: string, extra: string[] = []): Promise<string> {
+/**
+ * Decodes everything with ffmpeg (`-xerror`: the first decode error is fatal). Returns '' when clean, else the reason.
+ * `input` options go before `-i` (demuxer options, `-t`), `output` options after it (`-map`).
+ */
+async function decodeErrors(target: string, input: string[] = [], output: string[] = []): Promise<string> {
   try {
     const { stderr } = await run(
       ffmpegBinary(),
-      ['-hide_banner', '-nostdin', '-v', 'error', '-xerror', ...extra, '-i', target, '-f', 'null', '-'],
+      [
+        '-hide_banner',
+        '-nostdin',
+        '-v',
+        'error',
+        '-xerror',
+        ...input,
+        '-i',
+        target,
+        ...output,
+        '-f',
+        'null',
+        '-',
+      ],
       {
         timeoutMs: 300_000,
       },
@@ -849,7 +888,9 @@ async function verifyThroughFfmpeg(
   const index = store.index(id);
   const info = index.info;
   const name = `${kind.toUpperCase()} ${scenario ? `live window ${scenario.firstNumber}..${scenario.lastNumber}` : 'VOD'} via ffmpeg's demuxer`;
-  const input = scenario ? ['-live_start_index', '0'] : [];
+  // `-live_start_index` is an option of the HLS demuxer only; the DASH demuxer starts a SegmentTimeline window at its first segment
+  // when the window is shorter than 60 s, which both scenarios are.
+  const input = scenario && kind === 'hls' ? ['-live_start_index', '0'] : [];
   try {
     const probed = await probeStreams(url, input);
     note(
@@ -882,7 +923,7 @@ async function verifyThroughFfmpeg(
       const seconds = (scenario.lastNumber - scenario.firstNumber + 1) * SEGMENT_SEC - 2 * SEGMENT_SEC;
       const packets = await probePackets(url, [...input, '-read_intervals', `%+${seconds}`]);
       assertGapless(id, name, index, probed.streams, packets, scenario.firstNumber, spec.frameRate);
-      const errors = await decodeErrors(url, ['-live_start_index', '0', '-t', String(seconds)]);
+      const errors = await decodeErrors(url, [...input, '-t', String(seconds)]);
       record(
         id,
         `${name}: ${seconds} s of the window decode without error`,
@@ -900,7 +941,7 @@ async function verifyThroughFfmpeg(
         );
       }
       const maps = kind === 'dash' ? ['-map', '0:v:1', '-map', '0:a:0'] : [];
-      const errors = await decodeErrors(url, maps);
+      const errors = await decodeErrors(url, [], maps);
       record(
         id,
         `${name}: decodes end to end${maps.length ? ' (v360 + audio)' : ' (default variant)'}`,
