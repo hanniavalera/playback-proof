@@ -1,0 +1,46 @@
+{
+  "condition": "bandwidth-drop-finite",
+  "poolSessions": 60,
+  "sessionsPerArm": 30,
+  "splits": 2000,
+  "alpha": 0.05,
+  "falsePositives": 0,
+  "rate": 0,
+  "interval": {
+    "lower": 0,
+    "upper": 0.0018427397934059364,
+    "level": 0.95
+  },
+  "perMetric": [
+    {
+      "id": "rebufferShare",
+      "rejectionRates": [
+        {
+          "level": 0.01,
+          "rate": 0
+        },
+        {
+          "level": 0.05,
+          "rate": 0
+        },
+        {
+          "level": 0.1,
+          "rate": 0
+        },
+        {
+          "level": 0.25,
+          "rate": 0
+        }
+      ]
+    }
+  ],
+  "verdicts": {
+    "a-better": 0,
+    "b-better": 0,
+    "equivalent": 2000,
+    "inconclusive": 0
+  },
+  "pass": true,
+  "conservative": true,
+  "reason": "The harness declared 0.00 % (0 of 2000; 95 % interval 0.00 to 0.18 %) of the splits of identical sessions significant: not above the significance level of 5 %, and well below it: it is safe and conservative, so it will under-detect rather than over-claim."
+}
