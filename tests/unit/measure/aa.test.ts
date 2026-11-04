@@ -187,6 +187,26 @@ describe('PB-PERF A/A: counting what the gate got wrong on an unchanged build', 
     );
     expect(JSON.parse(JSON.stringify(summary))).toStrictEqual(summary);
   });
+
+  it('takes the passes in the order they were measured, whatever order the files are given in (a glob sorts pass-10 before pass-2)', async () => {
+    const early = await pass({ first: startupBatch(QUIET) });
+    const middle = await pass({ first: startupBatch(shifted(5)) });
+    const late = await pass({ first: startupBatch(shifted(-3)) });
+    early.generatedAt = '2026-11-04T10:00:00.000Z';
+    middle.generatedAt = '2026-11-04T10:05:00.000Z';
+    late.generatedAt = '2026-11-04T10:10:00.000Z';
+    const summary = summarizeAa([
+      { file: 'aa/pass-10.json', report: late },
+      { file: 'aa/pass-1.json', report: early },
+      { file: 'aa/pass-2.json', report: middle },
+    ]);
+    expect(summary.runs.map((run) => run.file)).toStrictEqual([
+      'aa/pass-1.json',
+      'aa/pass-2.json',
+      'aa/pass-10.json',
+    ]);
+    expect(startupOf(summary).medians).toStrictEqual([100, 105, 97]);
+  });
 });
 
 describe('PB-PERF A/A: refusing reports that are not one baseline measured again and again', () => {
@@ -260,5 +280,31 @@ describe('PB-PERF A/A: the Markdown', () => {
     expect(markdown).toContain('| PB-PERF-003 | rebufferCount |');
     expect(markdown).toContain('Tracked, not gated: PB-PERF-001 manifestMs.');
     expect(markdown.endsWith('\n')).toBe(true);
+  });
+
+  it('counts the passes that could not be trusted and prints only the first line of their problems (the rest is in the JSON)', async () => {
+    const failed = await pass({ first: startupBatch(QUIET) });
+    failed.exitCode = 2;
+    failed.verdict = 'problem';
+    const message =
+      "PB-PERF-002 on firefox, run 1 of 10: qa.waitFor('firstframe') timed out\n14 events so far:\n  #0 load-requested";
+    failed.problems = [{ scenario: 'PB-PERF-002', message }];
+    const summary = summarizeAa(named([await pass({ first: startupBatch(QUIET) }), failed]));
+    expect(summary.exitCodes).toStrictEqual({ '0': 1, '1': 0, '2': 1 });
+    expect(summary.runs[1]!.problems).toStrictEqual([message]);
+
+    const markdown = renderAaMarkdown(summary);
+    expect(markdown).toContain('**Passes that could not be trusted (exit code 2): 1 of 2.**');
+    expect(markdown).toContain(
+      "> Problem in aa/2.json: PB-PERF-002 on firefox, run 1 of 10: qa.waitFor('firstframe') timed out",
+    );
+    expect(markdown).not.toContain('14 events so far');
+    expect(markdown).not.toContain('load-requested');
+  });
+
+  it('says nothing about untrusted passes when there were none', async () => {
+    const markdown = renderAaMarkdown(summarizeAa(named([await pass({ first: startupBatch(QUIET) })])));
+    expect(markdown).not.toContain('could not be trusted');
+    expect(markdown).not.toContain('> Problem');
   });
 });

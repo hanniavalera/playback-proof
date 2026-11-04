@@ -26,10 +26,21 @@ function main(argv: string[]): number {
     return 2;
   }
 
-  const reports = files.map((file) => ({
-    file: relative(root, join(process.cwd(), file)),
-    report: JSON.parse(readFileSync(file, 'utf8')) as GateReport,
-  }));
+  const reports: Array<{ file: string; report: GateReport }> = [];
+  for (const file of files) {
+    try {
+      reports.push({
+        file: relative(root, join(process.cwd(), file)),
+        report: JSON.parse(readFileSync(file, 'utf8')) as GateReport,
+      });
+    } catch (error) {
+      // A pass that died before it wrote its report leaves nothing at its path (and an unmatched glob arrives as the pattern itself).
+      console.error(
+        `PROBLEM: cannot read the gate report ${file}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return 2;
+    }
+  }
   let summary;
   try {
     summary = summarizeAa(reports);

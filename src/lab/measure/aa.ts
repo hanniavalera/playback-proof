@@ -105,8 +105,13 @@ function assertSameCondition(reports: readonly GateReport[]): void {
   });
 }
 
-export function summarizeAa(reports: readonly { file: string; report: GateReport }[]): AaSummary {
-  if (reports.length === 0) throw new Error('an A/A summary needs at least one gate report');
+/**
+ * Summarizes the gate reports of an A/A check. The reports are taken in the order they were measured (`generatedAt`, whatever order they
+ * are given in: a shell glob sorts `pass-10` before `pass-2`), so that the per-pass lists read as a time series.
+ */
+export function summarizeAa(given: readonly { file: string; report: GateReport }[]): AaSummary {
+  if (given.length === 0) throw new Error('an A/A summary needs at least one gate report');
+  const reports = [...given].sort((a, b) => a.report.generatedAt.localeCompare(b.report.generatedAt));
   assertSameCondition(reports.map(({ report }) => report));
   const first = (reports[0] as { report: GateReport }).report;
 
@@ -247,6 +252,9 @@ const num = (value: number | null, unit: MetricUnit): string => {
 const share = (value: number | null): string =>
   value === null ? '-' : value === Infinity ? 'over' : `${(value * 100).toFixed(0)} %`;
 
+/** The first line of a message: a problem of the harness carries the player's whole event log, which belongs in the JSON and not in a table. */
+const firstLine = (text: string): string => text.split(/\r?\n/, 1)[0] ?? '';
+
 /** The A/A summary as Markdown: the verdict first, then, per gated metric, how much of its allowance the honest noise used. */
 export function renderAaMarkdown(summary: AaSummary): string {
   const lines: string[] = [
@@ -256,6 +264,11 @@ export function renderAaMarkdown(summary: AaSummary): string {
     '',
     `- **False positives (exit code 1): ${summary.falsePositives} of ${summary.passes}.**`,
     `- Exit codes: 0 x ${summary.exitCodes['0']}, 1 x ${summary.exitCodes['1']}, 2 x ${summary.exitCodes['2']}.`,
+    ...(summary.exitCodes['2'] > 0
+      ? [
+          `- **Passes that could not be trusted (exit code 2): ${summary.exitCodes['2']} of ${summary.passes}.** They are not false positives: the measurement failed, and what is in the table comes from the other passes. The first line of each problem is listed below; the JSON keeps the whole message.`,
+        ]
+      : []),
     `- First-batch alarms (a gated metric failed in the first batch and a fresh batch was measured): ${summary.firstBatchAlarms}; of those ${summary.notReproduced} did not reproduce.`,
     '',
     'How much of its allowance each gated metric used in the worst pass (100 % is exactly at the limit, anything above is an alarm):',
@@ -276,6 +289,7 @@ export function renderAaMarkdown(summary: AaSummary): string {
     );
   }
   const problems = summary.runs.filter((run) => run.problems.length > 0);
-  for (const run of problems) lines.push('', `> Problem in ${run.file}: ${run.problems.join('; ')}`);
+  for (const run of problems)
+    lines.push('', `> Problem in ${run.file}: ${run.problems.map(firstLine).join('; ')}`);
   return `${lines.join('\n')}\n`;
 }
