@@ -25,18 +25,58 @@ import { makeScratch } from '../support/scratch.ts';
 
 // The flake gate of the GitHub workflows (ADR-170 to ADR-172, docs/CI.md). The workflows cannot run here, so these tests do what
 // can be done without GitHub: they check who may write (the trust model), and they run the arguments the workflow gives the gate,
-// as written in the workflow, against a real git repository laid out as the job lays out its workspace.
+// as written in the workflow, against a real git repository laid out as the job lays out its workspace. The merge gate (ci.yml)
+// and the nightly (nightly.yml) have the same two jobs, and every test of a job runs for both.
 
 const BOT = 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>';
 const LINUX = detectEnvId({ GITHUB_ACTIONS: 'true', RUNNER_OS: 'Linux', RUNNER_ARCH: 'X64' });
 const MACOS = detectEnvId({ GITHUB_ACTIONS: 'true', RUNNER_OS: 'macOS', RUNNER_ARCH: 'ARM64' });
 const environmentOf = (runner: string): string => (runner.startsWith('macos') ? MACOS : LINUX);
 
-const ciJobs = jobsOf(code(read(`${WORKFLOW_DIR}/ci.yml`)));
-const mergeGate = ciJobs.get('merge-gate') ?? '';
-const judge = ciJobs.get('flake') ?? '';
-const recorder = ciJobs.get('flake-record') ?? '';
-const legs = legsOf(mergeGate);
+interface Pipeline {
+  file: string;
+  /** The job that runs the browsers: the flake jobs wait for it and judge what it uploaded. */
+  legsId: string;
+  /** The names of the two checks. `flake` is the required one, so the nightly's jobs say what they are. */
+  judgeName: string;
+  recordName: string;
+  /** What the recorder's condition says about the event. */
+  events: string;
+  /** The tiers the runs of the legs hold. */
+  tiers: Array<'merge' | 'release'>;
+}
+
+const PIPELINES: Pipeline[] = [
+  {
+    file: 'ci.yml',
+    legsId: 'merge-gate',
+    judgeName: 'flake',
+    recordName: 'flake-record',
+    events: "github.event_name == 'push'",
+    tiers: ['merge'],
+  },
+  {
+    file: 'nightly.yml',
+    legsId: 'release',
+    judgeName: 'flake (nightly)',
+    recordName: 'flake-record (nightly)',
+    events: "(github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')",
+    tiers: ['merge', 'release'],
+  },
+];
+
+function load(pipeline: Pipeline) {
+  const jobs = jobsOf(code(read(`${WORKFLOW_DIR}/${pipeline.file}`)));
+  return {
+    ...pipeline,
+    jobs,
+    judge: jobs.get('flake') ?? '',
+    recorder: jobs.get('flake-record') ?? '',
+    legs: legsOf(jobs.get(pipeline.legsId) ?? ''),
+  };
+}
+type Loaded = ReturnType<typeof load>;
+const loaded = PIPELINES.map(load);
 
 interface Invocation {
   name: string;
@@ -54,44 +94,46 @@ function invocations(job: string): Invocation[] {
   });
 }
 
-describe('the trust model of the flake jobs', () => {
+describe.each(loaded)('the trust model of the flake jobs of $file', (p) => {
   it('has a judge that can only read: a read token, a checkout that keeps no credential, and no way to record', () => {
-    expect(judge, 'the job is missing').not.toBe('');
-    expect(judge).toMatch(/^ {4}permissions:\n {6}contents: read\n(?! {6})/m);
-    expect(judge).toMatch(/- uses: actions\/checkout@v\d+\n {8}with:\n {10}persist-credentials: false\n/);
-    expect(judge).not.toMatch(/--record|--push|ci-data/);
-    expect(judge).toMatch(/^ {4}needs: merge-gate$/m);
-    expect(judge).toMatch(/^ {4}if: \$\{\{ !cancelled\(\) \}\}$/m);
+    expect(p.judge, 'the job is missing').not.toBe('');
+    expect(p.judge).toContain(`\n    name: ${p.judgeName}\n`);
+    expect(p.judge).toContain(`\n    needs: ${p.legsId}\n`);
+    expect(p.judge).toContain('\n    if: ${{ !cancelled() }}\n');
+    expect(p.judge).toMatch(/^ {4}permissions:\n {6}contents: read\n(?! {6})/m);
+    expect(p.judge).toMatch(/- uses: actions\/checkout@v\d+\n {8}with:\n {10}persist-credentials: false\n/);
+    expect(p.judge).not.toMatch(/--record|--push|ci-data/);
   });
 
-  it('has a recorder with the one write token of the workflow, for a push to main only', () => {
-    expect(recorder, 'the job is missing').not.toBe('');
-    expect(recorder).toMatch(/^ {4}permissions:\n {6}contents: write\n(?! {6})/m);
-    expect(recorder).toMatch(
-      /^ {4}if: \$\{\{ !cancelled\(\) && github\.event_name == 'push' && github\.ref == 'refs\/heads\/main' \}\}$/m,
+  it('has a recorder with the one write token of the workflow, for the events that record and for main only', () => {
+    expect(p.recorder, 'the job is missing').not.toBe('');
+    expect(p.recorder).toContain(`\n    name: ${p.recordName}\n`);
+    expect(p.recorder).toContain(`\n    needs: ${p.legsId}\n`);
+    expect(p.recorder).toContain(
+      `\n    if: \${{ !cancelled() && ${p.events} && github.ref == 'refs/heads/main' }}\n`,
     );
-    expect(recorder).toMatch(/^ {4}needs: merge-gate$/m);
+    expect(p.recorder).toMatch(/^ {4}permissions:\n {6}contents: write\n(?! {6})/m);
   });
 
   it('lets no other job record or push', () => {
-    for (const [id, job] of ciJobs) {
+    for (const [id, job] of p.jobs) {
       if (id !== 'flake-record') expect(job, `job ${id}`).not.toMatch(/--record|--push/);
     }
   });
 
   it('judges with the gate’s own exit code, and lets the recorder pass over a verdict only', () => {
-    for (const call of invocations(judge)) {
+    for (const call of invocations(p.judge)) {
       expect(call.command, call.name).not.toMatch(/\|\||&&|;|\|/);
     }
-    for (const call of invocations(recorder)) {
+    for (const call of invocations(p.recorder)) {
       expect(call.command, call.name).toMatch(/ \|\| \[ "\$\?" -eq 1 \]$/);
     }
   });
 });
 
-describe('the arguments of the flake jobs', () => {
+describe.each(loaded)('the arguments of the flake jobs of $file', (p) => {
   const byEnvironment = new Map<string, string[]>();
-  for (const leg of legs) {
+  for (const leg of p.legs) {
     const id = environmentOf(leg.runner);
     byEnvironment.set(id, [...(byEnvironment.get(id) ?? []), `reports/flake/reports-${leg.leg}`]);
   }
@@ -99,7 +141,7 @@ describe('the arguments of the flake jobs', () => {
 
   it('are two invocations, one per environment, each with the artifacts of the legs that run in that environment', () => {
     expect([...byEnvironment.keys()].sort()).toEqual([LINUX, MACOS].sort());
-    for (const job of [judge, recorder]) {
+    for (const job of [p.judge, p.recorder]) {
       const calls = invocations(job);
       expect(calls).toHaveLength(2);
       expect(calls.map((call) => sorted(parseCliArgs(call.argv, {}).runs)).sort()).toEqual(
@@ -109,7 +151,7 @@ describe('the arguments of the flake jobs', () => {
   });
 
   it('read the history from the git store as the bot, and write one decision file per invocation', () => {
-    for (const job of [judge, recorder]) {
+    for (const job of [p.judge, p.recorder]) {
       const parsed = invocations(job).map((call) => parseCliArgs(call.argv, {}));
       for (const args of parsed) {
         expect(args.store).toBe('git');
@@ -125,8 +167,8 @@ describe('the arguments of the flake jobs', () => {
   });
 
   it('are the same for the judge and the recorder, which only adds --record --push', () => {
-    const judged = invocations(judge).map((call) => call.argv);
-    const recorded = invocations(recorder).map((call) => call.argv);
+    const judged = invocations(p.judge).map((call) => call.argv);
+    const recorded = invocations(p.recorder).map((call) => call.argv);
     expect(recorded).toHaveLength(judged.length);
     recorded.forEach((argv, i) => {
       expect(argv.filter((a) => a === '--record' || a === '--push')).toEqual(['--record', '--push']);
@@ -135,22 +177,22 @@ describe('the arguments of the flake jobs', () => {
   });
 
   it('are checked by the last step of the recorder, which names the files they write', () => {
-    const check = stepsOf(recorder).at(-1);
+    const check = stepsOf(p.recorder).at(-1);
     expect(check?.name).toMatch(/^Check that both environments are in the history/);
     const command = commandOf(check ?? { name: '', text: '' }) ?? '';
-    for (const call of invocations(recorder)) {
+    for (const call of invocations(p.recorder)) {
       expect(command).toContain(parseCliArgs(call.argv, {}).json ?? 'no file');
     }
     expect(command).toContain('.recorded != null');
   });
 
-  it('download the artifacts to where the arguments look for them', () => {
-    for (const job of [judge, recorder]) {
+  it('download the artifacts of the legs to where the arguments look for them', () => {
+    for (const job of [p.judge, p.recorder]) {
       expect(job).toMatch(
         /- name: Download the run files of the legs\n {8}uses: actions\/download-artifact@v\d+\n {8}with:\n {10}pattern: reports-\*\n {10}path: reports\/flake\n/,
       );
     }
-    expect(mergeGate).toContain('name: reports-${{ matrix.leg }}');
+    expect(read(`${WORKFLOW_DIR}/${p.file}`)).toContain('name: reports-${{ matrix.leg }}');
   });
 });
 
@@ -181,9 +223,13 @@ function put(dir: string, relative: string, text: string): void {
   writeFileSync(file, text);
 }
 
-function download(checkout: string, build: string): void {
-  for (const leg of legs) {
-    const file = run([record({ project: leg.project })], {
+/** The artifacts of one build: a run file per leg, in the tiers the workflow's legs run. */
+function download(checkout: string, build: string, p: Loaded): void {
+  for (const leg of p.legs) {
+    const tests = p.tiers.map((tier) =>
+      record({ id: tier === 'merge' ? 'PB-VOD-001' : 'PB-VOD-003', project: leg.project, tier }),
+    );
+    const file = run(tests, {
       runId: build,
       invocationId: `${build}-${leg.leg}`,
       envId: environmentOf(leg.runner),
@@ -224,33 +270,43 @@ async function runAll(job: string, checkout: string, root: string): Promise<numb
   return exits;
 }
 
-describe('the flake jobs on a real git repository', () => {
-  it('bootstrap the history: a judge writes nothing, the first push to main creates ci-data as the bot, a re-run adds nothing', async () => {
-    const root = makeScratch('ci-flake-');
-    scratches.push(root);
-    const world = makeWorld(root);
-    const checkout = world.writer('job');
-    const strategy = lab(root);
-    download(checkout, 'gha-100-1');
-    const branches = (): string[] =>
-      git(world.bare, 'for-each-ref', '--format=%(refname)', 'refs/heads').split('\n');
-    const main = git(world.bare, 'rev-parse', 'main');
+/** A temporary bare repository, a CI checkout of it (which is not the bot) and the directory of the strategy document. */
+function bench(): { bare: string; checkout: string; strategy: string; reader: () => GitStore } {
+  const root = makeScratch('ci-flake-');
+  scratches.push(root);
+  const world = makeWorld(root);
+  return {
+    bare: world.bare,
+    checkout: world.writer('job'),
+    strategy: lab(root),
+    reader: () => new GitStore({ repoDir: world.writer('reader'), identity: parseIdentity(BOT) }),
+  };
+}
+
+const branches = (bare: string): string[] =>
+  git(bare, 'for-each-ref', '--format=%(refname)', 'refs/heads').split('\n');
+
+describe.each(loaded)('the flake jobs of $file on a real git repository', (p) => {
+  it('bootstrap the history: a judge writes nothing, the first push creates ci-data as the bot, a re-run adds nothing', async () => {
+    const { bare, checkout, strategy, reader } = bench();
+    download(checkout, 'gha-100-1', p);
+    const main = git(bare, 'rev-parse', 'main');
 
     // `flake`, on a pull request or on the first run of all: there is no ci-data yet, which is an empty history and not an error.
-    expect(await runAll(judge, checkout, strategy)).toEqual([0, 0]);
-    expect(branches()).toEqual(['refs/heads/main']);
+    expect(await runAll(p.judge, checkout, strategy)).toEqual([0, 0]);
+    expect(branches(bare)).toEqual(['refs/heads/main']);
 
-    // `flake-record`, on the first push to main: the branch is created, parentless, one commit per environment.
-    expect(await runAll(recorder, checkout, strategy)).toEqual([0, 0]);
-    expect(branches()).toEqual(['refs/heads/ci-data', 'refs/heads/main']);
-    expect(git(world.bare, 'rev-parse', 'main')).toBe(main);
-    expect(git(world.bare, 'ls-tree', '-r', '--name-only', 'ci-data').split('\n')).toEqual([
+    // `flake-record`, on the first recording: the branch is created, parentless, one commit per environment.
+    expect(await runAll(p.recorder, checkout, strategy)).toEqual([0, 0]);
+    expect(branches(bare)).toEqual(['refs/heads/ci-data', 'refs/heads/main']);
+    expect(git(bare, 'rev-parse', 'main')).toBe(main);
+    expect(git(bare, 'ls-tree', '-r', '--name-only', 'ci-data').split('\n')).toEqual([
       `history/${LINUX}.jsonl`,
       `history/${MACOS}.jsonl`,
     ]);
-    expect(git(world.bare, 'rev-list', '--count', 'ci-data')).toBe('2');
-    expect(git(world.bare, 'rev-list', '--max-parents=0', 'ci-data').split('\n')).toHaveLength(1);
-    expect(new Set(git(world.bare, 'log', '--format=%an <%ae>%n%cn <%ce>', 'ci-data').split('\n'))).toEqual(
+    expect(git(bare, 'rev-list', '--count', 'ci-data')).toBe('2');
+    expect(git(bare, 'rev-list', '--max-parents=0', 'ci-data').split('\n')).toHaveLength(1);
+    expect(new Set(git(bare, 'log', '--format=%an <%ae>%n%cn <%ce>', 'ci-data').split('\n'))).toEqual(
       new Set([BOT]),
     );
     for (const file of ['gate-linux', 'gate-macos']) {
@@ -260,42 +316,79 @@ describe('the flake jobs on a real git repository', () => {
       expect(decision.recorded?.pushed, file).toBe(true);
     }
 
-    // What the next judge reads back: the four Linux runs and the macOS one.
-    const reader = new GitStore({ repoDir: world.writer('reader'), identity: parseIdentity(BOT) });
-    expect((await reader.load(LINUX)).map((r) => r.invocationId).sort()).toEqual(
-      legs
+    // What the next judge reads back: the Linux runs of the four legs and the macOS run of the fifth.
+    const history = reader();
+    expect((await history.load(LINUX)).map((r) => r.invocationId).sort()).toEqual(
+      p.legs
         .filter((l) => environmentOf(l.runner) === LINUX)
         .map((l) => `gha-100-1-${l.leg}`)
         .sort(),
     );
-    expect((await reader.load(MACOS)).map((r) => r.invocationId)).toEqual(['gha-100-1-webkit-macos']);
+    expect((await history.load(MACOS)).map((r) => r.invocationId)).toEqual(['gha-100-1-webkit-macos']);
 
     // Running the job again (a re-run of the failed jobs) records the same runs: nothing new, nothing pushed.
-    const tip = git(world.bare, 'rev-parse', 'ci-data');
-    for (const call of invocations(recorder)) {
+    const tip = git(bare, 'rev-parse', 'ci-data');
+    for (const call of invocations(p.recorder)) {
       const { io, out } = ioIn(checkout, strategy);
       expect(await gateCommand(call.argv, io), call.name).toBe(0);
       expect(out.join('\n'), call.name).toContain('0 new runs');
     }
-    expect(git(world.bare, 'rev-parse', 'ci-data')).toBe(tip);
+    expect(git(bare, 'rev-parse', 'ci-data')).toBe(tip);
   });
 
-  it('fail the judge when the merge gate left no run file: a merge gate that did not run is not a pass', async () => {
-    const root = makeScratch('ci-flake-');
-    scratches.push(root);
-    const checkout = makeWorld(root).writer('job');
-    const strategy = lab(root);
+  it('fail the judge when the legs left no run file: a merge gate that did not run is not a pass', async () => {
+    const { checkout, strategy } = bench();
     // The streams job failed, the legs were skipped, and the download step found no artifact to download.
     const none = ioIn(checkout, strategy);
-    expect(await gateCommand(invocations(judge)[0]?.argv ?? [], none.io)).toBe(2);
+    expect(await gateCommand(invocations(p.judge)[0]?.argv ?? [], none.io)).toBe(2);
     expect(none.err.join('\n')).toContain('reports/flake/reports-chromium: no such file or directory');
 
     // One leg left nothing (its job died before the upload): that environment cannot be judged, the other one still is.
-    download(checkout, 'gha-101-1');
+    download(checkout, 'gha-101-1', p);
     rmSync(join(checkout, 'reports/flake/reports-webkit-linux'), { recursive: true });
     const partial = ioIn(checkout, strategy);
-    expect(await runAll(judge, checkout, strategy)).toEqual([2, 0]);
-    expect(await gateCommand(invocations(judge)[0]?.argv ?? [], partial.io)).toBe(2);
+    expect(await runAll(p.judge, checkout, strategy)).toEqual([2, 0]);
+    expect(await gateCommand(invocations(p.judge)[0]?.argv ?? [], partial.io)).toBe(2);
     expect(partial.err.join('\n')).toContain('reports/flake/reports-webkit-linux: no such file or directory');
+  });
+});
+
+describe('the flake jobs of the merge gate and of the nightly', () => {
+  const [gate, night] = loaded as [Loaded, Loaded];
+
+  it('have four different check names, so that the required `flake` is one job', () => {
+    const names = [gate, night].flatMap((p) => [p.judgeName, p.recordName]);
+    expect(new Set(names).size).toBe(4);
+    expect(gate.judgeName).toBe('flake');
+  });
+
+  it('run the same steps, which the nightly repeats because a reusable workflow would rename the required check', () => {
+    expect(stepsOf(night.judge).map((s) => s.text)).toEqual(stepsOf(gate.judge).map((s) => s.text));
+    expect(stepsOf(night.recorder).map((s) => s.text)).toEqual(stepsOf(gate.recorder).map((s) => s.text));
+  });
+
+  it('have the same legs, so that one set of arguments serves both', () => {
+    expect(night.legs.map((l) => [l.leg, l.runner])).toEqual(gate.legs.map((l) => [l.leg, l.runner]));
+  });
+
+  it('record into one history: a push to main and a night add to the same file of each environment, on top of each other', async () => {
+    const { bare, checkout, strategy, reader } = bench();
+    download(checkout, 'gha-100-1', gate);
+    expect(await runAll(gate.recorder, checkout, strategy)).toEqual([0, 0]);
+
+    rmSync(join(checkout, 'reports'), { recursive: true });
+    download(checkout, 'gha-200-1', night);
+    expect(await runAll(night.recorder, checkout, strategy)).toEqual([0, 0]);
+
+    expect(git(bare, 'rev-list', '--count', 'ci-data')).toBe('4');
+    expect(git(bare, 'rev-list', '--max-parents=0', 'ci-data').split('\n')).toHaveLength(1);
+    const linux = await reader().load(LINUX);
+    expect(linux).toHaveLength(8);
+    const nights = linux.filter((r) => r.runId === 'gha-200-1');
+    expect(nights).toHaveLength(4);
+    expect(nights.every((r) => r.tests.some((t) => t.tier === 'release'))).toBe(true);
+    expect(
+      linux.filter((r) => r.runId === 'gha-100-1').every((r) => r.tests.every((t) => t.tier === 'merge')),
+    ).toBe(true);
   });
 });

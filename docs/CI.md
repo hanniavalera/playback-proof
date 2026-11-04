@@ -34,6 +34,9 @@ every night 04:41 UTC  |  manual run  |  a pull request that changes nightly.yml
   streams ---- the same workflow, the same cache
   |
   +-- release (<the same five legs>)   npm run test:e2e -- --grep "@merge|@release" --project=<project>
+  |
+  +-- flake (nightly)          the judge of ci.yml, for these runs (it runs on the pull request too)
+  +-- flake-record (nightly)   the recorder of ci.yml; schedule and manual runs on main only
 
 Arrive with their phase, as jobs that need `streams` (nothing of them exists yet):
   performance gate (Phase 5), A/B runs (6), soak and readiness (7), triage (8).
@@ -53,6 +56,8 @@ Budgets are the design numbers of [TEST_STRATEGY.md section 6.3](../TEST_STRATEG
 | `flake` | pull request (forks too), push to `main`, manual; not when the run is cancelled | `ubuntu-24.04` | "seconds" (TEST_STRATEGY.md section 6.1); about a minute with its setup: unmeasured | 10 min | none: the verdict is on the job summary | `gh run download <run-id> --pattern 'reports-*' --dir reports/flake`, then `npm run gate:flake -- --store git --git-identity "me <me@example.invalid>" --runs reports/flake/reports-chromium` (and the other legs of the environment): it reads `ci-data` of `origin` and writes nothing |
 | `flake-record` | push to `main` only | `ubuntu-24.04` | as `flake` | 10 min | none | not against `ci-data`, on purpose; the same runs into a local history: `npm run gate:flake -- --store file --history-dir <dir> --record --runs <dir of run files>` |
 | `streams`, `release (<leg>)` of the nightly | `schedule` (04:41 UTC), manual, and a pull request that changes `nightly.yml` (a schedule and a manual run exist only for a file on the default branch, so a change would otherwise be seen the night after the merge) | as the gate | 15 min per engine (the release budget) | 30 min, stop at 26; 45 on macOS, stop at 41 | `reports-<leg>` (30 days) | `CI=true npm run docker:pw -- npm run test:e2e -- --grep "@merge\|@release" --project=<project>` |
+| `flake (nightly)` | the nightly's triggers, the pull request included; not when the run is cancelled | `ubuntu-24.04` | as `flake` | 10 min | none | as `flake`, with the `reports-<leg>` of the nightly run |
+| `flake-record (nightly)` | `schedule` and a manual run **on `main`**; never the pull request | `ubuntu-24.04` | as `flake` | 10 min | none | as `flake-record` |
 
 The legs and what each one is for:
 
@@ -88,6 +93,8 @@ The default permission of the repository's token is `read` and stays so: the rec
 **The first run on `main`.** There is no `ci-data` branch yet and nothing has to be created by hand. Until the first recording every judge reads an empty history (a missing branch is an empty history, not an error), so it passes with the note that there is not enough data. The first push to `main` after the merge runs `flake-record`: the store builds a commit with no parent that holds `history/gha-linux-x64.jsonl` and pushes it as the new branch `ci-data`, then the macOS call adds a second commit on top of it with `history/gha-macos-arm64.jsonl`; both are authored and committed as `github-actions[bot]`. Two jobs that both find no branch settle it with the store's retry (the loser fetches the winner's tip and appends there), and running the job again records nothing new. [`tests/unit/ci/flake-jobs.test.ts`](../tests/unit/ci/flake-jobs.test.ts) runs this sequence with the workflow's own arguments against a temporary bare repository. What has not been seen is the push of the bot, with the job's token, on GitHub.
 
 **When a build is judged.** Both jobs wait for `merge-gate` and use `if: ${{ !cancelled() }}` (ADR-171): a leg that is red does not skip them, because a build that flaked is the one to judge, and a run that was cancelled (the next push to the pull request does that) does not start them. Nothing can skip `flake`, so it is also what turns red when the legs never ran.
+
+**The nightly** has the same two jobs, named `flake (nightly)` and `flake-record (nightly)`: the required check `flake` is the job of `ci.yml`, and two checks of one name would be ambiguous. Their steps are the same (a unit test compares them; a reusable workflow would have renamed the check, since a called job is named `<caller job> / <called job>`). The judge runs for every run of the nightly, the one a pull request that changes `nightly.yml` triggers included, which is the only time its wiring is exercised before the merge. The recorder runs for the schedule and for a manual run **on `main`** (a manual run of another branch only judges) and never for the pull request. The runs of the nightly hold the `@release` tests as well as the `@merge` ones: the history gets the flake rates of the release tier, and its `@merge` tests count as builds of their engine job, like the merge gate's. Two limits. The nightly runs the plain `test:e2e`, not `gate:merge`, so a quarantined test is not run apart and non-blocking there: it fails the nightly like any other. And a push to `main` and a night can record at the same moment, which is the race the store retries (a unit test records a push and a night, one after the other, into one history).
 
 ## How the data moves
 
