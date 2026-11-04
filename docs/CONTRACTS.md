@@ -69,7 +69,7 @@ Authoritative data (durations, hashes) comes from `GET /api/streams`. Targets fo
 
 ```
 /health                                          service status
-/player/                                         the player page (?manifest=...&config=A|B&autoplay=1&muted=1&start=..&abr=1)
+/player/                                         the player page (?manifest=...&config=A|B&autoplay=1&muted=1&start=..&abr=1&hud=0)
 /api/...                                         control API (section 4)
 /s/<session>/<stream>/dash/manifest.mpd          DASH manifest (static for VOD, dynamic for live)
 /s/<session>/<stream>/hls/master.m3u8            HLS multivariant playlist
@@ -187,7 +187,7 @@ Exact semantics (the service implements them as written and its tests pin them):
 
 ## 6. The player page and `window.__qa`
 
-- Page: `/player/` with query `manifest`, `config` (`A` | `B`), `autoplay`, `muted`, `start`, `abr` (`PlayerPageParams`). Muted by default so autoplay is allowed in every engine.
+- Page: `/player/` with query `manifest`, `config` (`A` | `B`), `autoplay`, `muted`, `start`, `abr`, `hud` (`PlayerPageParams`). Muted by default so autoplay is allowed in every engine. `hud=1` shows a small overlay (default off: the page under test carries no extra work). A parameter the page cannot use (`muted=maybe`, `start=-3`) is ignored and recorded as an `error` event with code 0, so a typo in a test fails loudly instead of silently changing what is measured.
 - Hook: `window.__qa` (`QAHook`, `src/shared/qa.ts`). Event timeline with a **cursor**, so waits are race-free; metrics snapshot;
   actions that resolve on the resulting event (`seek` resolves on `seeked`).
 - Metric definitions: [METRICS.md](METRICS.md). Configurations A and B: `src/player/configs.ts` (A = Shaka defaults, B = a tuned candidate; both are printed by `qa.info()`).

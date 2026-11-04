@@ -190,4 +190,6 @@ export interface PlayerPageParams {
   start?: number;
   /** Default true. false disables ABR (the first variant is pinned by selectVariantByHeight). */
   abr?: boolean;
+  /** Default false. true shows a small overlay (state, startup, rebuffers, rung, live latency); off by default so the page under test carries no extra work. */
+  hud?: boolean;
 }
