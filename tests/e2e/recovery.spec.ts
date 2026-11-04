@@ -252,3 +252,50 @@ test(
     });
   },
 );
+
+test(
+  'PB-REC-004 slow segment: the player recovers by itself, with at most one rebuffer and no error',
+  { tag: ['@release', '@dash'] },
+  async ({ newSession, streamFor, player }, testInfo) => {
+    const session = await newSession({
+      stream: streamFor('vod', 'dash'),
+      protocol: 'dash',
+      faults: profile('slow-segment'),
+    });
+    const [rule] = await ruleIdsOf(session);
+    const [slow] = profile('slow-segment');
+    if (slow?.type !== 'latency') throw new Error('the slow-segment profile is no longer a latency rule');
+    const qa = await player(session).open();
+
+    // The fault fired: the origin held the first byte of the segment back for the rule's whole delay, and answered it in the end
+    // (the delay is below the 10 s connection timeout, so the player waited instead of giving up on the request).
+    const [late] = await waitForFault(session, rule as string);
+    const request = late as NonNullable<typeof late>;
+    expect(request.ttfbMs, 'time to first byte of the delayed request (request log)').toBeGreaterThanOrEqual(
+      slow.ms - 50,
+    );
+    expect(request.status, 'status of the delayed request (request log)').toBe(200);
+    expect(request.aborted ?? false, 'delayed request aborted by the player (request log)').toBe(false);
+    const number = segmentOf(request);
+
+    // The playhead gets past the late segment: it stalls at the end of what was buffered and resumes by itself once the segment is in.
+    const stream = await streamInfoOf(session);
+    await qa.waitForMediaTime(number * stream.segmentDurationSec + 1);
+
+    const metrics = await qa.metrics();
+    expectHealthyPlayback(metrics);
+    expectNoErrors(metrics);
+    expectAtMostRebuffers(metrics, 1);
+    expect(
+      metrics.rebuffer.events.filter((episode) => episode.ongoing),
+      'stalls that have not ended (metrics.rebuffer.events)',
+    ).toEqual([]);
+    const [episode] = metrics.rebuffer.events;
+    testInfo.annotations.push({
+      type: 'recovery',
+      description: episode
+        ? `segment ${number} took ${Math.round(request.ttfbMs)} ms to its first byte; the player stalled for ${Math.round(episode.durationMs)} ms at media time ${episode.mediaTime.toFixed(2)} s and resumed by itself`
+        : `segment ${number} took ${Math.round(request.ttfbMs)} ms to its first byte; the player did not stall`,
+    });
+  },
+);
