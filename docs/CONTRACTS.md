@@ -24,7 +24,7 @@ tooling can be built and verified independently. If a contract has to change, ch
 | `flake/`                  | Playwright reporter, history, flake rate, quarantine list, gate               | 5     |
 | `ab/`                     | A/B runner, statistics, markdown report                                       | 6     |
 | `triage/`                 | Failure collection, deterministic clustering, optional LLM summaries          | 8     |
-| `.github/`, `Jenkinsfile` | CI: the same gate stages in both systems                                      | 4     |
+| `.github/`, `Jenkinsfile`, `jenkins/` | CI: the same gate stages in both systems; Jenkins runs locally from `docker-compose.yml` ([jenkins/README.md](../jenkins/README.md), [decisions/ci-jenkins.md](decisions/ci-jenkins.md)) | 4     |
 
 ## 2. Browser and OS matrix (evidence: [CODEC_MATRIX.md](CODEC_MATRIX.md), ADR-001)
 
