@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "envId": "gha-linux-x64",
-  "generatedAt": "2026-11-04T03:13:35.347Z",
+  "generatedAt": "2026-11-04T06:24:41.277Z",
   "invokedVia": "direct",
   "args": [
     "--browsers",
@@ -21,25 +21,25 @@
     "node": "v22.23.4",
     "playwright": "1.64.1",
     "git": {
-      "commit": "7791a78",
+      "commit": "f2ae98f",
       "dirty": false
     }
   },
   "media": {
     "ffmpeg": "6.1.1-3ubuntu5",
-    "specHash": "45d1d26001eac593532d30783f3c407a12389fbc3bbe7a0f9c6c9e6f538ce518",
+    "specHash": "eab691739028f483d2bb1b312aeb7f578b6b840d935265628941a7342cb9b307",
     "files": {
       "v-vp9.mp4": {
-        "sha256": "5f05ca593f156d1681f6eca2ef2585734432ce99e09908a5d02536d238e6a786",
-        "bytes": 299703
+        "sha256": "4ad19966d9fad432ec40ad5b793250d1007cbddc13202527de97725ec4b85e83",
+        "bytes": 227192
       },
       "v-vp9.webm": {
-        "sha256": "3821c73c5f20b12578396d3b78377522b804dcda35daf591344c764d6307092f",
-        "bytes": 299482
+        "sha256": "8df5110bed7f29ac861613433d4c1208c85551846affffd7f9a00b07f795fa40",
+        "bytes": 226973
       },
       "v-vp8.webm": {
-        "sha256": "6944a33cc42766483a9d17dc2ee983b6d13451baa03bc13eb2ead79b42a2a784",
-        "bytes": 303156
+        "sha256": "707024fa225b7ffdfcfd096d21b50d96d6cbd73149aeff0a6f9b7444c3882b8a",
+        "bytes": 302504
       },
       "v-h264.mp4": {
         "sha256": "f502db23f2eac2d654c08edbbd54dda7774cf9d825b6296cce75644933f7ccab",
@@ -105,22 +105,22 @@
           "runs": [
             {
               "ok": true,
+              "currentTime": 1.03,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
               "currentTime": 1.01,
               "framesPresented": 32
             },
             {
               "ok": true,
-              "currentTime": 1.02,
-              "framesPresented": 32
-            },
-            {
-              "ok": true,
-              "currentTime": 1.04,
-              "framesPresented": 32
-            },
-            {
-              "ok": true,
-              "currentTime": 1.02,
+              "currentTime": 1.01,
               "framesPresented": 32
             },
             {
@@ -138,7 +138,7 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1.01,
+              "currentTime": 1.02,
               "framesPresented": 32
             },
             {
@@ -148,12 +148,12 @@
             },
             {
               "ok": true,
-              "currentTime": 1.01,
-              "framesPresented": 31
+              "currentTime": 1.03,
+              "framesPresented": 32
             },
             {
               "ok": true,
-              "currentTime": 1.03,
+              "currentTime": 1.01,
               "framesPresented": 32
             },
             {
@@ -171,18 +171,18 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1.01,
-              "framesPresented": 31
-            },
-            {
-              "ok": true,
               "currentTime": 1.03,
               "framesPresented": 32
             },
             {
               "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
               "currentTime": 1.01,
-              "framesPresented": 32
+              "framesPresented": 31
             },
             {
               "ok": true,
@@ -191,7 +191,7 @@
             },
             {
               "ok": true,
-              "currentTime": 1.02,
+              "currentTime": 1.01,
               "framesPresented": 32
             }
           ]
@@ -204,12 +204,7 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1.04,
-              "framesPresented": 32
-            },
-            {
-              "ok": true,
-              "currentTime": 1.04,
+              "currentTime": 1.02,
               "framesPresented": 32
             },
             {
@@ -219,7 +214,12 @@
             },
             {
               "ok": true,
-              "currentTime": 1.01,
+              "currentTime": 1.03,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
               "framesPresented": 32
             },
             {
@@ -237,7 +237,12 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1.02,
+              "currentTime": 1.03,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
               "framesPresented": 31
             },
             {
@@ -247,17 +252,12 @@
             },
             {
               "ok": true,
-              "currentTime": 1,
-              "framesPresented": 31
-            },
-            {
-              "ok": true,
-              "currentTime": 1,
-              "framesPresented": 31
-            },
-            {
-              "ok": true,
               "currentTime": 1.05,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.03,
               "framesPresented": 32
             }
           ]
@@ -270,12 +270,12 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1.02,
+              "currentTime": 1.01,
               "framesPresented": 31
             },
             {
               "ok": true,
-              "currentTime": 1.01,
+              "currentTime": 1.03,
               "framesPresented": 32
             },
             {
@@ -285,13 +285,13 @@
             },
             {
               "ok": true,
-              "currentTime": 1.01,
+              "currentTime": 1,
               "framesPresented": 31
             },
             {
               "ok": true,
-              "currentTime": 1.01,
-              "framesPresented": 31
+              "currentTime": 1.02,
+              "framesPresented": 32
             }
           ]
         },
@@ -303,12 +303,17 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1.02,
+              "currentTime": 1.03,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
               "framesPresented": 31
             },
             {
               "ok": true,
-              "currentTime": 1,
+              "currentTime": 1.03,
               "framesPresented": 31
             },
             {
@@ -320,11 +325,6 @@
               "ok": true,
               "currentTime": 1.01,
               "framesPresented": 32
-            },
-            {
-              "ok": true,
-              "currentTime": 1,
-              "framesPresented": 31
             }
           ]
         },
@@ -341,22 +341,22 @@
             },
             {
               "ok": true,
+              "currentTime": 1,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
               "currentTime": 1.01,
-              "framesPresented": 31
-            },
-            {
-              "ok": true,
-              "currentTime": 1,
-              "framesPresented": 31
-            },
-            {
-              "ok": true,
-              "currentTime": 1,
-              "framesPresented": 31
-            },
-            {
-              "ok": true,
-              "currentTime": 1.03,
               "framesPresented": 32
             }
           ]
@@ -369,7 +369,7 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1.26,
+              "currentTime": 1.25,
               "framesPresented": 0
             },
             {
@@ -379,7 +379,7 @@
             },
             {
               "ok": true,
-              "currentTime": 1.26,
+              "currentTime": 1.25,
               "framesPresented": 0
             },
             {
@@ -402,12 +402,12 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1.26,
+              "currentTime": 1.25,
               "framesPresented": 0
             },
             {
               "ok": true,
-              "currentTime": 1,
+              "currentTime": 1.26,
               "framesPresented": 0
             },
             {
@@ -422,7 +422,7 @@
             },
             {
               "ok": true,
-              "currentTime": 1.26,
+              "currentTime": 1.25,
               "framesPresented": 0
             }
           ]
@@ -435,12 +435,12 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1,
+              "currentTime": 1.25,
               "framesPresented": 0
             },
             {
               "ok": true,
-              "currentTime": 1.26,
+              "currentTime": 1.25,
               "framesPresented": 0
             },
             {
@@ -468,7 +468,12 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1.01,
+              "currentTime": 1.04,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.05,
               "framesPresented": 31
             },
             {
@@ -483,13 +488,8 @@
             },
             {
               "ok": true,
-              "currentTime": 1.01,
+              "currentTime": 1.04,
               "framesPresented": 32
-            },
-            {
-              "ok": true,
-              "currentTime": 1.05,
-              "framesPresented": 31
             }
           ]
         },
@@ -550,28 +550,28 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1,
-              "framesPresented": 31
+              "currentTime": 1.04,
+              "framesPresented": 32
             },
             {
               "ok": true,
-              "currentTime": 1,
+              "currentTime": 1.01,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
               "framesPresented": 31
             },
             {
               "ok": true,
               "currentTime": 1.02,
-              "framesPresented": 31
+              "framesPresented": 32
             },
             {
               "ok": true,
               "currentTime": 1,
               "framesPresented": 31
-            },
-            {
-              "ok": true,
-              "currentTime": 1.05,
-              "framesPresented": 32
             }
           ]
         },
@@ -582,22 +582,22 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1,
-              "framesPresented": 0
-            },
-            {
-              "ok": true,
-              "currentTime": 1.26,
-              "framesPresented": 0
-            },
-            {
-              "ok": true,
               "currentTime": 1.25,
               "framesPresented": 0
             },
             {
               "ok": true,
               "currentTime": 1.26,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.26,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.24,
               "framesPresented": 0
             },
             {
@@ -614,13 +614,8 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1,
-              "framesPresented": 31
-            },
-            {
-              "ok": true,
-              "currentTime": 1.04,
-              "framesPresented": 31
+              "currentTime": 1.01,
+              "framesPresented": 32
             },
             {
               "ok": true,
@@ -629,12 +624,17 @@
             },
             {
               "ok": true,
-              "currentTime": 1,
-              "framesPresented": 30
+              "currentTime": 1.01,
+              "framesPresented": 31
             },
             {
               "ok": true,
-              "currentTime": 1.03,
+              "currentTime": 1.02,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
               "framesPresented": 32
             }
           ]
@@ -646,7 +646,7 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1.26,
+              "currentTime": 1.24,
               "framesPresented": 0
             },
             {
@@ -661,12 +661,12 @@
             },
             {
               "ok": true,
-              "currentTime": 1.26,
+              "currentTime": 1.25,
               "framesPresented": 0
             },
             {
               "ok": true,
-              "currentTime": 1.26,
+              "currentTime": 1.25,
               "framesPresented": 0
             }
           ]
@@ -681,22 +681,22 @@
           "runs": [
             {
               "ok": true,
+              "currentTime": 1.03,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
               "currentTime": 1.02,
-              "framesPresented": 31
-            },
-            {
-              "ok": true,
-              "currentTime": 1.01,
               "framesPresented": 32
             },
             {
               "ok": true,
-              "currentTime": 1.01,
-              "framesPresented": 32
-            },
-            {
-              "ok": true,
-              "currentTime": 1.01,
+              "currentTime": 1.02,
               "framesPresented": 32
             },
             {
@@ -714,12 +714,17 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1,
+              "currentTime": 1.02,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
               "framesPresented": 31
             },
             {
               "ok": true,
-              "currentTime": 1.02,
+              "currentTime": 1.03,
               "framesPresented": 32
             },
             {
@@ -729,12 +734,7 @@
             },
             {
               "ok": true,
-              "currentTime": 1.02,
-              "framesPresented": 32
-            },
-            {
-              "ok": true,
-              "currentTime": 1.03,
+              "currentTime": 1.01,
               "framesPresented": 32
             }
           ]
@@ -771,6 +771,16 @@
           "runs": [
             {
               "ok": true,
+              "currentTime": 1,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
               "currentTime": 1.01,
               "framesPresented": 31
             },
@@ -782,16 +792,6 @@
             {
               "ok": true,
               "currentTime": 1,
-              "framesPresented": 31
-            },
-            {
-              "ok": true,
-              "currentTime": 1,
-              "framesPresented": 31
-            },
-            {
-              "ok": true,
-              "currentTime": 1.01,
               "framesPresented": 31
             }
           ]
@@ -837,12 +837,12 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1,
+              "currentTime": 1.01,
               "framesPresented": 31
             },
             {
               "ok": true,
-              "currentTime": 1.01,
+              "currentTime": 1,
               "framesPresented": 31
             },
             {
@@ -890,7 +890,7 @@
             },
             {
               "ok": true,
-              "currentTime": 1.01,
+              "currentTime": 1,
               "framesPresented": 31
             }
           ]
@@ -903,7 +903,7 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1.01,
+              "currentTime": 1,
               "framesPresented": 31
             },
             {
@@ -918,12 +918,12 @@
             },
             {
               "ok": true,
-              "currentTime": 1.01,
+              "currentTime": 1,
               "framesPresented": 31
             },
             {
               "ok": true,
-              "currentTime": 1.01,
+              "currentTime": 1,
               "framesPresented": 31
             }
           ]
@@ -936,16 +936,6 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1.01,
-              "framesPresented": 31
-            },
-            {
-              "ok": true,
-              "currentTime": 1.01,
-              "framesPresented": 31
-            },
-            {
-              "ok": true,
               "currentTime": 1,
               "framesPresented": 31
             },
@@ -957,6 +947,16 @@
             {
               "ok": true,
               "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
               "framesPresented": 31
             }
           ]
@@ -969,12 +969,12 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1.01,
+              "currentTime": 1,
               "framesPresented": 31
             },
             {
               "ok": true,
-              "currentTime": 1.01,
+              "currentTime": 1,
               "framesPresented": 31
             },
             {
@@ -1007,22 +1007,22 @@
             },
             {
               "ok": true,
-              "currentTime": 1.01,
+              "currentTime": 1,
               "framesPresented": 31
             },
             {
               "ok": true,
-              "currentTime": 1.01,
+              "currentTime": 1,
               "framesPresented": 31
             },
             {
               "ok": true,
-              "currentTime": 1.01,
+              "currentTime": 1,
               "framesPresented": 31
             },
             {
               "ok": true,
-              "currentTime": 1.01,
+              "currentTime": 1,
               "framesPresented": 31
             }
           ]
@@ -1035,12 +1035,12 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1.12,
+              "currentTime": 1.13,
               "framesPresented": 0
             },
             {
               "ok": true,
-              "currentTime": 1.12,
+              "currentTime": 1.13,
               "framesPresented": 0
             },
             {
@@ -1068,7 +1068,7 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1.12,
+              "currentTime": 1.13,
               "framesPresented": 0
             },
             {
@@ -1078,7 +1078,7 @@
             },
             {
               "ok": true,
-              "currentTime": 1.12,
+              "currentTime": 1.13,
               "framesPresented": 0
             },
             {
@@ -1101,12 +1101,12 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1.12,
+              "currentTime": 1.13,
               "framesPresented": 0
             },
             {
               "ok": true,
-              "currentTime": 1.12,
+              "currentTime": 1.13,
               "framesPresented": 0
             },
             {
@@ -1121,7 +1121,7 @@
             },
             {
               "ok": true,
-              "currentTime": 1.12,
+              "currentTime": 1.14,
               "framesPresented": 0
             }
           ]
@@ -1139,22 +1139,22 @@
             },
             {
               "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
               "currentTime": 1,
               "framesPresented": 31
             },
             {
               "ok": true,
-              "currentTime": 1.01,
+              "currentTime": 1,
               "framesPresented": 31
             },
             {
               "ok": true,
-              "currentTime": 1.01,
-              "framesPresented": 31
-            },
-            {
-              "ok": true,
-              "currentTime": 1.01,
+              "currentTime": 1,
               "framesPresented": 31
             }
           ]
@@ -1167,7 +1167,12 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1.01,
+              "currentTime": 1,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
               "framesPresented": 31
             },
             {
@@ -1182,12 +1187,7 @@
             },
             {
               "ok": true,
-              "currentTime": 1.01,
-              "framesPresented": 31
-            },
-            {
-              "ok": true,
-              "currentTime": 1.01,
+              "currentTime": 1,
               "framesPresented": 31
             }
           ]
@@ -1201,7 +1201,7 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1,
+              "currentTime": 1.01,
               "framesPresented": 31
             },
             {
@@ -1221,7 +1221,7 @@
             },
             {
               "ok": true,
-              "currentTime": 1,
+              "currentTime": 1.01,
               "framesPresented": 31
             }
           ]
@@ -1233,27 +1233,27 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1.12,
+              "currentTime": 1.13,
               "framesPresented": 0
             },
             {
               "ok": true,
-              "currentTime": 1.12,
+              "currentTime": 1.13,
               "framesPresented": 0
             },
             {
               "ok": true,
-              "currentTime": 1.12,
+              "currentTime": 1.13,
               "framesPresented": 0
             },
             {
               "ok": true,
-              "currentTime": 1.12,
+              "currentTime": 1.13,
               "framesPresented": 0
             },
             {
               "ok": true,
-              "currentTime": 1.12,
+              "currentTime": 1.13,
               "framesPresented": 0
             }
           ]
@@ -1275,7 +1275,7 @@
             },
             {
               "ok": true,
-              "currentTime": 1,
+              "currentTime": 1.01,
               "framesPresented": 31
             },
             {
@@ -1297,27 +1297,27 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1.12,
+              "currentTime": 1.13,
               "framesPresented": 0
             },
             {
               "ok": true,
-              "currentTime": 1.12,
+              "currentTime": 1.13,
               "framesPresented": 0
             },
             {
               "ok": true,
-              "currentTime": 1.12,
+              "currentTime": 1.13,
               "framesPresented": 0
             },
             {
               "ok": true,
-              "currentTime": 1.12,
+              "currentTime": 1.13,
               "framesPresented": 0
             },
             {
               "ok": true,
-              "currentTime": 1.12,
+              "currentTime": 1.13,
               "framesPresented": 0
             }
           ]
@@ -1332,12 +1332,45 @@
           "runs": [
             {
               "ok": true,
-              "currentTime": 1,
+              "currentTime": 1.01,
               "framesPresented": 31
             },
             {
               "ok": true,
-              "currentTime": 1,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            }
+          ]
+        },
+        "prefetch": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
               "framesPresented": 31
             },
             {
@@ -1352,40 +1385,7 @@
             },
             {
               "ok": true,
-              "currentTime": 1,
-              "framesPresented": 31
-            }
-          ]
-        },
-        "prefetch": {
-          "attempts": 5,
-          "passes": 5,
-          "reliability": "ok",
-          "typeSupportedClaim": true,
-          "runs": [
-            {
-              "ok": true,
-              "currentTime": 1,
-              "framesPresented": 31
-            },
-            {
-              "ok": true,
-              "currentTime": 1,
-              "framesPresented": 31
-            },
-            {
-              "ok": true,
-              "currentTime": 1,
-              "framesPresented": 31
-            },
-            {
-              "ok": true,
-              "currentTime": 1,
-              "framesPresented": 31
-            },
-            {
-              "ok": true,
-              "currentTime": 1,
+              "currentTime": 1.01,
               "framesPresented": 31
             }
           ]
@@ -1416,6 +1416,78 @@
       "cases": {
         "cmaf-vp9-aac": {
           "attempts": 5,
+          "passes": 0,
+          "reliability": "fail",
+          "typeSupportedClaim": true,
+          "failure": {
+            "stage": "play",
+            "error": "NotSupportedError: The operation is not supported.",
+            "mediaError": {
+              "code": 4,
+              "message": "Failed to push buffer"
+            },
+            "count": 5
+          },
+          "runs": [
+            {
+              "ok": false,
+              "stage": "play",
+              "error": "NotSupportedError: The operation is not supported.",
+              "mediaError": {
+                "code": 4,
+                "message": "Failed to push buffer"
+              },
+              "currentTime": 0,
+              "framesPresented": 0
+            },
+            {
+              "ok": false,
+              "stage": "play",
+              "error": "NotSupportedError: The operation is not supported.",
+              "mediaError": {
+                "code": 4,
+                "message": "Failed to push buffer"
+              },
+              "currentTime": 0,
+              "framesPresented": 0
+            },
+            {
+              "ok": false,
+              "stage": "play",
+              "error": "NotSupportedError: The operation is not supported.",
+              "mediaError": {
+                "code": 4,
+                "message": "Failed to push buffer"
+              },
+              "currentTime": 0,
+              "framesPresented": 0
+            },
+            {
+              "ok": false,
+              "stage": "play",
+              "error": "NotSupportedError: The operation is not supported.",
+              "mediaError": {
+                "code": 4,
+                "message": "Failed to push buffer"
+              },
+              "currentTime": 0,
+              "framesPresented": 0
+            },
+            {
+              "ok": false,
+              "stage": "play",
+              "error": "NotSupportedError: The operation is not supported.",
+              "mediaError": {
+                "code": 4,
+                "message": "Failed to push buffer"
+              },
+              "currentTime": 0,
+              "framesPresented": 0
+            }
+          ]
+        },
+        "cmaf-vp9-opus": {
+          "attempts": 5,
           "passes": 2,
           "reliability": "intermittent",
           "typeSupportedClaim": true,
@@ -1441,15 +1513,9 @@
               "framesPresented": 0
             },
             {
-              "ok": false,
-              "stage": "play",
-              "error": "NotSupportedError: The operation is not supported.",
-              "mediaError": {
-                "code": 4,
-                "message": "Failed to push buffer"
-              },
-              "currentTime": 0,
-              "framesPresented": 0
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 30
             },
             {
               "ok": false,
@@ -1466,66 +1532,6 @@
               "ok": true,
               "currentTime": 1,
               "framesPresented": 30
-            },
-            {
-              "ok": true,
-              "currentTime": 1,
-              "framesPresented": 30
-            }
-          ]
-        },
-        "cmaf-vp9-opus": {
-          "attempts": 5,
-          "passes": 1,
-          "reliability": "intermittent",
-          "typeSupportedClaim": true,
-          "failure": {
-            "stage": "play",
-            "error": "NotSupportedError: The operation is not supported.",
-            "mediaError": {
-              "code": 4,
-              "message": "Failed to push buffer"
-            },
-            "count": 4
-          },
-          "runs": [
-            {
-              "ok": false,
-              "stage": "play",
-              "error": "NotSupportedError: The operation is not supported.",
-              "mediaError": {
-                "code": 4,
-                "message": "Failed to push buffer"
-              },
-              "currentTime": 0,
-              "framesPresented": 0
-            },
-            {
-              "ok": false,
-              "stage": "play",
-              "error": "NotSupportedError: The operation is not supported.",
-              "mediaError": {
-                "code": 4,
-                "message": "Failed to push buffer"
-              },
-              "currentTime": 0,
-              "framesPresented": 0
-            },
-            {
-              "ok": true,
-              "currentTime": 1,
-              "framesPresented": 30
-            },
-            {
-              "ok": false,
-              "stage": "play",
-              "error": "NotSupportedError: The operation is not supported.",
-              "mediaError": {
-                "code": 4,
-                "message": "Failed to push buffer"
-              },
-              "currentTime": 0,
-              "framesPresented": 0
             },
             {
               "ok": false,
@@ -1542,8 +1548,8 @@
         },
         "webm-vp9-opus": {
           "attempts": 5,
-          "passes": 1,
-          "reliability": "intermittent",
+          "passes": 0,
+          "reliability": "fail",
           "typeSupportedClaim": true,
           "failure": {
             "stage": "play",
@@ -1552,7 +1558,7 @@
               "code": 4,
               "message": "Failed to push buffer"
             },
-            "count": 4
+            "count": 5
           },
           "runs": [
             {
@@ -1589,9 +1595,15 @@
               "framesPresented": 0
             },
             {
-              "ok": true,
-              "currentTime": 1,
-              "framesPresented": 30
+              "ok": false,
+              "stage": "play",
+              "error": "NotSupportedError: The operation is not supported.",
+              "mediaError": {
+                "code": 4,
+                "message": "Failed to push buffer"
+              },
+              "currentTime": 0,
+              "framesPresented": 0
             },
             {
               "ok": false,
@@ -1649,11 +1661,6 @@
               "framesPresented": 0
             },
             {
-              "ok": true,
-              "currentTime": 1,
-              "framesPresented": 30
-            },
-            {
               "ok": false,
               "stage": "play",
               "error": "NotSupportedError: The operation is not supported.",
@@ -1663,70 +1670,15 @@
               },
               "currentTime": 0,
               "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 30
             }
           ]
         },
         "vp9-fmp4-video": {
-          "attempts": 5,
-          "passes": 2,
-          "reliability": "intermittent",
-          "typeSupportedClaim": true,
-          "failure": {
-            "stage": "play",
-            "error": "NotSupportedError: The operation is not supported.",
-            "mediaError": {
-              "code": 4,
-              "message": "Failed to push buffer"
-            },
-            "count": 3
-          },
-          "runs": [
-            {
-              "ok": true,
-              "currentTime": 1,
-              "framesPresented": 30
-            },
-            {
-              "ok": false,
-              "stage": "play",
-              "error": "NotSupportedError: The operation is not supported.",
-              "mediaError": {
-                "code": 4,
-                "message": "Failed to push buffer"
-              },
-              "currentTime": 0,
-              "framesPresented": 0
-            },
-            {
-              "ok": true,
-              "currentTime": 1,
-              "framesPresented": 30
-            },
-            {
-              "ok": false,
-              "stage": "play",
-              "error": "NotSupportedError: The operation is not supported.",
-              "mediaError": {
-                "code": 4,
-                "message": "Failed to push buffer"
-              },
-              "currentTime": 0,
-              "framesPresented": 0
-            },
-            {
-              "ok": false,
-              "stage": "play",
-              "error": "NotSupportedError: The operation is not supported.",
-              "mediaError": {
-                "code": 4,
-                "message": "Failed to push buffer"
-              },
-              "currentTime": 0,
-              "framesPresented": 0
-            }
-          ]
-        },
-        "vp9-webm-video": {
           "attempts": 5,
           "passes": 1,
           "reliability": "intermittent",
@@ -1789,6 +1741,66 @@
               },
               "currentTime": 0,
               "framesPresented": 0
+            }
+          ]
+        },
+        "vp9-webm-video": {
+          "attempts": 5,
+          "passes": 2,
+          "reliability": "intermittent",
+          "typeSupportedClaim": true,
+          "failure": {
+            "stage": "play",
+            "error": "NotSupportedError: The operation is not supported.",
+            "mediaError": {
+              "code": 4,
+              "message": "Failed to push buffer"
+            },
+            "count": 3
+          },
+          "runs": [
+            {
+              "ok": false,
+              "stage": "play",
+              "error": "NotSupportedError: The operation is not supported.",
+              "mediaError": {
+                "code": 4,
+                "message": "Failed to push buffer"
+              },
+              "currentTime": 0,
+              "framesPresented": 0
+            },
+            {
+              "ok": false,
+              "stage": "play",
+              "error": "NotSupportedError: The operation is not supported.",
+              "mediaError": {
+                "code": 4,
+                "message": "Failed to push buffer"
+              },
+              "currentTime": 0,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 30
+            },
+            {
+              "ok": false,
+              "stage": "play",
+              "error": "NotSupportedError: The operation is not supported.",
+              "mediaError": {
+                "code": 4,
+                "message": "Failed to push buffer"
+              },
+              "currentTime": 0,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 30
             }
           ]
         },
@@ -1866,8 +1878,8 @@
         },
         "vp8-webm-video": {
           "attempts": 5,
-          "passes": 1,
-          "reliability": "intermittent",
+          "passes": 0,
+          "reliability": "fail",
           "typeSupportedClaim": true,
           "failure": {
             "stage": "play",
@@ -1876,13 +1888,19 @@
               "code": 4,
               "message": "Failed to push buffer"
             },
-            "count": 4
+            "count": 5
           },
           "runs": [
             {
-              "ok": true,
-              "currentTime": 1,
-              "framesPresented": 30
+              "ok": false,
+              "stage": "play",
+              "error": "NotSupportedError: The operation is not supported.",
+              "mediaError": {
+                "code": 4,
+                "message": "Failed to push buffer"
+              },
+              "currentTime": 0,
+              "framesPresented": 0
             },
             {
               "ok": false,
@@ -1932,7 +1950,7 @@
         },
         "aac-fmp4-audio": {
           "attempts": 5,
-          "passes": 3,
+          "passes": 1,
           "reliability": "intermittent",
           "typeSupportedClaim": true,
           "failure": {
@@ -1942,12 +1960,12 @@
               "code": 4,
               "message": "Failed to push buffer"
             },
-            "count": 2
+            "count": 4
           },
           "runs": [
             {
               "ok": true,
-              "currentTime": 1.2,
+              "currentTime": 1.17,
               "framesPresented": 0
             },
             {
@@ -1962,8 +1980,14 @@
               "framesPresented": 0
             },
             {
-              "ok": true,
-              "currentTime": 1.2,
+              "ok": false,
+              "stage": "currentTime",
+              "error": "MediaError 4: Failed to push buffer",
+              "mediaError": {
+                "code": 4,
+                "message": "Failed to push buffer"
+              },
+              "currentTime": 0,
               "framesPresented": 0
             },
             {
@@ -1978,16 +2002,22 @@
               "framesPresented": 0
             },
             {
-              "ok": true,
-              "currentTime": 1.2,
+              "ok": false,
+              "stage": "currentTime",
+              "error": "MediaError 4: Failed to push buffer",
+              "mediaError": {
+                "code": 4,
+                "message": "Failed to push buffer"
+              },
+              "currentTime": 0,
               "framesPresented": 0
             }
           ]
         },
         "opus-fmp4-audio": {
           "attempts": 5,
-          "passes": 3,
-          "reliability": "intermittent",
+          "passes": 0,
+          "reliability": "fail",
           "typeSupportedClaim": true,
           "failure": {
             "stage": "currentTime",
@@ -1996,12 +2026,18 @@
               "code": 4,
               "message": "Failed to push buffer"
             },
-            "count": 2
+            "count": 5
           },
           "runs": [
             {
-              "ok": true,
-              "currentTime": 1.22,
+              "ok": false,
+              "stage": "currentTime",
+              "error": "MediaError 4: Failed to push buffer",
+              "mediaError": {
+                "code": 4,
+                "message": "Failed to push buffer"
+              },
+              "currentTime": 0,
               "framesPresented": 0
             },
             {
@@ -2016,8 +2052,14 @@
               "framesPresented": 0
             },
             {
-              "ok": true,
-              "currentTime": 1.23,
+              "ok": false,
+              "stage": "currentTime",
+              "error": "MediaError 4: Failed to push buffer",
+              "mediaError": {
+                "code": 4,
+                "message": "Failed to push buffer"
+              },
+              "currentTime": 0,
               "framesPresented": 0
             },
             {
@@ -2032,8 +2074,14 @@
               "framesPresented": 0
             },
             {
-              "ok": true,
-              "currentTime": 1.23,
+              "ok": false,
+              "stage": "currentTime",
+              "error": "MediaError 4: Failed to push buffer",
+              "mediaError": {
+                "code": 4,
+                "message": "Failed to push buffer"
+              },
+              "currentTime": 0,
               "framesPresented": 0
             }
           ]
@@ -2065,6 +2113,11 @@
               "framesPresented": 0
             },
             {
+              "ok": true,
+              "currentTime": 1.22,
+              "framesPresented": 0
+            },
+            {
               "ok": false,
               "stage": "currentTime",
               "error": "MediaError 4: Failed to push buffer",
@@ -2073,11 +2126,6 @@
                 "message": "Failed to push buffer"
               },
               "currentTime": 0,
-              "framesPresented": 0
-            },
-            {
-              "ok": true,
-              "currentTime": 1.22,
               "framesPresented": 0
             },
             {
@@ -2106,7 +2154,7 @@
         },
         "av1-fmp4-video": {
           "attempts": 5,
-          "passes": 3,
+          "passes": 2,
           "reliability": "intermittent",
           "typeSupportedClaim": true,
           "failure": {
@@ -2116,7 +2164,7 @@
               "code": 4,
               "message": "Failed to push buffer"
             },
-            "count": 2
+            "count": 3
           },
           "runs": [
             {
@@ -2152,15 +2200,21 @@
               "framesPresented": 0
             },
             {
-              "ok": true,
-              "currentTime": 1,
-              "framesPresented": 30
+              "ok": false,
+              "stage": "play",
+              "error": "NotSupportedError: The operation is not supported.",
+              "mediaError": {
+                "code": 4,
+                "message": "Failed to push buffer"
+              },
+              "currentTime": 0,
+              "framesPresented": 0
             }
           ]
         },
         "hevc-fmp4-video": {
           "attempts": 5,
-          "passes": 1,
+          "passes": 2,
           "reliability": "intermittent",
           "typeSupportedClaim": true,
           "failure": {
@@ -2170,19 +2224,13 @@
               "code": 4,
               "message": "Failed to push buffer"
             },
-            "count": 4
+            "count": 3
           },
           "runs": [
             {
-              "ok": false,
-              "stage": "play",
-              "error": "NotSupportedError: The operation is not supported.",
-              "mediaError": {
-                "code": 4,
-                "message": "Failed to push buffer"
-              },
-              "currentTime": 0,
-              "framesPresented": 0
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 30
             },
             {
               "ok": true,
@@ -2365,7 +2413,7 @@
             {
               "ok": true,
               "currentTime": 1,
-              "framesPresented": 31
+              "framesPresented": 30
             },
             {
               "ok": true,
