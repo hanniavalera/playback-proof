@@ -31,7 +31,7 @@ make a wrong segment, a skipped segment or a loop restart visible and audible. O
 
 ## ADR-041: Each stream is a pure function of its own spec; the cache key hashes the spec and the resolved ffmpeg arguments
 
-**Context.** The catalog has four streams (a fifth, ClearKey, is a stretch goal: ADR-049). `vod-cmaf-short` (12 s) and `live-cmaf` (24 s) look like prefixes of `vod-cmaf` (60 s).
+**Context.** The catalog has five streams (the fifth, ClearKey, is the same pipeline with an encryption step: ADR-049). `vod-cmaf-short` (12 s) and `live-cmaf` (24 s) look like prefixes of `vod-cmaf` (60 s).
 The cache must change whenever anything that changes the bytes changes, and only then.
 
 **Decision.**
@@ -146,13 +146,13 @@ against ffprobe on every segment instead of trusting it. Running it on ffmpeg 6.
   forced keyframes, AAC `-aac_coder twoloop -profile:a aac_low`, Opus `-vbr off -frame_duration 20 -compression_level 10`.
 - **`-row-mt 0` is pinned, and that is the finding.** With `-row-mt 1` the libvpx VP9 bitstream depends on whether the encoder runs on one thread or on several: on a 6 s 720p clip, 1 thread gives md5 `a7f1e0de...` (1,310,205 bytes), 2 and 4 threads give
   `4ee7adae...` (1,311,541 bytes). With `-row-mt 0` the output is identical for 1, 2, 3 and 4 threads (`a7f1e0de...`). A unit test (`produces identical bytes whatever the ffmpeg thread count`) fails when the flag is set to 1 (checked by mutation) and a spec test pins it.
-- **Experiment on the whole catalog**, two clean caches, the same machine and ffmpeg 9.0.2: `--threads 4` took 109.9 s and `--threads 1` took 181.2 s. **All 268 files have the identical sha256** (124 + 28 + 64 + 52 per stream, compared one by one from the two `stream.json` files)
-  and the four `contentHash` values are equal. Subsets generated earlier in the work reproduced the same hashes as well.
+- **Experiment on the whole catalog**, two clean caches, the same machine and ffmpeg 9.0.2: `--threads 4` took 112.2 s and `--threads 1` took 183.0 s. **All 282 files are identical byte for byte** (124 + 28 + 64 + 52 + 14 per stream; compared with `shasum` over both cache trees, not only through the hashes recorded in `stream.json`)
+  and the five `contentHash` values are equal. Subsets generated earlier in the work reproduced the same hashes as well, and the four older streams kept their hashes when the encrypted stream was added (ADR-049 touched none of their bytes).
 - The thread count is not part of the cache key.
 
 **Not promised.** Byte equality across ffmpeg versions, builds or platforms: libvpx has different SIMD paths per CPU, `aevalsrc` evaluates `sin` with the platform's libm, the native AAC encoder changes between releases, and a muxer may write the same element with another header size.
-The version is recorded in `stream.json` and `StreamInfo.ffmpegVersion`. Measured: the four streams generated in Docker with Ubuntu's ffmpeg 6.1.1 (aarch64, 4 CPUs) have the `contentHash` `cac90e8344ae` (`vod-cmaf`), `0757d6892b9e` (`vod-cmaf-short`), `637a981739b5` (`vod-webm`) and
-`7baf3de387ba` (`live-cmaf`) in two clean runs, run to run identical; the macOS run with ffmpeg 9.0.2 has `66738540703f`, `52288c8dbedb`, `ed602bbaec0d` and `edf24480e424`. Same specs, same spec hashes, different bytes: both statements above are true at the same time.
+The version is recorded in `stream.json` and `StreamInfo.ffmpegVersion`. Measured: the streams generated in Docker with Ubuntu's ffmpeg 6.1.1 (aarch64, 4 CPUs) have the `contentHash` `cac90e8344ae` (`vod-cmaf`), `0757d6892b9e` (`vod-cmaf-short`), `637a981739b5` (`vod-webm`),
+`7baf3de387ba` (`live-cmaf`) and `d5fc537f25cd` (`vod-cmaf-clearkey`), identical in every clean run (three for the first four streams, two for the encrypted one); the macOS run with ffmpeg 9.0.2 has `66738540703f`, `52288c8dbedb`, `ed602bbaec0d`, `edf24480e424` and `f1d6817ae459`. Same specs, same spec hashes, different bytes: both statements above are true at the same time.
 
 **Alternatives considered.** Check the streams in (50 MB of binary in git, and no way to see what made them). Two-pass VBR (slower, and no determinism benefit). Ignore thread dependence and pin `-threads 1` (the encode takes about 60 % longer on this machine).
 
@@ -193,7 +193,7 @@ read across the boundary. The `mfhd` sequence number is the one thing I know is 
 - "Complete" means: `stream.json` matches the spec hash and the generator version, the index satisfies its invariants, `contentHash` matches the file hashes, and every listed file exists with its recorded size. That costs milliseconds, is what a no-op run and `MediaStore.has()` use, and starts no ffmpeg.
   `--verify` additionally re-hashes every file and fails, naming the file, on a mismatch.
 - `createMediaStore` decides readiness once, at construction; it never throws for a missing or damaged stream and says why in the error of `index()`.
-- Real run: first generation 109.9 s; the second run 0.46 s including Node and tsx start-up (no ffmpeg is started: a unit test proves it by pointing `PB_FFMPEG` at nothing); `--verify` of all 42.42 MB in 268 files, 0.54 s for the whole command.
+- Real run: first generation 112.2 s; the second run 0.68 s including Node and tsx start-up (no ffmpeg is started: a unit test proves it by pointing `PB_FFMPEG` at nothing); `--verify` of all 43.46 MB in 282 files, 0.45 s for the whole command.
 
 **Alternatives considered.** Generate into the final directory and write `stream.json` last (a crash leaves something that looks like a stream, and a reader can see it half written). Hash every file on every start (cheap here, but it blurs "complete" and "intact").
 A lock file (needs stale-lock handling, and the rename already gives the atomicity).
@@ -217,27 +217,57 @@ A lock file (needs stale-lock handling, and the rename already gives the atomici
    fetches the init segment and every listed segment over HTTP, and compares the times the MPD **claims** (`S@t`, `S@d`) with the times ffprobe **finds** in the bytes, plus codecs, sizes, channels, the declared bandwidth against the measured peak, the `UTCTiming` URL and the same live windows.
    Whenever the ffmpeg build has a DASH demuxer, the tool also reads the MPD through it.
 5. It prints a table (stream, representations, segments, bytes, duration, content hash, checks passed), lists skipped checks, and exits non-zero on any failure.
+6. For the encrypted stream, ffmpeg decrypts every representation with the key and has to reproduce the unencrypted twin (packets and frames), must fail without the key, and the init segments and the manifest must name the same key id (ADR-049).
 
 Findings that came from running it, not from design: (a) the Homebrew ffmpeg 9.0.2 of the dev host has **no DASH demuxer** (it is built without libxml2; Ubuntu's 6.1.1 has one), so `ffprobe manifest.mpd` cannot be the DASH check there: hence the independent client (the demuxer
 checks are reported as skipped, not as passed) and the Docker run, where the real demuxer exists. (b) ffprobe reports Opus-in-WebM packets at *block timecode minus the track's `CodecDelay`* (6.5 ms, 7 ticks): the check applies that documented offset; the cluster timecodes themselves are on
 the 2000 ms grid. (c) ffprobe leaves video packet durations empty in fMP4, so a video segment's duration is taken from where the next one starts. (d) Running generation under ffmpeg 6.1 in Docker found the missing `DefaultDuration` (ADR-044). (e) The same run found two defects of the tool itself that the dev host could not show:
 ffprobe 6.1 omits the duration of the first packet of a stream (9.0 prints it), which the tool now fills in from the timestamp spacing for that one packet (any other missing duration still fails the checks that need it), and the DASH-demuxer path used `-map` before `-i` and the HLS-only `-live_start_index`,
-which the 9.0.2 host never executed because it has no DASH demuxer. After the fixes the Docker run passes 345 of 345 checks with nothing skipped, including both live windows through the real DASH demuxer, and the loop-boundary window is gapless in all four tracks.
+which the 9.0.2 host never executed because it has no DASH demuxer. After the fixes the Docker run passes 407 of 407 checks with nothing skipped (all five streams, including both live windows and the encrypted stream through the real DASH demuxer), and the loop-boundary window is gapless in all four tracks.
 
 **Alternatives considered.** Validate with the lab's own parser (circular). Only `ffprobe manifest.mpd` (does not exist for DASH on the dev host, and a demuxer's live mode tolerates things a player does not). Browsers (not allowed for this component, and they would test the browser).
 
-**Consequences.** The tool takes about 19 s for the catalog on this machine and needs ffmpeg and ffprobe (as does generation). Its DASH route is a reading of the standard that I wrote, which is why the builders are also tested by a round trip through it and by a strict XML reader,
+**Consequences.** The tool takes about 23 s for the catalog on this machine and needs ffmpeg and ffprobe (as does generation). Its DASH route is a reading of the standard that I wrote, which is why the builders are also tested by a round trip through it and by a strict XML reader,
 and why the demuxer-based check runs in Docker. Ports 4620 to 4629 only; the server is always closed.
 
 **Defending it.** "Verification that shares code with the thing it verifies is a mirror. This one asks ffprobe what is in the bytes and asks the manifest what it claims, and fails if they differ. When the tool I wanted, the DASH demuxer, was not on this machine, I said so,
 built the next best independent thing, and ran the real one in Docker."
 
-## ADR-049: ClearKey (`vod-cmaf-clearkey`) is not in the catalog yet
+## ADR-049: ClearKey (`vod-cmaf-clearkey`): CENC AES-CTR applied by the lab after the cut
 
-**Status.** Not implemented in this commit; the next commits implement it or replace this entry with the reason they could not.
+**Context.** The brief makes an encrypted 12 s stream (`v360` + `a-aac`, CENC AES-CTR, a public throw-away key pair, DASH only, `ContentProtection` in the manifest) a stretch goal. It prefers ffmpeg's `-encryption_scheme cenc-aes-ctr`, and allows writing the encryption by hand only when that is small and ffmpeg's own decryption (`-decryption_key`) can verify it.
 
-**Context.** The brief makes an encrypted 12 s stream (`v360` + `a-aac`, CENC AES-CTR, a public throw-away key, DASH only) a stretch goal, to be done with ffmpeg's built-in encryption or reported as not done.
+**What was measured before deciding.**
 
-**Probe (measured, ffmpeg 9.0.2).** `-encryption_scheme cenc-aes-ctr -encryption_key <hex> -encryption_kid <hex>` on the pinned VP9 plan writes `encv` with `sinf` (`frma`, `schm` = `cenc`, `tenc` with the key id and an 8-byte per-sample IV), and per fragment `senc` (one IV per sample, no subsamples),
-`saiz` and `saio`. Two runs under `-fflags +bitexact` are byte-identical (the IV is a counter from zero). `ffmpeg -decryption_key` turns it back into exactly the clear stream: 360 of 360 packets and 360 of 360 decoded frames have equal md5 against an unencrypted encode with the same arguments, and decoding without the key
-or with a wrong key fails. The cost for this pipeline is that the audio is re-cut on the 2 s grid (ADR-042), so the per-sample `senc` entries have to follow their samples into the new segments, and the init, the DASH builder and the verification need to know about protection.
+- ffmpeg 9.0.2 (the dev host) can do it: with the pinned VP9 plan the muxer writes `encv` with `sinf`/`tenc` and, in every `traf`, `senc`, `saio` and `saiz`; two runs under `-fflags +bitexact` are byte-identical (the IV is a counter from 0);
+  `ffmpeg -decryption_key` returns exactly the unencrypted stream (360 of 360 packets and decoded frames equal) and fails without the key or with a wrong one.
+- **ffmpeg 6.1.1, the version of the CI image (Ubuntu 24.04), cannot.** It encrypts the samples but writes no per-fragment information: `senc`, `saio` and `saiz` appear once, empty, inside the `stbl` of the init segment, and none of the fragments' `traf` boxes has them. Its own demuxer then cannot read what its muxer wrote:
+  on a 6 s clip (180 frames) `ffmpeg -decryption_key ... -c copy` returns 0 packets (the unencrypted twin: 180), and without the key it stops with "saio atom found without saiz". None of six `-movflags` combinations changes that. The upstream source says the same:
+  `ff_mov_cenc_write_stbl_atoms` is called from the fragment writer only from release 8.0 on (`libavformat/movenc.c` read at the tags n6.1.1, n7.0, n7.1, n8.0).
+- The lab re-cuts the audio on its own grid and drops the AAC priming sample (ADR-042), so per-sample information has to be sliced and moved anyway, whoever writes it.
+
+**Decision.** The lab encrypts, after the cut, with one code path that behaves the same on every ffmpeg (`src/server/media/cenc.ts`):
+
+- AES-128 in CTR mode through Node's `crypto`; the counter block is the sample's 8-byte IV followed by a 64-bit block counter that starts at 0 for every sample; whole samples, no subsample map. The IV of a sample is its index in the track's own timeline (video 0 to N-1, audio 0 to N-1 after the priming sample is gone).
+- `protectInit` turns the one sample entry `vp09` / `mp4a` into `encv` / `enca` and appends a `sinf` (`frma` = the real format, `schm` = `cenc` 1.0, `schi` > `tenc`: protected, 8-byte IVs, the key id), the layout ffmpeg writes too. `buildMediaSegment` writes `senc`, `saio` and `saiz` after the `trun`; `saio` points at the first IV and `saiz` says every sample's information is its IV.
+  The reader checks all three against each other and against the sample count.
+- The stream's ffmpeg plans are the plans of an unencrypted stream, so its plaintext is exactly the unencrypted twin's; `drm` is part of the spec and so of the cache key. The key pair is public (16 ASCII bytes each, `StreamInfo.drm`).
+- The DASH manifest carries `ContentProtection` for `urn:mpeg:dash:mp4protection:2011` (`value="cenc"`, `cenc:default_KID` as a UUID) and for the ClearKey system id in both AdaptationSets, before the `SegmentTemplate` as the schema orders them; the key is never in it.
+
+**Why this is not hand-rolled cryptography.** The cipher is the platform's AES-128-CTR, checked against the published vector NIST SP 800-38A F.5.1 (a unit test). What the lab wrote is the framing: which bytes are encrypted under which counter, and the boxes. Framing is what a decryptor tells you if it is wrong, and the decryptor is not the lab's:
+`tools/verify-streams.ts` generates the same spec without encryption into its scratch directory and requires that **ffmpeg with the key** turns every encrypted representation into exactly the unencrypted twin, packet by packet (the plaintext bytes) and frame by frame (360 and 562 of them for the 12 s stream),
+that without the key or with a wrong one it does **not**, that the init segments name the right key id (a literal byte scan, not the lab's parser) and that the manifest's `cenc:default_KID` is the init segment's. In Docker, ffmpeg 6.1.1's real DASH demuxer reads the MPD and decodes the stream end to end with `-cenc_decryption_key`.
+Mutation checks: putting the IV into the other half of the counter block, and writing the `senc` entries in reverse order, each fail the unit tests and the ffmpeg decryption. Under ffmpeg 6.1.1 in Docker the stream is generated and verified with the same 52 checks (the 48 of the dev host plus the four of the real DASH demuxer).
+
+**Alternatives considered.** ffmpeg's encryption where it exists and the lab's where it does not (two code paths whose bytes differ by build, and nothing gained over one path that works everywhere). Requiring ffmpeg 8.0 or later (not the CI image). A packager such as Bento4 or Shaka Packager (a new dependency for 12 s of media).
+Checking in encrypted fixtures (no way to see what made them).
+
+**Consequences and limits.**
+
+- The key is public and the IVs are counters, and video sample `i` and audio sample `i` use the same IV under the same key: for real content that would be a keystream reuse. It is a fixture that protects nothing, and says so.
+- **Not tried in a browser** (no browsers were allowed for this component): what is verified is that ffmpeg decrypts it and that the manifest and the init segments agree on the key id. The whole VP9 sample is encrypted, without leaving the uncompressed header in the clear; the software ClearKey implementations of browsers decrypt before decoding, but a decryptor that
+  needs the header in the clear would need a subsample map in `senc` (a local change in `cenc.ts` and the writer). No `pssh` box is written: a player is expected to start from the manifest's `ContentProtection` with the key configured (`clearKeys` in Shaka).
+- DASH only, VOD only, one key for both tracks, `cenc` (AES-CTR) and no `cbcs`.
+
+**Defending it.** "The brief said to use ffmpeg's encryption if it works. It works on my laptop and not on the CI image, and I proved that from a run and from the upstream source before writing a line. So I wrote one small path that behaves the same everywhere, used the platform's AES for the cipher, and had ffmpeg's own decryption judge it against an unencrypted
+twin, with a negative control. If I had got the counter wrong, ffmpeg would have shown me noise; it showed me the same 360 frames."
