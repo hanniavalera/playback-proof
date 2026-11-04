@@ -43,11 +43,29 @@ export const UNBUFFERED_FROM_SEC = 16;
 // `seeked` 0.3 to 0.4 s past a target and a wait for 8 s return at 11.4 s, where the same specs had read 0 to 0.1 s on an M2 Pro. A bound
 // of the form "within X seconds of the position" is therefore a statement about the machine. The sound bound is about time: between two
 // readings of the media clock, taken from a player at rate 1, the clock advanced no more than the wall clock did (plus a frame period
-// and the resolution of the clocks), and did not go back by more than that. `expectClockPace` of `seeking.ts` is that bound; the wall
+// and the resolution of the clocks, and, in a span that contains a restart of the clock, the step the clock takes then:
+// `RESTART_CLOCK_STEP_SEC`), and did not go back by more than a frame. `expectClockPace` of `seeking.ts` is that bound; the wall
 // clock it uses is the one of the test process (`stopwatch`), started before the call that began the span and read after the reading
 // that ended it, so it brackets whatever the page did in between however late it did it. A real defect is far outside it: a landing at
 // the start of the segment is a second before the target, a skip to the next segment or GOP is a second or two ahead of a wall clock
 // that ran for a fraction of one.
+
+/**
+ * How far past the wall clock the media clock may be read in a span that contains a RESTART of the clock: a resume after a pause, a replay
+ * after `ended`, the clock starting again at the landing of a seek. The clock is not wall-synchronous there: it steps forward when the
+ * player starts ticking again (the audio renderer restarting is the likeliest cause; I did not look into the engines for it) and is
+ * wall-synchronous from then on. Measured as the media time of the `playing` event past the paused position: Chromium 60.5 and 49.1 ms in
+ * the two failed attempts of PB-VOD-005 in the Linux nightly of run 41793007785, with 10 and 8 ms of wall clock between the call and the event, and
+ * 49.9 to 58.6 ms in five runs on the M2 Pro (a steady 50 to 60 ms, not noise); macOS WebKit 0.2 to 4.2 ms; Firefox 0 in four runs and 101
+ * ms in one; Linux WebKit 12 to 79 ms. After a seek the step was not measured: the checks that read the clock after one passed in every
+ * leg of the runs I read, but their bracket holds the wall clock of the seek (20 to 45 ms in Chromium, against a step of 50 to 60 ms at a
+ * resume), so whatever margin they have is a few milliseconds, and the allowance is there so that a fast seek cannot make them fail. 0.15
+ * s is 1.5 times the largest step seen (Firefox's 101 ms), 2.5 times Chromium's, and a seventh of the smallest real defect: a resume that
+ * skips to the next segment, or rewinds to the start of its GOP from the middle of it (the pauses are placed there, `middleOfSegment`),
+ * is a second away, and a seek back is seconds. The step is forward only (the smallest step measured was 0), so the bound on going back
+ * is unchanged.
+ */
+export const RESTART_CLOCK_STEP_SEC = 0.15;
 
 /**
  * How close to the end of the title `ended` must fire. The video track is exactly as long as the title (`durationSec`), the audio ends up

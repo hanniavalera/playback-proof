@@ -118,7 +118,8 @@ test(
     const timeline = await qa.events(since);
 
     // No jump: the clock restarts where it stopped (the `paused` and `playing` events of qa.events()) and goes on from there. The page reads
-    // the clock when it gets to the event, so the bound is the wall clock of the call, not a distance (ADR-092).
+    // the clock when it gets to the event, and the clock steps forward by 50 to 100 ms when it restarts (Chromium read 49 and 60 ms past the
+    // pause with 8 and 10 ms of wall clock in between), so the bound is the wall clock of the call plus that step, not a distance (ADR-092).
     expectClockPace(
       { from: pausedAt, to: resumedAt, wallMs: resumedAfterMs },
       info,
@@ -203,7 +204,8 @@ test(
 
     // From the beginning: the first `playing` after play() is at the start of the title and the clock runs on from there. A player that
     // stayed at the end would have the clock at 12 s here, which `waitForMediaTime(1)` accepts at once: the wall clock of the call is what
-    // shows it (a restart that was read late is at most as far from 0 as the clock could have run, ADR-092).
+    // shows it (a restart that was read late, or that stepped forward as the clock restarts, is at most as far from 0 as the clock could
+    // have run plus the step, ADR-092).
     expectClockPace(
       { from: 0, to: restartedAt, wallMs: restartedAfterMs },
       info,
