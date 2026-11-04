@@ -167,7 +167,7 @@ test(
       ).not.toContain('firstframe');
       const metrics = await qa.metrics();
       expect(metrics.startupMs, 'startup time (metrics.startupMs) with a wrong key').toBeNull();
-      // Presented, not decoded: WebKit's decoder sometimes counts one frame out of the garbage (2 of 10 runs measured) that nothing ever
+      // Presented, not decoded: WebKit's decoder sometimes counts one frame out of the garbage (ADR-105 has the counts) that nothing ever
       // presents, and what a viewer gets is what counts here.
       expect(
         metrics.frames.presented ?? 0,
