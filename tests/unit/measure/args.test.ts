@@ -56,6 +56,9 @@ describe('PB-PERF command line: defaults', () => {
       '--inject-on',
       '--allow-missing-baseline',
       '--write-baseline',
+      '--paired',
+      '--control-ref',
+      '--control-dir',
     ]) {
       expect(PERF_USAGE, flag).toContain(flag);
     }
@@ -220,5 +223,68 @@ describe('PB-PERF command line: what belongs to which command', () => {
   it('reads --help', () => {
     expect(gate('--help').help).toBe(true);
     expect(gate('-h').help).toBe(true);
+  });
+});
+
+describe('PB-PERF command line: the paired gate', () => {
+  it('is off by default, and names no control until it is asked for', () => {
+    expect(gate()).toMatchObject({ paired: false, controlRef: null, controlDir: null });
+    expect(run()).toMatchObject({ paired: false, controlRef: null, controlDir: null });
+  });
+
+  it('reads --paired with a control ref, with a control checkout, or with neither (the default control is chosen where it is used)', () => {
+    expect(gate('--paired')).toMatchObject({ paired: true, controlRef: null, controlDir: null });
+    expect(gate('--paired', '--control-ref', 'origin/main')).toMatchObject({
+      paired: true,
+      controlRef: 'origin/main',
+      controlDir: null,
+    });
+    expect(gate('--paired', '--control-ref', 'HEAD^1', '--profile', 'chromium')).toMatchObject({
+      controlRef: 'HEAD^1',
+      profiles: ['chromium'],
+    });
+    expect(gate('--paired', '--control-dir', '../control')).toMatchObject({
+      controlRef: null,
+      controlDir: '../control',
+    });
+    expect(gate('--paired', '--control-dir', '/work/main', '--control-ref', 'v1.2.3')).toMatchObject({
+      controlRef: 'v1.2.3',
+      controlDir: '/work/main',
+    });
+  });
+
+  it('belongs to the gate, and its control options belong to it', () => {
+    expect(() => run('--paired')).toThrow(/--paired belongs to the gate/);
+    expect(() => gate('--control-ref', 'origin/main')).toThrow(
+      /--control-ref and --control-dir belong to --paired/,
+    );
+    expect(() => gate('--control-dir', '/work/main')).toThrow(/belong to --paired/);
+  });
+
+  it('refuses a control ref that is not a ref: empty, an option, or with whitespace', () => {
+    expect(() => gate('--paired', '--control-ref', '')).toThrow(/--control-ref is empty/);
+    expect(() => gate('--paired', '--control-ref=--upload-pack=x')).toThrow(
+      /--control-ref must not start with a dash/,
+    );
+    expect(() => gate('--paired', '--control-ref', 'origin main')).toThrow(
+      /--control-ref must not contain whitespace/,
+    );
+    expect(() => gate('--paired', '--control-dir', ' ')).toThrow(/--control-dir is empty/);
+  });
+
+  it('measures its own baseline and judges the whole profile of it: no committed baseline directory, no allowance for a missing baseline, no scenario subset', () => {
+    expect(() => gate('--paired', '--baseline-dir', 'perf/baselines')).toThrow(
+      /--paired measures its own baseline: --baseline-dir/,
+    );
+    expect(() => gate('--paired', '--allow-missing-baseline')).toThrow(
+      /--allow-missing-baseline does not apply/,
+    );
+    expect(() => gate('--paired', '--scenario', 'PB-PERF-001')).toThrow(/cannot be combined with --scenario/);
+  });
+
+  it('keeps the injection of a sensitivity check, which goes to the head only', () => {
+    expect(
+      gate('--paired', '--inject-faults', '[{"type":"latency","ms":150}]', '--inject-on', 'first'),
+    ).toMatchObject({ paired: true, injectOn: 'first', injectFaults: [{ type: 'latency', ms: 150 }] });
   });
 });

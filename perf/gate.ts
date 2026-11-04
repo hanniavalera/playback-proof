@@ -3,14 +3,20 @@
 // Measures the scenarios of the profiles, compares them with the committed baseline of THIS environment, and fails the build only for a
 // regression that reproduces: a metric that fails is measured again in a fresh browser with fresh runs, and counts only if it fails again.
 //
+// With --paired (ADR-179) the baseline is not the committed one: the control (the base build) is measured first, by its own harness, on
+// THIS machine, and the head is judged against what it just measured, with the same rules. On a shared runner the machine is part of the
+// measurement, and the committed baseline is a measurement of another one.
+//
 //   exit 0   every metric is within its threshold (a failure that did not reproduce is reported and passes)
 //   exit 1   a regression reproduced
 //   exit 2   the measurement could not be trusted: no baseline here (the message has the command that records one), a stream that
-//            changed since the baseline, a browser that did not start, a run that failed. An environment failure is not a regression.
+//            changed since the baseline, a browser that did not start, a run that failed, and, when paired, a control that could not be
+//            made ready or measured. An environment failure is not a regression.
 //
 // Writes reports/perf/<envId>/<profile>.json (every run) and .md, and appends the Markdown to $GITHUB_STEP_SUMMARY when it is set.
 
 import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { cpus } from 'node:os';
 import { join } from 'node:path';
 import { PERF_USAGE, PerfUsageError, parsePerfArgs } from '../src/lab/measure/args.ts';
 import type { PerfOptions } from '../src/lab/measure/args.ts';
@@ -19,7 +25,17 @@ import type { Baseline } from '../src/lab/measure/baseline.ts';
 import { combineExitCodes, compareEnvironment } from '../src/lab/measure/decide.ts';
 import type { ExitCode, Problem } from '../src/lab/measure/decide.ts';
 import { runGate } from '../src/lab/measure/gate.ts';
-import { loadAround, machineFacts } from '../src/lab/measure/machine.ts';
+import { loadAround, machineFacts, perfHost } from '../src/lab/measure/machine.ts';
+import {
+  Cleanup,
+  bindCleanupToSignals,
+  buildPaired,
+  headOptions,
+  pairedExitCode,
+  runControl,
+  withControlModel,
+} from '../src/lab/measure/paired.ts';
+import type { ControlInfo, PairedReport } from '../src/lab/measure/paired.ts';
 import {
   buildGateReport,
   busyWarning,
@@ -30,8 +46,11 @@ import {
 import type { GateReport } from '../src/lab/measure/report.ts';
 import { scenariosFor } from '../src/lab/measure/scenarios.ts';
 import type { BatchMeasurement, PerfProfile } from '../src/lab/measure/types.ts';
-import { DEFAULT_BASELINE_DIR, DEFAULT_REPORTS_DIR, log, startHarness } from './harness.ts';
+import { collectHostInfo } from '../src/lab/probe/host-info.ts';
+import { detectEnvId } from '../src/shared/env.ts';
+import { DEFAULT_BASELINE_DIR, DEFAULT_REPORTS_DIR, ROOT, log, startHarness } from './harness.ts';
 import type { Harness } from './harness.ts';
+import { realPairedDeps } from './paired-deps.ts';
 
 /** Writes the JSON and the Markdown of a profile's report; the Markdown also goes to the job summary of the CI system when there is one. */
 function writeReports(dir: string, report: GateReport): string {
@@ -44,12 +63,21 @@ function writeReports(dir: string, report: GateReport): string {
   return `${base}.json`;
 }
 
-/** One profile: the baseline, the environment check, the gate loop, the reports. Returns the exit code of the profile. */
-async function gateProfile(harness: Harness, profile: PerfProfile, options: PerfOptions): Promise<ExitCode> {
+/**
+ * One profile: the baseline, the environment check, the gate loop, the reports. Returns the exit code of the profile. `paired` is what
+ * the control run found out when the baseline is the control's (the head's options already point at its baselines).
+ */
+async function gateProfile(
+  harness: Harness,
+  profile: PerfProfile,
+  options: PerfOptions,
+  paired: ControlInfo | null = null,
+): Promise<ExitCode> {
   const specs = scenariosFor(profile, options.scenarios);
   const baselineDir = options.baselineDir ?? DEFAULT_BASELINE_DIR;
   const reportsDir = options.reportsDir ?? DEFAULT_REPORTS_DIR;
   const baselineFile = baselinePath(baselineDir, harness.envId, profile);
+  const profileStarted = Date.now();
   const common = {
     envId: harness.envId,
     profile,
@@ -72,7 +100,19 @@ async function gateProfile(harness: Harness, profile: PerfProfile, options: Perf
       setupProblems.push({ scenario: '*', message: error.message });
     }
   }
-
+  // A control recorded by code that predates the CPU model ran on this machine: the model the gate read before it started it is its.
+  const recordedByControl = baseline?.host.cpuModel;
+  if (paired && baseline) baseline = withControlModel(baseline, paired.cpuModelAtControl);
+  const pairedReport = (): { paired?: PairedReport } =>
+    paired
+      ? {
+          paired: buildPaired(paired, {
+            recordedByControl,
+            head: harness.host.cpuModel,
+            headMs: Date.now() - profileStarted,
+          }),
+        }
+      : {};
   const warnings: string[] = [];
   if (baseline) {
     // The streams are checked before any browser starts: a changed stream makes every number incomparable, and there is no point in
@@ -111,6 +151,7 @@ async function gateProfile(harness: Harness, profile: PerfProfile, options: Perf
       browser: null,
       warnings,
       setupProblems,
+      ...pairedReport(),
     });
     console.log(renderGateText(report, []));
     log(`wrote ${writeReports(reportsDir, report)}`);
@@ -150,10 +191,86 @@ async function gateProfile(harness: Harness, profile: PerfProfile, options: Perf
     machine,
     browser,
     warnings,
+    ...pairedReport(),
   });
   console.log(renderGateText(report, result.scenarios));
   log(`wrote ${writeReports(reportsDir, report)}`);
   return report.exitCode;
+}
+
+/**
+ * The paired gate (ADR-179): the control is measured first, by its own harness, on this machine, and then the head is gated against what
+ * it measured. The control's checkout and the temporary directory with its baselines are removed on every path: a failure, an exit code
+ * of 2, a SIGINT or a SIGTERM.
+ */
+async function pairedGate(options: PerfOptions, profiles: PerfProfile[]): Promise<ExitCode> {
+  const deps = realPairedDeps(log);
+  const cleanup = new Cleanup(deps, ROOT);
+  const controller = new AbortController();
+  let harness: Harness | null = null;
+  const release = bindCleanupToSignals(process, {
+    abort: () => controller.abort(),
+    cleanup: () => cleanup.disposeAll(),
+    exit: (code) => process.exit(code),
+    harnessRunning: () => harness !== null,
+  });
+  try {
+    const envId = detectEnvId();
+    const control = await runControl(
+      deps,
+      {
+        headRoot: ROOT,
+        envId,
+        profiles,
+        controlRef: options.controlRef,
+        controlDir: options.controlDir,
+        runs: options.runs,
+        warmupRuns: options.warmupRuns,
+        port: options.port,
+        runTimeoutMs: options.runTimeoutMs,
+        baseEnv: process.env,
+      },
+      cleanup,
+      controller.signal,
+    );
+    if (!control.ok || control.baselineDir === null) {
+      // No control, no judgement: a report per profile says why, and the exit code is 2, never 0.
+      const host = perfHost(collectHostInfo(ROOT), cpus());
+      for (const profile of profiles) {
+        const report = buildGateReport({
+          envId,
+          profile,
+          generatedAt: new Date().toISOString(),
+          host,
+          result: { scenarios: [], problems: [], exitCode: 2 },
+          baseline: null,
+          browser: null,
+          ffmpeg: null,
+          warnings: [],
+          setupProblems: [{ scenario: '*', message: control.problem ?? 'the control could not be measured' }],
+          paired: buildPaired(control.info, { recordedByControl: undefined, head: host.cpuModel, headMs: 0 }),
+        });
+        console.log(renderGateText(report, []));
+        log(`wrote ${writeReports(options.reportsDir ?? DEFAULT_REPORTS_DIR, report)}`);
+      }
+      return pairedExitCode(false, []);
+    }
+
+    try {
+      harness = await startHarness(options);
+    } catch (error) {
+      console.error(`PROBLEM: ${error instanceof Error ? error.message : String(error)}`);
+      return 2;
+    }
+    const against = headOptions(options, control.baselineDir);
+    const codes: ExitCode[] = [];
+    for (const profile of profiles) codes.push(await gateProfile(harness, profile, against, control.info));
+    return pairedExitCode(true, codes);
+  } finally {
+    release();
+    if (harness !== null) await harness.stop();
+    cleanup.disposeAll();
+  }
 }
 
 async function main(argv: string[]): Promise<number> {
@@ -182,7 +299,7 @@ async function main(argv: string[]): Promise<number> {
     console.error('no scenario to run for the profiles and scenarios asked for');
     return 2;
   }
-
+  if (options.paired) return pairedGate(options, profiles);
   let harness: Harness;
   try {
     harness = await startHarness(options);
