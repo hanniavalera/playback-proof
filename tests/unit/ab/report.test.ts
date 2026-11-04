@@ -159,6 +159,11 @@ describe('PB-AB report: a pre-registered experiment in which B is better', () =>
     expect(markdown).toContain('configuration A: no overrides');
   });
 
+  it('names the content hash of the stream the plan used and of no other stream the service holds', () => {
+    expect(markdown).toContain('vod-cmaf over dash (content hash f00dfeed)');
+    expect(markdown).not.toContain('badc0ffe');
+  });
+
   it('prints the plan as it was pre-registered: the hypothesis, the threshold with its reason, the minimum detectable effect, the rules', () => {
     expect(markdown).toContain('- Hypothesis (startupMs): Under 300 ms of latency B starts no faster than A');
     expect(markdown).toContain(

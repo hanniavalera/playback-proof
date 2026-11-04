@@ -40,7 +40,7 @@ export function buildRaw(
       },
       browser: { name: 'chromium', version: '156.0.8078.4', userAgent: 'Mozilla/5.0 Chrome/156' },
       ffmpeg: '9.0.2',
-      streams: { 'vod-cmaf': 'f00dfeed' },
+      streams: { 'vod-cmaf': 'f00dfeed', 'vod-webm': 'badc0ffe' },
     },
     run: {
       startedAt: '2026-11-05T09:00:00.000Z',

@@ -455,7 +455,7 @@ export function renderReport(
         ],
         [
           'Stream',
-          `${prereg.stream} over ${prereg.protocol} (content hash ${Object.values(raw.environment.streams).join(', ') || 'not recorded'})`,
+          `${prereg.stream} over ${prereg.protocol} (content hash ${raw.environment.streams[prereg.stream] ?? 'not recorded'})`,
         ],
         [
           'Arm A',

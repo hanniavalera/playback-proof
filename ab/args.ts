@@ -41,8 +41,9 @@ npm run ab -- --power <raw results>            power and minimum detectable effe
 
 The runner starts the test data service as a child process, drives the engine through Playwright, and writes under docs/results/ab/:
 <id>.<env>.<stamp>.raw.json (every session), .report.json and .report.md. Run it alone on a quiet machine.
-Exit codes: 0 done (whatever the verdict: inconclusive and "no difference" are results); 1 an A/A check that the harness failed;
-2 the run could not be trusted or started: an invalid or uncommitted pre-registration, a harness error, a condition that was stopped.
+Exit codes: 0 the run was valid (whatever the verdict: B better, A better, equivalent within the margin and inconclusive are all results);
+1 a valid A/A run in which the harness failed its own check; 2 the run is not valid or could not be started: an invalid or uncommitted
+pre-registration, a missing or failed A/A check, a condition that was not applied, a harness error, a machine that was not quiet.
 
   --prereg FILE               the pre-registration to run (ab/prereg/<name>.json)
   --report FILE               a raw results file to write the report of

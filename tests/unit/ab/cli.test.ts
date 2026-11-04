@@ -181,7 +181,7 @@ describe('PB-AB command: the refusals before anything starts', () => {
 describe('PB-AB command: a pipeline check', () => {
   it('runs the plan on the machine it is given, writes the files, and says in every line that it is plumbing only, not evidence', async () => {
     commitPlan('small.json', smallJson());
-    const machine = fakeMachine();
+    const machine = fakeMachine((_arm, index) => ({ startupMs: 828.8999999761581 + index }));
     const run = capture();
     const code = await main(
       ['--prereg', 'small.json', '--port', '4723', '--out-dir', 'out-run'],
@@ -211,6 +211,9 @@ describe('PB-AB command: a pipeline check', () => {
     const progress = run.err.join('\n');
     expect(progress).toMatch(/\[PB-AB-002 high-latency\] 1\/10 warm-up A: startup/);
     expect(progress).toMatch(/\[PB-AB-002 high-latency\] 10\/10 [AB]: startup/);
+    // Whole milliseconds: a progress line is for a person, and 828.8999999761581 ms is noise.
+    for (const line of run.err.filter((l) => /\d+\/10 /.test(l)))
+      expect(line).toMatch(/startup \d+ ms, start \d+p/);
   });
 
   it('writes a report that --report reproduces byte for byte from the raw results', async () => {

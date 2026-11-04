@@ -32,7 +32,10 @@ export async function startAbHarness(options: { port: number; engine: Engine }):
   const host = collectHostInfo(ROOT);
   const service = await startService({ root: ROOT, port: options.port });
   let stopped = false;
-  const onSignal = (): void => {
+  const onSignal = (signal: NodeJS.Signals): void => {
+    log(
+      `${signal}: stopping the service and the browser. An interrupted run writes no results: a partial result would invite stopping when the data look good.`,
+    );
     void stop().finally(() => process.exit(130));
   };
   const stop = async (): Promise<void> => {

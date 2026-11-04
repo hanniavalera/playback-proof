@@ -260,9 +260,10 @@ async function modeRun(
             );
           else {
             const record = event.record;
+            const startup = record.values.startupMs;
             const shown =
               record.status === 'ok'
-                ? `startup ${String(record.values.startupMs ?? 'n/a')} ms, start ${String(record.startRungHeight)}p`
+                ? `startup ${typeof startup === 'number' ? Math.round(startup) : 'n/a'} ms, start ${String(record.startRungHeight)}p`
                 : `FAILED ${record.failure?.kind}: ${record.failure?.message.split('\n')[0]}`;
             io.err(
               `[${prereg.id} ${event.condition}] ${record.index + 1}/${event.total} ${record.warmup ? 'warm-up ' : ''}${record.arm}: ${shown}, ${(record.durationMs / 1000).toFixed(1)} s`,
