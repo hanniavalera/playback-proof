@@ -4,9 +4,11 @@ import {
   EXACT_MAX_PER_ARM,
   MAX_EXACT_POOLED,
   exactRankSumDistribution,
+  heavyTies,
   mannWhitneyU,
   mannWhitneyVariance,
 } from '../../../ab/stats/mann-whitney.ts';
+import { mulberry32, seedFrom, shuffleInPlace } from '../../../ab/stats/random.ts';
 import { tieGroupSizes } from '../../../ab/stats/sample.ts';
 import {
   bruteForceExactP,
@@ -17,6 +19,7 @@ import {
   shuffled,
   uCounts,
 } from './helpers.ts';
+import { aaPool } from './synthetic.ts';
 
 // Reference checks of the Mann-Whitney U test. The independent references are: brute force over every assignment of the pooled sessions
 // (the definition of the exact permutation p-value, ties included), the Gaussian-binomial generating function of the untied distribution,
@@ -162,7 +165,7 @@ describe('PB-AB Mann-Whitney U: the correction for ties', () => {
     const u1 = 130;
     const sigma2 = (20 * 20 * (41 - (15 ** 3 - 15 + (11 ** 3 - 11) + (14 ** 3 - 14)) / (40 * 39))) / 12;
     const z = (Math.abs(u1 - 200) - 0.5) / Math.sqrt(sigma2);
-    const result = mannWhitneyU(a, b);
+    const result = mannWhitneyU(a, b, { method: 'asymptotic' });
     expect(result.method).toBe('asymptotic');
     expect(result.u1).toBe(u1);
     expect(result.z).toBeCloseTo(z, 12);
@@ -212,19 +215,28 @@ describe('PB-AB Mann-Whitney U: the choice of method and the approximation', () 
     ).toBe('asymptotic');
   });
 
-  it('can be forced either way, and refuses an exact enumeration it cannot count exactly', () => {
+  it('can be forced either way, and refuses an exact enumeration that is too big or too expensive', () => {
     const a = [1, 4, 9, 12];
     const b = [2, 3, 20];
     expect(mannWhitneyU(a, b, { method: 'asymptotic' }).method).toBe('asymptotic');
     expect(mannWhitneyU(a, b, { method: 'exact' }).method).toBe('exact');
-    const many = Array.from({ length: MAX_EXACT_POOLED }, (_, i) => i);
+    const beyond = Array.from({ length: MAX_EXACT_POOLED / 2 + 1 }, (_, i) => i);
     expect(() =>
       mannWhitneyU(
-        many,
-        many.map((x) => x + 0.5),
+        beyond,
+        beyond.map((x) => x + 0.5),
         { method: 'exact' },
       ),
-    ).toThrow(RangeError);
+    ).toThrow(/beyond the 400 it is computed for/);
+    // 150 against 150 with no ties: 300 groups x 150 counts x 90,001 sums = 4e9 additions, far over the 6e8 a forced run may do.
+    const wide = Array.from({ length: 150 }, (_, i) => i);
+    expect(() =>
+      mannWhitneyU(
+        wide,
+        wide.map((x) => x + 0.5),
+        { method: 'exact' },
+      ),
+    ).toThrow(/operations, more than the 6e\+8 allowed/);
   });
 
   it('the normal approximation is close to the exact p-value at the edge of the exact range (12 against 12)', () => {
@@ -238,7 +250,74 @@ describe('PB-AB Mann-Whitney U: the choice of method and the approximation', () 
     }
   });
 
-  it('the normal approximation tracks the exact conditional p-value with ties too (a permutation test of 20000 draws)', () => {
+  it('the normal approximation is also close to the exact p-value at 30 against 30 when there are no ties', () => {
+    const random = generator(405);
+    for (let i = 0; i < 6; i++) {
+      const a = gaussian(random, 30);
+      const b = gaussian(random, 30, 0.5);
+      const exact = mannWhitneyU(a, b, { method: 'exact' }).p;
+      const approximate = mannWhitneyU(a, b, { method: 'asymptotic' }).p;
+      expect(Math.abs(exact - approximate)).toBeLessThan(0.01);
+    }
+  });
+});
+
+describe('PB-AB Mann-Whitney U: heavy ties use the exact distribution (the extension the A/A calibration asked for)', () => {
+  it('calls ties heavy when on average three or more sessions share a value', () => {
+    expect(heavyTies([20, 20, 20])).toBe(true);
+    expect(heavyTies([3, 3, 3, 3])).toBe(true);
+    expect(heavyTies([2, 2, 2, 2, 2, 2])).toBe(false);
+    expect(heavyTies(Array<number>(60).fill(1))).toBe(false);
+    expect(heavyTies([57, 1, 1, 1])).toBe(true);
+  });
+
+  it('chooses exact for a zero-inflated sample of 30 against 30 and the approximation for a continuous one', () => {
+    const zeros = (events: number): number[] => [
+      ...Array<number>(events).fill(0.5),
+      ...Array<number>(30 - events).fill(0),
+    ];
+    const lumpy = mannWhitneyU(zeros(4), zeros(11));
+    expect(lumpy.method).toBe('exact');
+    expect(lumpy.ties).toBe(true);
+    const random = generator(406);
+    expect(mannWhitneyU(gaussian(random, 30), gaussian(random, 30)).method).toBe('asymptotic');
+    // Five distinct values in 30 + 30 is heavy too; sixty distinct values is not.
+    expect(mannWhitneyU(coarse(random, 30, 4), coarse(random, 30, 4)).method).toBe('exact');
+  });
+
+  it('computes the same p-value with or without the cache of distributions, and repeats it', () => {
+    const a = [...Array<number>(26).fill(0), 1, 2, 3, 4];
+    const b = [...Array<number>(18).fill(0), ...Array<number>(12).fill(1)];
+    const first = mannWhitneyU(a, b);
+    expect(first.method).toBe('exact');
+    expect(mannWhitneyU(a, b)).toStrictEqual(first);
+    expect(mannWhitneyU([...a].reverse(), [...b].reverse())).toStrictEqual(first);
+  });
+
+  it('adds the counts up to C(60, 30) = 1.18e17 for the sixty pooled sessions of an experiment (floating point, to a relative 1e-12)', () => {
+    const groups = tieGroupSizes([
+      ...Array<number>(40).fill(0),
+      ...Array<number>(10).fill(1),
+      ...Array<number>(10).fill(2),
+    ]);
+    const total = [...exactRankSumDistribution(groups, 30).values()].reduce((sum, count) => sum + count, 0);
+    expect(Math.abs(total / 118264581564861424 - 1)).toBeLessThan(1e-12);
+    const untied = [...exactRankSumDistribution(Array<number>(60).fill(1), 30).values()];
+    expect(Math.abs(untied.reduce((sum, count) => sum + count, 0) / 118264581564861424 - 1)).toBeLessThan(
+      1e-12,
+    );
+  });
+
+  it('is symmetric about the mean when nothing ties, at 30 against 30 (the classical distribution is)', () => {
+    const distribution = exactRankSumDistribution(Array<number>(60).fill(1), 30);
+    const centre2 = 30 * 61;
+    for (const [sum2, count] of distribution) {
+      const mirror = distribution.get(2 * centre2 - sum2) ?? 0;
+      expect(Math.abs(count / mirror - 1)).toBeLessThan(1e-12);
+    }
+  });
+
+  it('agrees with a permutation test of 20000 draws on a zero-inflated sample of 30 against 30', () => {
     const random = generator(8);
     const a = coarse(random, 30, 3);
     const b = coarse(random, 30, 3).map((x) => Math.min(3, x + (random() < 0.3 ? 1 : 0)));
@@ -252,8 +331,26 @@ describe('PB-AB Mann-Whitney U: the choice of method and the approximation', () 
       if (Math.abs(u - 450) >= observed) atLeastAsFar += 1;
     }
     const permutation = atLeastAsFar / draws;
-    const approximate = mannWhitneyU(a, b).p;
-    expect(Math.abs(permutation - approximate)).toBeLessThan(0.02);
+    expect(mannWhitneyU(a, b).method).toBe('exact');
+    expect(Math.abs(permutation - mannWhitneyU(a, b).p)).toBeLessThan(0.015);
+    expect(Math.abs(permutation - mannWhitneyU(a, b, { method: 'asymptotic' }).p)).toBeLessThan(0.03);
+  });
+
+  it('keeps a metric that is zero in most sessions at its level where the approximation does not (a pool of 60, 1000 random splits)', () => {
+    // The finding behind the extension: this pool of 60 sessions (a rebuffer count that is 0 in three of four) split into two arms of 30,
+    // 1000 times, with the same splits: the normal approximation says "different" in 7.8 % at alpha 5 %, the exact distribution in 3.4 %.
+    const pool = aaPool(generator(2026), 60).map((session) => session.values.rebufferCount as number);
+    let approximate = 0;
+    let exact = 0;
+    for (let split = 0; split < 1000; split++) {
+      const order = shuffleInPlace([...pool], mulberry32(seedFrom(1, 'split', split)));
+      const a = order.slice(0, 30);
+      const b = order.slice(30);
+      if (mannWhitneyU(a, b, { method: 'asymptotic' }).p < 0.05) approximate += 1;
+      if (mannWhitneyU(a, b).p < 0.05) exact += 1;
+    }
+    expect(approximate / 1000).toBeGreaterThan(0.07);
+    expect(exact / 1000).toBeLessThan(0.05);
   });
 });
 

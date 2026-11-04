@@ -105,3 +105,22 @@ export function rebufferPrereg(): Json {
     ],
   };
 }
+
+/** The real interleaved A/A run (PB-AB-001): configuration A in both arms, startup under high latency. */
+export function aaPrereg(): Json {
+  const base = startupPrereg();
+  return {
+    ...base,
+    id: 'PB-AB-001-high-latency',
+    kind: 'aa',
+    catalogId: 'PB-AB-001',
+    title: 'A/A: configuration A against itself, startup under high latency',
+    hypotheses: [
+      {
+        metric: 'startupMs',
+        text: 'Both arms run configuration A, so the harness must find no difference between them.',
+      },
+    ],
+    arms: { A: 'A', B: 'A' },
+  };
+}

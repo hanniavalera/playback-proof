@@ -1,11 +1,65 @@
 import type { AnalysisPlan } from '../../../ab/analyze.ts';
 import type { MetricPlan } from '../../../ab/prereg.ts';
+import { sha256Hex } from '../../../ab/prereg.ts';
+import { RESULT_SCHEMA_VERSION } from '../../../ab/results.ts';
+import type { RawResult } from '../../../ab/results.ts';
+import type { FaultRule } from '../../../src/shared/faults.ts';
 import type { Random } from '../../../ab/stats/random.ts';
 import type { ArmId, SessionRecord } from '../../../ab/types.ts';
 import { gaussian } from './helpers.ts';
 
 // Synthetic sessions for the analysis, the A/A calibration and the report: values chosen by the test, so that what the pipeline should
 // say is known in advance.
+
+/** A raw results file around some sessions: the plan text, its hash, a made-up environment. */
+export function buildRaw(
+  prereg: { text: string; conditionId: string; rules: FaultRule[] },
+  sessions: SessionRecord[],
+  over: Partial<RawResult['preregistration']> = {},
+): RawResult {
+  return {
+    schemaVersion: RESULT_SCHEMA_VERSION,
+    kind: 'ab-raw',
+    preregistration: {
+      path: 'ab/prereg/plan.json',
+      sha256: sha256Hex(prereg.text),
+      text: prereg.text,
+      committed: { clean: true, commit: 'abc1234', date: '2026-11-05T08:00:00Z' },
+      ...over,
+    },
+    environment: {
+      envId: 'local-darwin-arm64',
+      host: {
+        os: { platform: 'darwin', arch: 'arm64', release: '27.2', name: 'macOS 27.2' },
+        cpus: 12,
+        memoryGiB: 16,
+        node: 'v22.11.0',
+        playwright: '1.64.1',
+        git: { commit: 'def5678', dirty: false },
+      },
+      browser: { name: 'chromium', version: '156.0.8078.4', userAgent: 'Mozilla/5.0 Chrome/156' },
+      ffmpeg: '9.0.2',
+      streams: { 'vod-cmaf': 'f00dfeed' },
+    },
+    run: {
+      startedAt: '2026-11-05T09:00:00.000Z',
+      finishedAt: '2026-11-05T09:31:00.000Z',
+      command: 'npm run ab -- --prereg ab/prereg/plan.json',
+    },
+    conditions: [
+      {
+        id: prereg.conditionId,
+        rules: prereg.rules,
+        stream: 'vod-cmaf',
+        startedAt: '2026-11-05T09:00:00.000Z',
+        finishedAt: '2026-11-05T09:31:00.000Z',
+        loadAverage: { before: 1.1, after: 1.4 },
+        sessions,
+        aborted: null,
+      },
+    ],
+  };
+}
 
 export function makeSession(
   index: number,

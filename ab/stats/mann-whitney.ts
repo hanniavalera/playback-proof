@@ -10,7 +10,7 @@ import { assertSample, chooseBig, tieGroupSizes } from './sample.ts';
 //   Under "no difference" (every assignment of the N = n1 + n2 pooled sessions to the arms equally likely) E[U1] = n1 n2 / 2.
 //   The rank sum of A, with ties given their average rank, is R1 = U1 + n1 (n1 + 1) / 2; U1 - E[U1] = R1 - n1 (N + 1) / 2.
 //
-// TWO P-VALUES, chosen by size (the brief's rule: exact for both arms <= 12 sessions, normal approximation otherwise)
+// TWO P-VALUES (the brief's rule: exact for both arms <= 12 sessions, normal approximation otherwise; plus one extension, below)
 //   exact       P(|S - E S| >= |s - E S|) over all C(N, n1) assignments of the pooled sessions to arm A, where S is the rank sum of A and s
 //               the observed one. The enumeration is CONDITIONAL ON THE TIES THAT WERE OBSERVED (the pooled mid-ranks are fixed, only the
 //               assignment varies), so it is exact with ties too, and equals the classical exact distribution when there are none. It is a
@@ -19,15 +19,27 @@ import { assertSample, chooseBig, tieGroupSizes } from './sample.ts';
 //               deviation is below it), and the variance corrected for ties:
 //                   sigma^2 = n1 n2 / 12 * [ (N + 1) - sum_j (t_j^3 - t_j) / (N (N - 1)) ]      t_j = size of the j-th group of tied values.
 //               With every value equal sigma^2 = 0 and the answer is p = 1: nothing can be told apart.
+//
+// THE EXTENSION. `auto` is also exact when ties are heavy (on average three or more sessions share a value) and the programme is cheap
+// (a few ms for 30 against 30). The A/A calibration found why: on a metric that is zero in most sessions the rank sum lives on a coarse
+// lattice, and the normal approximation with a continuity correction of 1/2 declares identical samples different too often (7.3 % at
+// alpha 5 % on one pool, 7.8 % for a rebuffer count). The exact test does not have the problem and costs 3 to 5 ms there.
 
 /** `method: 'auto'` computes the exact p-value when both arms have at most this many sessions. */
 export const EXACT_MAX_PER_ARM = 12;
 
 /**
- * The exact enumeration counts assignments in doubles, exact up to 2^53. Every partial count is at most C(N, floor(N / 2)), which stays
- * below 2^53 up to N = 56 pooled sessions (C(56, 28) = 7.6e15; C(57, 28) = 1.6e16 does not).
+ * The largest pooled sample the exact distribution is computed for. The counts are doubles: exact integers up to 2^53 (N = 56), and beyond
+ * that accurate to a relative 1e-15 or so, which is all a p-value needs; the guard is the cost, `exactCost`, and C(400, 200) = 1e119 still
+ * fits a double.
  */
-export const MAX_EXACT_POOLED = 56;
+export const MAX_EXACT_POOLED = 400;
+
+/** The most work (additions) a forced `exact` computation may do: about a second. Beyond it the asymptotic method is the only one. */
+export const MAX_EXACT_COST = 600_000_000;
+
+/** `auto` also computes the exact p-value when ties are heavy and it costs at most this much (about 0.1 s): see the top of the file. */
+export const AUTO_EXACT_COST = 60_000_000;
 
 export type MannWhitneyMethod = 'auto' | 'exact' | 'asymptotic';
 
@@ -70,6 +82,17 @@ function smallChoose(n: number, k: number): number {
 }
 
 /**
+ * The work of the dynamic programme behind the exact p-value, in additions: for every group of tied values, every count of sessions
+ * already in arm A, up to the size of the group, over the whole range of rank sums. A sample without ties is the worst case per group; a
+ * sample with a few big groups (a rebuffer count that is zero in most sessions) is far cheaper.
+ */
+export function exactCost(groupSizes: readonly number[], n1: number): number {
+  const total = groupSizes.reduce((sum, size) => sum + size, 0);
+  const widest = 2 * total * n1 + 1;
+  return groupSizes.reduce((sum, size) => sum + n1 * Math.min(size, n1) * widest, 0);
+}
+
+/**
  * The exact distribution of 2 x (the rank sum of n1 sessions drawn at random from the pooled ones), given the sizes of the groups of tied
  * values in ascending order of value: a map from the doubled rank sum to the NUMBER of assignments that give it. Doubling keeps every
  * mid-rank an integer. The counts add up to C(N, n1). This is the heart of the exact p-value, exposed so that a test can compare it with
@@ -83,7 +106,11 @@ export function exactRankSumDistribution(groupSizes: readonly number[], n1: numb
     );
   if (total > MAX_EXACT_POOLED)
     throw new RangeError(
-      `the exact distribution of ${total} pooled sessions needs counts beyond 2^53 (at most ${MAX_EXACT_POOLED}): use the asymptotic method`,
+      `the exact distribution of ${total} pooled sessions is beyond the ${MAX_EXACT_POOLED} it is computed for: use the asymptotic method`,
+    );
+  if (exactCost(groupSizes, n1) > MAX_EXACT_COST)
+    throw new RangeError(
+      `the exact distribution of this sample needs ${exactCost(groupSizes, n1).toExponential(1)} operations, more than the ${MAX_EXACT_COST.toExponential(0)} allowed: use the asymptotic method`,
     );
   const widest = 2 * total * n1;
   // ways[c][s]: assignments that put c sessions of the groups seen so far into arm A with a doubled rank sum of s.
@@ -92,16 +119,17 @@ export function exactRankSumDistribution(groupSizes: readonly number[], n1: numb
   let before = 0;
   for (const size of groupSizes) {
     const rank2 = 2 * before + size + 1;
+    const choose = Array.from({ length: Math.min(size, n1) + 1 }, (_, k) => smallChoose(size, k));
     // In place, counts from high to low: ways[c - k] below still holds the values from before this group.
     for (let c = n1; c >= 1; c--) {
       const row = ways[c] as Float64Array;
       for (let k = 1; k <= Math.min(size, c); k++) {
         const source = ways[c - k] as Float64Array;
-        const choose = smallChoose(size, k);
+        const multiplicity = choose[k] as number;
         const shift = k * rank2;
         for (let s = widest; s >= shift; s--) {
           const w = source[s - shift] as number;
-          if (w !== 0) row[s] = (row[s] as number) + w * choose;
+          if (w !== 0) row[s] = (row[s] as number) + w * multiplicity;
         }
       }
     }
@@ -115,18 +143,41 @@ export function exactRankSumDistribution(groupSizes: readonly number[], n1: numb
   return distribution;
 }
 
-function exactTwoSidedP(groupSizes: readonly number[], n1: number, observed2: number): number {
+/**
+ * The two-sided tail of an exact distribution as a lookup by distance from the mean: `tail[d]` = P(|S - E S| >= d / 2), in doubled
+ * units. The distribution depends only on the sizes of the groups of tied values and on n1, not on the values, so thousands of simulated
+ * experiments with the same ties (a power simulation, an A/A calibration) build it once.
+ */
+const TAIL_CACHE = new Map<string, Float64Array>();
+const TAIL_CACHE_ENTRIES = 1500;
+
+function exactTail(groupSizes: readonly number[], n1: number): Float64Array {
+  const key = `${n1}|${groupSizes.join(',')}`;
+  const cached = TAIL_CACHE.get(key);
+  if (cached) return cached;
   const total = groupSizes.reduce((sum, size) => sum + size, 0);
-  const distribution = exactRankSumDistribution(groupSizes, n1);
   const centre2 = n1 * (total + 1);
-  const farthest = Math.abs(observed2 - centre2);
-  let atLeastAsFar = 0;
+  const distribution = exactRankSumDistribution(groupSizes, n1);
+  let farthest = 0;
   let all = 0;
   for (const [sum2, count] of distribution) {
+    farthest = Math.max(farthest, Math.abs(sum2 - centre2));
     all += count;
-    if (Math.abs(sum2 - centre2) >= farthest) atLeastAsFar += count;
   }
-  return Math.min(1, atLeastAsFar / all);
+  const tail = new Float64Array(farthest + 2);
+  for (const [sum2, count] of distribution)
+    tail[Math.abs(sum2 - centre2)] = (tail[Math.abs(sum2 - centre2)] as number) + count;
+  for (let d = farthest - 1; d >= 0; d--) tail[d] = (tail[d] as number) + (tail[d + 1] as number);
+  for (let d = 0; d < tail.length; d++) tail[d] = Math.min(1, (tail[d] as number) / all);
+  if (TAIL_CACHE.size >= TAIL_CACHE_ENTRIES) TAIL_CACHE.clear();
+  TAIL_CACHE.set(key, tail);
+  return tail;
+}
+
+function exactTwoSidedP(groupSizes: readonly number[], n1: number, observed2: number): number {
+  const total = groupSizes.reduce((sum, size) => sum + size, 0);
+  const tail = exactTail(groupSizes, n1);
+  return (tail[Math.abs(observed2 - n1 * (total + 1))] as number | undefined) ?? 0;
 }
 
 /** Var(U1) under no difference, with the correction for ties of the pooled sample (see the definitions at the top of the file). */
@@ -137,8 +188,21 @@ export function mannWhitneyVariance(n1: number, n2: number, groupSizes: readonly
 }
 
 /**
+ * Whether ties are heavy enough that the normal approximation is unreliable and the exact conditional distribution is cheap: on average
+ * three or more pooled sessions share a value. The rank sum of such data lives on a coarse lattice (a zero-inflated count: the sum moves
+ * in steps of the size of the ranks of the few non-zero sessions, a continuity correction of 1/2 is far too small for it) and the
+ * approximation is too eager: on a synthetic A/A pool it declared identical sessions different 7.3 % of the time at alpha 5 %, against
+ * 5.6 % for the exact test (ADR-141 in docs/decisions/ab.md).
+ */
+export function heavyTies(groupSizes: readonly number[]): boolean {
+  const total = groupSizes.reduce((sum, size) => sum + size, 0);
+  return groupSizes.length * 3 <= total;
+}
+
+/**
  * Two-sided Mann-Whitney U test of `a` against `b`. `method: 'auto'` (default) is exact when both samples have at most
- * `EXACT_MAX_PER_ARM` values and the normal approximation, with continuity and tie corrections, otherwise.
+ * `EXACT_MAX_PER_ARM` values (the brief's rule), or when ties are heavy (`heavyTies`) and the exact distribution costs at most
+ * `AUTO_EXACT_COST`; otherwise it is the normal approximation with continuity and tie corrections.
  */
 export function mannWhitneyU(
   a: readonly number[],
@@ -151,13 +215,16 @@ export function mannWhitneyU(
   const n2 = b.length;
   const requested = options.method ?? 'auto';
   const limit = options.exactMaxPerArm ?? EXACT_MAX_PER_ARM;
-  const method: 'exact' | 'asymptotic' =
-    requested === 'auto' ? (n1 <= limit && n2 <= limit ? 'exact' : 'asymptotic') : requested;
 
   const twice = twiceU1(a, b);
   const u1 = twice / 2;
   const groups = tieGroupSizes([...a, ...b].sort((x, y) => x - y));
   const ties = groups.length < n1 + n2;
+  const small = n1 <= limit && n2 <= limit;
+  const cheapAndLumpy =
+    n1 + n2 <= MAX_EXACT_POOLED && heavyTies(groups) && exactCost(groups, n1) <= AUTO_EXACT_COST;
+  const method: 'exact' | 'asymptotic' =
+    requested === 'auto' ? (small || cheapAndLumpy ? 'exact' : 'asymptotic') : requested;
 
   if (method === 'exact') {
     // Doubled rank sum of A: 2 R1 = 2 U1 + n1 (n1 + 1).
