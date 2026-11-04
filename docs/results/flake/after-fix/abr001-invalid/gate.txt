@@ -1,0 +1,10 @@
+flake gate: FAIL (1 failure)  [gha-macos-arm64, 2026-11-04, 1 run in this build, 40 runs judged]
+
+Invalid runs of the tests of this build (the last 30 scheduled executions each, judged from 20, budget 40.0%; 0 with none are not listed)
+| test | engine | invalid | scheduled | share | budget | verdict | quarantine |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| PB-ABR-001 | webkit | 16 | 30 | 53.3% | 40.0% | over-invalid-budget | no |
+
+Failures, and the decision each one drives
+1. [over-invalid-budget] PB-ABR-001 on webkit was an invalid run in 16 of 30 of its last scheduled executions (53.3%), the budget is 40.0%: the claim is no longer evaluated on this leg. Last invalid run: forced downshift to 360p 2.0 s after entering 720p, 10 of 387 frames dropped (run collect-20261104T210703Z-02aad0-40, 2026-11-04, commit 98ecb4f7).
+   Decision: Fix the machine (load, decode), or declare the leg a documented gap with evidence (src/lab/gaps.ts), or retire the test on this leg: do not widen the budget to make it green. Who: the owner of the Adaptive bitrate (ABR) area. By when: before this merge; the gate stays red while more than 40.0% of the last 30 scheduled executions of the leg are invalid runs. A fixed machine clears it only as newer executions push the old invalid runs out of the window (at most 18 valid executions of this leg); a documented gap or a retirement in the same pull request ends the judgement of the leg at once, because its next run no longer schedules the test. A quarantine does not clear it.

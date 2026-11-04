@@ -1,0 +1,97 @@
+{
+  "generatedAt": "2026-11-04T21:22:05.553Z",
+  "envId": "gha-macos-arm64",
+  "today": "2026-11-04",
+  "history": {
+    "runs": 40,
+    "from": "2026-11-04T21:07:06.207Z",
+    "to": "2026-11-04T21:20:23.780Z"
+  },
+  "limits": {
+    "windowRuns": 30,
+    "minRunsToJudge": 20,
+    "quarantineTriggerRate": 0.05,
+    "suiteBudgetRate": 0.02,
+    "invalidRunBudgetRate": 0.4,
+    "quarantineMaxAgeDays": 14,
+    "mergeQuarantineMaxAgeDays": 7
+  },
+  "suites": [],
+  "tests": [
+    {
+      "id": "PB-ABR-001",
+      "project": "webkit",
+      "tier": "release",
+      "executions": 19,
+      "passed": 19,
+      "flaky": 0,
+      "failed": 0,
+      "flakeRate": 0,
+      "failureRate": 0,
+      "verdict": "not-enough-data",
+      "window": [
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed"
+      ],
+      "quarantinedExecutions": 0,
+      "executionsInHistory": 19,
+      "unobserved": 0,
+      "lastFailure": null,
+      "cleanWindow": false,
+      "experimental": false,
+      "title": "PB-ABR-001 climbs to the top rung on an unconstrained network and stays there",
+      "quarantine": null
+    }
+  ],
+  "invalidRuns": [
+    {
+      "id": "PB-ABR-001",
+      "project": "webkit",
+      "tier": "release",
+      "scheduled": 30,
+      "invalid": 16,
+      "share": 0.5333333333333333,
+      "budget": 0.4,
+      "verdict": "over-invalid-budget",
+      "lastInvalid": {
+        "date": "2026-11-04T21:20:23.780Z",
+        "runId": "collect-20261104T210703Z-02aad0-40",
+        "commit": "98ecb4f72ca1a52e4435a157f0bb172a4a28363c",
+        "reason": "invalid run: forced downshift to 360p 2.0 s after entering 720p, 10 of 387 frames dropped. The playhead entered the first 720p segment at media time 8.0 s and the player left 720p at 9.98 s, 9.3 s after it reached it, on a 20000 kbps link that carries it. The origin was asked twice for a-aac #10: Shaka switches the unchanged audio stream again only for a forced switch, which it makes when it disables a rung. No request failed and the player raised no error, and the load dropped frames: Shaka's dropped-frame protection, which disables the rung that plays for 30 s, fits, so this attempt cannot say whether the player holds 720p on an unconstrained link (ADR-106, amendment 3)."
+      },
+      "experimental": false,
+      "title": "PB-ABR-001 climbs to the top rung on an unconstrained network and stays there",
+      "quarantine": null
+    }
+  ],
+  "quarantine": [],
+  "quarantineProblems": [],
+  "skips": [
+    {
+      "id": "PB-ABR-001",
+      "project": "webkit",
+      "reason": "invalid run: forced downshift to 360p 2.0 s after entering 720p, 10 of 387 frames dropped. The playhead entered the first 720p segment at media time 8.0 s and the player left 720p at 9.98 s, 9.3 s after it reached it, on a 20000 kbps link that carries it. The origin was asked twice for a-aac #10: Shaka switches the unchanged audio stream again only for a forced switch, which it makes when it disables a rung. No request failed and the player raised no error, and the load dropped frames: Shaka's dropped-frame protection, which disables the rung that plays for 30 s, fits, so this attempt cannot say whether the player holds 720p on an unconstrained link (ADR-106, amendment 3).",
+      "date": "2026-11-04T21:20:23.780Z",
+      "times": 21,
+      "of": 40
+    }
+  ],
+  "notes": []
+}

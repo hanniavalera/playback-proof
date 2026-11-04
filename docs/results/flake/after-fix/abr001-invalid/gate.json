@@ -1,0 +1,37 @@
+{
+  "decision": "fail",
+  "envId": "gha-macos-arm64",
+  "today": "2026-11-04",
+  "runsJudged": 40,
+  "currentRuns": 1,
+  "failures": [
+    {
+      "kind": "over-invalid-budget",
+      "subject": "PB-ABR-001 on webkit",
+      "message": "PB-ABR-001 on webkit was an invalid run in 16 of 30 of its last scheduled executions (53.3%), the budget is 40.0%: the claim is no longer evaluated on this leg. Last invalid run: forced downshift to 360p 2.0 s after entering 720p, 10 of 387 frames dropped (run collect-20261104T210703Z-02aad0-40, 2026-11-04, commit 98ecb4f7).",
+      "decision": "Fix the machine (load, decode), or declare the leg a documented gap with evidence (src/lab/gaps.ts), or retire the test on this leg: do not widen the budget to make it green. Who: the owner of the Adaptive bitrate (ABR) area. By when: before this merge; the gate stays red while more than 40.0% of the last 30 scheduled executions of the leg are invalid runs. A fixed machine clears it only as newer executions push the old invalid runs out of the window (at most 18 valid executions of this leg); a documented gap or a retirement in the same pull request ends the judgement of the leg at once, because its next run no longer schedules the test. A quarantine does not clear it."
+    }
+  ],
+  "notes": [],
+  "suites": [],
+  "tests": [],
+  "invalidRuns": [
+    {
+      "id": "PB-ABR-001",
+      "project": "webkit",
+      "invalid": 16,
+      "scheduled": 30,
+      "share": 0.5333333333333333,
+      "budget": 0.4,
+      "verdict": "over-invalid-budget",
+      "lastInvalid": {
+        "date": "2026-11-04T21:20:23.780Z",
+        "runId": "collect-20261104T210703Z-02aad0-40",
+        "commit": "98ecb4f72ca1a52e4435a157f0bb172a4a28363c",
+        "reason": "invalid run: forced downshift to 360p 2.0 s after entering 720p, 10 of 387 frames dropped. The playhead entered the first 720p segment at media time 8.0 s and the player left 720p at 9.98 s, 9.3 s after it reached it, on a 20000 kbps link that carries it. The origin was asked twice for a-aac #10: Shaka switches the unchanged audio stream again only for a forced switch, which it makes when it disables a rung. No request failed and the player raised no error, and the load dropped frames: Shaka's dropped-frame protection, which disables the rung that plays for 30 s, fits, so this attempt cannot say whether the player holds 720p on an unconstrained link (ADR-106, amendment 3)."
+      },
+      "quarantined": null
+    }
+  ],
+  "recorded": null
+}
