@@ -25,6 +25,9 @@ export interface RepInfo {
   width?: number;
   height?: number;
   frameRate?: number;
+  /** Audio only: channel count and sample rate as found in the file (manifests need them: AudioChannelConfiguration, CHANNELS). */
+  channels?: number;
+  sampleRate?: number;
   initExt: 'mp4' | 'webm';
   segmentExt: 'm4s' | 'webm';
 }
