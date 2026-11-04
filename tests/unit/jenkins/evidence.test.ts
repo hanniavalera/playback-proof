@@ -8,6 +8,7 @@ import {
   parseToolVersions,
   redact,
   stringifyEvidence,
+  summarizeArtifacts,
   summarizePlaywright,
   worstStatus,
 } from '../../../tools/lib/jenkins-evidence.ts';
@@ -382,6 +383,33 @@ describe('summarizePlaywright', () => {
   it('yields nothing for a document that is not a Playwright report', () => {
     expect(summarizePlaywright(null)).toEqual([]);
     expect(summarizePlaywright({ unrelated: true })).toEqual([]);
+  });
+});
+
+describe('summarizeArtifacts', () => {
+  it('keeps the reports and groups what a failing test left by the directory of the test', () => {
+    const dir = 'test-results/vod-start-PB-VOD-002-HLS-VOD-starts-a1b2c-chromium';
+    const paths = [
+      'reports/chromium/playwright.json',
+      'reports/chromium/html/index.html',
+      'reports/chromium/html/data/abcdef.zip',
+      'test-results/.last-run.json',
+      `${dir}/qa-events.json`,
+      `${dir}/request-log.json`,
+      `${dir}-retry1/qa-events.json`,
+    ];
+    expect(summarizeArtifacts(paths)).toEqual({
+      count: 7,
+      reports: ['reports/chromium/playwright.json', 'reports/chromium/html/index.html'],
+      failureFiles: {
+        [dir]: ['qa-events.json', 'request-log.json'],
+        [`${dir}-retry1`]: ['qa-events.json'],
+      },
+    });
+  });
+
+  it('is empty for a build that archived nothing', () => {
+    expect(summarizeArtifacts([])).toEqual({ count: 0, reports: [], failureFiles: {} });
   });
 });
 

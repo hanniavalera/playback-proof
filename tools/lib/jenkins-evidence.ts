@@ -372,6 +372,29 @@ export function summarizePlaywright(report: unknown): ProjectSummary[] {
 // The record
 // ---------------------------------------------------------------------------------------------------------------------------------
 
+export interface ArtifactSummary {
+  /** Everything the build archived. */
+  count: number;
+  /** The reports of the engines: the JSON of each run and the entry page of its HTML report. */
+  reports: string[];
+  /** The files Playwright kept for a failing test, by test directory (the failure attachments of docs/CONTRACTS.md 7.2). */
+  failureFiles: Record<string, string[]>;
+}
+
+/** What a build archived, cut down to what is evidence: the reports, and the directories of the tests that left files. */
+export function summarizeArtifacts(paths: readonly string[]): ArtifactSummary {
+  const failureFiles: Record<string, string[]> = {};
+  for (const path of paths) {
+    const match = /^(test-results\/[^/]+)\/(.+)$/.exec(path);
+    if (match?.[1] !== undefined && match[2] !== undefined) (failureFiles[match[1]] ??= []).push(match[2]);
+  }
+  return {
+    count: paths.length,
+    reports: paths.filter((p) => /^reports\/[^/]+\/(playwright\.json|html\/index\.html)$/.test(p)),
+    failureFiles,
+  };
+}
+
 export interface EvidenceInput {
   job: string;
   build: number;
@@ -423,7 +446,7 @@ export interface Evidence {
   /** The merge gate: how long its engines took together against what they would take one after the other. */
   mergeGate: { wallClockMs: number; branchesMs: number; waitedMs: number; branches: number } | null;
   playwright: ProjectSummary[];
-  artifacts: string[];
+  artifacts: ArtifactSummary;
   /** Only for a build that did not succeed: the first stage that failed, and the tests that did. */
   failure?: { stage: string | null; message: string | null; tests: { project: string; test: TestOutcome }[] };
 }
@@ -465,7 +488,7 @@ export function buildEvidence(input: EvidenceInput): Evidence {
           }
         : null,
     playwright: input.playwright,
-    artifacts: input.artifacts,
+    artifacts: summarizeArtifacts(input.artifacts),
   };
   if (input.result !== 'SUCCESS') {
     const failed = input.stages.find(
