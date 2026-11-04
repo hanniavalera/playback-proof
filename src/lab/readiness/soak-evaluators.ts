@@ -2,9 +2,9 @@ import { LIVE_LIMITS } from '../../shared/criteria.ts';
 import { median, percentile } from '../measure/stats.ts';
 import { evaluateManifestCadence } from './evaluators.ts';
 import type { TimeWindow } from './evaluators.ts';
-import { fitLine, perHour, pooledSlope, quartileShift } from './regression.ts';
+import { fitLine, perHour, pooledSlope, pooledTheilSen, quartileShift } from './regression.ts';
 import type { Point } from './regression.ts';
-import { aggregate, evaluation, formatMs, plural } from './verdict.ts';
+import { aggregate, evaluation, formatMs, judge, plural } from './verdict.ts';
 import type { Evaluation, Limits, Verdict } from './verdict.ts';
 
 // The evaluators of PB-RDY-005, the soak (docs/decisions/readiness.md, ADR-155 to ADR-157): pure functions from what a soak recorded to
@@ -254,9 +254,11 @@ export function evaluateCriticalErrors(input: SoakInput, limits: Limits = LIVE_L
 }
 
 /**
- * Errors of any severity that no injected fault explains. TEST_STRATEGY.md section 8 says that anything outside an injected fault window
- * fails the soak, and `LIVE_LIMITS` has no number for it: zero tolerance is its own, so it is judged against the critical-error limit,
- * which is also zero. A recoverable error is a signal the soak exists to find (a retried segment, a manifest that did not arrive).
+ * Errors of any severity that no injected fault explains, as information next to the criteria: it decides nothing. TEST_STRATEGY.md
+ * section 8 says that "anything outside an injected fault window fails the soak", and `LIVE_READINESS` has no row for it (only the
+ * critical errors, which are judged above and fail the soak whenever they happen); whether this line should be one is the owner's decision
+ * (ADR-156). A recoverable error is a signal the soak exists to find (a retried segment, a manifest that did not arrive), so the sheet
+ * shows it, with the zero of the critical-error limit as the reference it is held against.
  */
 export function evaluateUnexplainedErrors(input: SoakInput, limits: Limits = LIVE_LIMITS): Evaluation {
   const windows = explainedWindows(input.faults, limits);
@@ -270,6 +272,7 @@ export function evaluateUnexplainedErrors(input: SoakInput, limits: Limits = LIV
     limitKey: 'maxCriticalErrors',
     bound: 'at-most',
     limits,
+    scope: 'advisory',
     detail: {
       total: input.errors.length,
       explainedByFaults: input.errors.length - unexplained.length,
@@ -282,7 +285,7 @@ export function evaluateUnexplainedErrors(input: SoakInput, limits: Limits = LIV
     sentence: ({ verdict }) =>
       verdict === 'GO'
         ? `${plural(input.errors.length, 'error')} in the soak, ${input.errors.length === 0 ? 'none to explain' : 'all inside an injected fault'}.`
-        : `${plural(unexplained.length, 'error')} that no injected fault explains: ${unexplained.map(describeError).join('; ')}. The first: ${unexplained[0]?.message ?? ''}`,
+        : `${plural(unexplained.length, 'error')} that no injected fault explains: ${unexplained.map(describeError).join('; ')}. The first: ${unexplained[0]?.message ?? ''} This line is information and does not decide the soak (a critical error does, on its own line).`,
   });
 }
 
@@ -360,11 +363,16 @@ export function driftSegments(input: SoakInput, limits: Limits = LIVE_LIMITS): P
 }
 
 /**
- * The drift: the slope of the least-squares line through the latency reads, in ms per hour, with the level it starts from, judged as the
- * change that slope makes over the length of the soak after the warm-up. A flat series at any level has a slope of zero, so a player
- * that sits steadily 10 s behind is not "drifting" (that is a finding of PB-RDY-003); a series that climbs is, whatever it started at.
- * With an injected fault the series is fitted in stretches that share one slope and have a level each, so the step an outage leaves is
- * not read as a slope. Both signs count: a latency that falls steadily is a media clock running fast, which ends at the edge.
+ * The drift: the slope of the Theil-Sen line through the latency reads (the median of all the slopes between two reads, so a few wild reads
+ * cannot move it), in ms per hour, with the level it starts from (the median of the intercepts), judged as the change that slope makes
+ * over the length of the soak after the warm-up. A flat series at any level has a slope of zero, so a player that sits steadily 10 s
+ * behind is not "drifting" (that is a finding of PB-RDY-003); a series that climbs is, whatever it started at. With an injected fault the
+ * series is fitted in stretches that share one slope and have a level each, so the step an outage leaves is not read as a slope. Both
+ * signs count: a latency that falls steadily is a media clock running fast, which ends at the edge.
+ *
+ * Ordinary least squares over the same stretches is reported next to it as a cross-check. When the two differ by more than the limit
+ * itself, or would not give the same verdict, the line says so in its note: a wild read moves least squares and not Theil-Sen, and a
+ * curve (flat, then climbing) moves least squares more than Theil-Sen, so a disagreement is where a reader has to look at the series.
  */
 export function evaluateLatencyDrift(input: SoakInput, limits: Limits = LIVE_LIMITS): Evaluation {
   const segments = driftSegments(input, limits);
@@ -376,10 +384,21 @@ export function evaluateLatencyDrift(input: SoakInput, limits: Limits = LIVE_LIM
   const spanMs = input.endMs - (input.firstFrameMs + input.warmupMs);
   const enough = points >= MIN_DRIFT_SAMPLES && evidenceMs >= MIN_DRIFT_SPAN_MS;
   const fit = segments.length === 1 ? fitLine(segments[0] as Point[]) : null;
+  const robust = pooledTheilSen(segments);
   const pooled = pooledSlope(segments);
-  const slopePerMs = pooled?.slope ?? null;
-  const driftMs = slopePerMs === null ? null : Math.abs(slopePerMs * spanMs);
+  const slopePerMs = robust?.slope ?? null;
+  const changeMs = slopePerMs === null ? null : slopePerMs * spanMs;
+  const driftMs = changeMs === null ? null : Math.abs(changeMs);
+  const olsChangeMs = pooled === null ? null : pooled.slope * spanMs;
+  const marginMs = limits.maxLatencyDriftMs;
+  const gapMs = changeMs === null || olsChangeMs === null ? null : Math.abs(changeMs - olsChangeMs);
+  const verdictsDiffer =
+    driftMs !== null &&
+    olsChangeMs !== null &&
+    judge(driftMs, marginMs, 'at-most') !== judge(Math.abs(olsChangeMs), marginMs, 'at-most');
+  const disagree = enough && gapMs !== null && (gapMs > marginMs || verdictsDiffer);
   const latencies = segments.flat().map((point) => point.y);
+  const signed = (ms: number): string => `${ms >= 0 ? '+' : '-'}${formatMs(Math.abs(ms))}`;
   return evaluation({
     id: 'soak.latency-drift',
     check: 'PB-RDY-005',
@@ -390,32 +409,51 @@ export function evaluateLatencyDrift(input: SoakInput, limits: Limits = LIVE_LIM
     bound: 'at-most',
     limits,
     detail: {
+      estimator: 'theil-sen',
       slopeMsPerHour: slopePerMs === null ? null : perHour(slopePerMs),
-      fittedChangeMs: slopePerMs === null ? null : slopePerMs * spanMs,
+      fittedChangeMs: changeMs,
+      pairwiseSlopes: robust?.pairs ?? 0,
+      thinned: robust?.thinned ?? false,
       spanMs,
       evidenceMs,
       samples: points,
       minimumSamples: MIN_DRIFT_SAMPLES,
       minimumEvidenceMs: MIN_DRIFT_SPAN_MS,
       stretches:
-        pooled?.segments.map((segment) => ({
+        robust?.segments.map((segment) => ({
           fromMs: segment.firstX,
           toMs: segment.lastX,
           samples: segment.n,
           levelAtStartMs: segment.intercept,
-          meanMs: segment.meanY,
-          residualSdMs: segment.residualSd,
+          medianMs: segment.medianY,
+          scatterMs: segment.scatter,
           ownSlopeMsPerHour: perHour(segment.ownSlope),
         })) ?? [],
+      leastSquares: {
+        slopeMsPerHour: pooled === null ? null : perHour(pooled.slope),
+        fittedChangeMs: olsChangeMs,
+        stretches:
+          pooled?.segments.map((segment) => ({
+            levelAtStartMs: segment.intercept,
+            residualSdMs: segment.residualSd,
+            ownSlopeMsPerHour: perHour(segment.ownSlope),
+          })) ?? [],
+      },
+      estimators: { gapMs, marginMs, verdictsDiffer, disagree },
       quartileShiftMs: segments.length === 1 ? quartileShift(latencies) : null,
       rSquared: fit?.r2 ?? null,
     },
     ...(enough ? {} : { verdict: 'INCONCLUSIVE' as const }),
+    ...(disagree && changeMs !== null && olsChangeMs !== null && gapMs !== null
+      ? {
+          note: `The two estimators of the drift disagree: Theil-Sen, which is the verdict, puts the change at ${signed(changeMs)} and least squares at ${signed(olsChangeMs)} over ${formatMs(spanMs)}, ${formatMs(gapMs)} apart${gapMs > marginMs ? `, more than the ${formatMs(marginMs)} of the limit` : ''}${verdictsDiffer ? '; least squares would not have given the same verdict' : ''}. A wild read moves least squares and not Theil-Sen, and so does a series that is flat and then climbs for the last part of the soak: the series is in the result file, look at it.`,
+        }
+      : {}),
     sentence: ({ verdict, value, limit }) => {
       if (!enough || slopePerMs === null)
         return `Only ${plural(points, 'latency read')} over ${formatMs(evidenceMs)} of fault-free soak after the warm-up (at least ${MIN_DRIFT_SAMPLES} reads over ${formatMs(MIN_DRIFT_SPAN_MS)} are needed): the drift cannot be judged.`;
-      const level = pooled?.segments[0]?.intercept ?? 0;
-      return `Latency changed by ${value} over the ${formatMs(spanMs)} after the warm-up (a slope of ${perHour(slopePerMs) >= 0 ? '+' : ''}${Math.round(perHour(slopePerMs)).toLocaleString('en-US')} ms/h from a level of ${formatMs(level)}); the limit is ${limit}${verdict === 'GO' ? '.' : ': the playhead is slipping away from the live edge.'}`;
+      const level = robust?.segments[0]?.intercept ?? 0;
+      return `Latency changed by ${value} over the ${formatMs(spanMs)} after the warm-up (a Theil-Sen slope of ${perHour(slopePerMs) >= 0 ? '+' : ''}${Math.round(perHour(slopePerMs)).toLocaleString('en-US')} ms/h from a level of ${formatMs(level)}; least squares reads ${olsChangeMs === null ? 'nothing' : signed(olsChangeMs)}); the limit is ${limit}${verdict === 'GO' ? '.' : ': the playhead is slipping away from the live edge.'}`;
     },
   });
 }

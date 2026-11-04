@@ -49,6 +49,11 @@ export interface Evaluation {
   censored?: true;
   /** What else a reader needs to check the number (counts, the worst run, the fitted line). JSON-serialisable. */
   detail?: Record<string, unknown>;
+  /**
+   * What a reader should know about this line even when it is a GO, which a sheet prints without a verdict and apart from the sentence of
+   * the lines that are not (two estimators of the same number that disagree, a line whose verdict hangs on a choice).
+   */
+  note?: string;
 }
 
 /** The comparison every limit goes through. The limit is inclusive: a value exactly at the limit is within it. */
@@ -130,6 +135,7 @@ export interface EvaluationInput {
   scope?: Evaluation['scope'];
   censored?: true;
   detail?: Record<string, unknown>;
+  note?: string;
   /** The sentence, given the verdict and the value in words (`value` is null: the text says why). */
   sentence: (context: { verdict: Verdict; value: string; limit: string }) => string;
   /** Overrides the judgement: a line that cannot be judged says why in its own sentence. */
@@ -161,5 +167,6 @@ export function evaluation(input: EvaluationInput): Evaluation {
     scope: input.scope ?? 'criterion',
     ...(input.censored ? { censored: true as const } : {}),
     ...(input.detail ? { detail: input.detail } : {}),
+    ...(input.note ? { note: input.note } : {}),
   };
 }

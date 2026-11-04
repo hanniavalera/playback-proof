@@ -39,7 +39,7 @@ function checkBlock(check: CheckResult): string[] {
 
 const firstLine = (text: string): string => text.split('\n')[0] ?? '';
 
-/** The findings: the sentence of every line that is not a GO, which is the part of the sheet that has to be read. */
+/** The findings: the sentence of every line that is not a GO, which is the part of the sheet that has to be read, and the notes of the lines. */
 function findings(checks: readonly CheckResult[]): string[] {
   const lines: string[] = [];
   for (const check of checks) {
@@ -49,6 +49,8 @@ function findings(checks: readonly CheckResult[]): string[] {
         `  ${check.id} ${evaluation.verdict}${evaluation.scope === 'advisory' ? ' (advisory)' : ''}: ${evaluation.sentence}`,
       );
     }
+    for (const evaluation of check.evaluations)
+      if (evaluation.note) lines.push(`  ${check.id} note, ${evaluation.label}: ${evaluation.note}`);
     for (const note of check.notes) lines.push(`  ${check.id} note: ${note}`);
   }
   return lines;
@@ -135,9 +137,21 @@ export function renderSoakReport(report: SoakReport): string {
         ]
       : []),
   ];
-  const why = criteria.filter((evaluation) => evaluation.verdict !== 'GO' && evaluation.verdict !== 'N/A');
+  const why = report.evaluations.filter(
+    (evaluation) => evaluation.verdict !== 'GO' && evaluation.verdict !== 'N/A',
+  );
   if (why.length > 0)
-    out.push('', '  Why:', ...why.map((evaluation) => `  ${evaluation.verdict}: ${evaluation.sentence}`));
+    out.push(
+      '',
+      '  Why:',
+      ...why.map(
+        (evaluation) =>
+          `  ${evaluation.verdict}${evaluation.scope === 'advisory' ? ' (advisory)' : ''}: ${evaluation.sentence}`,
+      ),
+    );
+  const noted = report.evaluations.filter((evaluation) => evaluation.note);
+  if (noted.length > 0)
+    out.push('', '  Notes:', ...noted.map((evaluation) => `  ${evaluation.label}: ${evaluation.note}`));
   const { harness } = report;
   if (harness.firstHeapMb !== null && harness.lastHeapMb !== null) {
     out.push(

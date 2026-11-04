@@ -25,8 +25,9 @@ describe('the policy text of the live criteria', () => {
     expect(checkGeneratedBlocks(markdown, live)).toEqual([]);
   });
 
-  it('describes the drift the way the evaluator measures it: a slope, not a difference of medians', () => {
-    expect(LIVE_READINESS.maxLatencyDriftMs.measure).toContain('least-squares slope');
+  it('describes the drift the way the evaluator measures it: a robust slope with least squares beside it, not a difference of medians', () => {
+    expect(LIVE_READINESS.maxLatencyDriftMs.measure).toContain('Theil-Sen slope');
+    expect(LIVE_READINESS.maxLatencyDriftMs.measure).toContain('least squares');
     expect(LIVE_READINESS.maxLatencyDriftMs.measure).toContain('outside the injected faults');
   });
 });

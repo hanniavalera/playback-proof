@@ -109,17 +109,73 @@ describe('latency drift', () => {
     expect(drift.verdict).toBe('GO');
   });
 
+  it('is not flipped by one wild read at the very end of the soak, where least squares would be', () => {
+    // 49 reads after the warm-up, the last one 23.8 s too high. A least-squares slope gives the last read a leverage of 6(n-1)/(n(n+1)),
+    // 0.118 here: 2.8 s of fitted change, a NO-GO for a player that never drifted. The median of the pairwise slopes does not move.
+    const latency = (sec: number): number => (sec === 300 ? 30_000 : 6200);
+    const drift = evaluateLatencyDrift(soak({ latency }));
+    expect(drift.verdict).toBe('GO');
+    expect(drift.value).toBeCloseTo(0, 6);
+    const ols = (drift.detail?.leastSquares as { fittedChangeMs: number }).fittedChangeMs;
+    expect(ols).toBeGreaterThan(LIVE_LIMITS.maxLatencyDriftMs * 2.5);
+    const estimators = drift.detail?.estimators as { disagree: boolean; verdictsDiffer: boolean };
+    expect(estimators).toMatchObject({ disagree: true, verdictsDiffer: true });
+    expect(evaluateSoak(soak({ latency })).verdict).toBe('GO');
+  });
+
+  it('still sees a real slow ramp when the soak also ends on a wild read', () => {
+    const drift = evaluateLatencyDrift(
+      soak({ latency: (sec) => ramp(3000)(sec) + (sec === 300 ? 24_000 : 0) }),
+    );
+    expect(drift.verdict).toBe('NO-GO');
+    expect(drift.value).toBeCloseTo(3000, 3);
+    expect(drift.detail?.slopeMsPerHour).toBeCloseTo(45_000, 0);
+  });
+
+  it('puts the least-squares reading next to the verdict, and says nothing about it while the two agree', () => {
+    const ramped = evaluateLatencyDrift(soak({ latency: ramp(3000) }));
+    expect(ramped.detail?.estimator).toBe('theil-sen');
+    expect(ramped.detail?.pairwiseSlopes).toBe((49 * 48) / 2);
+    expect((ramped.detail?.leastSquares as { fittedChangeMs: number }).fittedChangeMs).toBeCloseTo(3000, 3);
+    expect(ramped.detail?.estimators).toMatchObject({ disagree: false, verdictsDiffer: false });
+    expect(ramped.note).toBeUndefined();
+    expect(ramped.sentence).toContain('Theil-Sen slope of +45,000 ms/h');
+    expect(ramped.sentence).toContain('least squares reads +3.00 s');
+  });
+
+  it('says on the sheet when the two estimators differ by more than the limit, and names what to look at', () => {
+    const drift = evaluateLatencyDrift(soak({ latency: (sec) => (sec === 300 ? 30_000 : 6200) }));
+    expect(drift.note).toContain('Theil-Sen, which is the verdict');
+    expect(drift.note).toContain('+0 ms');
+    expect(drift.note).toContain('more than the 1.00 s of the limit');
+    expect(drift.note).toContain('would not have given the same verdict');
+  });
+
+  it('flags a series that is flat and then climbs in the last part: the verdict stays the robust one, the sheet says to look', () => {
+    // The last 30 % of the reads climb by 8 s. Theil-Sen is blind to a climb that short (most pairs are flat); least squares is not: the
+    // disagreement is the only place such a climb shows, which is why it is printed whatever the verdict.
+    const hockey = (sec: number): number => 6200 + (sec <= 230 ? 0 : ((sec - 230) / 70) * 8000);
+    const drift = evaluateLatencyDrift(soak({ latency: hockey }));
+    expect(drift.verdict).toBe('GO');
+    expect(drift.detail?.estimators).toMatchObject({ disagree: true, verdictsDiffer: true });
+    expect(drift.note).toContain('flat and then climbs');
+  });
+
   it('does not read the step an injected outage leaves as a slope, and would if the fault were not declared', () => {
-    const stalled = (sec: number): number => (sec < 120 ? 6200 : 10_100);
-    const declared = evaluateLatencyDrift(soak({ minutes: 8, latency: stalled, faults: [fault(120, 10)] }));
+    // Half of the reads on each side of the step: with nothing declared, half of the pairs of reads straddle it and the median of their
+    // slopes is one of the straddling ones. A step near either end would not do it (most pairs would be flat); the cut is what makes the
+    // answer independent of where the outage fell.
+    const stalled = (sec: number): number => (sec < 210 ? 6200 : 10_100);
+    const declared = evaluateLatencyDrift(soak({ minutes: 6, latency: stalled, faults: [fault(210, 10)] }));
     expect(declared.verdict).toBe('GO');
     expect(declared.value).toBeCloseTo(0, 6);
     const stretches = declared.detail?.stretches as Array<{ levelAtStartMs: number }>;
     expect(stretches).toHaveLength(2);
     expect(stretches[0]?.levelAtStartMs).toBeCloseTo(6200, 6);
     expect(stretches[1]?.levelAtStartMs).toBeCloseTo(10_100, 6);
-    const hidden = evaluateLatencyDrift(soak({ minutes: 8, latency: stalled }));
+    const hidden = evaluateLatencyDrift(soak({ minutes: 6, latency: stalled }));
     expect(hidden.verdict).toBe('NO-GO');
+    expect(hidden.value).toBeGreaterThan(3000);
   });
 
   it("keeps the player's catch-up after an outage out of the fit: the ramp back to the edge is the settling the policy allows", () => {
@@ -257,7 +313,7 @@ describe('errors', () => {
     expect(evaluateCriticalErrors(soak({ errors: [error(130, 1)] })).verdict).toBe('GO');
   });
 
-  it('fails the soak on an error that no injected fault explains, and accepts one inside the stall it belongs to', () => {
+  it('reports an error that no injected fault explains as information, and accepts one inside the stall it belongs to', () => {
     const faults = [fault(120, 10)];
     expect(evaluateUnexplainedErrors(soak({ errors: [error(100, 1)], faults })).verdict).toBe('NO-GO');
     expect(evaluateUnexplainedErrors(soak({ errors: [error(125, 1)], faults })).verdict).toBe('GO');
@@ -268,6 +324,19 @@ describe('errors', () => {
     expect(evaluateUnexplainedErrors(soak({ errors: [error(100, 1, 'HTTP_ERROR')] })).sentence).toContain(
       'HTTP_ERROR',
     );
+  });
+
+  it('does not let that line decide the soak (the strategy asks for it and criteria.ts has no row for it: the owner decides)', () => {
+    const line = evaluateUnexplainedErrors(soak({ errors: [error(100, 1)] }));
+    expect(line.scope).toBe('advisory');
+    expect(line.verdict).toBe('NO-GO');
+    expect(line.sentence).toContain('does not decide the soak');
+    const recoverable = evaluateSoak(soak({ errors: [error(100, 1)] }));
+    expect(recoverable.verdict).toBe('GO');
+    // A critical error is a criterion of its own, whether or not an injected fault explains it, and still fails the soak.
+    const critical = evaluateSoak(soak({ errors: [error(100, 2)] }));
+    expect(critical.verdict).toBe('NO-GO');
+    expect(get(critical.evaluations, 'soak.critical-errors').scope).toBe('criterion');
   });
 });
 

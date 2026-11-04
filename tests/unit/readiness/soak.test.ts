@@ -220,8 +220,12 @@ describe('the result file of a soak', () => {
     expect(report.episodes).toHaveLength(1);
     expect(report.faults).toHaveLength(1);
     expect(report.consoleProblems).toEqual(['error: Failed to load resource']);
-    // An error that no injected fault explains fails the soak.
+    // A recoverable error that no injected fault explains is shown with a verdict of its own and decides nothing; the soak is NO-GO here
+    // for what the recording shows besides it (a stall of 3 s outside the faults is above the rebuffer-ratio limit).
+    const unexplained = get(report.evaluations, 'soak.unexplained-errors');
+    expect(unexplained.verdict).toBe('NO-GO');
+    expect(unexplained.scope).toBe('advisory');
+    expect(get(report.evaluations, 'soak.rebuffer-ratio').verdict).toBe('NO-GO');
     expect(report.verdict).toBe('NO-GO');
-    expect(get(report.evaluations, 'soak.unexplained-errors').verdict).toBe('NO-GO');
   });
 });

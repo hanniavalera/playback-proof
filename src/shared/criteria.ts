@@ -201,7 +201,7 @@ export const LIVE_READINESS = {
     'Latency drift',
     SEGMENT_MS / 2,
     'ms',
-    'The change that the least-squares slope of the `latencyMs` reads makes over the length of the soak after the warm-up, outside the injected faults (one slope for the stretches between them, each with its own level). The difference of the medians of the last and the first quarter is reported next to it.',
+    'The change that the Theil-Sen slope (the median of the slopes between every two of the `latencyMs` reads) makes over the length of the soak after the warm-up, outside the injected faults (one slope for the stretches between them, each with its own level). The same change by least squares and the difference of the medians of the last and the first quarter are reported next to it, and the sheet says when the least-squares reading differs from it by more than the limit.',
     'Half a segment. A trend that large means the playhead is slipping relative to the edge; smaller differences are within what segment-granular positioning and timer jitter explain.',
   ),
   maxHeapGrowthMb: assumption(

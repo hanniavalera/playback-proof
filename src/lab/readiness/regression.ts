@@ -1,7 +1,9 @@
 import { median } from '../measure/stats.ts';
 
-// Least squares for the soak's drift and heap trends. Pure and dependency free; the cases that matter (a flat line is not a drift, a step
-// is not a slope, noise does not flip a verdict) are pinned by tests/unit/readiness/regression.test.ts.
+// The line fits behind the soak's drift and heap trends: Theil-Sen (the median of the pairwise slopes, which the drift verdict is made of)
+// and ordinary least squares (the cross-check next to it, and the trend of the heap). Pure and dependency free; the cases that matter (a
+// flat line is not a drift, a step is not a slope, a wild read does not flip a verdict, noise does not either) are pinned by
+// tests/unit/readiness/regression.test.ts.
 //
 // Everything is computed on values centred on their means: the x of a soak is a time in epoch milliseconds (1.7e12), and the products of
 // such numbers lose most of their digits in a double.
@@ -123,6 +125,125 @@ export function pooledSlope(segments: ReadonlyArray<readonly Point[]>): PooledFi
         meanY: own.meanY,
         residualSd: points.length > 2 ? Math.sqrt(ss / (points.length - 2)) : null,
         ownSlope: own.slope,
+      };
+    }),
+  };
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Theil-Sen: the robust slope the drift verdict is made of
+
+/**
+ * Most points of one stretch whose pairs are all used. n points have n(n-1)/2 pairwise slopes, held in memory at once: 1,200 points are
+ * 719,400 slopes (5.8 MB). A soak reads every few seconds, so 30 minutes at 5 s is 360 points and nothing is thinned; only a very long
+ * soak read very often is, to evenly spaced points (first and last kept), and the fit says so.
+ */
+export const MAX_THEIL_SEN_POINTS = 1200;
+
+export interface RobustFit {
+  /** The median of the pairwise slopes of every stretch (y per x), pairs from different stretches never mixed. */
+  slope: number;
+  /** Points of the stretches that contributed. */
+  n: number;
+  /** Pairwise slopes the median was taken over. */
+  pairs: number;
+  /** A stretch had more than `MAX_THEIL_SEN_POINTS` points and was thinned. */
+  thinned: boolean;
+  /** One line per contributing stretch, each with a level of its own and the pooled slope. */
+  segments: Array<{
+    n: number;
+    /** Points used after thinning. */
+    used: number;
+    firstX: number;
+    lastX: number;
+    /** The level at the stretch's first x: the median of `y - slope * (x - firstX)`, the median-of-intercepts line. */
+    intercept: number;
+    medianY: number;
+    /** The scatter around the line as a standard deviation would say it: 1.4826 times the median absolute residual. Null below three points. */
+    scatter: number | null;
+    /** The median of this stretch's own pairwise slopes, for the reader who wants to see that the stretches agree. */
+    ownSlope: number;
+  }>;
+}
+
+const medianOfSorted = (sorted: ArrayLike<number>): number => {
+  const middle = sorted.length >> 1;
+  return sorted.length % 2 === 1
+    ? (sorted[middle] as number)
+    : ((sorted[middle - 1] as number) + (sorted[middle] as number)) / 2;
+};
+
+/** Evenly spaced points, the first and the last kept: thinning that does not favour any part of the series. */
+function thinned(points: readonly Point[], max: number): readonly Point[] {
+  if (points.length <= max) return points;
+  return Array.from(
+    { length: max },
+    (_, i) => points[Math.floor((i * (points.length - 1)) / (max - 1))] as Point,
+  );
+}
+
+/** Every slope between two points of the stretch with different x, sorted. */
+function pairwiseSlopes(points: readonly Point[]): Float64Array {
+  const slopes = new Float64Array((points.length * (points.length - 1)) / 2);
+  let count = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[i] as Point;
+    for (let j = i + 1; j < points.length; j++) {
+      const b = points[j] as Point;
+      const dx = b.x - a.x;
+      if (dx !== 0) slopes[count++] = (b.y - a.y) / dx;
+    }
+  }
+  return slopes.subarray(0, count).sort();
+}
+
+/**
+ * One slope for several stretches of a series, each with a level of its own, by the Theil-Sen method: the median of all the slopes between
+ * two points of the same stretch (a stretch that an outage cut in two gives pairs on each side, never across, so the step an outage
+ * leaves is not read as a slope), and for each stretch the median of `y - slope * x` as its level. The median of n(n-1)/2 slopes is not
+ * moved by a few wild reads wherever they are in the series (up to 29 % of the points can be wild before it is), where the least-squares
+ * slope is moved by one read at either end in proportion to its distance from the middle. Null when no stretch has two points with
+ * different x.
+ */
+export function pooledTheilSen(segments: ReadonlyArray<readonly Point[]>): RobustFit | null {
+  const used: Array<{ points: readonly Point[]; original: number; slopes: Float64Array }> = [];
+  for (const original of segments) {
+    const points = thinned(original, MAX_THEIL_SEN_POINTS);
+    if (points.length < 2) continue;
+    const slopes = pairwiseSlopes(points);
+    if (slopes.length === 0) continue;
+    used.push({ points, original: original.length, slopes });
+  }
+  if (used.length === 0) return null;
+  const all = new Float64Array(used.reduce((sum, segment) => sum + segment.slopes.length, 0));
+  let offset = 0;
+  for (const { slopes } of used) {
+    all.set(slopes, offset);
+    offset += slopes.length;
+  }
+  all.sort();
+  const slope = medianOfSorted(all);
+  return {
+    slope,
+    n: used.reduce((sum, segment) => sum + segment.original, 0),
+    pairs: all.length,
+    thinned: used.some((segment) => segment.original > segment.points.length),
+    segments: used.map(({ points, original, slopes }) => {
+      const firstX = Math.min(...points.map((p) => p.x));
+      const lastX = Math.max(...points.map((p) => p.x));
+      const intercept = medianOfSorted(points.map((p) => p.y - slope * (p.x - firstX)).sort((a, b) => a - b));
+      const absolute = points
+        .map((p) => Math.abs(p.y - (intercept + slope * (p.x - firstX))))
+        .sort((a, b) => a - b);
+      return {
+        n: original,
+        used: points.length,
+        firstX,
+        lastX,
+        intercept,
+        medianY: median(points.map((p) => p.y)),
+        scatter: points.length > 2 ? 1.4826 * medianOfSorted(absolute) : null,
+        ownSlope: medianOfSorted(slopes),
       };
     }),
   };
