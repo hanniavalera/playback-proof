@@ -132,18 +132,38 @@ async function main(): Promise<void> {
     }
 
     // Does the ClearKey module keep keys per page, per context or per browser? A page with the right key stays open; a second page
-    // asks for the same key id with a wrong key.
+    // asks for the same key id with a wrong key, in the same context and in another one; then the same with the order swapped, and
+    // with the first page closed before the second one starts.
+    const sharing = async (label: string, outcome: Promise<Outcome>): Promise<void> => {
+      const { verdict, detail } = await outcome;
+      rows.push([`sharing: ${label}`, verdict, detail]);
+    };
     const holder = await (await browser.newContext()).newPage();
-    const held = await attempt(service, holder, drm);
-    rows.push(['sharing: page A, right key, stays open', held.verdict, held.detail]);
-    const sameContext = await attempt(service, await holder.context().newPage(), wrong);
-    rows.push(['sharing: page B, wrong key, SAME context as A', sameContext.verdict, sameContext.detail]);
-    const otherContext = await attempt(service, await fresh(), wrong);
-    rows.push([
-      'sharing: page B, wrong key, OTHER context of the same browser',
-      otherContext.verdict,
-      otherContext.detail,
-    ]);
+    await sharing('page A, right key, stays open', attempt(service, holder, drm));
+    await sharing(
+      'page B, wrong key, SAME context as A',
+      attempt(service, await holder.context().newPage(), wrong),
+    );
+    await sharing(
+      'page B, wrong key, OTHER context of the same browser',
+      attempt(service, await fresh(), wrong),
+    );
+
+    const wrongFirst = await (await browser.newContext()).newPage();
+    await sharing('page A, wrong key, stays open', attempt(service, wrongFirst, wrong));
+    await sharing(
+      'page B, right key, SAME context as A',
+      attempt(service, await wrongFirst.context().newPage(), drm),
+    );
+
+    const closing = await (await browser.newContext()).newPage();
+    await sharing('page A, right key, closed afterwards', attempt(service, closing, drm));
+    const closedContext = closing.context();
+    await closing.close();
+    await sharing(
+      'page B, wrong key, SAME context as the closed A',
+      attempt(service, await closedContext.newPage(), wrong),
+    );
 
     console.log(
       `${engine} ${browser.version()}, ${process.platform}, shaka ${(await emePage.evaluate(() => window.__qa.info().shakaVersion)) || '?'}`,
