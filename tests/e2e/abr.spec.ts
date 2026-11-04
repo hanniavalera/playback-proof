@@ -1,4 +1,5 @@
 import { profile } from '../../src/shared/profiles.ts';
+import { compareHistoryWithLog, rungRuns } from './abr/agreement.ts';
 import {
   SHAKA_SWITCH_INTERVAL_S,
   settleWindowSeconds,
@@ -522,5 +523,69 @@ test(
       delivered.slice(-3).map((entry) => entry.rep),
       `rungs of the last three video segments the origin delivered (request log): ${describeSegments(delivered)}`,
     ).toEqual([ladder.lowest.rep, ladder.lowest.rep, ladder.lowest.rep]);
+  },
+);
+
+test(
+  'PB-ABR-007 the bitrate history of window.__qa agrees with the rungs the request log shows (bandwidth-drop)',
+  { tag: ['@release', '@dash'] },
+  async ({ newSession, streamFor, player }, testInfo) => {
+    test.setTimeout(ABR_TEST_TIMEOUT_MS);
+    const rules = profile('bandwidth-drop');
+    const session = await newSession({ stream: streamFor('vod', 'dash'), protocol: 'dash', faults: rules });
+    const stream = await streamInfoOf(session);
+    const ladder = ladderOf(stream);
+    const settle = bestRungCarriedBy(ladder, throttleOf(rules).kbps);
+
+    const qa = await player(session).open();
+    await qa.waitFor('firstframe');
+    // The history to compare is the whole of a drop: the start rung (Shaka's choice, per engine), the step down (in one or two
+    // decisions, PB-ABR-002), and a few segments of the rung it ends on, so that a player that kept fetching the old rung shows.
+    const down = await qa.waitFor('variant-changed', {
+      detail: { reason: 'abr', height: settle.height },
+      timeoutMs: DOWNSHIFT_WAIT_MS,
+    });
+    await waitForRequest(session, (entry) => entry.kind === 'segment' && entry.rep === settle.rep, {
+      timeoutMs: WAIT_MS,
+    });
+    await qa.waitForMediaTime(down.mediaTime + 2 * stream.segmentDurationSec, { timeoutMs: WAIT_MS });
+
+    // Quiet by construction: the next decision of the ABR manager is a switch interval (8 s) after the one just seen, so nothing
+    // can change between reading the player's account and the origin's.
+    const metrics = await qa.metrics();
+    const loadT = (await qa.events()).find((event) => event.name === 'load-requested')?.t;
+    const log = await session.service.log(session.id);
+    const manifestAt = requestsFor(log, { kind: 'manifest' }).find((entry) => entry.rep === undefined);
+    const manifestMs = metrics.startup.manifestMs;
+    if (loadT === undefined || !manifestAt || manifestMs === null) {
+      throw new Error(
+        `the two clocks cannot be aligned: load-requested at ${String(loadT)}, manifest request ${String(manifestAt?.seq)}, manifestMs ${String(manifestMs)}`,
+      );
+    }
+    const history = metrics.bitrate.history.map((change) => ({
+      t: change.t,
+      height: change.height as number,
+      reason: change.reason,
+    }));
+    const runs = rungRuns(log, ladder);
+    const comparison = compareHistoryWithLog({
+      history,
+      runs,
+      anchor: { loadT, manifestAtMs: manifestAt.msSinceStart, manifestMs },
+      segmentDurationSec: stream.segmentDurationSec,
+    });
+    testInfo.annotations.push({
+      type: 'measured',
+      description: `player: ${history.map((entry) => `${entry.height}p ${entry.reason}`).join(' > ')}; origin: ${runs.map((run) => `${run.height}p x ${run.requests}`).join(' > ')}; first request of a new rung after the player's switch: ${comparison.lags.map((lag) => `${lag.height}p ${lag.lagMs} ms`).join(', ')} (bound ${stream.segmentDurationSec * 1000} ms)`,
+    });
+
+    expect(
+      metrics.bitrate.switches,
+      'rung changes counted by the player (metrics.bitrate.switches) against its own history (metrics.bitrate.history)',
+    ).toBe(history.length - 1);
+    expect(
+      comparison.problems,
+      'where the player history (qa.metrics().bitrate.history) and the video segments in the request log disagree',
+    ).toEqual([]);
   },
 );
