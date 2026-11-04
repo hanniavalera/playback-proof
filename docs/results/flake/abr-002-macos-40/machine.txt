@@ -1,0 +1,17 @@
+measure: flake-collect, engine webkit, runner macos-15
+label: abr002-macos
+started: 2026-11-04T15:52:42Z
+commit: 1234a5c5b395b541d877281a7e95ab10e69525b1 (fix/collect-keep-failures)
+environment id: gha-macos-arm64
+runner: macOS ARM64, github-hosted, image macos15 20261028.0489.1
+cpus: 3
+cpu: Apple M1 (Virtual)
+memory: 7168 MiB
+os: macOS 15.8.2
+uptime: 15:52  up 2 mins, 1 user, load averages: 87.15 38.67 15.48
+node: v22.23.4, npm: 10.9.9
+playwright: Version 1.64.1
+ffmpeg: not installed (the streams come from the streams job)
+
+finished: 2026-11-04T16:21:44Z
+uptime: 16:21  up 31 mins, 1 user, load averages: 3.35 3.35 5.75

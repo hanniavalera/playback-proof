@@ -1,0 +1,17 @@
+measure: flake-collect, engine webkit, runner macos-15
+label: abr12-isolated
+started: 2026-11-04T19:01:16Z
+commit: e0a5be30c3d62243a89a36acf765efc424c8c977 (main)
+environment id: gha-macos-arm64
+runner: macOS ARM64, github-hosted, image macos15 20261028.0489.1
+cpus: 3
+cpu: Apple M1 (Virtual)
+memory: 7168 MiB
+os: macOS 15.8.2
+uptime: 19:01  up 1 min, 1 user, load averages: 100.84 39.02 15.27
+node: v22.23.4, npm: 10.9.9
+playwright: Version 1.64.1
+ffmpeg: not installed (the streams come from the streams job)
+
+finished: 2026-11-04T19:38:04Z
+uptime: 19:38  up 38 mins, 1 user, load averages: 2.03 2.59 4.81

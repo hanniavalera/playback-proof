@@ -1,0 +1,21 @@
+import { expect, test } from './support/fixtures.ts';
+
+// A demonstration, not a product test: a real playback test whose FIRST attempt fails on purpose in every fourth repetition of the
+// flake collector (PB_RUN_ID ends in -N), so that the retry passes: a flake of about 25 % that the tracker has to find and the
+// gate has to stop.
+const repetition = Number(/-(\d+)$/.exec(process.env.PB_RUN_ID ?? '')?.[1] ?? '0');
+
+test(
+  'PB-VOD-001 DEMO deliberately flaky: plays 2 s of media, and its first attempt fails in every fourth run',
+  { tag: ['@merge', '@dash'] },
+  async ({ newSession, streamFor, player }, testInfo) => {
+    const session = await newSession({ stream: streamFor('vod', 'dash'), protocol: 'dash' });
+    const qa = await player(session).open();
+    await qa.waitFor('firstframe');
+    expect(await qa.waitForMediaTime(2), 'media time reached').toBeGreaterThanOrEqual(2);
+    expect(
+      testInfo.retry === 0 && repetition % 4 === 0,
+      'deliberately injected first-attempt failure (this is the demonstration, not the player)',
+    ).toBe(false);
+  },
+);

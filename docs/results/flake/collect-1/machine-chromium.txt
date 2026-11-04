@@ -1,0 +1,17 @@
+measure: flake-collect, engine chromium, runner ubuntu-24.04
+label: col-chromium
+started: 2026-11-04T08:24:47Z
+commit: be6f38cf64d8b1fd3d5b9a9ce1ab5ce8cc363be7 (main)
+environment id: gha-linux-x64
+runner: Linux X64, github-hosted, image ubuntu24 20261026.354.1
+cpus: 4
+cpu: AMD EPYC 7763 64-Core Processor
+memory: 15983 MiB
+os: Ubuntu 24.04.5 LTS
+uptime:  08:24:47 up 2 min,  0 user,  load average: 0.90, 0.28, 0.10
+node: v22.23.4, npm: 10.9.9
+playwright: Version 1.64.1
+ffmpeg: not installed (the streams come from the streams job)
+
+finished: 2026-11-04T09:02:04Z
+uptime:  09:02:04 up 39 min,  0 user,  load average: 2.44, 2.46, 2.30

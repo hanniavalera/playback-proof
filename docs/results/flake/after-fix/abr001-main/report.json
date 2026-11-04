@@ -1,0 +1,83 @@
+{
+  "generatedAt": "2026-11-04T19:01:12.612Z",
+  "envId": "gha-macos-arm64",
+  "today": "2026-11-04",
+  "history": {
+    "runs": 40,
+    "from": "2026-11-04T18:01:03.710Z",
+    "to": "2026-11-04T18:23:07.476Z"
+  },
+  "limits": {
+    "windowRuns": 30,
+    "minRunsToJudge": 20,
+    "quarantineTriggerRate": 0.05,
+    "suiteBudgetRate": 0.02,
+    "quarantineMaxAgeDays": 14,
+    "mergeQuarantineMaxAgeDays": 7
+  },
+  "suites": [],
+  "tests": [
+    {
+      "id": "PB-ABR-001",
+      "project": "webkit",
+      "tier": "release",
+      "executions": 30,
+      "passed": 5,
+      "flaky": 5,
+      "failed": 20,
+      "flakeRate": 0.16666666666666666,
+      "failureRate": 0.6666666666666666,
+      "verdict": "over-trigger",
+      "window": [
+        "passed",
+        "failed",
+        "flaky",
+        "passed",
+        "passed",
+        "failed",
+        "passed",
+        "failed",
+        "failed",
+        "failed",
+        "failed",
+        "failed",
+        "flaky",
+        "flaky",
+        "failed",
+        "failed",
+        "failed",
+        "failed",
+        "passed",
+        "flaky",
+        "failed",
+        "failed",
+        "failed",
+        "failed",
+        "flaky",
+        "failed",
+        "failed",
+        "failed",
+        "failed",
+        "failed"
+      ],
+      "quarantinedExecutions": 0,
+      "executionsInHistory": 40,
+      "unobserved": 0,
+      "lastFailure": {
+        "outcome": "failed",
+        "date": "2026-11-04T18:23:07.476Z",
+        "runId": "collect-20261104T180059Z-29c778-40",
+        "commit": "30b7d6d39c4d642b122e529685116c1abc775c4e",
+        "signature": "Error: rung changes in the <n> s after reaching <n>p (qa.events()): none. Shaka also leaves a rung, whatever the link, when <n> % of the frames of a <n> s window are dropped (it disables that variant…"
+      },
+      "cleanWindow": false,
+      "experimental": false,
+      "title": "PB-ABR-001 climbs to the top rung on an unconstrained network and stays there",
+      "quarantine": null
+    }
+  ],
+  "quarantine": [],
+  "quarantineProblems": [],
+  "skips": [],
+  "notes": []
+}
