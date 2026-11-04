@@ -95,7 +95,7 @@ test(
 );
 
 test(
-  'PB-VOD-008 seek backward to a position the buffer has already evicted: playback resumes from the target',
+  'PB-VOD-008 seek backward to a position that is no longer buffered (flushed by an earlier far seek): playback resumes from the target and the segment is fetched again',
   { tag: ['@release', '@dash'] },
   async ({ newSession, streamFor, player }) => {
     const session = await newSession({

@@ -52,7 +52,7 @@ const DEFINITIONS = {
   },
   'flaky-segments': {
     purpose:
-      'A CDN hiccup in the middle of a title: the first three requests for video segment 3 fail. Three in a row exceed the two attempts of the default retry policy, so the player must take its failure path (disable the rung, switch to another) and carry on. Selecting by segment number hits the same segment in every engine, whichever rung is playing.',
+      'A CDN hiccup in the middle of a title: the first three requests for video segment 3 fail. Three in a row exceed the two attempts of the default retry policy, so the network layer gives up on that request. What the player does next depends on the engine and on timing (it may disable the rung and switch to another, or its adaptation may abandon the request for a different rung): the test asserts the outcome, which is that it carries on, not the path. Selecting by segment number hits the same segment in every engine, whichever rung is playing.',
     usedBy: ['PB-REC-002'],
     rules: [{ type: 'status', status: 503, match: { kind: 'segment', track: 'video', number: 3 }, times: 3 }],
   },
