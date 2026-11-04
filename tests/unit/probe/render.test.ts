@@ -119,6 +119,7 @@ describe('renderMatrix', () => {
     expect(gaps).toContain('the whole text is in the JSON');
     expect(gaps).not.toMatch(/ +\n/);
     expect(gaps).toContain('firefox runs the playback suites in `fixture-linux-arm64`');
+    expect(gaps).toContain('must report the launch failure, not skip silently');
     expect(gaps).toContain('`engines.firefox.launchFailed`');
   });
 

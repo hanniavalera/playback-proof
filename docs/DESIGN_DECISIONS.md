@@ -26,9 +26,11 @@ showed:
 **Rejected.** "Use `isTypeSupported` and skip what is false": it reports `true` for everything on Linux WebKit, so it would have produced a red or flaky WebKit job and taught nothing.
 "Install Chrome and Safari": it would stop testing the engines Playwright ships and make CI depend on proprietary installs. "Drop WebKit": it removes the engine with the most distinctive MSE behaviour.
 
-**Consequences.** Three jobs per pull request instead of one, one of them on a more expensive runner. In return the matrix is honest: every gap has evidence in `docs/CODEC_MATRIX.md`.
+**Consequences.** Three jobs per pull request instead of one, one of them on a more expensive runner. In return the matrix is honest: every gap has evidence in [CODEC_MATRIX.md](CODEC_MATRIX.md).
 
 **Defending it.** "I measured it. Capability reporting and capability reality disagree in one engine, so the lab decodes a real clip before it trusts a codec. The matrix and the gaps are generated, not asserted."
+
+**Update.** The committed probe results ([CODEC_MATRIX.md](CODEC_MATRIX.md)) refine point 3: on Linux WebKit the MSE verdict is intermittent rather than a flat failure, and it depends on how the page drives the element. See [ADR-031](decisions/codecs.md). The rest of this record stands.
 
 ## ADR-002: Network faults are injected by the test data service, not by the browser
 

@@ -343,7 +343,7 @@ function renderGap(gap: LabGap, index: number, files: readonly ResultFile[]): st
       })
       .map((other) => code(other.envId));
     out.push(
-      `- **Consequence for the lab:** no ${name} suite can run in this environment, and the shared fixture reports the launch failure instead of skipping silently. ` +
+      `- **Consequence for the lab:** no ${name} suite can run in this environment; a spec that is started there must report the launch failure, not skip silently ([ADR-034](decisions/codecs.md)). ` +
         (elsewhere.length > 0
           ? `${name} runs the playback suites in ${elsewhere.join(', ')} (see [CONTRACTS.md](CONTRACTS.md), section 2).`
           : `No committed environment runs ${name} yet.`),

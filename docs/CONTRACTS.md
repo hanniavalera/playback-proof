@@ -10,7 +10,9 @@ tooling can be built and verified independently. If a contract has to change, ch
 | ------------------------- | ---------------------------------------------------------------------------- | ----- |
 | `TEST_STRATEGY.md`        | Strategy, risk ranking, merge vs release tiers, readiness criteria, catalog   | 1     |
 | `src/shared/`             | Contract types and pure helpers (URL layout, env id). No runtime deps.        | 0     |
-| `tools/codec-matrix.ts`   | Real-decode capability probe and the generated `docs/CODEC_MATRIX.md`         | 1     |
+| `tools/codec-matrix.ts`   | Real-decode capability probe (CLI) and the generated [CODEC_MATRIX.md](CODEC_MATRIX.md) | 1     |
+| `src/lab/probe/`          | Capability probe library: formats, probe media, in-page probe, runner, `pickStream` | 1     |
+| `tools/docker/pw.sh`      | Runs a command in the Playwright Linux image that matches the pinned version  | 1     |
 | `src/server/media/`       | ffmpeg stream generation, segment store, tfdt rewriter, DASH/HLS builders     | 2     |
 | `src/server/` (rest)      | HTTP service: sessions, fault engine, live clock, request log, static player  | 2     |
 | `src/player/`             | The Shaka Player page and `window.__qa`                                       | 2     |
@@ -24,13 +26,13 @@ tooling can be built and verified independently. If a contract has to change, ch
 | `triage/`                 | Failure collection, deterministic clustering, optional LLM summaries          | 8     |
 | `.github/`, `Jenkinsfile` | CI: the same gate stages in both systems                                      | 4     |
 
-## 2. Browser and OS matrix (evidence: `docs/CODEC_MATRIX.md`, ADR-001)
+## 2. Browser and OS matrix (evidence: [CODEC_MATRIX.md](CODEC_MATRIX.md), ADR-001)
 
 | Engine   | Where it runs the playback suites                              | Why                                                                                                                                                           |
 | -------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Chromium | Linux (CI, Jenkins, Docker) and macOS                          | Plays every format tried.                                                                                                                                     |
 | Firefox  | Linux only (CI, Jenkins, Docker)                               | Plays every format tried on Linux. Playwright's Firefox does not start on the macOS development host ("Could not find profile folder"), so locally it runs in Docker. |
-| WebKit   | macOS only (local, GitHub `macos` runners)                     | Playwright's Linux WebKit exposes `MediaSource` and answers `isTypeSupported` with `true` for everything, but MSE playback fails (`MediaError 4: Failed to push buffer`, intermittently). The Linux WebKit gap is documented and the specs are skipped there with that reason. |
+| WebKit   | macOS only (local, GitHub `macos` runners)                     | Playwright's Linux WebKit exposes `MediaSource` and answers `isTypeSupported` with `true` for everything, but MSE playback fails (`MediaError 4: Failed to push buffer`, intermittently), when the page behaves like the player page (muted element, segments fetched after the SourceBuffers exist): with an unmuted element or prefetched data the same bytes played in every attempt (see the sensitivity table in [CODEC_MATRIX.md](CODEC_MATRIX.md) and ADR-031 in [decisions/codecs.md](decisions/codecs.md)). The Linux WebKit gap is documented and the specs are skipped there with that reason. |
 
 Never trust `MediaSource.isTypeSupported` alone. The capability probe decodes real media.
 
@@ -51,7 +53,7 @@ Authoritative data (durations, hashes) comes from `GET /api/streams`. Targets fo
 - Segment numbers are 1-based. VOD segment `k` covers `[(k-1)*d, k*d)`.
 - Generation is a pure function of the spec in `src/server/media/specs.ts`; output is content-addressed under `.cache/streams/<specHash>/`
   and generation is idempotent. `StreamInfo.contentHash` identifies the content.
-- The player page picks the stream flavour a browser can really decode: see `docs/CODEC_MATRIX.md` and the capability fixture in `tests/e2e/support`.
+- The player page picks the stream flavour a browser can really decode: see [CODEC_MATRIX.md](CODEC_MATRIX.md) and the capability fixture in `tests/e2e/support`.
 
 ### URL layout (see `src/shared/urls.ts`, the only place that builds these)
 
@@ -132,7 +134,7 @@ with the session id, so a rerun with the same request order sees the same delays
 - **No fixed sleeps.** Specs wait on player events (`qa.waitFor`, `qa.waitForMediaTime`, cursor-based) or on the server request log. ESLint forbids
   `waitForTimeout` and `setTimeout` in specs.
 - A spec that cannot run in an environment because of a documented gap (for example WebKit on Linux) is skipped by the shared fixture
-  with the reason from `docs/CODEC_MATRIX.md`; a silent skip is a bug.
+  with the reason from [CODEC_MATRIX.md](CODEC_MATRIX.md) (the text `explainNoStream` in `src/lab/probe/capabilities.ts` builds); a silent skip is a bug.
 
 ## 8. Environments, ports, variables
 
@@ -145,7 +147,7 @@ with the session id, so a rerun with the same request order sees the same delays
 ## 9. Commands (names are fixed; implementations arrive with their phase)
 
 `npm run typecheck | lint | format:check | docs:check | build:player | generate:streams | serve | codec-matrix | docker:pw | test:unit | test:e2e | test:merge | test:release | perf | perf:gate | perf:baseline | flake:report | flake:gate | ab | readiness | soak | triage`
-(`docker:pw -- <command>` runs a command inside the Playwright Linux image that matches the pinned `@playwright/test`, with the repository mounted: this is how Firefox runs on a macOS host and how the Linux CI environment is reproduced locally.)
+(`docker:pw -- <command>` runs a command inside the Playwright Linux image that matches the pinned `@playwright/test`, with the repository mounted: this is how Firefox runs on a macOS host and how the Linux CI environment is reproduced locally. `codec-matrix` probes the installed browsers and writes `docs/results/codec-matrix/<envId>.json`; `codec-matrix -- --render` regenerates [CODEC_MATRIX.md](CODEC_MATRIX.md) from every committed file and `-- --check` fails when it is stale. Options of both: `npm run codec-matrix -- --help`, `bash tools/docker/pw.sh --help`.)
 and the CI gate stages `gate:static | gate:unit | gate:merge | gate:perf | gate:flake | gate:triage`, which both GitHub Actions and the Jenkinsfile call.
 
 ## 10. Rules of engagement for contributors (including the agents that build this)
