@@ -1,0 +1,2430 @@
+{
+  "schemaVersion": 1,
+  "tool": "player-smoke",
+  "envId": "local-darwin-arm64",
+  "generatedAt": "2026-11-04T03:20:16.416Z",
+  "invokedVia": "direct",
+  "args": [
+    "--browsers",
+    "chromium,webkit",
+    "--muted",
+    "0",
+    "--out",
+    "docs/results/player-smoke/experiments/unmuted-local-darwin-arm64.json"
+  ],
+  "host": {
+    "os": {
+      "platform": "darwin",
+      "arch": "arm64",
+      "release": "27.2.0",
+      "name": "macOS 27.2"
+    },
+    "cpus": 12,
+    "memoryGiB": 16,
+    "node": "v22.11.0",
+    "playwright": "1.64.1",
+    "git": {
+      "commit": "0c5ed98",
+      "dirty": false
+    }
+  },
+  "service": {
+    "origin": "http://127.0.0.1:<port>",
+    "health": {
+      "status": "ok",
+      "version": "0.1.0",
+      "ffmpeg": "9.0.2",
+      "streams": {
+        "vod-cmaf": "ready",
+        "vod-cmaf-short": "ready",
+        "vod-webm": "ready",
+        "live-cmaf": "ready",
+        "vod-cmaf-clearkey": "ready"
+      },
+      "player": "built",
+      "uptimeSec": 933.867
+    }
+  },
+  "options": {
+    "browsers": [
+      "chromium",
+      "webkit"
+    ],
+    "repeat": 1,
+    "muted": false,
+    "sessions": [
+      "vod-dash",
+      "vod-hls",
+      "live-dash",
+      "live-hls",
+      "actions",
+      "recovery",
+      "ended"
+    ],
+    "config": "A",
+    "mediaSeconds": 3,
+    "timeoutMs": 20000,
+    "useCapabilities": true
+  },
+  "capabilities": "docs/results/codec-matrix/local-darwin-arm64.json",
+  "engines": {
+    "chromium": {
+      "browserVersion": "156.0.8078.4",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36",
+      "facts": {
+        "downlinkMbps": 9.5,
+        "requestVideoFrameCallback": true,
+        "getVideoPlaybackQuality": true,
+        "mediaSource": "MediaSource",
+        "hlsCanPlayType": "maybe"
+      }
+    },
+    "webkit": {
+      "browserVersion": "27.2",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+      "facts": {
+        "downlinkMbps": null,
+        "requestVideoFrameCallback": true,
+        "getVideoPlaybackQuality": true,
+        "mediaSource": "MediaSource",
+        "hlsCanPlayType": "maybe"
+      }
+    }
+  },
+  "summary": [
+    {
+      "engine": "chromium",
+      "session": "vod-dash",
+      "runs": 1,
+      "passes": 0,
+      "failures": 1,
+      "skips": 0
+    },
+    {
+      "engine": "chromium",
+      "session": "vod-hls",
+      "runs": 1,
+      "passes": 1,
+      "failures": 0,
+      "skips": 0
+    },
+    {
+      "engine": "chromium",
+      "session": "live-dash",
+      "runs": 1,
+      "passes": 1,
+      "failures": 0,
+      "skips": 0
+    },
+    {
+      "engine": "chromium",
+      "session": "live-hls",
+      "runs": 1,
+      "passes": 1,
+      "failures": 0,
+      "skips": 0
+    },
+    {
+      "engine": "chromium",
+      "session": "actions",
+      "runs": 1,
+      "passes": 1,
+      "failures": 0,
+      "skips": 0
+    },
+    {
+      "engine": "chromium",
+      "session": "recovery",
+      "runs": 1,
+      "passes": 1,
+      "failures": 0,
+      "skips": 0
+    },
+    {
+      "engine": "chromium",
+      "session": "ended",
+      "runs": 1,
+      "passes": 1,
+      "failures": 0,
+      "skips": 0
+    },
+    {
+      "engine": "webkit",
+      "session": "vod-dash",
+      "runs": 1,
+      "passes": 1,
+      "failures": 0,
+      "skips": 0
+    },
+    {
+      "engine": "webkit",
+      "session": "vod-hls",
+      "runs": 1,
+      "passes": 1,
+      "failures": 0,
+      "skips": 0
+    },
+    {
+      "engine": "webkit",
+      "session": "live-dash",
+      "runs": 1,
+      "passes": 1,
+      "failures": 0,
+      "skips": 0
+    },
+    {
+      "engine": "webkit",
+      "session": "live-hls",
+      "runs": 1,
+      "passes": 1,
+      "failures": 0,
+      "skips": 0
+    },
+    {
+      "engine": "webkit",
+      "session": "actions",
+      "runs": 1,
+      "passes": 1,
+      "failures": 0,
+      "skips": 0
+    },
+    {
+      "engine": "webkit",
+      "session": "recovery",
+      "runs": 1,
+      "passes": 1,
+      "failures": 0,
+      "skips": 0
+    },
+    {
+      "engine": "webkit",
+      "session": "ended",
+      "runs": 1,
+      "passes": 1,
+      "failures": 0,
+      "skips": 0
+    }
+  ],
+  "failures": [
+    {
+      "engine": "chromium",
+      "session": "vod-dash",
+      "signature": "[playback] 0 via play",
+      "count": 1
+    }
+  ],
+  "results": [
+    {
+      "repeat": 1,
+      "engine": "chromium",
+      "session": "vod-dash",
+      "status": "fail",
+      "stream": "vod-cmaf",
+      "durationMs": 20316,
+      "startupMs": 123.30000001192093,
+      "mediaTime": null,
+      "rebuffers": 0,
+      "decoded": 4,
+      "dropped": 0,
+      "presented": 1,
+      "rungHeight": 720,
+      "startRungHeight": 720,
+      "switches": 0,
+      "latencyMs": null,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/0ff022e05a3e/vod-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": false,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "ready",
+        "startupMs": 123.30000001192093,
+        "startup": {
+          "manifestMs": 10.300000011920929,
+          "loadedMs": 15.600000023841858
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 4,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 1
+        },
+        "bitrate": {
+          "switches": 0,
+          "current": {
+            "id": 2,
+            "bandwidth": 1845302,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 81.19999998807907,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ]
+        },
+        "live": {
+          "isLive": false,
+          "latencyMs": null,
+          "latencyMaxMs": null,
+          "presentationDelayMs": null,
+          "edgeSeeks": 0
+        },
+        "errors": [
+          {
+            "t": 83,
+            "code": 0,
+            "category": 0,
+            "severity": 1,
+            "message": "NotAllowedError: play() failed because the user didn't interact with the document first. https://goo.gl/xX8pDD",
+            "source": "play"
+          }
+        ],
+        "playback": {
+          "currentTime": 0,
+          "duration": 60,
+          "paused": true,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 10.005333,
+          "readyState": 4
+        }
+      },
+      "errors": [
+        {
+          "t": 83,
+          "code": 0,
+          "category": 0,
+          "severity": 1,
+          "message": "NotAllowedError: play() failed because the user didn't interact with the document first. https://goo.gl/xX8pDD",
+          "source": "play"
+        }
+      ],
+      "checks": [],
+      "consoleErrors": [],
+      "stage": "playback",
+      "error": "page.evaluate: Error: qa.waitForMediaTime(3) timed out after 20000 ms: the media clock is at 0.000 s.\n9 events so far, the last 9:\n  #0 t=66.2 media=0.000 load-requested {\"uri\":\"/s/0ff022e05a3e/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=67.0 media=0.000 buffering-start\n  #2 t=76.5 media=0.000 manifest-loaded\n  #3 t=80.8 media=0.000 buffering-start\n  #4 t=81.2 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=81.8 media=0.000 loaded\n  #6 t=83.0 media=0.000 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"NotAllowedError: play() failed because the user didn't interact with the document first. https://goo.gl/xX8pDD\",\"…\n  #7 t=183.7 media=0.000 buffering-end\n  #8 t=189.5 media=0.000 firstframe {\"source\":\"requestVideoFrameCallback\"}\n    at Timeline.failure (http://127.0.0.1:<port>/player/player.js:297:14)",
+      "excerpt": [
+        "#0 +0 ms media 0.00 load-requested {\"uri\":\"/s/0ff022e05a3e/vod-cmaf/dash/manifest.mpd\"}",
+        "#1 +1 ms media 0.00 buffering-start",
+        "#2 +10 ms media 0.00 manifest-loaded",
+        "#3 +15 ms media 0.00 buffering-start",
+        "#4 +15 ms media 0.00 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}",
+        "#5 +16 ms media 0.00 loaded",
+        "#6 +17 ms media 0.00 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"NotAllowedError: play() failed because the user didn't interact with the document first. https://goo.gl/xX8pDD\",\"source\":\"play",
+        "#7 +118 ms media 0.00 buffering-end",
+        "#8 +123 ms media 0.00 firstframe {\"source\":\"requestVideoFrameCallback\"}"
+      ]
+    },
+    {
+      "repeat": 1,
+      "engine": "chromium",
+      "session": "vod-hls",
+      "status": "pass",
+      "stream": "vod-cmaf",
+      "durationMs": 3381,
+      "startupMs": 139.5,
+      "mediaTime": 3,
+      "rebuffers": 0,
+      "decoded": 95,
+      "dropped": 0,
+      "presented": 91,
+      "rungHeight": 720,
+      "startRungHeight": 720,
+      "switches": 0,
+      "latencyMs": null,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/39c926abb4ec/vod-cmaf/hls/master.m3u8",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": false,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "playing",
+        "startupMs": 139.5,
+        "startup": {
+          "manifestMs": 18.80000001192093,
+          "loadedMs": 22.69999998807907
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 95,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 91
+        },
+        "bitrate": {
+          "switches": 0,
+          "current": {
+            "id": 11,
+            "bandwidth": 1845302,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 89,
+              "from": null,
+              "to": 11,
+              "height": 720,
+              "reason": "start"
+            }
+          ]
+        },
+        "live": {
+          "isLive": false,
+          "latencyMs": null,
+          "latencyMaxMs": null,
+          "presentationDelayMs": null,
+          "edgeSeeks": 0
+        },
+        "errors": [],
+        "playback": {
+          "currentTime": 2.971719,
+          "duration": 59.98932600000001,
+          "paused": false,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 11.02828,
+          "readyState": 4
+        }
+      },
+      "errors": [],
+      "checks": [
+        {
+          "name": "browser supported by Shaka",
+          "ok": true,
+          "detail": "supported=true"
+        },
+        {
+          "name": "page parameters usable",
+          "ok": true
+        },
+        {
+          "name": "plays through MSE (loadMode media-source)",
+          "ok": true,
+          "detail": "loadMode=media-source"
+        },
+        {
+          "name": "first frame presented (startupMs known)",
+          "ok": true,
+          "detail": "startupMs=139.5"
+        },
+        {
+          "name": "media time advanced 3 s",
+          "ok": true,
+          "detail": "reached 3.00 s, needed 3.00 s"
+        },
+        {
+          "name": "no error events",
+          "ok": true
+        }
+      ],
+      "consoleErrors": [
+        "warning: Unable to determine bitstream format for CEA parsing!",
+        "warning: Unable to determine bitstream format for CEA parsing!",
+        "warning: Unable to determine bitstream format for CEA parsing!"
+      ]
+    },
+    {
+      "repeat": 1,
+      "engine": "chromium",
+      "session": "live-dash",
+      "status": "pass",
+      "stream": "live-cmaf",
+      "durationMs": 3354,
+      "startupMs": 120.40000003576279,
+      "mediaTime": 27,
+      "rebuffers": 0,
+      "decoded": 95,
+      "dropped": 0,
+      "presented": 91,
+      "rungHeight": 720,
+      "startRungHeight": 720,
+      "switches": 0,
+      "latencyMs": 6177.918593368531,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/f98ac1a5bbcd/live-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": false,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "playing",
+        "startupMs": 120.40000003576279,
+        "startup": {
+          "manifestMs": 11.900000035762787,
+          "loadedMs": 16.400000035762787
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 95,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 91
+        },
+        "bitrate": {
+          "switches": 0,
+          "current": {
+            "id": 2,
+            "bandwidth": 1839698,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 85.30000001192093,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ]
+        },
+        "live": {
+          "isLive": true,
+          "latencyMs": 6177.918593368531,
+          "latencyMaxMs": 6178.165505630492,
+          "presentationDelayMs": 6000,
+          "edgeSeeks": 0
+        },
+        "errors": [],
+        "playback": {
+          "currentTime": 26.999415,
+          "duration": null,
+          "paused": false,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 5.000584,
+          "readyState": 4
+        }
+      },
+      "errors": [],
+      "checks": [
+        {
+          "name": "browser supported by Shaka",
+          "ok": true,
+          "detail": "supported=true"
+        },
+        {
+          "name": "page parameters usable",
+          "ok": true
+        },
+        {
+          "name": "plays through MSE (loadMode media-source)",
+          "ok": true,
+          "detail": "loadMode=media-source"
+        },
+        {
+          "name": "first frame presented (startupMs known)",
+          "ok": true,
+          "detail": "startupMs=120.40000003576279"
+        },
+        {
+          "name": "media time advanced 3 s",
+          "ok": true,
+          "detail": "reached 27.00 s, needed 27.00 s"
+        },
+        {
+          "name": "no error events",
+          "ok": true
+        },
+        {
+          "name": "live latency measured",
+          "ok": true,
+          "detail": "latencyMs=6177.918593368531 presentationDelayMs=6000"
+        }
+      ],
+      "consoleErrors": [
+        "warning: Shaka Player's internal Manifest structure is NOT covered by semantic versioning compatibility guarantees.  It may change at any time!  Please consider filing a feature request for whatever you use getManifest() for."
+      ]
+    },
+    {
+      "repeat": 1,
+      "engine": "chromium",
+      "session": "live-hls",
+      "status": "pass",
+      "stream": "live-cmaf",
+      "durationMs": 3354,
+      "startupMs": 136,
+      "mediaTime": 27,
+      "rebuffers": 0,
+      "decoded": 95,
+      "dropped": 0,
+      "presented": 90,
+      "rungHeight": 720,
+      "startRungHeight": 720,
+      "switches": 0,
+      "latencyMs": 6173.569857238771,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/1d9cf03f48bc/live-cmaf/hls/master.m3u8",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": false,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "playing",
+        "startupMs": 136,
+        "startup": {
+          "manifestMs": 19.5,
+          "loadedMs": 23.399999976158142
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 95,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 90
+        },
+        "bitrate": {
+          "switches": 0,
+          "current": {
+            "id": 11,
+            "bandwidth": 1839698,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 92.89999997615814,
+              "from": null,
+              "to": 11,
+              "height": 720,
+              "reason": "start"
+            }
+          ]
+        },
+        "live": {
+          "isLive": true,
+          "latencyMs": 6173.569857238771,
+          "latencyMaxMs": 6173.72588394165,
+          "presentationDelayMs": 6000,
+          "edgeSeeks": 0
+        },
+        "errors": [],
+        "playback": {
+          "currentTime": 26.995426,
+          "duration": null,
+          "paused": false,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 5.004571000000002,
+          "readyState": 4
+        }
+      },
+      "errors": [],
+      "checks": [
+        {
+          "name": "browser supported by Shaka",
+          "ok": true,
+          "detail": "supported=true"
+        },
+        {
+          "name": "page parameters usable",
+          "ok": true
+        },
+        {
+          "name": "plays through MSE (loadMode media-source)",
+          "ok": true,
+          "detail": "loadMode=media-source"
+        },
+        {
+          "name": "first frame presented (startupMs known)",
+          "ok": true,
+          "detail": "startupMs=136"
+        },
+        {
+          "name": "media time advanced 3 s",
+          "ok": true,
+          "detail": "reached 27.00 s, needed 27.00 s"
+        },
+        {
+          "name": "no error events",
+          "ok": true
+        },
+        {
+          "name": "live latency measured",
+          "ok": true,
+          "detail": "latencyMs=6173.569857238771 presentationDelayMs=6000"
+        }
+      ],
+      "consoleErrors": [
+        "warning: Unable to determine bitstream format for CEA parsing!",
+        "warning: Unable to determine bitstream format for CEA parsing!",
+        "warning: Unable to determine bitstream format for CEA parsing!",
+        "warning: Shaka Player's internal Manifest structure is NOT covered by semantic versioning compatibility guarantees.  It may change at any time!  Please consider filing a feature request for whatever you use getManifest() for."
+      ]
+    },
+    {
+      "repeat": 1,
+      "engine": "chromium",
+      "session": "actions",
+      "status": "pass",
+      "stream": "vod-cmaf",
+      "durationMs": 9119,
+      "startupMs": 136.69999998807907,
+      "mediaTime": 3,
+      "rebuffers": 0,
+      "decoded": 272,
+      "dropped": 0,
+      "presented": 260,
+      "rungHeight": 240,
+      "startRungHeight": 720,
+      "switches": 1,
+      "latencyMs": null,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/b9f03a2eb4e4/vod-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": false,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "playing",
+        "startupMs": 136.69999998807907,
+        "startup": {
+          "manifestMs": 11.199999988079071,
+          "loadedMs": 15.800000011920929
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 272,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 260
+        },
+        "bitrate": {
+          "switches": 1,
+          "current": {
+            "id": 0,
+            "bandwidth": 341878,
+            "width": 426,
+            "height": 240,
+            "videoCodec": "vp09.00.20.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 83.80000001192093,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 6959.700000047684,
+              "from": 2,
+              "to": 0,
+              "height": 240,
+              "reason": "manual"
+            }
+          ]
+        },
+        "live": {
+          "isLive": false,
+          "latencyMs": null,
+          "latencyMaxMs": null,
+          "presentationDelayMs": null,
+          "edgeSeeks": 0
+        },
+        "errors": [],
+        "playback": {
+          "currentTime": 42.008796,
+          "duration": 60,
+          "paused": false,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 9.991203000000006,
+          "readyState": 4
+        }
+      },
+      "errors": [],
+      "checks": [
+        {
+          "name": "browser supported by Shaka",
+          "ok": true,
+          "detail": "supported=true"
+        },
+        {
+          "name": "page parameters usable",
+          "ok": true
+        },
+        {
+          "name": "plays through MSE (loadMode media-source)",
+          "ok": true,
+          "detail": "loadMode=media-source"
+        },
+        {
+          "name": "first frame presented (startupMs known)",
+          "ok": true,
+          "detail": "startupMs=136.69999998807907"
+        },
+        {
+          "name": "media time advanced 3 s",
+          "ok": true,
+          "detail": "reached 3.00 s, needed 3.00 s"
+        },
+        {
+          "name": "no error events",
+          "ok": true
+        },
+        {
+          "name": "pause: the element and the state say paused",
+          "ok": true,
+          "detail": "state=paused"
+        },
+        {
+          "name": "pause: a paused event is on the timeline",
+          "ok": true
+        },
+        {
+          "name": "resume: playing again, and a pause is not a rebuffer",
+          "ok": true,
+          "detail": "state=playing rebuffers=0"
+        },
+        {
+          "name": "seek in the buffer: seeking then seeked on the timeline",
+          "ok": true,
+          "detail": "seeking buffering-start seeked buffering-end playing"
+        },
+        {
+          "name": "seek in the buffer: not counted as a rebuffer",
+          "ok": true
+        },
+        {
+          "name": "seek outside the buffer: seeked, then playback continues from the target",
+          "ok": true,
+          "detail": "currentTime=39.98 target=39"
+        },
+        {
+          "name": "seek outside the buffer: the buffering it causes is not counted as a rebuffer",
+          "ok": true,
+          "detail": "rebuffers=0"
+        },
+        {
+          "name": "pin: a manual variant-changed to that height is on the timeline",
+          "ok": true,
+          "detail": "[{\"from\":2,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"manual\"}]"
+        },
+        {
+          "name": "pin: the active rung is the one asked for",
+          "ok": true,
+          "detail": "current=240 asked=240"
+        },
+        {
+          "name": "pin: ABR is off and the switch is counted",
+          "ok": true
+        },
+        {
+          "name": "pin: null gives ABR back",
+          "ok": true
+        },
+        {
+          "name": "frames: presented frames were counted over the window",
+          "ok": true,
+          "detail": "{\"presented\":60,\"dropped\":0,\"decoded\":60,\"mediaSeconds\":2,\"fps\":30}"
+        },
+        {
+          "name": "frames: the elapsed media time is the window asked for",
+          "ok": true,
+          "detail": "mediaSeconds=2.000"
+        },
+        {
+          "name": "frames: a plausible rate for 30 fps content",
+          "ok": true,
+          "detail": "fps=30.0"
+        },
+        {
+          "name": "no error events by the end of the scenario",
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "excerpt": [
+        "-- seek inside the buffer",
+        "#11 +0 ms media 1.00 seeking {\"from\":3.801438,\"to\":1,\"requested\":true}",
+        "#12 +0 ms media 1.00 buffering-start",
+        "#13 +23 ms media 1.00 seeked {\"readyState\":4,\"paused\":false}",
+        "#14 +23 ms media 1.00 buffering-end",
+        "#15 +23 ms media 1.00 playing",
+        "-- seek outside the buffer",
+        "#16 +0 ms media 39.00 seeking {\"from\":2.26143,\"to\":39,\"requested\":true}",
+        "#17 +1 ms media 39.00 buffering-start",
+        "#18 +36 ms media 39.00 seeked {\"readyState\":4,\"paused\":false}",
+        "#19 +36 ms media 39.00 buffering-end",
+        "#20 +36 ms media 39.00 playing",
+        "-- pinning a rung",
+        "#21 +0 ms media 39.98 variant-changed {\"from\":2,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"manual\"}",
+        "-- measureFrames(2): {\"presented\":60,\"dropped\":0,\"decoded\":60,\"mediaSeconds\":2,\"fps\":30}"
+      ]
+    },
+    {
+      "repeat": 1,
+      "engine": "chromium",
+      "session": "recovery",
+      "status": "pass",
+      "stream": "vod-cmaf",
+      "durationMs": 8375,
+      "startupMs": 120.5,
+      "mediaTime": 3,
+      "rebuffers": 0,
+      "decoded": 245,
+      "dropped": 0,
+      "presented": 241,
+      "rungHeight": 720,
+      "startRungHeight": 720,
+      "switches": 0,
+      "latencyMs": null,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/c971ac0233ee/vod-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": false,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "playing",
+        "startupMs": 120.5,
+        "startup": {
+          "manifestMs": 10.699999988079071,
+          "loadedMs": 15.699999988079071
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 245,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 241
+        },
+        "bitrate": {
+          "switches": 0,
+          "current": {
+            "id": 2,
+            "bandwidth": 1845302,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 84,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ]
+        },
+        "live": {
+          "isLive": false,
+          "latencyMs": null,
+          "latencyMaxMs": null,
+          "presentationDelayMs": null,
+          "edgeSeeks": 0
+        },
+        "errors": [],
+        "playback": {
+          "currentTime": 7.990425,
+          "duration": 60,
+          "paused": false,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 10.009573999999999,
+          "readyState": 4
+        }
+      },
+      "errors": [],
+      "checks": [
+        {
+          "name": "browser supported by Shaka",
+          "ok": true,
+          "detail": "supported=true"
+        },
+        {
+          "name": "page parameters usable",
+          "ok": true
+        },
+        {
+          "name": "plays through MSE (loadMode media-source)",
+          "ok": true,
+          "detail": "loadMode=media-source"
+        },
+        {
+          "name": "first frame presented (startupMs known)",
+          "ok": true,
+          "detail": "startupMs=120.5"
+        },
+        {
+          "name": "media time advanced 3 s",
+          "ok": true,
+          "detail": "reached 3.00 s, needed 3.00 s"
+        },
+        {
+          "name": "the request log shows the faulted segment answered 404 once, with the rule that did it",
+          "ok": true,
+          "detail": "video segment 3: v720:404 v720:200"
+        },
+        {
+          "name": "the same segment was requested again and served",
+          "ok": true,
+          "detail": "statuses 404, 200"
+        },
+        {
+          "name": "playback continued past the fault",
+          "ok": true,
+          "detail": "reached 8.00 s, needed 8 s"
+        },
+        {
+          "name": "no critical error",
+          "ok": true,
+          "detail": "[]"
+        },
+        {
+          "name": "at most one rebuffer (PB-REC-001)",
+          "ok": true,
+          "detail": "rebuffers=0, 0 ms"
+        }
+      ],
+      "consoleErrors": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "excerpt": [
+        "-- the request log, video segment 3: seq 8 v720 404 faults=[f1] ttfb 0.08 ms | seq 9 v720 200 faults=[] ttfb 0.37 ms",
+        "-- error events seen by the hook: none (Shaka retried below the application)",
+        "#0 +0 ms media 0.00 load-requested {\"uri\":\"/s/c971ac0233ee/vod-cmaf/dash/manifest.mpd\"}",
+        "#1 +1 ms media 0.00 buffering-start",
+        "#2 +11 ms media 0.00 manifest-loaded",
+        "#3 +15 ms media 0.00 buffering-start",
+        "#4 +15 ms media 0.00 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}",
+        "#5 +16 ms media 0.00 loaded",
+        "#6 +116 ms media 0.00 playing",
+        "#7 +116 ms media 0.00 buffering-end",
+        "#8 +121 ms media 0.00 firstframe {\"source\":\"requestVideoFrameCallback\"}"
+      ]
+    },
+    {
+      "repeat": 1,
+      "engine": "chromium",
+      "session": "ended",
+      "status": "pass",
+      "stream": "vod-cmaf",
+      "durationMs": 6509,
+      "startupMs": 122.30000001192093,
+      "mediaTime": 3,
+      "rebuffers": 0,
+      "decoded": 185,
+      "dropped": 0,
+      "presented": 181,
+      "rungHeight": 720,
+      "startRungHeight": 720,
+      "switches": 0,
+      "latencyMs": null,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/983c9102c0ab/vod-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": false,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "ended",
+        "startupMs": 122.30000001192093,
+        "startup": {
+          "manifestMs": 10.899999976158142,
+          "loadedMs": 15.399999976158142
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 185,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 181
+        },
+        "bitrate": {
+          "switches": 0,
+          "current": {
+            "id": 2,
+            "bandwidth": 1845302,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 81.39999997615814,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ]
+        },
+        "live": {
+          "isLive": false,
+          "latencyMs": null,
+          "latencyMaxMs": null,
+          "presentationDelayMs": null,
+          "edgeSeeks": 0
+        },
+        "errors": [],
+        "playback": {
+          "currentTime": 59.999999,
+          "duration": 59.999999,
+          "paused": true,
+          "ended": true,
+          "playbackRate": 1,
+          "bufferedAheadSec": 0,
+          "readyState": 4
+        }
+      },
+      "errors": [],
+      "checks": [
+        {
+          "name": "browser supported by Shaka",
+          "ok": true,
+          "detail": "supported=true"
+        },
+        {
+          "name": "page parameters usable",
+          "ok": true
+        },
+        {
+          "name": "plays through MSE (loadMode media-source)",
+          "ok": true,
+          "detail": "loadMode=media-source"
+        },
+        {
+          "name": "first frame presented (startupMs known)",
+          "ok": true,
+          "detail": "startupMs=122.30000001192093"
+        },
+        {
+          "name": "media time advanced 3 s",
+          "ok": true,
+          "detail": "reached 3.00 s, needed 3.00 s"
+        },
+        {
+          "name": "no error events",
+          "ok": true
+        },
+        {
+          "name": "the ended event is on the timeline, after the seek",
+          "ok": true,
+          "detail": "index 15"
+        },
+        {
+          "name": "the element and the state say ended",
+          "ok": true,
+          "detail": "ended=true state=ended"
+        },
+        {
+          "name": "the media time reached the end of the stream",
+          "ok": true,
+          "detail": "currentTime=60.00 duration=60"
+        },
+        {
+          "name": "the end is not a stall",
+          "ok": true,
+          "detail": "rebuffers=0"
+        },
+        {
+          "name": "no error event",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "consoleErrors": [],
+      "excerpt": [
+        "-- seeking to the end and playing to it",
+        "#9 +0 ms media 57.00 seeking {\"from\":2.748548,\"to\":57,\"requested\":true}",
+        "#10 +1 ms media 57.00 buffering-start",
+        "#11 +37 ms media 57.00 seeked {\"readyState\":4,\"paused\":false}",
+        "#12 +37 ms media 57.00 buffering-end",
+        "#13 +37 ms media 57.00 playing",
+        "#14 +3119 ms media 60.00 paused",
+        "#15 +3119 ms media 60.00 ended"
+      ]
+    },
+    {
+      "repeat": 1,
+      "engine": "webkit",
+      "session": "vod-dash",
+      "status": "pass",
+      "stream": "vod-cmaf",
+      "durationMs": 4367,
+      "startupMs": 236,
+      "mediaTime": 3,
+      "rebuffers": 0,
+      "decoded": 96,
+      "dropped": 0,
+      "presented": 91,
+      "rungHeight": 720,
+      "startRungHeight": 360,
+      "switches": 1,
+      "latencyMs": null,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/af8ac9e287d7/vod-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": false,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "playing",
+        "startupMs": 236,
+        "startup": {
+          "manifestMs": 17,
+          "loadedMs": 55
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 96,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 91
+        },
+        "bitrate": {
+          "switches": 1,
+          "current": {
+            "id": 2,
+            "bandwidth": 1845302,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 220,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 816,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ]
+        },
+        "live": {
+          "isLive": false,
+          "latencyMs": null,
+          "latencyMaxMs": null,
+          "presentationDelayMs": null,
+          "edgeSeeks": 0
+        },
+        "errors": [],
+        "playback": {
+          "currentTime": 3.011864874,
+          "duration": 60,
+          "paused": false,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 10.988129542,
+          "readyState": 4
+        }
+      },
+      "errors": [],
+      "checks": [
+        {
+          "name": "browser supported by Shaka",
+          "ok": true,
+          "detail": "supported=true"
+        },
+        {
+          "name": "page parameters usable",
+          "ok": true
+        },
+        {
+          "name": "plays through MSE (loadMode media-source)",
+          "ok": true,
+          "detail": "loadMode=media-source"
+        },
+        {
+          "name": "first frame presented (startupMs known)",
+          "ok": true,
+          "detail": "startupMs=236"
+        },
+        {
+          "name": "media time advanced 3 s",
+          "ok": true,
+          "detail": "reached 3.00 s, needed 3.00 s"
+        },
+        {
+          "name": "no error events",
+          "ok": true
+        },
+        {
+          "name": "CSP: an inline script does not run",
+          "ok": true
+        },
+        {
+          "name": "CSP: code from a string is refused (no unsafe-eval)",
+          "ok": true,
+          "detail": "violation event seen, code did not run"
+        },
+        {
+          "name": "CSP: a request outside the page's own origin is blocked (connect-src)",
+          "ok": true
+        }
+      ],
+      "consoleErrors": []
+    },
+    {
+      "repeat": 1,
+      "engine": "webkit",
+      "session": "vod-hls",
+      "status": "pass",
+      "stream": "vod-cmaf",
+      "durationMs": 4056,
+      "startupMs": 203,
+      "mediaTime": 3,
+      "rebuffers": 0,
+      "decoded": 96,
+      "dropped": 0,
+      "presented": 91,
+      "rungHeight": 720,
+      "startRungHeight": 360,
+      "switches": 1,
+      "latencyMs": null,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/deaff6f73872/vod-cmaf/hls/master.m3u8",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": false,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "playing",
+        "startupMs": 203,
+        "startup": {
+          "manifestMs": 29,
+          "loadedMs": 63
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 96,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 91
+        },
+        "bitrate": {
+          "switches": 1,
+          "current": {
+            "id": 11,
+            "bandwidth": 1845302,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 183,
+              "from": null,
+              "to": 8,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 765,
+              "from": 8,
+              "to": 11,
+              "height": 720,
+              "reason": "abr"
+            }
+          ]
+        },
+        "live": {
+          "isLive": false,
+          "latencyMs": null,
+          "latencyMaxMs": null,
+          "presentationDelayMs": null,
+          "edgeSeeks": 0
+        },
+        "errors": [],
+        "playback": {
+          "currentTime": 3.019510624,
+          "duration": 59.98932600000001,
+          "paused": false,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 10.980475168,
+          "readyState": 4
+        }
+      },
+      "errors": [],
+      "checks": [
+        {
+          "name": "browser supported by Shaka",
+          "ok": true,
+          "detail": "supported=true"
+        },
+        {
+          "name": "page parameters usable",
+          "ok": true
+        },
+        {
+          "name": "plays through MSE (loadMode media-source)",
+          "ok": true,
+          "detail": "loadMode=media-source"
+        },
+        {
+          "name": "first frame presented (startupMs known)",
+          "ok": true,
+          "detail": "startupMs=203"
+        },
+        {
+          "name": "media time advanced 3 s",
+          "ok": true,
+          "detail": "reached 3.00 s, needed 3.00 s"
+        },
+        {
+          "name": "no error events",
+          "ok": true
+        }
+      ],
+      "consoleErrors": [
+        "warning: Unable to determine bitstream format for CEA parsing!",
+        "warning: Unable to determine bitstream format for CEA parsing!",
+        "warning: Unable to determine bitstream format for CEA parsing!"
+      ]
+    },
+    {
+      "repeat": 1,
+      "engine": "webkit",
+      "session": "live-dash",
+      "status": "pass",
+      "stream": "live-cmaf",
+      "durationMs": 4009,
+      "startupMs": 164,
+      "mediaTime": 27,
+      "rebuffers": 0,
+      "decoded": 95,
+      "dropped": 0,
+      "presented": 90,
+      "rungHeight": 720,
+      "startRungHeight": 360,
+      "switches": 1,
+      "latencyMs": 6421.041011390869,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/89b192ab0406/live-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": false,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "playing",
+        "startupMs": 164,
+        "startup": {
+          "manifestMs": 17,
+          "loadedMs": 51
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 95,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 90
+        },
+        "bitrate": {
+          "switches": 1,
+          "current": {
+            "id": 2,
+            "bandwidth": 1839698,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 179,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 1254,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ]
+        },
+        "live": {
+          "isLive": true,
+          "latencyMs": 6421.041011390869,
+          "latencyMaxMs": 6421.284227905275,
+          "presentationDelayMs": 6000,
+          "edgeSeeks": 0
+        },
+        "errors": [],
+        "playback": {
+          "currentTime": 27.011333083,
+          "duration": null,
+          "paused": false,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 4.988662542,
+          "readyState": 4
+        }
+      },
+      "errors": [],
+      "checks": [
+        {
+          "name": "browser supported by Shaka",
+          "ok": true,
+          "detail": "supported=true"
+        },
+        {
+          "name": "page parameters usable",
+          "ok": true
+        },
+        {
+          "name": "plays through MSE (loadMode media-source)",
+          "ok": true,
+          "detail": "loadMode=media-source"
+        },
+        {
+          "name": "first frame presented (startupMs known)",
+          "ok": true,
+          "detail": "startupMs=164"
+        },
+        {
+          "name": "media time advanced 3 s",
+          "ok": true,
+          "detail": "reached 27.00 s, needed 27.00 s"
+        },
+        {
+          "name": "no error events",
+          "ok": true
+        },
+        {
+          "name": "live latency measured",
+          "ok": true,
+          "detail": "latencyMs=6421.041011390869 presentationDelayMs=6000"
+        }
+      ],
+      "consoleErrors": [
+        "warning: Shaka Player's internal Manifest structure is NOT covered by semantic versioning compatibility guarantees.  It may change at any time!  Please consider filing a feature request for whatever you use getManifest() for."
+      ]
+    },
+    {
+      "repeat": 1,
+      "engine": "webkit",
+      "session": "live-hls",
+      "status": "pass",
+      "stream": "live-cmaf",
+      "durationMs": 3966,
+      "startupMs": 171,
+      "mediaTime": 27,
+      "rebuffers": 0,
+      "decoded": 95,
+      "dropped": 0,
+      "presented": 90,
+      "rungHeight": 720,
+      "startRungHeight": 360,
+      "switches": 1,
+      "latencyMs": 6415.614680679689,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/ec0f57b357e8/live-cmaf/hls/master.m3u8",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": false,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "playing",
+        "startupMs": 171,
+        "startup": {
+          "manifestMs": 30,
+          "loadedMs": 62
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 95,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 90
+        },
+        "bitrate": {
+          "switches": 1,
+          "current": {
+            "id": 11,
+            "bandwidth": 1839698,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 184,
+              "from": null,
+              "to": 8,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 2247,
+              "from": 8,
+              "to": 11,
+              "height": 720,
+              "reason": "abr"
+            }
+          ]
+        },
+        "live": {
+          "isLive": true,
+          "latencyMs": 6415.614680679689,
+          "latencyMaxMs": 6415.748511734008,
+          "presentationDelayMs": 6000,
+          "edgeSeeks": 0
+        },
+        "errors": [],
+        "playback": {
+          "currentTime": 27.008419958,
+          "duration": null,
+          "paused": false,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 4.991572687833333,
+          "readyState": 4
+        }
+      },
+      "errors": [],
+      "checks": [
+        {
+          "name": "browser supported by Shaka",
+          "ok": true,
+          "detail": "supported=true"
+        },
+        {
+          "name": "page parameters usable",
+          "ok": true
+        },
+        {
+          "name": "plays through MSE (loadMode media-source)",
+          "ok": true,
+          "detail": "loadMode=media-source"
+        },
+        {
+          "name": "first frame presented (startupMs known)",
+          "ok": true,
+          "detail": "startupMs=171"
+        },
+        {
+          "name": "media time advanced 3 s",
+          "ok": true,
+          "detail": "reached 27.00 s, needed 27.00 s"
+        },
+        {
+          "name": "no error events",
+          "ok": true
+        },
+        {
+          "name": "live latency measured",
+          "ok": true,
+          "detail": "latencyMs=6415.614680679689 presentationDelayMs=6000"
+        }
+      ],
+      "consoleErrors": [
+        "warning: Unable to determine bitstream format for CEA parsing!",
+        "warning: Unable to determine bitstream format for CEA parsing!",
+        "warning: Unable to determine bitstream format for CEA parsing!",
+        "warning: Shaka Player's internal Manifest structure is NOT covered by semantic versioning compatibility guarantees.  It may change at any time!  Please consider filing a feature request for whatever you use getManifest() for."
+      ]
+    },
+    {
+      "repeat": 1,
+      "engine": "webkit",
+      "session": "actions",
+      "status": "pass",
+      "stream": "vod-cmaf",
+      "durationMs": 10754,
+      "startupMs": 189,
+      "mediaTime": 3,
+      "rebuffers": 0,
+      "decoded": 333,
+      "dropped": 0,
+      "presented": 260,
+      "rungHeight": 240,
+      "startRungHeight": 360,
+      "switches": 2,
+      "latencyMs": null,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/f1ef7344d120/vod-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": false,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "playing",
+        "startupMs": 189,
+        "startup": {
+          "manifestMs": 17,
+          "loadedMs": 51
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 333,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 260
+        },
+        "bitrate": {
+          "switches": 2,
+          "current": {
+            "id": 0,
+            "bandwidth": 341878,
+            "width": 426,
+            "height": 240,
+            "videoCodec": "vp09.00.20.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 180,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 1243,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 8284,
+              "from": 2,
+              "to": 0,
+              "height": 240,
+              "reason": "manual"
+            }
+          ]
+        },
+        "live": {
+          "isLive": false,
+          "latencyMs": null,
+          "latencyMaxMs": null,
+          "presentationDelayMs": null,
+          "edgeSeeks": 0
+        },
+        "errors": [],
+        "playback": {
+          "currentTime": 42.044955764,
+          "duration": 60,
+          "paused": false,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 9.955018361,
+          "readyState": 4
+        }
+      },
+      "errors": [],
+      "checks": [
+        {
+          "name": "browser supported by Shaka",
+          "ok": true,
+          "detail": "supported=true"
+        },
+        {
+          "name": "page parameters usable",
+          "ok": true
+        },
+        {
+          "name": "plays through MSE (loadMode media-source)",
+          "ok": true,
+          "detail": "loadMode=media-source"
+        },
+        {
+          "name": "first frame presented (startupMs known)",
+          "ok": true,
+          "detail": "startupMs=189"
+        },
+        {
+          "name": "media time advanced 3 s",
+          "ok": true,
+          "detail": "reached 3.00 s, needed 3.00 s"
+        },
+        {
+          "name": "no error events",
+          "ok": true
+        },
+        {
+          "name": "pause: the element and the state say paused",
+          "ok": true,
+          "detail": "state=paused"
+        },
+        {
+          "name": "pause: a paused event is on the timeline",
+          "ok": true
+        },
+        {
+          "name": "resume: playing again, and a pause is not a rebuffer",
+          "ok": true,
+          "detail": "state=playing rebuffers=0"
+        },
+        {
+          "name": "seek in the buffer: seeking then seeked on the timeline",
+          "ok": true,
+          "detail": "seeking buffering-start seeked buffering-end"
+        },
+        {
+          "name": "seek in the buffer: not counted as a rebuffer",
+          "ok": true
+        },
+        {
+          "name": "seek outside the buffer: seeked, then playback continues from the target",
+          "ok": true,
+          "detail": "currentTime=40.01 target=39"
+        },
+        {
+          "name": "seek outside the buffer: the buffering it causes is not counted as a rebuffer",
+          "ok": true,
+          "detail": "rebuffers=0"
+        },
+        {
+          "name": "pin: a manual variant-changed to that height is on the timeline",
+          "ok": true,
+          "detail": "[{\"from\":2,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"manual\"}]"
+        },
+        {
+          "name": "pin: the active rung is the one asked for",
+          "ok": true,
+          "detail": "current=240 asked=240"
+        },
+        {
+          "name": "pin: ABR is off and the switch is counted",
+          "ok": true
+        },
+        {
+          "name": "pin: null gives ABR back",
+          "ok": true
+        },
+        {
+          "name": "frames: presented frames were counted over the window",
+          "ok": true,
+          "detail": "{\"presented\":60,\"dropped\":0,\"decoded\":60,\"mediaSeconds\":2,\"fps\":30}"
+        },
+        {
+          "name": "frames: the elapsed media time is the window asked for",
+          "ok": true,
+          "detail": "mediaSeconds=2.000"
+        },
+        {
+          "name": "frames: a plausible rate for 30 fps content",
+          "ok": true,
+          "detail": "fps=30.0"
+        },
+        {
+          "name": "no error events by the end of the scenario",
+          "ok": true
+        }
+      ],
+      "consoleErrors": [],
+      "excerpt": [
+        "-- seek inside the buffer",
+        "#12 +0 ms media 1.00 seeking {\"from\":3.865066561,\"to\":1,\"requested\":true}",
+        "#13 +2 ms media 1.00 buffering-start",
+        "#14 +232 ms media 1.00 seeked {\"readyState\":4,\"paused\":false}",
+        "#15 +232 ms media 1.00 buffering-end",
+        "-- seek outside the buffer",
+        "#16 +0 ms media 39.00 seeking {\"from\":2.355668253,\"to\":39,\"requested\":true}",
+        "#17 +2 ms media 39.00 buffering-start",
+        "#18 +250 ms media 39.00 seeked {\"readyState\":4,\"paused\":false}",
+        "#19 +250 ms media 39.00 buffering-end",
+        "-- pinning a rung",
+        "#20 +0 ms media 40.01 variant-changed {\"from\":2,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"manual\"}",
+        "-- measureFrames(2): {\"presented\":60,\"dropped\":0,\"decoded\":60,\"mediaSeconds\":2,\"fps\":30}"
+      ]
+    },
+    {
+      "repeat": 1,
+      "engine": "webkit",
+      "session": "recovery",
+      "status": "pass",
+      "stream": "vod-cmaf",
+      "durationMs": 9100,
+      "startupMs": 196,
+      "mediaTime": 3,
+      "rebuffers": 0,
+      "decoded": 246,
+      "dropped": 0,
+      "presented": 241,
+      "rungHeight": 720,
+      "startRungHeight": 360,
+      "switches": 1,
+      "latencyMs": null,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/a8e186a24958/vod-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": false,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "playing",
+        "startupMs": 196,
+        "startup": {
+          "manifestMs": 16,
+          "loadedMs": 50
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 246,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 241
+        },
+        "bitrate": {
+          "switches": 1,
+          "current": {
+            "id": 2,
+            "bandwidth": 1845302,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 176,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 1334,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ]
+        },
+        "live": {
+          "isLive": false,
+          "latencyMs": null,
+          "latencyMaxMs": null,
+          "presentationDelayMs": null,
+          "edgeSeeks": 0
+        },
+        "errors": [],
+        "playback": {
+          "currentTime": 8.016055166,
+          "duration": 60,
+          "paused": false,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 9.983918584,
+          "readyState": 4
+        }
+      },
+      "errors": [],
+      "checks": [
+        {
+          "name": "browser supported by Shaka",
+          "ok": true,
+          "detail": "supported=true"
+        },
+        {
+          "name": "page parameters usable",
+          "ok": true
+        },
+        {
+          "name": "plays through MSE (loadMode media-source)",
+          "ok": true,
+          "detail": "loadMode=media-source"
+        },
+        {
+          "name": "first frame presented (startupMs known)",
+          "ok": true,
+          "detail": "startupMs=196"
+        },
+        {
+          "name": "media time advanced 3 s",
+          "ok": true,
+          "detail": "reached 3.00 s, needed 3.00 s"
+        },
+        {
+          "name": "the request log shows the faulted segment answered 404 once, with the rule that did it",
+          "ok": true,
+          "detail": "video segment 3: v360:404 v360:200 v720:200"
+        },
+        {
+          "name": "the same segment was requested again and served",
+          "ok": true,
+          "detail": "statuses 404, 200, 200"
+        },
+        {
+          "name": "playback continued past the fault",
+          "ok": true,
+          "detail": "reached 8.00 s, needed 8 s"
+        },
+        {
+          "name": "no critical error",
+          "ok": true,
+          "detail": "[]"
+        },
+        {
+          "name": "at most one rebuffer (PB-REC-001)",
+          "ok": true,
+          "detail": "rebuffers=0, 0 ms"
+        }
+      ],
+      "consoleErrors": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "excerpt": [
+        "-- the request log, video segment 3: seq 9 v360 404 faults=[f1] ttfb 0.08 ms | seq 10 v360 200 faults=[] ttfb 0.15 ms | seq 12 v720 200 faults=[] ttfb 0.04 ms",
+        "-- error events seen by the hook: none (Shaka retried below the application)",
+        "#0 +0 ms media 0.00 load-requested {\"uri\":\"/s/a8e186a24958/vod-cmaf/dash/manifest.mpd\"}",
+        "#1 +5 ms media 0.00 buffering-start",
+        "#2 +16 ms media 0.00 manifest-loaded",
+        "#3 +49 ms media 0.00 buffering-start",
+        "#4 +49 ms media 0.00 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}",
+        "#5 +50 ms media 0.00 loaded",
+        "#6 +195 ms media 0.00 playing",
+        "#7 +196 ms media 0.00 buffering-end",
+        "#8 +196 ms media 0.00 firstframe {\"source\":\"requestVideoFrameCallback\"}",
+        "#9 +1207 ms media 0.71 variant-changed {\"from\":1,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"abr\"}"
+      ]
+    },
+    {
+      "repeat": 1,
+      "engine": "webkit",
+      "session": "ended",
+      "status": "pass",
+      "stream": "vod-cmaf",
+      "durationMs": 7626,
+      "startupMs": 192,
+      "mediaTime": 3,
+      "rebuffers": 0,
+      "decoded": 216,
+      "dropped": 0,
+      "presented": 181,
+      "rungHeight": 720,
+      "startRungHeight": 360,
+      "switches": 1,
+      "latencyMs": null,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/5f40a222b69d/vod-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": false,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "ended",
+        "startupMs": 192,
+        "startup": {
+          "manifestMs": 16,
+          "loadedMs": 51
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 216,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 181
+        },
+        "bitrate": {
+          "switches": 1,
+          "current": {
+            "id": 2,
+            "bandwidth": 1845302,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 179,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 764,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ]
+        },
+        "live": {
+          "isLive": false,
+          "latencyMs": null,
+          "latencyMaxMs": null,
+          "presentationDelayMs": null,
+          "edgeSeeks": 0
+        },
+        "errors": [],
+        "playback": {
+          "currentTime": 60,
+          "duration": 60,
+          "paused": true,
+          "ended": true,
+          "playbackRate": 1,
+          "bufferedAheadSec": 0,
+          "readyState": 2
+        }
+      },
+      "errors": [],
+      "checks": [
+        {
+          "name": "browser supported by Shaka",
+          "ok": true,
+          "detail": "supported=true"
+        },
+        {
+          "name": "page parameters usable",
+          "ok": true
+        },
+        {
+          "name": "plays through MSE (loadMode media-source)",
+          "ok": true,
+          "detail": "loadMode=media-source"
+        },
+        {
+          "name": "first frame presented (startupMs known)",
+          "ok": true,
+          "detail": "startupMs=192"
+        },
+        {
+          "name": "media time advanced 3 s",
+          "ok": true,
+          "detail": "reached 3.00 s, needed 3.00 s"
+        },
+        {
+          "name": "no error events",
+          "ok": true
+        },
+        {
+          "name": "the ended event is on the timeline, after the seek",
+          "ok": true,
+          "detail": "index 15"
+        },
+        {
+          "name": "the element and the state say ended",
+          "ok": true,
+          "detail": "ended=true state=ended"
+        },
+        {
+          "name": "the media time reached the end of the stream",
+          "ok": true,
+          "detail": "currentTime=60.00 duration=60"
+        },
+        {
+          "name": "the end is not a stall",
+          "ok": true,
+          "detail": "rebuffers=0"
+        },
+        {
+          "name": "no error event",
+          "ok": true,
+          "detail": ""
+        }
+      ],
+      "consoleErrors": [],
+      "excerpt": [
+        "-- seeking to the end and playing to it",
+        "#10 +0 ms media 57.00 seeking {\"from\":2.950400792,\"to\":57,\"requested\":true}",
+        "#11 +1 ms media 57.00 buffering-start",
+        "#12 +273 ms media 57.00 seeked {\"readyState\":4,\"paused\":false}",
+        "#13 +273 ms media 57.00 buffering-end",
+        "#14 +3530 ms media 60.00 paused",
+        "#15 +3531 ms media 60.00 ended"
+      ]
+    }
+  ]
+}
