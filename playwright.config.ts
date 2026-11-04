@@ -12,6 +12,8 @@ const PORT = Number(process.env.PB_PORT ?? 4600);
 export default defineConfig({
   testDir: 'tests',
   testMatch: ['e2e/**/*.spec.ts', 'live/**/*.spec.ts'],
+  // Fails fast, before the first test, when the service cannot serve the streams or the player page.
+  globalSetup: './tests/e2e/support/global-setup.ts',
   outputDir: 'test-results',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
@@ -47,8 +49,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    // The service builds the player bundle and generates the streams on first start (cached afterwards).
-    command: 'npm run serve',
+    // The player bundle is built first (the service serves dist/player), then the service starts. The service refuses to start when
+    // a stream is missing and prints "run npm run generate:streams"; stdout and stderr are piped so that message stays visible.
+    command: 'npm run build:player && npm run serve',
     url: `http://127.0.0.1:${PORT}/health`,
     reuseExistingServer: !process.env.CI,
     timeout: 300_000,
