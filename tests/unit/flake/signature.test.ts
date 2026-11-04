@@ -34,7 +34,7 @@ describe('PB-LAB-005 error signatures: the same cause is one signature', () => {
     ],
     [
       'a failure on two machines (the path differs, the file does not)',
-      "Error: ENOENT: no such file or directory, open '/Users/hannia/repos/playback-proof/.cache/streams/vod-cmaf/manifest.mpd'",
+      "Error: ENOENT: no such file or directory, open '/Users/dev/repos/playback-proof/.cache/streams/vod-cmaf/manifest.mpd'",
       "Error: ENOENT: no such file or directory, open '/home/runner/work/playback-proof/playback-proof/.cache/streams/vod-cmaf/manifest.mpd'",
     ],
     [
