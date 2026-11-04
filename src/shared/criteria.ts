@@ -370,7 +370,7 @@ export const GATE_BUDGETS = {
     720,
     's',
     'Wall-clock of one performance job (one environment, its profiles) when no metric fails.',
-    'Twelve minutes. Performance runs are serial (one browser at a time) and must not share the machine; the table in section 6 adds up the scenarios. Measured locally (the workstation of the baselines, not a CI runner): the runs of the job "chromium and chromium-cpu4x" add up to 365 s with their warm-ups (282 s for the three scenarios of Chromium, 83 s for the throttled profile), about 6 to 7 minutes with the starts of the service and of four browsers; to be re-measured in CI.',
+    'Twelve minutes. Performance runs are serial (one browser at a time) and must not share the machine; the table in section 6 adds up the scenarios. Measured locally (the workstation of the baselines): the runs of the job "chromium and chromium-cpu4x" add up to 365 s with their warm-ups (282 s for the three scenarios of Chromium, 83 s for the throttled profile), about 6 to 7 minutes with the starts of the service and of four browsers. Measured on GitHub-hosted runners (the A/A jobs of docs/results/perf/gha-cross-vm.md): 283 to 288 s per pass of Chromium and 84 to 86 s of the throttled profile, the same. This is the budget of ONE measurement of the profiles: the paired gate that CI runs on a shared runner (ADR-179) measures the control and then the head, about twice that (about 12 to 13 minutes of measuring) plus the checkout of the control, its player build and an install when the lock files differ; what budget a paired job gets is an open decision.',
   ),
   perfRemeasureSec: assumption(
     'Performance re-measure',
