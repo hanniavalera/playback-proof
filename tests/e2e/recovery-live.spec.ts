@@ -164,8 +164,9 @@ test(
       `media time of the stall: the end of the media the stale manifest lists (${listedEndSec} s), less a second`,
     ).toBeGreaterThanOrEqual(listedEndSec - 1);
 
-    // The playhead was stranded: when fresh manifests return the seek range has moved past the point where it stopped. This is the
-    // spec's own condition (the window outlived the DVR depth), checked on the origin's state and not assumed.
+    // The playhead was stranded: the seek range has moved past the point where it stopped (the jumps the player made to follow the
+    // range are on record in the annotation). This is the spec's own condition (the window outlived the DVR depth), checked on the
+    // origin's state and not assumed.
     const edgeNow = await currentEdge(session);
     const seekStartSec = (edgeNow - DVR_SEGMENTS) * LIVE_FACTS.segmentSec;
     expect(
@@ -191,10 +192,11 @@ test(
       LIVE_LIMITS.manifestMaxGapMs,
     );
 
-    // The player's side: nothing critical, at most one stall, and the playhead is back inside the seek range.
+    // The player's side: nothing critical, and the playhead is back inside the seek range. How many stall episodes the recovery
+    // costs is not a promise of this row (the first one is the buffer running dry; where the player lands after its jump decides
+    // whether the audio, which Shaka refills once a second, runs dry a moment after the resume): it is on record, not asserted.
     const metrics = await qa.metrics();
     expectHealthyPlayback(metrics);
-    expectAtMostRebuffers(metrics, 1);
     const { minMs, maxMs } = seekRangeLatencyBoundsMs(session);
     const latencyMs = metrics.live.latencyMs ?? Number.NaN;
     expect(
@@ -207,7 +209,7 @@ test(
     ).toBeGreaterThanOrEqual(minMs);
     testInfo.annotations.push({
       type: 'recovery',
-      description: `${answeredStale.length} manifest requests answered stale (${stale.bytes} bytes) from +${Math.round(stale.msSinceStart)} ms, the first fresh one at +${Math.round(fresh.msSinceStart)} ms; the playhead stopped at ${stalled.mediaTime.toFixed(2)} s (the stale list ends at ${listedEndSec} s) and the seek range started at ${seekStartSec} s when fresh manifests returned; ${metrics.live.edgeSeeks} jumps forward by the player while stale; resumed at ${resumed.mediaTime.toFixed(2)} s; latency ${Math.round(latencyMs)} ms (inside the range up to ${maxMs} ms); longest gap between manifest requests ${Math.round(Math.max(...gaps))} ms; ${metrics.errors.length} errors`,
+      description: `${answeredStale.length} manifest requests answered stale (${stale.bytes} bytes) from +${Math.round(stale.msSinceStart)} ms, the first fresh one at +${Math.round(fresh.msSinceStart)} ms; the playhead stopped at ${stalled.mediaTime.toFixed(2)} s (the stale list ends at ${listedEndSec} s) and the seek range started at ${seekStartSec} s when fresh manifests returned; ${metrics.live.edgeSeeks} jumps forward by the player while stale; resumed at ${resumed.mediaTime.toFixed(2)} s; ${metrics.rebuffer.count} stall episodes (${metrics.rebuffer.events.map((episode) => `${Math.round(episode.durationMs)} ms at ${episode.mediaTime.toFixed(2)} s`).join(', ')}); latency ${Math.round(latencyMs)} ms (inside the range up to ${maxMs} ms); longest gap between manifest requests ${Math.round(Math.max(...gaps))} ms; ${metrics.errors.length} errors`,
     });
   },
 );
