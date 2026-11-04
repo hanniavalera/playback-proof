@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { loadAround, machineFacts } from '../../../src/lab/measure/machine.ts';
+import {
+  CPU_MODEL_DIFFERS_NOTE,
+  compareCpuModels,
+  cpuModelOf,
+  loadAround,
+  machineFacts,
+  perfHost,
+} from '../../../src/lab/measure/machine.ts';
 import {
   MachineBusyError,
   QUIET_ENV_NAMES,
@@ -8,6 +15,7 @@ import {
   quietEnvironment,
   waitUntilQuiet,
 } from '../../../src/lab/measure/quiet.ts';
+import { HOST } from './fixtures.ts';
 
 /** A machine whose load average follows `readings`, one per look, with a clock that only the waits advance. */
 function machine(readings: number[]) {
@@ -185,5 +193,86 @@ describe('PB-PERF machine facts: how the profile was measured', () => {
     ];
     expect(loadAround(batches)).toStrictEqual({ before: 0.5, after: 1.6 });
     expect(loadAround([])).toStrictEqual({ before: 0, after: 0 });
+  });
+});
+
+describe('PB-PERF machine facts: the CPU model', () => {
+  const XEON = 'Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz';
+  const EPYC = 'AMD EPYC 9V74 80-Core Processor';
+
+  it('takes the model of the first CPU, trimmed, with its runs of whitespace collapsed', () => {
+    expect(
+      cpuModelOf([{ model: `  Intel(R)   Xeon(R) Platinum 8370C CPU @\t2.80GHz \n` }, { model: EPYC }]),
+    ).toBe(XEON);
+    expect(cpuModelOf([{ model: 'Apple M2 Pro' }, { model: 'Apple M2 Pro' }])).toBe('Apple M2 Pro');
+  });
+
+  it('has no model where the OS names none: no CPU, an empty name, or the placeholder libuv reports', () => {
+    expect(cpuModelOf([])).toBeUndefined();
+    expect(cpuModelOf([{ model: '' }])).toBeUndefined();
+    expect(cpuModelOf([{ model: ' \t ' }])).toBeUndefined();
+    // What os.cpus() says inside the Playwright container on an Apple-silicon host (Linux arm64 has no model name in /proc/cpuinfo).
+    expect(cpuModelOf([{ model: 'unknown' }])).toBeUndefined();
+    expect(cpuModelOf([{ model: ' Unknown ' }])).toBeUndefined();
+    // Only the placeholder is dropped, not a name that happens to contain the word.
+    expect(cpuModelOf([{ model: 'unknown CPU 9' }])).toBe('unknown CPU 9');
+  });
+
+  it('adds the model to the host facts when there is one, and leaves them as they are when there is not', () => {
+    const named = perfHost(HOST, [{ model: EPYC }]);
+    expect(named).toStrictEqual({ ...HOST, cpuModel: EPYC });
+    const unnamed = perfHost(HOST, [{ model: 'unknown' }]);
+    expect(unnamed).toStrictEqual(HOST);
+    expect(unnamed).not.toHaveProperty('cpuModel');
+  });
+
+  it('says so, with the same words, when both are known and equal: no note', () => {
+    expect(compareCpuModels({ cpuModel: EPYC }, EPYC)).toStrictEqual({
+      baseline: EPYC,
+      current: EPYC,
+      differs: false,
+      line: `baseline machine: ${EPYC}; this machine: ${EPYC}`,
+      note: null,
+    });
+  });
+
+  it('adds the note when both are known and differ, and keeps both names', () => {
+    const comparison = compareCpuModels({ cpuModel: XEON }, EPYC);
+    expect(comparison).toStrictEqual({
+      baseline: XEON,
+      current: EPYC,
+      differs: true,
+      line: `baseline machine: ${XEON}; this machine: ${EPYC}`,
+      note: 'the CPU model differs from the one the baseline was recorded on: a difference in startup of that size may be the machine',
+    });
+    expect(comparison.note).toBe(CPU_MODEL_DIFFERS_NOTE);
+  });
+
+  it('does not call a difference what it cannot tell: a baseline recorded without the model, or a machine that does not name its CPU', () => {
+    expect(compareCpuModels({}, EPYC)).toStrictEqual({
+      baseline: null,
+      current: EPYC,
+      differs: false,
+      line: `baseline machine: not recorded; this machine: ${EPYC}`,
+      note: null,
+    });
+    expect(compareCpuModels({ cpuModel: XEON }, undefined)).toStrictEqual({
+      baseline: XEON,
+      current: null,
+      differs: false,
+      line: `baseline machine: ${XEON}; this machine: unknown`,
+      note: null,
+    });
+    expect(compareCpuModels({}, undefined).differs).toBe(false);
+  });
+
+  it('says there is no baseline when there is none, rather than that the baseline did not record a model', () => {
+    expect(compareCpuModels(null, EPYC)).toStrictEqual({
+      baseline: null,
+      current: EPYC,
+      differs: false,
+      line: `baseline machine: no baseline; this machine: ${EPYC}`,
+      note: null,
+    });
   });
 });

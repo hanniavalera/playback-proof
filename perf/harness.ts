@@ -3,12 +3,14 @@
 // src/lab/measure and unit-tested; this file is the plumbing that needs a real machine.
 
 import { existsSync } from 'node:fs';
+import { cpus } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { launchProfile } from '../src/lab/measure/browser.ts';
-import type { BaselineBrowser } from '../src/lab/measure/baseline.ts';
+import type { BaselineBrowser, PerfHost } from '../src/lab/measure/baseline.ts';
 import { injectionFor } from '../src/lab/measure/args.ts';
 import type { PerfOptions } from '../src/lab/measure/args.ts';
+import { perfHost } from '../src/lab/measure/machine.ts';
 import { runBatch } from '../src/lab/measure/runner.ts';
 import type { Attempt } from '../src/lab/measure/gate.ts';
 import type { BatchProgress } from '../src/lab/measure/runner.ts';
@@ -19,7 +21,6 @@ import type { BatchMeasurement, PerfProfile, RunRecord } from '../src/lab/measur
 import { cpuThrottleOf, engineOf } from '../src/lab/measure/types.ts';
 import { currentEnvironment } from '../src/lab/gaps.ts';
 import { collectHostInfo } from '../src/lab/probe/host-info.ts';
-import type { HostInfo } from '../src/lab/probe/host-info.ts';
 import { detectEnvId } from '../src/shared/env.ts';
 import type { StreamId } from '../src/shared/streams.ts';
 import { PLAYER_DIST, buildPlayer } from '../tools/build-player.ts';
@@ -30,7 +31,7 @@ export const DEFAULT_REPORTS_DIR = join(ROOT, 'reports', 'perf');
 
 export interface Harness {
   envId: string;
-  host: HostInfo;
+  host: PerfHost;
   service: RunningService;
   /** The content hash of every stream the service has, by id. */
   streamHashes: Partial<Record<StreamId, string>>;
@@ -73,7 +74,7 @@ export async function startHarness(options: PerfOptions): Promise<Harness> {
     await buildPlayer();
   }
   const envId = detectEnvId();
-  const host = collectHostInfo(ROOT);
+  const host = perfHost(collectHostInfo(ROOT), cpus());
   const service = await startService({ root: ROOT, port: options.port });
   const onSignal = (): void => {
     void service.stop().finally(() => process.exit(130));
