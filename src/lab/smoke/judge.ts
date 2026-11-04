@@ -133,7 +133,10 @@ export interface SessionResult {
   decoded: number | null;
   dropped: number | null;
   presented: number | null;
+  /** The height of the rung when the metrics were read. */
   rungHeight: number | null;
+  /** The height of the first rung Shaka picked for the load (the `start` variant-changed): what the configuration's defaults decide. */
+  startRungHeight: number | null;
   switches: number | null;
   latencyMs: number | null;
   info: QAInfo | null;
@@ -150,7 +153,15 @@ export function summarizeMetrics(
   metrics: QAMetrics | null,
 ): Pick<
   SessionResult,
-  'startupMs' | 'rebuffers' | 'decoded' | 'dropped' | 'presented' | 'rungHeight' | 'switches' | 'latencyMs'
+  | 'startupMs'
+  | 'rebuffers'
+  | 'decoded'
+  | 'dropped'
+  | 'presented'
+  | 'rungHeight'
+  | 'startRungHeight'
+  | 'switches'
+  | 'latencyMs'
 > {
   return {
     startupMs: metrics?.startupMs ?? null,
@@ -159,6 +170,7 @@ export function summarizeMetrics(
     dropped: metrics?.frames.dropped ?? null,
     presented: metrics?.frames.presented ?? null,
     rungHeight: metrics?.bitrate.current?.height ?? null,
+    startRungHeight: metrics?.bitrate.history.find((change) => change.reason === 'start')?.height ?? null,
     switches: metrics?.bitrate.switches ?? null,
     latencyMs: metrics?.live.latencyMs ?? null,
   };
@@ -218,12 +230,20 @@ export function renderTable(results: readonly SessionResult[]): string {
       cell(r.rebuffers),
       r.dropped === null || r.decoded === null ? '-' : `${r.dropped}/${r.decoded}`,
       cell(r.presented),
-      r.rungHeight === null ? '-' : `${r.rungHeight}p`,
+      rungCell(r),
       cell(r.latencyMs, 0, ' ms'),
       noteOf(r),
     ]);
   }
   return formatTable(rows);
+}
+
+/** `720p`, or `360>720p` when the first rung and the current one differ. */
+function rungCell(r: SessionResult): string {
+  if (r.rungHeight === null) return '-';
+  if (r.startRungHeight !== null && r.startRungHeight !== r.rungHeight)
+    return `${r.startRungHeight}>${r.rungHeight}p`;
+  return `${r.rungHeight}p`;
 }
 
 export interface SessionSummary {

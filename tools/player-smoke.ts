@@ -449,6 +449,7 @@ async function runSession(
     dropped: null,
     presented: null,
     rungHeight: null,
+    startRungHeight: null,
     switches: null,
     latencyMs: null,
     info: null,

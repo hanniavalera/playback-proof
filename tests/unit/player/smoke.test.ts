@@ -267,6 +267,7 @@ describe('the table and the summary', () => {
       dropped: 0,
       presented: 95,
       rungHeight: 360,
+      startRungHeight: null,
       switches: 0,
       latencyMs: null,
     });
@@ -277,9 +278,29 @@ describe('the table and the summary', () => {
       dropped: null,
       presented: null,
       rungHeight: null,
+      startRungHeight: null,
       switches: null,
       latencyMs: null,
     });
+  });
+
+  it('reads the first rung of the load from its `start` change, and shows `first>current` when the player moved', () => {
+    const change = (t: number, from: number | null, to: number, height: number, reason: string): QAEvent => ({
+      index: 0,
+      t,
+      name: 'variant-changed',
+      mediaTime: 0,
+      detail: { from, to, height, bandwidth: to * 1000, reason },
+    });
+    const events: QAEvent[] = [
+      ...healthyEvents,
+      change(310, null, 1, 360, 'start'),
+      change(900, 1, 2, 720, 'abr'),
+    ].map((event, index) => ({ ...event, index }));
+    const summary = summarizeMetrics(metricsOf(events));
+    expect(summary).toMatchObject({ startRungHeight: 360, switches: 1 });
+    expect(renderTable([result({ ...summary, rungHeight: 720 })])).toMatch(/\s360>720p\s/);
+    expect(renderTable([result({ ...summary, rungHeight: 360 })])).toMatch(/\s360p\s/);
   });
 
   it('prints one row per run with the verdict, the numbers, and why a run failed or was skipped', () => {
