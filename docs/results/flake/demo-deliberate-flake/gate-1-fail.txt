@@ -1,0 +1,17 @@
+flake gate: FAIL (2 failures)  [demo-deliberate-flake, 2026-11-04, 1 run in this build, 25 runs judged]
+
+Suite flake rate per engine job (merge-tier tests, the last 30 builds, quarantined tests left out)
+| engine job | builds | executions | flaky | rate | budget | verdict | left out (quarantined) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| chromium | 25 | 25 | 6 | 24.0% | 2.0% | over-budget | 0 |
+
+Tests of this build (the last 30 executions each, judged from 20; 0 with no flaky outcome are not listed)
+| test | engine | executions | flaky | failed | rate | verdict | quarantine |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| PB-VOD-001 | chromium | 25 | 6 | 0 | 24.0% | over-trigger | no |
+
+Failures, and the decision each one drives
+1. [over-trigger] PB-VOD-001 on chromium is above the quarantine trigger: 6 flaky of 25 executions (24.0%), the trigger is 5.0%, over the last 25 executions. Last flake: Error: deliberately injected first-attempt failure (this is the demonstration, not the player) (run collect-20261104T161148Z-af9a55-24, 2026-11-04, commit ff169e38).
+   Decision: Fix PB-VOD-001 on chromium today, or quarantine it today. Who: the owner of the VOD playback (VOD) area, named as the owner of the entry. To quarantine, add an entry to flake/quarantine.json with the owner, the reason with the evidence that the failure is not deterministic (the same commit failed and passed), the evidence (an issue or a CI run), since 2026-11-04 and an expiry no later than 2026-11-11 (a merge-tier test: at most 7 days). The gate stays red until one of the two has happened. Do not rerun the job: look first at the trace of the first failed attempt, not the green retry.
+2. [suite-budget] The suite flake rate of the chromium engine job is above its budget: 6 flaky of 25 executions (24.0%) over the last 25 builds, the budget is 2.0%. The tests that flaked: PB-VOD-001 (6 of 25).
+   Decision: Look at the environment first (the runner, the browser version, PB-ENV-001 in this build), since flakiness spread across tests points there. Then fix, or quarantine today (an expiry no later than 2026-11-11 for a merge-tier test), the tests that contribute most: a quarantined test leaves the suite rate, the old executions with it. Who: the lab maintainer with the owners of those tests. The gate stays red until the rate is within the budget.

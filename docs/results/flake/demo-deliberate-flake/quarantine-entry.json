@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "id": "PB-VOD-001",
+      "project": "chromium",
+      "reason": "demonstration: the first attempt fails in every fourth repetition on purpose (tests/e2e/demo-flaky.spec.ts) and the retry passes",
+      "owner": "@hanniavalera",
+      "since": "2026-11-04",
+      "expires": "2026-11-10",
+      "evidence": "25 repetitions of the flake collector: 6 flaky, 0 failed (docs/results/flake/demo-deliberate-flake.md)"
+    }
+  ]
+}

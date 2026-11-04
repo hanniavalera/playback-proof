@@ -4,7 +4,7 @@ A flaky test is one that fails and then passes on a retry with nobody having cha
 
 **The definition** is in [METRICS.md](METRICS.md): flake rate = runs in which the test failed and then passed on a retry / runs in which it executed. A test that fails every attempt is a **failure**, not a flake: it already failed the browser job, and the flake gate does not judge it.
 
-> **No flake rate of this lab has been measured yet.** The mechanism is built and tested on fixtures and on one real Playwright run of a scratch project. The numbers in the examples below come from fixture data built by the test helpers, and are labelled so. Real data comes from `tools/flake-collect.ts` (Phase 9), and until then the policy numbers are initial policy.
+> **What has been measured.** The mechanism was built and tested on fixtures, then run for real on GitHub's runners: 30 repetitions of the `@merge` tier in each Linux engine gave **no flaky outcome in 450 executions per engine**, and on the macOS runner (WebKit) one test, PB-ABR-002, failed its first attempt in 7 of 60 repetitions; the cause was traced to Shaka's dropped-frame protection and the attempts it ruins are now counted as invalid runs (ADR-106). Every number, with its machine, commit and command, is in [results/flake](results/flake/README.md). The numbers in the examples below are fixture data built by the test helpers, and are labelled so; none of them is a measurement of the lab.
 
 ## How the parts fit
 
@@ -131,9 +131,9 @@ The same numbers are in `reports/flake/gate.json` (`invalidRuns`, with the last 
 - A rate is a count over a window, not a probability. 30 executions cannot tell a test that flakes 1 % of the time from one that never does, and a test at 5 % is caught in 45 % of windows (the arithmetic is in `criteria.ts`). The suite budget catches what the per-test trigger cannot see: flakiness spread thin.
 - It sees only what one retry hides: a lower bound. A test that fails twice by bad luck is a failure.
 - It does not say that the test is at fault. A flaky outcome of a player test may be an intermittent defect of the player, and the history mixes commits: the report gives the commit and the signature of the last failure for that reason.
-- It is initial policy applied to a history that does not exist yet. It becomes evidence when the collector has gathered some and the numbers have been revised.
+- The policy numbers are still the initial policy, and the collections gave no reason to revise them: 450 clean executions per Linux engine argue for no change of the trigger, and the one flaky test that the macOS runner showed (7 of 60 first attempts) is over the 5 % trigger by itself. They are placed by judgment and the arithmetic above, not derived from a model of the causes, and the history of CI (`ci-data`) is what will say whether they are right: on the day of writing it holds a handful of runs.
 
-## Collecting the real data (Phase 9)
+## Collecting the data
 
 ```sh
 npm run serve                                   # once, on PB_PORT: the repetitions reuse the service
@@ -141,7 +141,7 @@ npx tsx tools/flake-collect.ts --project chromium --runs 30 --grep @merge
 npm run flake:report
 ```
 
-Each repetition is one Playwright invocation with one retry and the flake reporter on its command line; its run file (`reports/flake/collect/run-<n>.json`) is appended to `flake/history/<envId>.jsonl` before the next one starts, so a crash keeps what was gathered. Take the numbers from `flake:report` and quote the machine, the date, the commit and the command with them (METRICS.md: a number carries its environment).
+Each repetition is one Playwright invocation with one retry and the flake reporter on its command line; its run file (`reports/flake/collect/run-<n>.json`) is appended to `flake/history/<envId>.jsonl` before the next one starts, so a crash keeps what was gathered, and the output directory of every repetition is kept, so that a failed attempt keeps its trace. Take the numbers from `flake:report` and quote the machine, the date, the commit and the command with them (METRICS.md: a number carries its environment). On GitHub's runners the same command is the task `flake-collect` of `measure.yml` ([CI.md](CI.md), "Measurements on GitHub runners"); the collections made so far, with their numbers, are in [results/flake](results/flake/README.md).
 
 ## Files and variables
 
