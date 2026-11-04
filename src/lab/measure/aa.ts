@@ -1,5 +1,4 @@
 import type { StatName } from './decide.ts';
-import type { FinalVerdict } from './decide.ts';
 import type { GateReport } from './report.ts';
 import { stdDev } from './stats.ts';
 import type { MetricUnit } from './types.ts';
@@ -29,8 +28,6 @@ export interface AaMetric {
   tails: number[];
   /** The most the first batches were worse than the baseline, in the unit of the metric (negative: better in every pass). */
   worst: { median: number; tail: number };
-  /** The largest share of the allowance a first batch used: 1 is exactly at the limit, above 1 is an alarm. Null when nothing was allowed to be measured against. */
-  used: { median: number | null; tail: number | null };
   /** Passes whose first batch failed this metric. */
   firstBatchAlarms: number;
   /** Of those, the passes in which the fresh batch failed it too: false positives. */
@@ -153,7 +150,6 @@ export function summarizeAa(reports: readonly { file: string; report: GateReport
             medians: [],
             tails: [],
             worst: { median: -Infinity, tail: -Infinity },
-            used: { median: null, tail: null },
             firstBatchAlarms: 0,
             reproduced: 0,
             betweenBatch: { sd: null, relativeSd: null },
@@ -167,7 +163,7 @@ export function summarizeAa(reports: readonly { file: string; report: GateReport
         entry.worst.median = Math.max(entry.worst.median, comparison.median.worseBy);
         entry.worst.tail = Math.max(entry.worst.tail, comparison.tail.worseBy);
         if (final.first.verdict === 'fail') entry.firstBatchAlarms += 1;
-        if (final.verdict === ('regression' satisfies FinalVerdict)) entry.reproduced += 1;
+        if (final.verdict === 'regression') entry.reproduced += 1;
       }
     }
     const batches = report.scenarios.flatMap((scenario) => [scenario.first, scenario.remeasure]);
@@ -190,10 +186,6 @@ export function summarizeAa(reports: readonly { file: string; report: GateReport
   }
 
   for (const entry of metrics.values()) {
-    entry.used = {
-      median: used(entry.worst.median, entry.allowed.median),
-      tail: used(entry.worst.tail, entry.allowed.tail),
-    };
     const sd = entry.medians.length >= 2 ? stdDev(entry.medians) : null;
     entry.betweenBatch = {
       sd,
@@ -234,8 +226,11 @@ export function summarizeAa(reports: readonly { file: string; report: GateReport
   };
 }
 
-/** The share of the allowance that the worst pass used. A negative worst (better than the baseline in every pass) uses none of it. */
-function used(worst: number, allowed: number | null): number | null {
+/**
+ * The share of its allowance that the worst pass used: 1 is exactly at the limit, above 1 an alarm. A pass that was not worse than the
+ * baseline used none of it. Null when nothing was allowed to be measured against; Infinity when the allowance is zero and was exceeded.
+ */
+export function allowanceUsed(worst: number, allowed: number | null): number | null {
   if (allowed === null || !Number.isFinite(worst)) return null;
   if (worst <= 0) return 0;
   return allowed === 0 ? Infinity : worst / allowed;
@@ -270,7 +265,7 @@ export function renderAaMarkdown(summary: AaSummary): string {
   ];
   for (const m of summary.metrics.filter((metric) => metric.gated)) {
     lines.push(
-      `| ${m.scenario} | ${m.metric} | ${num(m.baseline.median, m.unit)} / ${num(m.baseline.tail, m.unit)} | ${m.baseline.cv === null ? '-' : `${(m.baseline.cv * 100).toFixed(1)} %`} | ${num(m.allowed.median, m.unit)} / ${num(m.allowed.tail, m.unit)} | ${num(m.worst.median, m.unit)} / ${num(m.worst.tail, m.unit)} | ${share(m.used.median)} / ${share(m.used.tail)} | ${num(m.betweenBatch.sd, m.unit)}${m.betweenBatch.relativeSd === null ? '' : ` (${(m.betweenBatch.relativeSd * 100).toFixed(1)} %)`} |`,
+      `| ${m.scenario} | ${m.metric} | ${num(m.baseline.median, m.unit)} / ${num(m.baseline.tail, m.unit)} | ${m.baseline.cv === null ? '-' : `${(m.baseline.cv * 100).toFixed(1)} %`} | ${num(m.allowed.median, m.unit)} / ${num(m.allowed.tail, m.unit)} | ${num(m.worst.median, m.unit)} / ${num(m.worst.tail, m.unit)} | ${share(allowanceUsed(m.worst.median, m.allowed.median))} / ${share(allowanceUsed(m.worst.tail, m.allowed.tail))} | ${num(m.betweenBatch.sd, m.unit)}${m.betweenBatch.relativeSd === null ? '' : ` (${(m.betweenBatch.relativeSd * 100).toFixed(1)} %)`} |`,
     );
   }
   const tracked = summary.metrics.filter((metric) => !metric.gated);

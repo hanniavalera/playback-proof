@@ -215,7 +215,8 @@ export function measureVariation(
 
 /** Rounds up to a multiple of `step` (the shares of the policy are multiples of 5 %). */
 export function roundUpTo(value: number, step: number): number {
-  return Math.ceil(value / step - 1e-9) * step;
+  // `|| 0`: a value of zero must round to 0, not to -0 (which JSON writes as 0 and strict equality tells apart).
+  return Math.ceil(value / step - 1e-9) * step || 0;
 }
 
 /** Rounds up to the next of 1, 2, 5 times a power of ten (the floors of the policy are round numbers). */
