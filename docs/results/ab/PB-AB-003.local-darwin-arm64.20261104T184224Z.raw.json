@@ -1,0 +1,6153 @@
+{
+  "schemaVersion": 1,
+  "kind": "ab-raw",
+  "preregistration": {
+    "path": "ab/prereg/PB-AB-003.json",
+    "sha256": "bc930ea63fac5e7a721365d85ce29528bb7f96a89c03fff3f6693c6383d6121d",
+    "text": "{\n  \"schemaVersion\": 1,\n  \"id\": \"PB-AB-003\",\n  \"kind\": \"experiment\",\n  \"catalogId\": \"PB-AB-003\",\n  \"title\": \"Rebuffering of configuration B against configuration A under a bandwidth drop on a finite link (Chromium, local-darwin-arm64)\",\n  \"registeredOn\": \"2026-11-04\",\n  \"hypotheses\": [\n    {\n      \"metric\": \"rebufferShare\",\n      \"text\": \"The two configurations as shipped stall about equally often under the drop: B does not stall in a share of sessions more than 20 percentage points above A. Neither is expected to stall often: in the two A/A pilots of this condition (18 s and 40 s of media) none of the 120 measured sessions of configuration A stalled, and every one of the 60 sessions of the second pilot went 720p, then 360p (between 16.7 and 16.9 s), then 240p (between 24.7 and 24.9 s). With the share of A at 0 the experiment can show that B stalls more (A better) or that the two are equivalent within 20 points; it cannot show that B stalls less, because a share cannot fall below 0. The verdict that would confirm the expectation is equivalent within the margin.\"\n    }\n  ],\n  \"engine\": \"chromium\",\n  \"stream\": \"vod-cmaf\",\n  \"protocol\": \"dash\",\n  \"arms\": { \"A\": \"A\", \"B\": \"B\" },\n  \"conditions\": [\n    {\n      \"id\": \"bandwidth-drop-finite\",\n      \"profile\": null,\n      \"rules\": [\n        { \"type\": \"throttle\", \"kbps\": 20000 },\n        { \"type\": \"throttle\", \"kbps\": 600, \"afterMs\": 8000 }\n      ],\n      \"rationale\": \"The catalog profile bandwidth-drop (600 kbps on media requests from 8 s after the first media request) with its first 8 s on a finite 20 000 kbps link instead of an unthrottled one: the player ignores downloads that take under 5 ms, so an unthrottled start would give its estimator nothing to hear, and 20 000 kbps is the fastest link on which the smallest segment still takes six times that. The slowest throttle wins, so the link is 600 kbps from 8 s on. The same condition and the same 40 s window as the second A/A pilot.\"\n    }\n  ],\n  \"observation\": { \"mediaSecondsAfterFirstFrame\": 40, \"sessionTimeoutMs\": 180000 },\n  \"sessionsPerArm\": 40,\n  \"warmupSessionsPerArm\": 2,\n  \"alpha\": 0.05,\n  \"bootstrapResamples\": 5000,\n  \"metrics\": [\n    {\n      \"id\": \"rebufferShare\",\n      \"role\": \"primary\",\n      \"direction\": \"lower-is-better\",\n      \"practicalThreshold\": 0.2,\n      \"thresholdBasis\": \"One session in five stalling more often than in the other arm is what a team would change a default for: rebuffering is what viewers feel most. This is the number written in the plan of the A/A pilot before its data. The sample size comes from that pilot by the rule stated there: the smallest even number of sessions per arm, at most 50, whose minimum detectable effect is not above the threshold. At 30 sessions per arm the minimum is 25.2 points and at 38 it is 20.1, above the threshold; at 40 it is 19.0 points (80 % power), so the design has 40 sessions per arm and the threshold stays 0.2. The threshold is also the margin of equivalence.\",\n      \"minimumDetectableEffect\": {\n        \"value\": 0.1902,\n        \"sessionsPerArm\": 40,\n        \"power\": 0.8,\n        \"source\": \"docs/results/ab/PB-AB-001-bandwidth-drop-finite-40s.local-darwin-arm64.20261104T175652Z.power-40.json\"\n      }\n    },\n    { \"id\": \"rebufferRatio\", \"role\": \"secondary\", \"direction\": \"lower-is-better\" }\n  ],\n  \"decisionRule\": {\n    \"id\": \"pb-ab-v1\",\n    \"text\": \"Four verdicts and no more: B better (ship B) only if the whole interval of the primary metric lies beyond the threshold in B's favour, the Holm-adjusted p is below alpha and no primary metric is harmed; A better (do not ship B) if the primary metric is worse beyond the threshold with an interval that excludes zero; equivalent within the margin (keep A) only if the whole interval lies inside plus or minus the threshold; inconclusive (keep A, collect more sessions) otherwise. Not finding a difference is not evidence that there is none.\"\n  },\n  \"exclusionRule\": {\n    \"text\": \"A session that errors or times out is a failed session: it is reported and never silently dropped; its metrics are left out of the comparison. The number of sessions is fixed in advance, 40 per arm after the warm-up: there is no interim analysis, no extension and no re-run to improve a result; the condition stops only after 5 failed sessions in a row. If the run is not valid (a data-quality gate fails) the report says so and the verdict is not acted on.\",\n    \"maxFailedShare\": 0.1,\n    \"abortAfterConsecutiveFailures\": 5\n  },\n  \"aaCheck\": {\n    \"source\": \"docs/results/ab/PB-AB-001-bandwidth-drop-finite-40s.local-darwin-arm64.20261104T175652Z.report.json\"\n  },\n  \"seed\": 20261131\n}\n",
+    "committed": {
+      "clean": true,
+      "commit": "150da3b",
+      "date": "2026-11-04T12:42:21-06:00"
+    }
+  },
+  "environment": {
+    "envId": "local-darwin-arm64",
+    "host": {
+      "os": {
+        "platform": "darwin",
+        "arch": "arm64",
+        "release": "27.2.0",
+        "name": "macOS 27.2"
+      },
+      "cpus": 12,
+      "memoryGiB": 16,
+      "node": "v22.11.0",
+      "playwright": "1.64.1",
+      "git": {
+        "commit": "150da3b",
+        "dirty": false
+      }
+    },
+    "browser": {
+      "name": "chromium",
+      "version": "156.0.8078.4",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+    },
+    "ffmpeg": "9.0.2",
+    "streams": {
+      "vod-cmaf": "66738540703f45d7ccfb51c91b8ccd40fe53bec59cb7bbef41fde9d03270ec06",
+      "vod-cmaf-short": "52288c8dbedb24753b7ce482292ae144a3aa33e57d68e145db6dfcdcb17d1dd0",
+      "vod-webm": "ed602bbaec0d94a1adda7ad70fefdc1652fbaf8a0d27001e9f287e85b8630c5e",
+      "live-cmaf": "edf24480e4244b97e3031cb01a542d0b859a148b16bbbaac2b63af5796a4cdb9",
+      "vod-cmaf-clearkey": "f1d6817ae45923e9bad0afba463d325a8050c35c158ea071d28927f5c1cd024a"
+    }
+  },
+  "run": {
+    "startedAt": "2026-11-04T18:42:24.910Z",
+    "finishedAt": "2026-11-04T19:45:52.437Z",
+    "command": "npm run ab -- --prereg ab/prereg/PB-AB-003.json --port 4720"
+  },
+  "conditions": [
+    {
+      "id": "bandwidth-drop-finite",
+      "rules": [
+        {
+          "type": "throttle",
+          "kbps": 20000
+        },
+        {
+          "type": "throttle",
+          "kbps": 600,
+          "afterMs": 8000
+        }
+      ],
+      "stream": "vod-cmaf",
+      "startedAt": "2026-11-04T18:42:24.911Z",
+      "finishedAt": "2026-11-04T19:45:52.436Z",
+      "loadAverage": {
+        "before": 3.6513671875,
+        "after": 17.0244140625
+      },
+      "sessions": [
+        {
+          "index": 0,
+          "block": 0,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": true,
+          "status": "ok",
+          "values": {
+            "startupMs": 225.30000001192093,
+            "manifestMs": 18.19999998807907,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0.0008291873963515755
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 131.39999997615814,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16786.600000023842,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24810,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "d128128c73b5",
+          "startedAt": "2026-11-04T18:42:25.516Z",
+          "durationMs": 40449,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "block": 0,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": true,
+          "status": "ok",
+          "values": {
+            "startupMs": 55.69999998807907,
+            "manifestMs": 12.099999964237213,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 94.60000002384186,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 160.70000004768372,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17267.100000023842,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21283.600000023842,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "8f2abe07c925",
+          "startedAt": "2026-11-04T18:43:05.966Z",
+          "durationMs": 40255,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "block": 1,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": true,
+          "status": "ok",
+          "values": {
+            "startupMs": 53.5,
+            "manifestMs": 10.900000035762787,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 86.09999996423721,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 152.89999997615814,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17255.299999952316,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21268.099999964237,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "9b310ebfcf64",
+          "startedAt": "2026-11-04T18:43:46.221Z",
+          "durationMs": 40251,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 3,
+          "block": 1,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": true,
+          "status": "ok",
+          "values": {
+            "startupMs": 203.80000001192093,
+            "manifestMs": 11.800000011920929,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 87.19999998807907,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16666.100000023842,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24699.19999998808,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "3ce42632ff90",
+          "startedAt": "2026-11-04T18:44:26.473Z",
+          "durationMs": 40392,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 4,
+          "block": 2,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 200.10000002384186,
+            "manifestMs": 11.899999976158142,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 88.19999998807907,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16859,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24890.5,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "9eeea7ed2600",
+          "startedAt": "2026-11-04T18:45:06.866Z",
+          "durationMs": 40387,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 5,
+          "block": 2,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 55.19999998807907,
+            "manifestMs": 11.5,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 88.59999996423721,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 155.5999999642372,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17257.899999976158,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21281.19999998808,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "cc323e714efb",
+          "startedAt": "2026-11-04T18:45:47.253Z",
+          "durationMs": 40238,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 6,
+          "block": 3,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 53.69999998807907,
+            "manifestMs": 11.199999988079071,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 83.5,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 150,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17231,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21241.200000047684,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "5028f4aec76b",
+          "startedAt": "2026-11-04T18:46:27.492Z",
+          "durationMs": 40219,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 7,
+          "block": 3,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 216,
+            "manifestMs": 12.5,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 90,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16751.099999964237,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24818,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "48047d4cd12c",
+          "startedAt": "2026-11-04T18:47:07.711Z",
+          "durationMs": 40414,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 8,
+          "block": 4,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 212.9000000357628,
+            "manifestMs": 10.800000011920929,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 94.29999995231628,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16749,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24817.899999976158,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "e92bafb98989",
+          "startedAt": "2026-11-04T18:47:48.126Z",
+          "durationMs": 40417,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 9,
+          "block": 4,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 55.80000001192093,
+            "manifestMs": 13,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 105.19999998807907,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 173.4000000357628,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17182.400000035763,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21272.400000035763,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "198fb099edf1",
+          "startedAt": "2026-11-04T18:48:28.544Z",
+          "durationMs": 40327,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 10,
+          "block": 5,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 75.60000002384186,
+            "manifestMs": 14.199999988079071,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 140.29999995231628,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 208.89999997615814,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17183.299999952316,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21272.799999952316,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "4c01ac51a352",
+          "startedAt": "2026-11-04T18:49:08.872Z",
+          "durationMs": 40438,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 11,
+          "block": 5,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 236.19999998807907,
+            "manifestMs": 18.100000023841858,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 151.39999997615814,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16829.899999976158,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24897.19999998808,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "b183d7da6955",
+          "startedAt": "2026-11-04T18:49:49.312Z",
+          "durationMs": 40535,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 12,
+          "block": 6,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 214.19999998807907,
+            "manifestMs": 12.600000023841858,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 94.10000002384186,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16754.30000001192,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24825.30000001192,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "9864db8c2ba1",
+          "startedAt": "2026-11-04T18:50:29.847Z",
+          "durationMs": 40453,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 13,
+          "block": 6,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 61.5,
+            "manifestMs": 14.100000023841858,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 126.69999998807907,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 194.5,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17205.399999976158,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21296.30000001192,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "5a76b2d6fe57",
+          "startedAt": "2026-11-04T18:51:10.301Z",
+          "durationMs": 40367,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 14,
+          "block": 7,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 56.60000002384186,
+            "manifestMs": 8.199999988079071,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 99.89999997615814,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 167.79999995231628,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17163.19999998808,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21258.899999976158,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "2ae02e32f10e",
+          "startedAt": "2026-11-04T18:51:50.672Z",
+          "durationMs": 40277,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 15,
+          "block": 7,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 216,
+            "manifestMs": 13,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 91.10000002384186,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16753.600000023842,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24821.5,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "777a45d406eb",
+          "startedAt": "2026-11-04T18:52:30.949Z",
+          "durationMs": 40420,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 16,
+          "block": 8,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 214.30000001192093,
+            "manifestMs": 12.199999988079071,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 91.69999998807907,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16755.400000035763,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24813.30000001192,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "76f664ee55c5",
+          "startedAt": "2026-11-04T18:53:11.369Z",
+          "durationMs": 40459,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 17,
+          "block": 8,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 61.69999998807907,
+            "manifestMs": 15.100000023841858,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 152.5,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 219.69999998807907,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17229.899999976158,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21319.80000001192,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "a238e836fd06",
+          "startedAt": "2026-11-04T18:53:51.830Z",
+          "durationMs": 40489,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 18,
+          "block": 9,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 56.30000001192093,
+            "manifestMs": 12.199999988079071,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 128.89999997615814,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 196.19999998807907,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17193.69999998808,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21297.899999976158,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "b0ebeeed6a87",
+          "startedAt": "2026-11-04T18:54:32.319Z",
+          "durationMs": 40398,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 19,
+          "block": 9,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 203,
+            "manifestMs": 11.900000035762787,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 85.69999998807907,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16746,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24817.399999976158,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "35dee28ce8e9",
+          "startedAt": "2026-11-04T18:55:12.718Z",
+          "durationMs": 40407,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 20,
+          "block": 10,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 213.20000004768372,
+            "manifestMs": 7.200000047683716,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 93.80000001192093,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16750.600000023842,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24818.399999976158,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "e2ee57c5e3e2",
+          "startedAt": "2026-11-04T18:55:53.126Z",
+          "durationMs": 40412,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 21,
+          "block": 10,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 54.90000003576279,
+            "manifestMs": 12.600000023841858,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 103.09999996423721,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 171,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 16769.5,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 20858.5,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "e5d587336d3b",
+          "startedAt": "2026-11-04T18:56:33.538Z",
+          "durationMs": 40440,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 22,
+          "block": 11,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 84.59999996423721,
+            "manifestMs": 11.699999988079071,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 173.19999998807907,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 243.39999997615814,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17248,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21346.399999976158,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "e942aea5698b",
+          "startedAt": "2026-11-04T18:57:13.979Z",
+          "durationMs": 40555,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 23,
+          "block": 11,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 215.69999998807907,
+            "manifestMs": 12.199999988079071,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 91.30000001192093,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16753.600000023842,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24821.80000001192,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "c0cff77131f7",
+          "startedAt": "2026-11-04T18:57:54.535Z",
+          "durationMs": 40426,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 24,
+          "block": 12,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 203.60000002384186,
+            "manifestMs": 11.400000035762787,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 84.09999996423721,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16751.899999976158,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24817.399999976158,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "ca9e9831a4ef",
+          "startedAt": "2026-11-04T18:58:34.961Z",
+          "durationMs": 40388,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 25,
+          "block": 12,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 55.19999998807907,
+            "manifestMs": 12.099999964237213,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 91.19999998807907,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 158.9000000357628,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17162.5,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21262.600000023842,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "1967b7d2f891",
+          "startedAt": "2026-11-04T18:59:15.350Z",
+          "durationMs": 40246,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 26,
+          "block": 13,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 54.60000002384186,
+            "manifestMs": 11.800000011920929,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 90.80000001192093,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 157.80000001192093,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17161.80000001192,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21260.400000035763,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "3bce62bd3568",
+          "startedAt": "2026-11-04T18:59:55.596Z",
+          "durationMs": 40261,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 27,
+          "block": 13,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 200.39999997615814,
+            "manifestMs": 10.699999988079071,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0.0008291873963515755
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 87,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16774.5,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24818.100000023842,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "ac3ccee842a8",
+          "startedAt": "2026-11-04T19:00:35.857Z",
+          "durationMs": 40502,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 28,
+          "block": 14,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 236.10000002384186,
+            "manifestMs": 29.900000035762787,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 217.69999998807907,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16899,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24963.399999976158,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "d4987f3fab01",
+          "startedAt": "2026-11-04T19:01:16.360Z",
+          "durationMs": 41670,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 29,
+          "block": 14,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 56.10000002384186,
+            "manifestMs": 7.600000023841858,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 101.30000001192093,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 167.80000001192093,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17162.600000023842,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21264.30000001192,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "a5526ea0025f",
+          "startedAt": "2026-11-04T19:01:58.032Z",
+          "durationMs": 40606,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 30,
+          "block": 15,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 55.19999998807907,
+            "manifestMs": 11.5,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 89.10000002384186,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 156.4000000357628,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17159.700000047684,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21261.100000023842,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "102b6d71f455",
+          "startedAt": "2026-11-04T19:02:38.639Z",
+          "durationMs": 40239,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 31,
+          "block": 15,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 201.5,
+            "manifestMs": 11.399999976158142,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 86.59999996423721,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16849.299999952316,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24886.399999976158,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "b2800cb965e6",
+          "startedAt": "2026-11-04T19:03:18.878Z",
+          "durationMs": 40402,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 32,
+          "block": 16,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 200,
+            "manifestMs": 10.900000035762787,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 89.60000002384186,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16874,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24915.899999976158,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "150fa93d26de",
+          "startedAt": "2026-11-04T19:03:59.280Z",
+          "durationMs": 40404,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 33,
+          "block": 16,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 53.89999997615814,
+            "manifestMs": 11.699999988079071,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 86.90000003576279,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 153.4000000357628,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17244.19999998808,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21458.600000023842,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "6202221ab233",
+          "startedAt": "2026-11-04T19:04:39.684Z",
+          "durationMs": 40256,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 34,
+          "block": 17,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 69.89999997615814,
+            "manifestMs": 11.099999964237213,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 83.19999998807907,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 149.39999997615814,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17239.30000001192,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21250.69999998808,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "9f825925ef7b",
+          "startedAt": "2026-11-04T19:05:19.941Z",
+          "durationMs": 40247,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 35,
+          "block": 17,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 201.79999995231628,
+            "manifestMs": 11.599999964237213,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 86.19999998807907,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16869.399999976158,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24893,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "ddca5ea2e8d6",
+          "startedAt": "2026-11-04T19:06:00.188Z",
+          "durationMs": 40385,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 36,
+          "block": 18,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 201.5999999642372,
+            "manifestMs": 13.099999964237213,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 88.5,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16848.899999976158,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24879.599999964237,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "e0ce91006966",
+          "startedAt": "2026-11-04T19:06:40.572Z",
+          "durationMs": 40406,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 37,
+          "block": 18,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 52.19999998807907,
+            "manifestMs": 11.099999964237213,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 86.59999996423721,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 153.0999999642372,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17223.399999976158,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21253.80000001192,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "1c842a11db30",
+          "startedAt": "2026-11-04T19:07:20.979Z",
+          "durationMs": 40259,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 38,
+          "block": 19,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 53.60000002384186,
+            "manifestMs": 11.399999976158142,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 85.5,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 151.89999997615814,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17254.19999998808,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21254.69999998808,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "3aa3f3f2004a",
+          "startedAt": "2026-11-04T19:08:01.239Z",
+          "durationMs": 40280,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 39,
+          "block": 19,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 201.5999999642372,
+            "manifestMs": 10.599999964237213,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 86.40000003576279,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16866.200000047684,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24904.600000023842,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "1d6b6f382310",
+          "startedAt": "2026-11-04T19:08:41.520Z",
+          "durationMs": 40399,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 40,
+          "block": 20,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 204.4000000357628,
+            "manifestMs": 11.300000011920929,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 83.80000001192093,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16856.100000023842,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24888.600000023842,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "d2f3583350fc",
+          "startedAt": "2026-11-04T19:09:21.919Z",
+          "durationMs": 40385,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 41,
+          "block": 20,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 55,
+            "manifestMs": 12,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 86.59999996423721,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 153.0999999642372,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17232.799999952316,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21238.799999952316,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "8b9a2b345a1c",
+          "startedAt": "2026-11-04T19:10:02.304Z",
+          "durationMs": 40234,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 42,
+          "block": 21,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 52.80000001192093,
+            "manifestMs": 11.100000023841858,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 83.19999998807907,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 149.80000001192093,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17264,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21266.30000001192,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "1ab01876abcf",
+          "startedAt": "2026-11-04T19:10:42.538Z",
+          "durationMs": 40253,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 43,
+          "block": 21,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 202.69999998807907,
+            "manifestMs": 11.100000023841858,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 84,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16858,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24912,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "75f3e9e37a8f",
+          "startedAt": "2026-11-04T19:11:22.791Z",
+          "durationMs": 40380,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 44,
+          "block": 22,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 205.80000001192093,
+            "manifestMs": 10.699999988079071,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 81.80000001192093,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16873.5,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24901.600000023842,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "33e216a864fb",
+          "startedAt": "2026-11-04T19:12:03.171Z",
+          "durationMs": 40374,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 45,
+          "block": 22,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 53.799999952316284,
+            "manifestMs": 11.099999964237213,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 87.90000003576279,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 154.5,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17238.900000035763,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21246.900000035763,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "024acad55015",
+          "startedAt": "2026-11-04T19:12:43.545Z",
+          "durationMs": 40252,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 46,
+          "block": 23,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 52.69999998807907,
+            "manifestMs": 11.5,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 85.19999998807907,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 152,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17248.5,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21259.399999976158,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "61bd4244bdfb",
+          "startedAt": "2026-11-04T19:13:23.797Z",
+          "durationMs": 40233,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 47,
+          "block": 23,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 202.20000004768372,
+            "manifestMs": 11.600000023841858,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 85,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16858.30000001192,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24884.400000035763,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "ff157df55005",
+          "startedAt": "2026-11-04T19:14:04.030Z",
+          "durationMs": 40402,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 48,
+          "block": 24,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 202.30000001192093,
+            "manifestMs": 10.699999988079071,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 85.60000002384186,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16856.80000001192,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24887.30000001192,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "ede79e2e6ba2",
+          "startedAt": "2026-11-04T19:14:44.432Z",
+          "durationMs": 40388,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 49,
+          "block": 24,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 55.799999952316284,
+            "manifestMs": 13.099999964237213,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 89.5,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 156.29999995231628,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17244.399999976158,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21276.19999998808,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "c8d9d6c61b7a",
+          "startedAt": "2026-11-04T19:15:24.821Z",
+          "durationMs": 40251,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 50,
+          "block": 25,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 54.19999998807907,
+            "manifestMs": 12.599999964237213,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 92.39999997615814,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 157.80000001192093,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17234.80000001192,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21236,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "2bfd70178f11",
+          "startedAt": "2026-11-04T19:16:05.072Z",
+          "durationMs": 40252,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 51,
+          "block": 25,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 200.4000000357628,
+            "manifestMs": 10.900000035762787,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 87.39999997615814,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16878.100000023842,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24913.69999998808,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "2bd3e28591c4",
+          "startedAt": "2026-11-04T19:16:45.324Z",
+          "durationMs": 40384,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 52,
+          "block": 26,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 213.80000001192093,
+            "manifestMs": 13.199999988079071,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 95.80000001192093,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16858.80000001192,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24895.69999998808,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "97a59b06165c",
+          "startedAt": "2026-11-04T19:17:25.708Z",
+          "durationMs": 40444,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 53,
+          "block": 26,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 95.69999998807907,
+            "manifestMs": 31.399999976158142,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 227.70000004768372,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 302.9000000357628,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 16493.5,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 20571.30000001192,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "4b7acbd5e6b1",
+          "startedAt": "2026-11-04T19:18:06.153Z",
+          "durationMs": 40460,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 54,
+          "block": 27,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 59.5,
+            "manifestMs": 15.300000011920929,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 110.10000002384186,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 178.5,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17325.19999998808,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21334.900000035763,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "a556ed0ac878",
+          "startedAt": "2026-11-04T19:18:46.613Z",
+          "durationMs": 40288,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 55,
+          "block": 27,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 208.4000000357628,
+            "manifestMs": 16.600000023841858,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 122.09999996423721,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16912.099999964237,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24941.799999952316,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "cf5860a820fc",
+          "startedAt": "2026-11-04T19:19:26.902Z",
+          "durationMs": 40462,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 56,
+          "block": 28,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 206.5,
+            "manifestMs": 14.800000011920929,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 103.10000002384186,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16678.900000035763,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24709.30000001192,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "1200b966b967",
+          "startedAt": "2026-11-04T19:20:07.364Z",
+          "durationMs": 40427,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 57,
+          "block": 28,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 63.5,
+            "manifestMs": 17,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 124.70000004768372,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 194.10000002384186,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 16589.900000035763,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 20647.400000035763,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "ea82635f25ee",
+          "startedAt": "2026-11-04T19:20:47.792Z",
+          "durationMs": 40389,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 58,
+          "block": 29,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 108.60000002384186,
+            "manifestMs": 35.10000002384186,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0.001658374792703151
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 296.4000000357628,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 384.10000002384186,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 16837.5,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 20867.400000035763,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "b26b2ad8a6d0",
+          "startedAt": "2026-11-04T19:21:28.182Z",
+          "durationMs": 40647,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 59,
+          "block": 29,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 360.69999998807907,
+            "manifestMs": 58,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 451.69999998807907,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 17248.599999964237,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 25276.69999998808,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "f8b9bcaa2da7",
+          "startedAt": "2026-11-04T19:22:08.829Z",
+          "durationMs": 41219,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 60,
+          "block": 30,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 286.30000001192093,
+            "manifestMs": 25.700000047683716,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0.0024875621890547263
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 330.4000000357628,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 17083,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 25133.700000047684,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "1ed101e683e6",
+          "startedAt": "2026-11-04T19:22:50.049Z",
+          "durationMs": 40848,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 61,
+          "block": 30,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 89.5,
+            "manifestMs": 31.30000001192093,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 216.10000002384186,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 290,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 16735.80000001192,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 20806.80000001192,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "82608f1bd50a",
+          "startedAt": "2026-11-04T19:23:30.897Z",
+          "durationMs": 40497,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 62,
+          "block": 31,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 108.90000003576279,
+            "manifestMs": 21.900000035762787,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 317.5,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 410.69999998807907,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 16763.899999976158,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 20788.69999998808,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "c60880c3a80b",
+          "startedAt": "2026-11-04T19:24:11.395Z",
+          "durationMs": 40615,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 63,
+          "block": 31,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 216.30000001192093,
+            "manifestMs": 15.199999988079071,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 110.30000001192093,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16887.80000001192,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24923.5,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "49170983273f",
+          "startedAt": "2026-11-04T19:24:52.010Z",
+          "durationMs": 40451,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 58,
+            "fired": [
+              57,
+              37
+            ]
+          }
+        },
+        {
+          "index": 64,
+          "block": 32,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 231.4000000357628,
+            "manifestMs": 18.700000047683716,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 136.5999999642372,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16931.099999964237,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24965,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "b5122b5f4791",
+          "startedAt": "2026-11-04T19:25:32.462Z",
+          "durationMs": 40825,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 65,
+          "block": 32,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 102.90000003576279,
+            "manifestMs": 23.5,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 435.80000001192093,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 535.3999999761581,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 16958.600000023842,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 20987.100000023842,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "b9f49d64d91f",
+          "startedAt": "2026-11-04T19:26:13.288Z",
+          "durationMs": 41336,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 66,
+          "block": 33,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 72.39999997615814,
+            "manifestMs": 22.399999976158142,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 159.89999997615814,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 229.19999998807907,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17315.099999964237,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21326,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "155889a09353",
+          "startedAt": "2026-11-04T19:26:54.624Z",
+          "durationMs": 40393,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 67,
+          "block": 33,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 229.5,
+            "manifestMs": 22.099999964237213,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 160.9000000357628,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16766.30000001192,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24803.400000035763,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "492367a26c6e",
+          "startedAt": "2026-11-04T19:27:35.017Z",
+          "durationMs": 40535,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 68,
+          "block": 34,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 217,
+            "manifestMs": 17.19999998807907,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0.0008291873963515755
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 132.5,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16825.100000023842,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24894.400000035763,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "e9f35f40ceb9",
+          "startedAt": "2026-11-04T19:28:15.552Z",
+          "durationMs": 40514,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 69,
+          "block": 34,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 73.69999998807907,
+            "manifestMs": 22.899999976158142,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 155.79999995231628,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 226.5,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17249.5,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21352.5,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "089ed4b97825",
+          "startedAt": "2026-11-04T19:28:56.067Z",
+          "durationMs": 40366,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 70,
+          "block": 35,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 81.80000001192093,
+            "manifestMs": 22.69999998807907,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0.0016542597187758478
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 176.39999997615814,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 246.19999998807907,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17518.899999976158,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21557.5,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "16753f36b8fb",
+          "startedAt": "2026-11-04T19:29:36.433Z",
+          "durationMs": 41377,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 71,
+          "block": 35,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 1109.4000000357628,
+            "manifestMs": 124.80000001192093,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0.008223684210526315
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 3024.399999976158,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 3671,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 12256.399999976158,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 20433.5,
+              "from": 2,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "8d034e5d677f",
+          "startedAt": "2026-11-04T19:30:17.871Z",
+          "durationMs": 49334,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 60,
+            "fired": [
+              59,
+              37
+            ]
+          }
+        },
+        {
+          "index": 72,
+          "block": 36,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "failed",
+          "values": {},
+          "startRungHeight": null,
+          "rungs": [],
+          "errors": [],
+          "info": null,
+          "sessionId": "72b413738bc5",
+          "startedAt": "2026-11-04T19:31:07.206Z",
+          "durationMs": 6261,
+          "failure": {
+            "kind": "page",
+            "message": "the player page did not boot (http://127.0.0.1:4720/player/?manifest=%2Fs%2F72b413738bc5%2Fvod-cmaf%2Fdash%2Fmanifest.mpd&config=A): ReferenceError: shaka is not defined\nThe browser console said:\n  error: Failed to load resource: net::ERR_NETWORK_IO_SUSPENDED\n  error: Failed to load resource: net::ERR_NETWORK_IO_SUSPENDED\n  pageerror: shaka is not defined\nthe last events of the player:\n  #0 +0 ms media 0.00 error {\"code\":0,\"category\":0,\"severity\":2,\"message\":\"ReferenceError: shaka is not defined\",\"source\":\"boot\",\"codeName\":\"ReferenceError\"}\n  #1 +1539 ms media 0.00 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"ReferenceError: shaka is not defined\",\"source\":\"unhandledrejection\",\"codeName\":\"ReferenceError\"}\nThe browser console said:\n  error: Failed to load resource: net::ERR_NETWORK_IO_SUSPENDED\n  error: Failed to load resource: net::ERR_NETWORK_IO_SUSPENDED\n  pageerror: shaka is not defined"
+          }
+        },
+        {
+          "index": 73,
+          "block": 36,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "failed",
+          "values": {},
+          "startRungHeight": null,
+          "rungs": [],
+          "errors": [],
+          "info": null,
+          "sessionId": "2f202fe4fd95",
+          "startedAt": "2026-11-04T19:31:13.760Z",
+          "durationMs": 472801,
+          "failure": {
+            "kind": "timeout",
+            "message": "PB-AB-003 bandwidth-drop-finite B #74 did not finish within 180000 ms\nthe last events of the player:\n  #0 +0 ms media 0.00 load-requested {\"uri\":\"/s/2f202fe4fd95/vod-cmaf/dash/manifest.mpd\"}\n  #1 +3 ms media 0.00 buffering-start\n  #2 +37 ms media 0.00 manifest-loaded\n  #3 +48 ms media 0.00 buffering-start\n  #4 +49 ms media 0.00 variant-changed {\"from\":null,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"start\"}\n  #5 +52 ms media 0.00 loaded\n  #6 +129 ms media 0.00 playing\n  #7 +130 ms media 0.00 buffering-end\n  #8 +131 ms media 0.00 firstframe {\"source\":\"requestVideoFrameCallback\"}\n  #9 +163 ms media 0.02 variant-changed {\"from\":0,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"abr\"}\n  #10 +22269 ms media 2.38 variant-changed {\"from\":2,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"abr\"}"
+          }
+        },
+        {
+          "index": 74,
+          "block": 37,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 531.8000000119209,
+            "manifestMs": 18.600000023841858,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 158,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 228,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 16975.099999964237,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21069.899999976158,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "963cf98845aa",
+          "startedAt": "2026-11-04T19:39:06.572Z",
+          "durationMs": 41123,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 75,
+          "block": 37,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 217.19999998807907,
+            "manifestMs": 13.300000011920929,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 127.70000004768372,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16777.900000035763,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24845.600000023842,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "f7cbc73aa515",
+          "startedAt": "2026-11-04T19:39:48.323Z",
+          "durationMs": 40553,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 76,
+          "block": 38,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 217.19999998807907,
+            "manifestMs": 8,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 129,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16775.600000023842,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24846.900000035763,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "28c8baa8506b",
+          "startedAt": "2026-11-04T19:40:28.876Z",
+          "durationMs": 40535,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 77,
+          "block": 38,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 58.60000002384186,
+            "manifestMs": 13.100000023841858,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 108.5,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 176.9000000357628,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17190.600000023842,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21298.900000035763,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "5e6d4c90abab",
+          "startedAt": "2026-11-04T19:41:09.411Z",
+          "durationMs": 40296,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 78,
+          "block": 39,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 51.69999998807907,
+            "manifestMs": 11.199999988079071,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 88.30000001192093,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 154.89999997615814,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17186.600000023842,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21284.899999976158,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "79ca17bc5dac",
+          "startedAt": "2026-11-04T19:41:49.708Z",
+          "durationMs": 40314,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 79,
+          "block": 39,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 223.69999998807907,
+            "manifestMs": 15.5,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 140.80000001192093,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16812,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24879,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "ae122e9d8f0e",
+          "startedAt": "2026-11-04T19:42:30.022Z",
+          "durationMs": 40656,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 80,
+          "block": 40,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 203.80000001192093,
+            "manifestMs": 10.800000011920929,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 82.5,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16747.19999998808,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24821.69999998808,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "2a6516102244",
+          "startedAt": "2026-11-04T19:43:10.678Z",
+          "durationMs": 40438,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        },
+        {
+          "index": 81,
+          "block": 40,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 61.30000001192093,
+            "manifestMs": 12.900000035762787,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 98.30000001192093,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 165,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17182.5,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21282.5,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "dd767ad97138",
+          "startedAt": "2026-11-04T19:43:51.117Z",
+          "durationMs": 40362,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 82,
+          "block": 41,
+          "arm": "B",
+          "config": "B",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 55.59999996423721,
+            "manifestMs": 11.699999988079071,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 3,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 92.20000004768372,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 158.60000002384186,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17161.400000035763,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 21233.80000001192,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "4faaa908ae1e",
+          "startedAt": "2026-11-04T19:44:31.479Z",
+          "durationMs": 40349,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 69,
+            "fired": [
+              68,
+              36
+            ]
+          }
+        },
+        {
+          "index": 83,
+          "block": 41,
+          "arm": "A",
+          "config": "A",
+          "condition": "bandwidth-drop-finite",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 207.39999997615814,
+            "manifestMs": 13.699999988079071,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 105.89999997615814,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16796.80000001192,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 24849,
+              "from": 1,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "5666134f1764",
+          "startedAt": "2026-11-04T19:45:11.829Z",
+          "durationMs": 40558,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 57,
+            "fired": [
+              56,
+              36
+            ]
+          }
+        }
+      ],
+      "aborted": null
+    }
+  ]
+}

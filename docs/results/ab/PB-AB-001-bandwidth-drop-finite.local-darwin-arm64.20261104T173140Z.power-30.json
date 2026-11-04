@@ -1,0 +1,85 @@
+{
+  "experiment": "PB-AB-001-bandwidth-drop-finite",
+  "condition": "bandwidth-drop-finite",
+  "sessionsPerArm": 30,
+  "simulations": 1000,
+  "seed": 20261112,
+  "pilotSessions": 60,
+  "metrics": [
+    {
+      "id": "rebufferShare",
+      "label": "Share of sessions with a rebuffer",
+      "unit": "share",
+      "pilotSessions": 60,
+      "pilotMedian": null,
+      "pilotP90": null,
+      "pilotShare": 0,
+      "mde": {
+        "mde": 0.25475478172302246,
+        "targetPower": 0.8,
+        "sessionsPerArm": 30,
+        "simulations": 1000,
+        "sides": [
+          {
+            "direction": "increase",
+            "mde": 0.25475478172302246,
+            "power": 0.8,
+            "note": null
+          },
+          {
+            "direction": "decrease",
+            "mde": null,
+            "power": null,
+            "note": "a share cannot move in this direction: it is already at its limit"
+          }
+        ],
+        "degenerate": false
+      },
+      "threshold": 0.2,
+      "curve": [
+        {
+          "shift": 0,
+          "power": 0,
+          "lower": 0,
+          "upper": 0.003682083896865671,
+          "simulations": 1000
+        },
+        {
+          "shift": 0.2,
+          "power": 0.552,
+          "lower": 0.5205633067623661,
+          "upper": 0.5831297072680999,
+          "simulations": 1000
+        },
+        {
+          "shift": 0.4,
+          "power": 0.991,
+          "lower": 0.982984216930145,
+          "upper": 0.9958766043396574,
+          "simulations": 1000
+        }
+      ],
+      "sessionsForThreshold": 38,
+      "verdicts": {
+        "none": {
+          "a-better": 0,
+          "b-better": 0,
+          "equivalent": 1,
+          "inconclusive": 0
+        },
+        "better": {
+          "a-better": 0,
+          "b-better": 0,
+          "equivalent": 1,
+          "inconclusive": 0
+        },
+        "worse": {
+          "a-better": 0.37,
+          "b-better": 0,
+          "equivalent": 0.013333333333333334,
+          "inconclusive": 0.6166666666666667
+        }
+      }
+    }
+  ]
+}

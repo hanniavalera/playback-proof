@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "id": "exploratory-constrained-1500",
+  "kind": "exploratory",
+  "catalogId": null,
+  "title": "EXPLORATORY: startup and rebuffering of configuration B against configuration A on a constrained link of 1500 kbps (Chromium, local-darwin-arm64)",
+  "registeredOn": "2026-11-04",
+  "hypotheses": [
+    {
+      "metric": "startupMs",
+      "text": "Exploratory, not confirmatory, and decides nothing. The link carries 1500 kbps on media requests, which is above the 360p rung with its audio (about 764 kbps) and below the 720p rung with its audio (about 1864 kbps). A and B start on different rungs, so the expectation is that the configuration that starts on the higher rung waits longer for its first frame; this is a guess about the two configurations as shipped, not about any one setting, and the run only estimates the size of the difference."
+    },
+    {
+      "metric": "rebufferShare",
+      "text": "Exploratory, not confirmatory, and decides nothing. On a link below the rate of the first rung of one of the two configurations, the sessions of that configuration may stall at the start; the run estimates the share of sessions that stall in each arm and the difference, and no ship decision follows from it."
+    }
+  ],
+  "engine": "chromium",
+  "stream": "vod-cmaf",
+  "protocol": "dash",
+  "arms": { "A": "A", "B": "B" },
+  "conditions": [
+    {
+      "id": "constrained-1500",
+      "profile": null,
+      "rules": [{ "type": "throttle", "kbps": 1500 }],
+      "rationale": "A constant, finite link of 1500 kbps on media requests, for the whole session: below what the highest rung needs and above what the middle rung needs, and slow enough that every download is heard by the player's estimator (the smallest segment takes 400 ms). Not a catalog profile: a third condition, chosen before any data, to see the two configurations on a steady constrained link and not only on a link that drops."
+    }
+  ],
+  "observation": { "mediaSecondsAfterFirstFrame": 12, "sessionTimeoutMs": 90000 },
+  "sessionsPerArm": 30,
+  "warmupSessionsPerArm": 2,
+  "alpha": 0.05,
+  "bootstrapResamples": 5000,
+  "metrics": [
+    {
+      "id": "startupMs",
+      "role": "primary",
+      "direction": "lower-is-better",
+      "practicalThreshold": 100,
+      "thresholdBasis": "A tenth of a second is the smallest change in the time to the first frame that a viewer notices on a page load. In an exploratory run the threshold only labels the table: it is not tied to a minimum detectable effect, because no A/A pilot was run for this condition (it decides nothing, so the harness does not ask for one)."
+    },
+    {
+      "id": "rebufferShare",
+      "role": "primary",
+      "direction": "lower-is-better",
+      "practicalThreshold": 0.2,
+      "thresholdBasis": "One session in five stalling more, or less, often is what a team would change a default for. In an exploratory run the threshold only labels the table: it is not tied to a minimum detectable effect, because no A/A pilot was run for this condition (it decides nothing, so the harness does not ask for one)."
+    },
+    { "id": "rebufferRatio", "role": "secondary", "direction": "lower-is-better" }
+  ],
+  "decisionRule": {
+    "id": "pb-ab-v1",
+    "text": "No decision. This is an exploratory run: it estimates the effects, intervals and p-values of two primary metrics (adjusted over their family with Holm's correction) and prints no verdict; nothing here is presented as confirmatory, and a result of this run is a hypothesis for a pre-registered experiment, not a finding."
+  },
+  "exclusionRule": {
+    "text": "A session that errors or times out is a failed session: it is reported and never silently dropped; its metrics are left out of the comparison. The number of sessions is fixed in advance, 30 per arm after the warm-up: there is no interim analysis, no extension and no re-run to improve a result.",
+    "maxFailedShare": 0.1,
+    "abortAfterConsecutiveFailures": 5
+  },
+  "seed": 20261141
+}

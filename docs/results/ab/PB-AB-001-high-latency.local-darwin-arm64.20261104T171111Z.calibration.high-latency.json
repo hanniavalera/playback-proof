@@ -1,0 +1,46 @@
+{
+  "condition": "high-latency",
+  "poolSessions": 60,
+  "sessionsPerArm": 30,
+  "splits": 2000,
+  "alpha": 0.05,
+  "falsePositives": 100,
+  "rate": 0.05,
+  "interval": {
+    "lower": 0.04086426771856541,
+    "upper": 0.060481722083164324,
+    "level": 0.95
+  },
+  "perMetric": [
+    {
+      "id": "startupMs",
+      "rejectionRates": [
+        {
+          "level": 0.01,
+          "rate": 0.0095
+        },
+        {
+          "level": 0.05,
+          "rate": 0.05
+        },
+        {
+          "level": 0.1,
+          "rate": 0.1
+        },
+        {
+          "level": 0.25,
+          "rate": 0.2425
+        }
+      ]
+    }
+  ],
+  "verdicts": {
+    "a-better": 0,
+    "b-better": 0,
+    "equivalent": 1998,
+    "inconclusive": 2
+  },
+  "pass": true,
+  "conservative": false,
+  "reason": "The harness declared 5.00 % (100 of 2000; 95 % interval 4.09 to 6.05 %) of the splits of identical sessions significant: not above the significance level of 5 %."
+}

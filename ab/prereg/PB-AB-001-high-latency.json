@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "id": "PB-AB-001-high-latency",
+  "kind": "aa",
+  "catalogId": "PB-AB-001",
+  "title": "A/A: configuration A against itself, startup under high latency (the harness's own check before PB-AB-002)",
+  "registeredOn": "2026-11-04",
+  "hypotheses": [
+    {
+      "metric": "startupMs",
+      "text": "Both arms run configuration A, so the harness must not find a difference: a primary metric that is significant after Holm's correction, or a verdict of A better or B better, counts as the harness finding a difference that is not there."
+    }
+  ],
+  "engine": "chromium",
+  "stream": "vod-cmaf",
+  "protocol": "dash",
+  "arms": { "A": "A", "B": "A" },
+  "conditions": [
+    {
+      "id": "high-latency",
+      "profile": "high-latency",
+      "rules": [{ "type": "latency", "ms": 300, "jitterMs": 100, "match": { "kind": "any" } }],
+      "rationale": "The condition of PB-AB-002, so that the harness is checked on the condition it will decide on: 300 ms before the first byte of every response makes every download measurable by the player's estimator, for the whole session."
+    }
+  ],
+  "observation": { "mediaSecondsAfterFirstFrame": 6, "sessionTimeoutMs": 60000 },
+  "sessionsPerArm": 30,
+  "warmupSessionsPerArm": 2,
+  "alpha": 0.05,
+  "bootstrapResamples": 5000,
+  "metrics": [
+    {
+      "id": "startupMs",
+      "role": "primary",
+      "direction": "lower-is-better",
+      "practicalThreshold": 100,
+      "thresholdBasis": "A tenth of a second is the smallest change in the time to the first frame that a viewer notices on a page load, so a smaller difference is not a reason to change a default. It is the number PB-AB-002 will use unless this pilot says the design cannot detect it."
+    },
+    { "id": "rebufferShare", "role": "secondary", "direction": "lower-is-better" },
+    { "id": "rebufferRatio", "role": "secondary", "direction": "lower-is-better" }
+  ],
+  "decisionRule": {
+    "id": "pb-ab-v1",
+    "text": "The rule of the experiments, applied to two copies of configuration A: four verdicts (A better, B better, equivalent within the margin, inconclusive). The harness passes this check when no primary metric is significant after Holm's correction and the verdict is neither A better nor B better, and when the A/A calibration of the pool of sessions (2000 random splits) does not show its false-positive rate above alpha."
+  },
+  "exclusionRule": {
+    "text": "A session that errors or times out is a failed session: it is reported and never silently dropped; its metrics are left out of the comparison. The number of sessions is fixed in advance: there is no interim analysis, no extension and no re-run to improve a result.",
+    "maxFailedShare": 0.1,
+    "abortAfterConsecutiveFailures": 5
+  },
+  "seed": 20261111
+}

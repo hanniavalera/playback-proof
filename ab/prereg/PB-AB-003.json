@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "id": "PB-AB-003",
+  "kind": "experiment",
+  "catalogId": "PB-AB-003",
+  "title": "Rebuffering of configuration B against configuration A under a bandwidth drop on a finite link (Chromium, local-darwin-arm64)",
+  "registeredOn": "2026-11-04",
+  "hypotheses": [
+    {
+      "metric": "rebufferShare",
+      "text": "The two configurations as shipped stall about equally often under the drop: B does not stall in a share of sessions more than 20 percentage points above A. Neither is expected to stall often: in the two A/A pilots of this condition (18 s and 40 s of media) none of the 120 measured sessions of configuration A stalled, and every one of the 60 sessions of the second pilot went 720p, then 360p (between 16.7 and 16.9 s), then 240p (between 24.7 and 24.9 s). With the share of A at 0 the experiment can show that B stalls more (A better) or that the two are equivalent within 20 points; it cannot show that B stalls less, because a share cannot fall below 0. The verdict that would confirm the expectation is equivalent within the margin."
+    }
+  ],
+  "engine": "chromium",
+  "stream": "vod-cmaf",
+  "protocol": "dash",
+  "arms": { "A": "A", "B": "B" },
+  "conditions": [
+    {
+      "id": "bandwidth-drop-finite",
+      "profile": null,
+      "rules": [
+        { "type": "throttle", "kbps": 20000 },
+        { "type": "throttle", "kbps": 600, "afterMs": 8000 }
+      ],
+      "rationale": "The catalog profile bandwidth-drop (600 kbps on media requests from 8 s after the first media request) with its first 8 s on a finite 20 000 kbps link instead of an unthrottled one: the player ignores downloads that take under 5 ms, so an unthrottled start would give its estimator nothing to hear, and 20 000 kbps is the fastest link on which the smallest segment still takes six times that. The slowest throttle wins, so the link is 600 kbps from 8 s on. The same condition and the same 40 s window as the second A/A pilot."
+    }
+  ],
+  "observation": { "mediaSecondsAfterFirstFrame": 40, "sessionTimeoutMs": 180000 },
+  "sessionsPerArm": 40,
+  "warmupSessionsPerArm": 2,
+  "alpha": 0.05,
+  "bootstrapResamples": 5000,
+  "metrics": [
+    {
+      "id": "rebufferShare",
+      "role": "primary",
+      "direction": "lower-is-better",
+      "practicalThreshold": 0.2,
+      "thresholdBasis": "One session in five stalling more often than in the other arm is what a team would change a default for: rebuffering is what viewers feel most. This is the number written in the plan of the A/A pilot before its data. The sample size comes from that pilot by the rule stated there: the smallest even number of sessions per arm, at most 50, whose minimum detectable effect is not above the threshold. At 30 sessions per arm the minimum is 25.2 points and at 38 it is 20.1, above the threshold; at 40 it is 19.0 points (80 % power), so the design has 40 sessions per arm and the threshold stays 0.2. The threshold is also the margin of equivalence.",
+      "minimumDetectableEffect": {
+        "value": 0.1902,
+        "sessionsPerArm": 40,
+        "power": 0.8,
+        "source": "docs/results/ab/PB-AB-001-bandwidth-drop-finite-40s.local-darwin-arm64.20261104T175652Z.power-40.json"
+      }
+    },
+    { "id": "rebufferRatio", "role": "secondary", "direction": "lower-is-better" }
+  ],
+  "decisionRule": {
+    "id": "pb-ab-v1",
+    "text": "Four verdicts and no more: B better (ship B) only if the whole interval of the primary metric lies beyond the threshold in B's favour, the Holm-adjusted p is below alpha and no primary metric is harmed; A better (do not ship B) if the primary metric is worse beyond the threshold with an interval that excludes zero; equivalent within the margin (keep A) only if the whole interval lies inside plus or minus the threshold; inconclusive (keep A, collect more sessions) otherwise. Not finding a difference is not evidence that there is none."
+  },
+  "exclusionRule": {
+    "text": "A session that errors or times out is a failed session: it is reported and never silently dropped; its metrics are left out of the comparison. The number of sessions is fixed in advance, 40 per arm after the warm-up: there is no interim analysis, no extension and no re-run to improve a result; the condition stops only after 5 failed sessions in a row. If the run is not valid (a data-quality gate fails) the report says so and the verdict is not acted on.",
+    "maxFailedShare": 0.1,
+    "abortAfterConsecutiveFailures": 5
+  },
+  "aaCheck": {
+    "source": "docs/results/ab/PB-AB-001-bandwidth-drop-finite-40s.local-darwin-arm64.20261104T175652Z.report.json"
+  },
+  "seed": 20261131
+}
