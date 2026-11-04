@@ -1,3 +1,4 @@
+import type { RequestLogEntry } from '../../src/shared/api.ts';
 import { profile } from '../../src/shared/profiles.ts';
 import {
   deliveryAfter,
@@ -436,6 +437,77 @@ test(
     testInfo.annotations.push({
       type: 'recovery',
       description: `load() failed ${Math.round(failedAfterMs)} ms after it was called (${RETRY.maxAttempts} attempts, ${error.detail?.codeName}); after the origin returned the second load reached its first frame in ${Math.round(metrics.startupMs ?? 0)} ms`,
+    });
+  },
+);
+
+/**
+ * The longest the first critical error can take. The audio has one rendition, so its first failed fetch has nowhere to go: the retry
+ * waits (at most 1500 ms), the second attempt fails, the streaming engine waits again (at most 1500 ms) before it reports the
+ * error. Doubled for the timers of a loaded runner.
+ */
+const FIRST_CRITICAL_BOUND_MS = 2 * 2 * LONGEST_FIRST_RETRY_WAIT_MS;
+
+test(
+  'PB-REC-007 persistent segment failure: a critical error is surfaced in bounded time and the state becomes error',
+  { tag: ['@release', '@dash'] },
+  async ({ newSession, streamFor, player }, testInfo) => {
+    const session = await newSession({
+      stream: streamFor('vod', 'dash'),
+      protocol: 'dash',
+      faults: profile('segments-down'),
+    });
+    const [rule] = await ruleIdsOf(session);
+    const stream = await streamInfoOf(session);
+    const videoRungs = stream.reps.filter((rep) => rep.track === 'video').map((rep) => rep.id);
+    const qa = await player(session).open();
+
+    // The fault fired: the origin refused segments, more than once (the first attempt and its retry), and nothing else.
+    const fired = await waitForFault(session, rule as string, RETRY.maxAttempts);
+    expect(
+      fired.map((entry) => `${entry.kind} ${entry.status}`),
+      'requests the rule fired on (request log)',
+    ).toEqual(fired.map(() => 'segment 503'));
+
+    // The player gives up: a critical error, not a spinner, within the time the retry policy explains.
+    const critical = await qa.waitFor('error', { detail: { severity: 2 } });
+    const requested = await qa.waitFor('load-requested');
+    const giveUpAfterMs = critical.t - requested.t;
+    expect(giveUpAfterMs, 'time from load() to the first critical error (page clock)').toBeLessThanOrEqual(
+      FIRST_CRITICAL_BOUND_MS,
+    );
+    const metrics = await qa.metrics();
+    expect(metrics.state, 'player state (metrics.state) after the critical error').toBe('error');
+    expect(metrics.startupMs, 'startup time (metrics.startupMs): no first frame can exist').toBeNull();
+
+    // Every rung was tried and given up on: after the first rung fails the player moves to the next, and it goes on until none is left.
+    // Each rung costs the same two waits as the audio, so the last one is refused within that many of them, doubled.
+    const allRungsBound = 2 * videoRungs.length * 2 * LONGEST_FIRST_RETRY_WAIT_MS;
+    const refusedSegment = (entry: RequestLogEntry): boolean =>
+      entry.kind === 'segment' && entry.status === 503 && !entry.pending;
+    for (const rung of videoRungs) {
+      await waitForRequest(session, (entry) => refusedSegment(entry) && entry.rep === rung, {
+        timeoutMs: allRungsBound,
+      });
+    }
+    const log = await session.service.log(session.id);
+    const refused = requestsFor(log, { kind: 'segment' }).filter(refusedSegment);
+    const firstRequestAt = requestsFor(log, { kind: ['init', 'segment'] })[0]?.msSinceStart ?? 0;
+    const lastRungGivenUpAt = Math.max(
+      ...videoRungs.map(
+        (rung) => refused.find((entry) => entry.rep === rung)?.msSinceStart ?? Number.POSITIVE_INFINITY,
+      ),
+    );
+    expect(
+      lastRungGivenUpAt - firstRequestAt,
+      `time from the first media request to the last video rung refused (${videoRungs.join(', ')}; request log)`,
+    ).toBeLessThanOrEqual(allRungsBound);
+    expect((await qa.metrics()).state, 'player state (metrics.state) after every rung was refused').toBe(
+      'error',
+    );
+    testInfo.annotations.push({
+      type: 'recovery',
+      description: `first critical error ${Math.round(giveUpAfterMs)} ms after load() (${critical.detail?.codeName}); rungs refused in the order ${[...new Set(refused.map((entry) => entry.rep))].join(', ')}, the last ${Math.round(lastRungGivenUpAt - firstRequestAt)} ms after the first media request; ${refused.length} segment requests refused by then; ${(await qa.metrics()).errors.length} errors`,
     });
   },
 );
