@@ -193,7 +193,7 @@ Highest risk first. The line is drawn by the rule above: the areas whose gate sa
 
 | Level | Tool | What it covers | Where it runs | Gate |
 | --- | --- | --- | --- | --- |
-| Static | `tsc`, ESLint, Prettier, `docs:check` | Types, lint (including no fixed sleeps in specs), formatting, and the integrity of the documents. | Every pull request | Merge (`gate:static`) |
+| Static | `tsc`, ESLint, Prettier, `docs:check`, `codec-matrix --check` | Types, lint (including no fixed sleeps in specs), formatting, and the integrity of the documents, including the generated codec matrix. | Every pull request | Merge (`gate:static`) |
 | Unit and service integration | Vitest (`tests/unit`) | The lab itself: the media pipeline against real ffmpeg output, the fault engine over a real socket, the live clock and `tfdt` rewriting, manifests, statistics, flake math, triage signatures, the docs tooling. | Every pull request | Merge (`gate:unit`) |
 | Browser end-to-end | Playwright test runner | The player in each engine: areas VOD, ABR, LIVE, REC, ENV and EME. | `@merge` on every pull request; `@release` nightly and before a release | Merge and release |
 | Performance | The harness (`perf/`) on the Playwright library API | Startup, frame rate, rebuffering and the low-end profile: repeated runs, median and p90, against committed baselines. | Own job, serial, one browser at a time | Merge (`gate:perf`) |
@@ -226,7 +226,7 @@ A pull request merges when every stage below is green. The stage names are the `
 
 | Stage | What runs | It passes when | Budget |
 | --- | --- | --- | --- |
-| `gate:static` | Typecheck, lint, format check, docs check. | All clean. | Static plus unit together (below). |
+| `gate:static` | Typecheck, lint, format check, docs check, and the freshness of the generated codec matrix (`codec-matrix --check`: `docs/CODEC_MATRIX.md` is what the committed probe results render to). | All clean. | Static plus unit together (below). |
 | `gate:unit` | Vitest. | Every test passes, and there are tests. | |
 | `gate:merge` | The `@merge` Playwright tests, one job per engine (chromium, firefox, webkit) and one for the throttled Chromium project (`@cpu`). | Every test passes after at most one retry. A pass on retry is not a pass: it is recorded as a flake (section 7). | Per engine job, below. |
 | `gate:perf` | The performance scenarios of the catalog against the baselines of this environment. | No gated metric regresses, or a regression does not reproduce on the automatic re-measure (ADR-004). | Per performance job, below. |
