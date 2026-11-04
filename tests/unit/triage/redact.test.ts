@@ -98,7 +98,7 @@ describe('PB-LAB-005 triage redaction: what identifies a machine or a person', (
   });
 
   it('removes home directories of the three systems, CI workspaces, and the directories of other absolute paths', () => {
-    expect(redact("open '/Users/hannia/repos/playback-proof/.cache/streams/vod-cmaf/manifest.mpd'")).toBe(
+    expect(redact("open '/Users/someone/repos/playback-proof/.cache/streams/vod-cmaf/manifest.mpd'")).toBe(
       "open '<home>/repos/playback-proof/.cache/streams/vod-cmaf/manifest.mpd'",
     );
     expect(redact('/home/alice/work/x.ts and /root/.cache/ms-playwright/chromium')).toBe(
@@ -117,7 +117,7 @@ describe('PB-LAB-005 triage redaction: what identifies a machine or a person', (
   });
 
   it('removes emails, addresses and hostnames, and keeps the words around them', () => {
-    expect(redact('contact hannia@example.com or ops-team+pb@corp.internal')).toBe(
+    expect(redact('contact someone@example.com or ops-team+pb@corp.internal')).toBe(
       'contact <email> or <email>',
     );
     expect(redact('connect ECONNREFUSED 127.0.0.1:4731 and 10.20.30.40')).toBe(

@@ -13,6 +13,7 @@ import { containsSecret, redact, redactValue } from '../../../triage/redact.ts';
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 const DATA = ['tests/fixtures/triage', 'docs/results/triage'];
 const PROSE = ['docs/TRIAGE.md', 'docs/decisions/triage.md'];
+const CODE = ['triage', 'tests/unit/triage'];
 
 function walk(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -23,6 +24,14 @@ function walk(dir: string): string[] {
 
 const data = DATA.flatMap((dir) => walk(join(ROOT, dir)));
 const prose = PROSE.map((file) => join(ROOT, file));
+// The code and the tests write their own samples of home paths and addresses (the redaction is tested on them), so only the name of this
+// machine's user and host is looked for there.
+const code = [
+  ...CODE.flatMap((dir) => walk(join(ROOT, dir))),
+  ...readdirSync(join(ROOT, 'tools'))
+    .filter((name) => name.startsWith('triage-'))
+    .map((name) => join(ROOT, 'tools', name)),
+];
 const relative = (path: string): string => path.slice(ROOT.length);
 const read = (path: string): string => readFileSync(path, 'utf8');
 
@@ -35,6 +44,8 @@ describe('PB-LAB-005 triage: what is committed holds no secret and nothing of a 
     expect(data.filter((file) => file.includes('tests/fixtures/triage/')).length).toBeGreaterThan(100);
     expect(data.some((file) => file.endsWith('docs/results/triage/triage-report.json'))).toBe(true);
     expect(data.some((file) => file.endsWith('docs/results/triage/README.md'))).toBe(true);
+    expect(code.some((file) => file.endsWith('tools/triage-mock.ts'))).toBe(true);
+    expect(code.length).toBeGreaterThan(30);
   });
 
   it('holds no token, key, credential or secret assignment of any kind the redaction knows', () => {
@@ -69,7 +80,7 @@ describe('PB-LAB-005 triage: what is committed holds no secret and nothing of a 
         'i',
       );
       expect(
-        offenders([...data, ...prose], (text) => pattern.test(text)),
+        offenders([...data, ...prose, ...code], (text) => pattern.test(text)),
         'a name of this machine',
       ).toStrictEqual([]);
     }

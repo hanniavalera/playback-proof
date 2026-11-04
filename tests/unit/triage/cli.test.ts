@@ -383,21 +383,21 @@ describe('PB-LAB-005 triage CLI: --summarize', () => {
 describe('PB-LAB-005 triage CLI: --redact for a report that is published', () => {
   it('takes home directories, hosts and secrets out of the files and of the output', async () => {
     const cwd = workspace();
-    const message = `Error: could not read /Users/hannia/repos/playback-proof/.cache/x.json from http://127.0.0.1:4731/player/?token=abc for me@example.com`;
+    const message = `Error: could not read /Users/someone/repos/playback-proof/.cache/x.json from http://127.0.0.1:4731/player/?token=abc for me@example.com`;
     write(
       cwd,
       'reports/playwright.json',
       report([{ title: 'PB-VOD-001 starts', attempts: [{ status: 'failed', message }] }]),
     );
     const plain = await triage(cwd, ['--out', 'plain']);
-    expect(plain.stdout).toContain('/Users/hannia');
+    expect(plain.stdout).toContain('/Users/someone');
     const redacted = await triage(cwd, ['--redact', '--out', 'redacted']);
     for (const text of [
       redacted.stdout,
       readFileSync(join(cwd, 'redacted/triage-report.md'), 'utf8'),
       readFileSync(join(cwd, 'redacted/triage-report.json'), 'utf8'),
     ]) {
-      expect(text).not.toContain('hannia');
+      expect(text).not.toContain('someone');
       expect(text).not.toContain('127.0.0.1');
       expect(text).not.toContain('example.com');
       expect(text).toContain('<home>/repos/playback-proof/.cache/x.json');

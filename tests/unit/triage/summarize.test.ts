@@ -264,9 +264,13 @@ describe('PB-LAB-005 triage summaries: no secret leaves, and the key travels in 
       failure({
         id: 'PB-VOD-001',
         file: 'tests/e2e/vod-start.spec.ts',
-        message: `Error: leaked ${all}\nsecond line: key ${FAKE_API_KEY} at /Users/hannia/repos/playback-proof/.cache/x.json for me@example.com`,
+        message: `Error: leaked ${all}\nsecond line: key ${FAKE_API_KEY} at /Users/someone/repos/playback-proof/.cache/x.json for me@example.com`,
         frames: [
-          { file: '/Users/hannia/repos/playback-proof/tests/e2e/rec/faults.ts', fn: 'waitForFault', line: 5 },
+          {
+            file: '/Users/someone/repos/playback-proof/tests/e2e/rec/faults.ts',
+            fn: 'waitForFault',
+            line: 5,
+          },
         ],
         missing: [`qa-events.json: could not be read (${SECRETS['bearer-token']})`],
         diagnostics: diagnosticsOf({
@@ -303,7 +307,7 @@ describe('PB-LAB-005 triage summaries: no secret leaves, and the key travels in 
         expect(request.url, `${name} in the url`).not.toContain(tail);
       }
       expect(request.rawBody).not.toContain(FAKE_API_KEY);
-      expect(request.rawBody).not.toContain('hannia');
+      expect(request.rawBody).not.toContain('someone');
       expect(request.rawBody).not.toContain('example.com');
       expect(request.rawBody).not.toContain('127.0.0.1');
       // The key is in the header that carries it, and in no other one.
