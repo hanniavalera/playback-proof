@@ -156,7 +156,7 @@ function percentile(values: number[], p: number): number {
   return sorted[Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length))] ?? 0;
 }
 
-const mb = (bytes: number): string => `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+const mib = (bytes: number): string => `${(bytes / 1024 / 1024).toFixed(1)} MiB`;
 const ms = (value: number): string => `${value.toFixed(2)} ms`;
 
 // ------------------------------------------------------------------------------------------------------------------------------
@@ -223,7 +223,7 @@ async function main(): Promise<void> {
       ms(percentile(run.totalMs, 99)),
       ms(percentile(run.ttfbMs, 50)),
       (run.totalMs.length / (run.wallMs / 1000)).toFixed(0),
-      `${(run.bytes / 1024 / 1024 / (run.wallMs / 1000)).toFixed(0)} MB/s`,
+      `${(run.bytes / 1024 / 1024 / (run.wallMs / 1000)).toFixed(0)} MiB/s`,
     ]);
   }
   const [bare, service] = measured;
@@ -248,12 +248,14 @@ async function main(): Promise<void> {
       )
       .join('\n'),
   );
-  if (service?.before && service.after && service.collected)
+  if (service?.before && service.after && service.collected) {
+    const change = service.after.rss - service.before.rss;
     console.log(
-      `service RSS: ${mb(service.before.rss)} before (after ${warmup} warm-up requests), ${mb(service.after.rss)} after ${count} requests ` +
-        `(${(service.after.rss - service.before.rss >= 0 ? '+' : '-') + mb(Math.abs(service.after.rss - service.before.rss))}), ${mb(service.collected.rss)} after a garbage collection; ` +
-        `heap ${mb(service.before.heapUsed)} -> ${mb(service.collected.heapUsed)}, external ${mb(service.before.external)} -> ${mb(service.collected.external)}`,
+      `service RSS: ${mib(service.before.rss)} before (after ${warmup} warm-up requests), ${mib(service.after.rss)} after ${count} requests ` +
+        `(${change >= 0 ? '+' : '-'}${mib(Math.abs(change))}), ${mib(service.collected.rss)} after a garbage collection; ` +
+        `heap ${mib(service.before.heapUsed)} -> ${mib(service.collected.heapUsed)}, external ${mib(service.before.external)} -> ${mib(service.collected.external)}`,
     );
+  }
 }
 
 await main();
