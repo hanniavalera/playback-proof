@@ -510,6 +510,65 @@ describe('PB-LAB-006 README: the prose against the files it stands on', () => {
       expect(readme).toContain('seven of the attempts dropped only 2 frames');
     });
 
+    it('PB-ABR-001 with the classifier: 19 passed, 21 of 40 invalid, none failed, and the gate fails with over-invalid-budget', () => {
+      const series = find('after-fix/abr001-invalid');
+      expect([
+        series?.repetitions,
+        series?.totals.executions,
+        series?.totals.flaky,
+        series?.totals.failed,
+        series?.totals.invalid,
+      ]).toStrictEqual([40, 19, 0, 0, 21]);
+      expect(own('after-fix/abr001-invalid', 'PB-ABR-001')?.invalid).toBe(21);
+      const wilson = (k: number, n: number, z = 1.959964): [number, number] => {
+        const p = k / n;
+        const d = 1 + (z * z) / n;
+        const centre = (p + (z * z) / (2 * n)) / d;
+        const half = (z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n))) / d;
+        return [centre - half, centre + half];
+      };
+      expect(digits((100 * 21) / 40, 1)).toBe('52.5');
+      expect(wilson(21, 40).map((x) => Math.round(100 * x))).toStrictEqual([37, 67]);
+      const before = ['after-fix/abr12-isolated', 'after-fix/abr001-main'].map((name) => {
+        const t = own(name, 'PB-ABR-001');
+        return Math.round((100 * ((t?.flaky ?? 0) + (t?.failed ?? 0))) / (t?.executions ?? 1));
+      });
+      expect(before).toStrictEqual([77, 80]);
+      const gate = JSON.parse(read('docs/results/flake/after-fix/abr001-invalid/gate.json')) as Loose;
+      expect(gate.decision).toBe('fail');
+      expect(gate.failures[0].kind).toBe('over-invalid-budget');
+      expect(gate.failures[0].message).toContain(
+        'invalid run in 16 of 30 of its last scheduled executions (53.3%), the budget is 40.0%',
+      );
+      const page = read('docs/results/flake/README.md');
+      expect(page).toContain('**After the classifier**');
+      expect(page).toContain('21 of 40 (52.5 %, Wilson 37 to 67 %)');
+      expect(page).toContain('the first time that verdict fired on real data');
+      expect(page).toContain('where 77 to 80 % of the first attempts failed');
+      expect(read('docs/FLAKE.md')).toContain('judged from 20');
+      const linux = ['chromium', 'firefox', 'webkit-linux'].map((job) =>
+        collections.find((x) => x.name === `collect-1 / ${job}`),
+      );
+      expect(linux.reduce((n, c) => n + (c?.totals.executions ?? 0), 0)).toBe(1350);
+      expect(linux.reduce((n, c) => n + (c?.totals.invalid ?? 0), 0)).toBe(0);
+      for (const quoted of [
+        'ended **21 as an invalid run** and failed none (`after-fix/abr001-invalid`): 52.5 % invalid, above the budget',
+        '`over-invalid-budget`, 16 of the last 30 scheduled executions (53.3 %)',
+        'now ends 21 of 40 repetitions as an invalid run, above the invalid-run budget',
+        'the test passed 19, ended 21 as an invalid run (52.5 %, Wilson 37 to 67 %) and failed none',
+        'The share varies from job to job (77 to 80 % of the first attempts failed before the classifier in two collections, 52.5 % were invalid after it in a third) and the cause is not explained',
+        'against a budget of 40 %), the first time that verdict fired on real data',
+        '21 of 40 repetitions ended as an invalid run, 19 passed and none failed',
+        '(16 of the last 30 scheduled executions, 53.3 %, against 40 %)',
+        'once the nightly has 20 scheduled executions of the test on that leg (the gate judges from 20)',
+        "is the owner's decision",
+        'No invalid run was recorded on a Linux engine in the 1,350 executions of the merge tier (`collect-1`); PB-ABR-001 itself was collected on macOS only',
+        '"After the classifier"',
+      ]) {
+        expect(readme, quoted).toContain(quoted);
+      }
+    });
+
     it('the demonstration is filed under its own environment, and its spec says it is not the player', () => {
       expect(find('demo-deliberate-flake', 'chromium')?.envId).toBe('demo-deliberate-flake');
       expect(read('docs/results/flake/demo-deliberate-flake/demo-flaky.spec.ts.txt')).toContain(
