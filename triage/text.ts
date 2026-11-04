@@ -11,6 +11,16 @@ export function truncate(text: string, max: number): string {
   return text.length > max ? `${text.slice(0, Math.max(0, max - 1))}…` : text;
 }
 
+/** The text without control characters, except the line feed and the tab: what a model may have written is not trusted to be only text. */
+export function withoutControlCharacters(text: string): string {
+  return [...text]
+    .filter((char) => {
+      const code = char.codePointAt(0) ?? 0;
+      return code === 9 || code === 10 || (code >= 32 && code !== 127);
+    })
+    .join('');
+}
+
 /** One line: whitespace runs collapse, then the cut. For a table cell and for a line of a prompt. */
 export function oneLine(text: string, max: number): string {
   return truncate(text.replace(/\s+/g, ' ').trim(), max);

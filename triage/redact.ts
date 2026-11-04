@@ -164,6 +164,24 @@ export function redact(text: string): string {
   return STEPS.reduce((out, step) => step.apply(out), text);
 }
 
+// The steps that take out a secret, as opposed to what identifies a machine or a person.
+const SECRET_STEPS = new Set([
+  'private-key-block',
+  'secret-headers',
+  ...NAMED_TOKENS,
+  'url-credentials',
+  'secret-assignment',
+  'long-hex',
+]);
+
+/**
+ * Only the secrets: for a line the person who runs the tool reads on their own screen (an error of the service, the endpoint that could not
+ * be reached), where the host is what they need to see and a key is what must not be there.
+ */
+export function redactSecrets(text: string): string {
+  return STEPS.filter((step) => SECRET_STEPS.has(step.name)).reduce((out, step) => step.apply(out), text);
+}
+
 /** The same value with every string (and every key) redacted: the evidence of a cluster is a JSON-safe object, and it goes through here whole. */
 export function redactValue<T>(value: T): T {
   if (typeof value === 'string') return redact(value) as T;

@@ -1,33 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { containsSecret, redact, redactValue, SECRET_PATTERNS, STEPS } from '../../../triage/redact.ts';
-
-// The secrets below are made of pieces at run time: no line of this file holds a whole key, so that a secret scanner reading the
-// repository finds nothing to report and the tests still plant text that has exactly the shape of the real thing.
-const join = (...pieces: string[]): string => pieces.join('');
-
-const SECRETS: Record<string, string> = {
-  'private-key': join(
-    '-----BEGIN ',
-    'RSA PRIVATE',
-    ' KEY-----\nMIIEowIBAAKCAQEA0Z3VS5JJcds3xfn\n-----END ',
-    'RSA PRIVATE',
-    ' KEY-----',
-  ),
-  'anthropic-api-key': join('sk-', 'ant-', 'api03-', 'ZZtestZZtestZZtestZZtest0123456789abcd'),
-  'api-key': join('sk-', 'proj-', 'ZZtestZZtestZZtestZZtest0123456789'),
-  'github-token': join('gh', 'p_', 'ZZtestZZtestZZtestZZtestZZtest012345'),
-  'aws-access-key-id': join('AK', 'IA', 'ZZTESTZZTESTZZTE'),
-  'google-api-key': join('AI', 'za', 'ZZtestZZtestZZtestZZtestZZtest012345'),
-  'slack-token': join('xo', 'xb-', '0123456789-ZZtestZZtest'),
-  'payment-key': join('sk_', 'live_', 'ZZtestZZtestZZtest0123'),
-  'npm-token': join('npm', '_', 'ZZtestZZtestZZtestZZtestZZtest0123456'),
-  jwt: join('eyJ', 'hbGciOiJIUzI1NiJ9', '.', 'eyJzdWIiOiJ0ZXN0In0', '.', 'c2lnbmF0dXJlc2lnbmF0dXJl'),
-  'bearer-token': join('Bea', 'rer ', 'ZZtestZZtestZZtestZZtest0123456789'),
-  'basic-credentials': join('Bas', 'ic ', 'dGVzdHVzZXI6dGVzdHBhc3N3b3Jk'),
-  'url-credentials': join('post', 'gres://', 'svc_user', ':', 'hunter2hunter2', '@db.internal/pb'),
-  'secret-assignment': join('DB_PASS', 'WORD', '=', 'correct-horse-battery'),
-  'long-hex': join('9b74c9897bac770ffc029102a200c5de', '0cc175b9c0f1b6a831c399e269772661'),
-};
+import {
+  containsSecret,
+  redact,
+  redactSecrets,
+  redactValue,
+  SECRET_PATTERNS,
+  STEPS,
+} from '../../../triage/redact.ts';
+import { SECRETS } from './secrets.ts';
 
 describe('PB-LAB-005 triage redaction: every secret pattern takes its secret out and leaves the sentence', () => {
   it('has a sample for every pattern of the list, so that a pattern added without a test is a failing test', () => {
@@ -216,6 +196,16 @@ describe('PB-LAB-005 triage redaction: the steps and the values', () => {
     });
     expect(redactValue(7)).toBe(7);
     expect(redactValue(undefined)).toBeUndefined();
+  });
+
+  it('has a secrets-only form for a line the person who runs the tool reads on their own screen: the host stays, the key goes', () => {
+    const line = `could not reach http://127.0.0.1:4751/v1/messages (key ${SECRETS['anthropic-api-key']}) from /Users/me/pb`;
+    expect(redactSecrets(line)).toBe(
+      'could not reach http://127.0.0.1:4751/v1/messages (key <anthropic-api-key>) from /Users/me/pb',
+    );
+    expect(redact(line)).toBe(
+      'could not reach http://<host>/v1/messages (key <anthropic-api-key>) from <home>/pb',
+    );
   });
 
   it('finds nothing in text that has no secret, and names the first pattern that fits when there is one', () => {
