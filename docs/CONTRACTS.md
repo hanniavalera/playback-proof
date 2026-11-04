@@ -157,7 +157,9 @@ Exact semantics (the service implements them as written and its tests pin them):
   listing the frozen window with the frozen `publishTime`, segments above the frozen edge are 404. At `S + ms` the origin catches up: the edge jumps
   to `edge(now)` and the timeline is unchanged (no discontinuity). A segment that was published is never unpublished.
 - **manifest-stale** (`ms`) is active in `[origin + afterMs, origin + afterMs + ms)` (`forMs` is rejected). While active, every manifest and playlist
-  request is answered with the last body served before the rule became active. Segments are not affected.
+  request is answered with the last body served before the rule became active. Segments are not affected. The replayed body is kept per
+  (session, manifest URL), recorded at serve time. A URL that had not been served before the rule became active has nothing to replay: its
+  current body is served and becomes the body replayed for the rest of the window.
 - **Validation.** Invalid rules are rejected with 400 and a list of the problems: unknown `type`, non-finite or negative numbers, `kbps <= 0`,
   `status` outside 100-599, a `live-stall` or `manifest-stale` rule on a VOD session, `status` without `match.kind`.
 
