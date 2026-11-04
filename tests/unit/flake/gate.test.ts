@@ -2,20 +2,31 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { FLAKE_LIMITS } from '../../../src/shared/criteria.ts';
-import { evaluateGate, exitCode, interestingTests, renderGate } from '../../../flake/gate.ts';
-import type { GateFailure, GateInput } from '../../../flake/gate.ts';
+import { FLAKE_LIMITS, INVALID_RUN_PREFIX } from '../../../src/shared/criteria.ts';
+import {
+  evaluateGate,
+  exitCode,
+  interestingTests,
+  renderGate,
+  withInvalidRuns,
+} from '../../../flake/gate.ts';
+import type { GateInput } from '../../../flake/gate.ts';
 import { addDays, catalogFacts } from '../../../flake/quarantine.ts';
 import type { QuarantineEntry } from '../../../flake/quarantine.ts';
+import type { FlakeRun } from '../../../flake/run.ts';
 import { percent } from '../../../flake/stats.ts';
 import { parseCatalog } from '../../../tools/catalog.ts';
 import { builds, record, run, SIGNATURE_FLAKE } from './fixtures.ts';
+import { ABR002_FIX, GAP_REASON, INVALID_REASON, pattern, realHistory } from './invalid-fixtures.ts';
 
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 const facts = catalogFacts(parseCatalog(readFileSync(join(ROOT, 'TEST_STRATEGY.md'), 'utf8')));
 const TODAY = '2026-11-03';
 const W = FLAKE_LIMITS.windowRuns;
 const MIN = FLAKE_LIMITS.minRunsToJudge;
+const INVALID_BUDGET = FLAKE_LIMITS.invalidRunBudgetRate;
+/** The most invalid runs of a full window that are within the budget: 12 of 30. */
+const AT_BUDGET = Math.round(INVALID_BUDGET * W);
 const MERGE_DAYS = FLAKE_LIMITS.mergeQuarantineMaxAgeDays;
 const RELEASE_DAYS = FLAKE_LIMITS.quarantineMaxAgeDays;
 
@@ -56,9 +67,9 @@ function webkit(count: number, flakyBuilds: number[], options: { tier?: 'merge' 
   return { history: all.slice(0, -1), current: all.slice(-1) };
 }
 
-const only = (failures: GateFailure[]): GateFailure => {
-  expect(failures).toHaveLength(1);
-  return failures[0] as GateFailure;
+const only = <T>(items: readonly T[]): T => {
+  expect(items).toHaveLength(1);
+  return items[0] as T;
 };
 
 describe('PB-LAB-004 flake gate: a test above the trigger that is not quarantined', () => {
@@ -374,6 +385,162 @@ describe('PB-LAB-004 flake gate: the suite budget of an engine job', () => {
   });
 });
 
+/** A leg of PB-ABR-002 on webkit, one run per character (invalid-fixtures.ts); the last run is the build being judged. */
+function leg(chars: string, options: Parameters<typeof pattern>[2] = {}) {
+  const runs = pattern('PB-ABR-002', chars, options);
+  return { history: runs.slice(0, -1), current: runs.slice(-1) };
+}
+
+/** `total` scheduled executions of which `invalid` are invalid runs, the invalid ones the newest. */
+const share = (invalid: number, total: number): string => 'p'.repeat(total - invalid) + 'i'.repeat(invalid);
+
+describe('PB-LAB-004 flake gate: the invalid-run budget of a test on an engine', () => {
+  it('fails when more than the budget of the last scheduled executions were invalid runs, and says what is wrong, who decides and what', () => {
+    const { history, current } = leg(share(AT_BUDGET + 1, W));
+    const report = gate({ history, current });
+
+    expect(report.pass).toBe(false);
+    expect(exitCode(report)).toBe(1);
+    const failure = only(report.failures);
+    expect(failure.kind).toBe('over-invalid-budget');
+    expect(failure.subject).toBe('PB-ABR-002 on webkit');
+    expect(failure.message).toContain(
+      `PB-ABR-002 on webkit was an invalid run in ${AT_BUDGET + 1} of ${W} of its last scheduled executions (${percent((AT_BUDGET + 1) / W)}), the budget is ${percent(INVALID_BUDGET)}: the claim is no longer evaluated on this leg.`,
+    );
+    // The newest invalid run, with the numbers of its attempt (the first sentence of its reason, without the prefix) and where to find it.
+    const newest = current[0] as FlakeRun;
+    expect(failure.message).toContain(
+      `Last invalid run: ${INVALID_REASON.slice(INVALID_RUN_PREFIX.length).trim().replace(/\.$/, '')} (run ${newest.runId}, ${newest.date.slice(0, 10)}, commit ${newest.commit.slice(0, 8)}).`,
+    );
+
+    expect(failure.decision).toContain(
+      'Fix the machine (load, decode), or declare the leg a documented gap with evidence (src/lab/gaps.ts), or retire the test on this leg: do not widen the budget to make it green.',
+    );
+    expect(failure.decision).toContain('Who: the owner of the Adaptive bitrate (ABR) area.');
+    expect(failure.decision).toContain(
+      `the gate stays red while more than ${percent(INVALID_BUDGET)} of the last ${W} scheduled executions of the leg are invalid runs`,
+    );
+    expect(failure.decision).toContain(`at most ${W - AT_BUDGET} valid executions of this leg`);
+    expect(failure.decision).toContain('A quarantine does not clear it.');
+  });
+
+  it('keeps the first sentence of a long reason in its message, cut at 200 characters', () => {
+    const long = `${INVALID_RUN_PREFIX} ${'a long first sentence '.repeat(20)}. And a second one that is not quoted.`;
+    const failure = only(gate(leg(share(AT_BUDGET + 1, W), { reason: long })).failures);
+    const quoted = /Last invalid run: (.*) \(run /.exec(failure.message)?.[1] ?? '';
+    expect(quoted).toHaveLength(200);
+    expect(quoted.endsWith('…')).toBe(true);
+    expect(quoted.startsWith('a long first sentence')).toBe(true);
+    expect(failure.message).not.toContain('a second one');
+  });
+
+  it('is strict about "above": exactly the budget passes, one more invalid run fails', () => {
+    // The precondition that makes this the boundary case.
+    expect(AT_BUDGET / W).toBe(INVALID_BUDGET);
+    const at = gate(leg(share(AT_BUDGET, W)));
+    expect(at.pass).toBe(true);
+    expect(only(at.invalidRuns).stats.verdict).toBe('ok');
+    expect(gate(leg(share(AT_BUDGET + 1, W))).pass).toBe(false);
+  });
+
+  it('judges only what this build scheduled, and each test on its own engine', () => {
+    const bad = pattern('PB-ABR-002', share(AT_BUDGET + 1, W));
+    // A build that scheduled another test, or the same test on another engine, is not judged on the history of webkit.
+    expect(gate({ history: bad, current: builds(1, { project: 'chromium' }) }).pass).toBe(true);
+    const chromium = pattern('PB-ABR-002', 'p'.repeat(W), { project: 'chromium' });
+    const both = gate({
+      history: [...bad.slice(0, -1), ...chromium.slice(0, -1)],
+      current: [...bad.slice(-1), ...chromium.slice(-1)],
+    });
+    expect(only(both.failures).subject).toBe('PB-ABR-002 on webkit');
+    expect(both.invalidRuns.map((j) => `${j.stats.project} ${j.stats.verdict}`)).toEqual([
+      'chromium ok',
+      'webkit over-invalid-budget',
+    ]);
+  });
+
+  it('judges a test that has only ever been an invalid run: it executed nothing, so no flake statistic sees it', () => {
+    const report = gate(leg('i'.repeat(MIN)));
+    expect(report.tests).toEqual([]);
+    expect(only(report.failures).message).toContain(
+      `was an invalid run in ${MIN} of ${MIN} of its last scheduled executions (${percent(1)})`,
+    );
+  });
+
+  it('stops judging a leg in the build that declares it a documented gap: a gap is not a scheduled execution', () => {
+    expect(GAP_REASON).toMatch(/^documented gap in /);
+    const history = pattern('PB-ABR-002', share(AT_BUDGET + 1, W));
+    const declared = gate({ history, current: pattern('PB-ABR-002', 'g') });
+    expect(declared.pass).toBe(true);
+    expect(declared.invalidRuns).toEqual([]);
+    // The same history, and this build ended its attempt as an invalid run: red.
+    expect(gate({ history, current: pattern('PB-ABR-002', 'i') }).pass).toBe(false);
+    // A build that skipped the test for another reason is not judged either.
+    expect(gate({ history, current: pattern('PB-ABR-002', 's') }).pass).toBe(true);
+  });
+
+  it('is not hidden by a quarantine, which is about flakiness: it fails, and says that the quarantine does not cover it', () => {
+    const entries = [entry({ id: 'PB-ABR-002', project: 'webkit' })];
+    const report = gate({ ...leg(share(AT_BUDGET + 1, W)), entries });
+    expect(report.quarantine.effective).toHaveLength(1);
+    const failure = only(report.failures);
+    expect(failure.kind).toBe('over-invalid-budget');
+    expect(failure.message).toContain(
+      `It is quarantined until ${addDays(TODAY, MERGE_DAYS - 1)} (owner @hanniavalera): a quarantine is about flakiness and does not cover this.`,
+    );
+    expect(only(report.invalidRuns).quarantine?.owner).toBe('@hanniavalera');
+
+    // Executions that ran as quarantined (non-blocking) count in the window like any other.
+    const recorded = gate({ ...leg(share(AT_BUDGET + 1, W), { quarantined: true }), entries });
+    expect(only(recorded.failures).kind).toBe('over-invalid-budget');
+  });
+
+  it('gives no verdict below the minimum number of scheduled executions, says so, and does not fail', () => {
+    const report = gate(leg('i'.repeat(MIN - 1)));
+    expect(report.pass).toBe(true);
+    expect(only(report.invalidRuns).stats.verdict).toBe('not-enough-data');
+    expect(report.notes).toContain(
+      `PB-ABR-002 on webkit: ${MIN - 1} of ${MIN - 1} scheduled executions ended as invalid runs (${percent(1)}); no verdict yet, the invalid-run budget (${percent(INVALID_BUDGET)}) is judged from ${MIN}.`,
+    );
+    // A test with no invalid run in its window has nothing to say about them.
+    expect(gate(leg('p'.repeat(MIN - 1))).notes.filter((n) => n.includes('invalid run'))).toEqual([]);
+  });
+
+  it('passes the real collection of PB-ABR-002 on the macOS runner at every build, and shows its invalid runs', () => {
+    const all = realHistory(ABR002_FIX);
+    for (let n = 1; n <= all.length; n++) {
+      const report = gate({ history: all.slice(0, n - 1), current: [all[n - 1] as FlakeRun] });
+      expect(report.failures, `build ${n}`).toEqual([]);
+    }
+    const last = gate({ history: all.slice(0, -1), current: all.slice(-1) });
+    const text = renderGate(last);
+    expect(text).toContain(
+      `| PB-ABR-002 | webkit | 6 | ${W} | ${percent(6 / W)} | ${percent(INVALID_BUDGET)} | ok | no |`,
+    );
+  });
+
+  it('is listed after the tests above their trigger, among the failures of one build', () => {
+    const base = webkit(W, [3, W - 1]);
+    const all = [...base.history, ...base.current].map((r, i) => ({
+      ...r,
+      tests: [
+        ...r.tests,
+        record({
+          id: 'PB-ABR-002',
+          project: 'webkit',
+          outcome: i >= W - AT_BUDGET - 1 ? 'skipped' : 'passed',
+          ...(i >= W - AT_BUDGET - 1 ? { skipReason: INVALID_REASON } : {}),
+        }),
+      ],
+    }));
+    const report = gate({ history: all.slice(0, -1), current: all.slice(-1) });
+    expect(report.failures.map((f) => `${f.kind} ${f.subject}`)).toEqual([
+      'over-trigger PB-VOD-007 on webkit',
+      'over-invalid-budget PB-ABR-002 on webkit',
+    ]);
+  });
+});
+
 describe('PB-LAB-004 flake gate: what it prints', () => {
   it('prints the verdict, the engine job table, the tests that matter and each failure with its decision', () => {
     const { history, current } = webkit(W, [3, W - 1]);
@@ -394,6 +561,31 @@ describe('PB-LAB-004 flake gate: what it prints', () => {
     expect(text).toContain('   Decision: Fix PB-VOD-007 on webkit today, or quarantine it today.');
     // Fourteen healthy tests are counted, not listed.
     expect(text).toContain('14 with no flaky outcome are not listed');
+  });
+
+  it('prints the invalid runs of the tests of this build in a table, only when there are some, and the failure with its decision', () => {
+    const report = gate(leg(share(AT_BUDGET + 1, W)));
+    const text = renderGate(report);
+    expect(withInvalidRuns(report)).toHaveLength(1);
+    expect(text).toContain(
+      `Invalid runs of the tests of this build (the last ${W} scheduled executions each, judged from ${MIN}, budget ${percent(INVALID_BUDGET)}; 0 with none are not listed)`,
+    );
+    expect(text).toContain('| test | engine | invalid | scheduled | share | budget | verdict | quarantine |');
+    expect(text).toContain(
+      `| PB-ABR-002 | webkit | ${AT_BUDGET + 1} | ${W} | ${percent((AT_BUDGET + 1) / W)} | ${percent(INVALID_BUDGET)} | over-invalid-budget | no |`,
+    );
+    expect(text).toContain(
+      `1. [over-invalid-budget] PB-ABR-002 on webkit was an invalid run in ${AT_BUDGET + 1} of ${W}`,
+    );
+    expect(text).toContain(
+      '   Decision: Fix the machine (load, decode), or declare the leg a documented gap',
+    );
+
+    // A build in which no test has an invalid run in its window prints no such table.
+    const clean = gate({ current: builds(1, { project: 'chromium' }) });
+    expect(withInvalidRuns(clean)).toEqual([]);
+    expect(renderGate(clean)).not.toContain('Invalid runs of the tests');
+    expect(clean.invalidRuns).toHaveLength(15);
   });
 
   it('prints a pass in one line and the table of a quarantined test with its owner and expiry', () => {
