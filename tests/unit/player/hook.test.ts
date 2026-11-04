@@ -642,6 +642,15 @@ describe('live', () => {
     expect(hook.metrics().live.edgeSeeks).toBe(1);
   });
 
+  it('measures the jump from the position before the seek, even if a timeupdate fires after the assignment and before `seeking`', async () => {
+    const { hook, video, player } = await liveHarness();
+    player.seekEnd = 117;
+    video.currentTime = 116; // `currentTime` already reads 116 and video.seeking is true
+    video.fire('timeupdate');
+    await settle();
+    expect(hook.metrics().live.edgeSeeks).toBe(1);
+  });
+
   it('does not count the positioning before the first frame', async () => {
     const { hook, video, player } = await harness({ setup: (p) => (p.live = true) });
     await hook.load(URI);
