@@ -4,7 +4,7 @@
 // nothing changed. Writes <out-dir>/<envId>/<profile>-aa.json and .md and prints the headline: the false-positive count.
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { renderAaMarkdown, summarizeAa } from '../src/lab/measure/aa.ts';
 import type { GateReport } from '../src/lab/measure/report.ts';
 
@@ -15,8 +15,14 @@ function main(argv: string[]): number {
   const files: string[] = [];
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i] as string;
-    if (arg === '--out-dir') outDir = join(process.cwd(), argv[(i += 1)] ?? '');
-    else if (arg.startsWith('--')) {
+    if (arg === '--out-dir') {
+      const value = argv[(i += 1)];
+      if (!value) {
+        console.error('--out-dir needs a directory');
+        return 2;
+      }
+      outDir = resolve(process.cwd(), value);
+    } else if (arg.startsWith('--')) {
       console.error(`unknown option ${arg}\nusage: npx tsx perf/aa.ts [--out-dir DIR] <gate-report.json>...`);
       return 2;
     } else files.push(arg);
@@ -28,10 +34,11 @@ function main(argv: string[]): number {
 
   const reports: Array<{ file: string; report: GateReport }> = [];
   for (const file of files) {
+    const path = resolve(process.cwd(), file);
     try {
       reports.push({
-        file: relative(root, join(process.cwd(), file)),
-        report: JSON.parse(readFileSync(file, 'utf8')) as GateReport,
+        file: relative(root, path),
+        report: JSON.parse(readFileSync(path, 'utf8')) as GateReport,
       });
     } catch (error) {
       // A pass that died before it wrote its report leaves nothing at its path (and an unmatched glob arrives as the pattern itself).

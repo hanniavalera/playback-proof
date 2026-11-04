@@ -4,9 +4,9 @@
 // <out-dir>/threshold-derivation.json and .md: the variation of every metric, what each rule needs, what the baselines show for the
 // metrics judged by a budget, and how the committed PERF_POLICY sits above the noise.
 
-import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
-import { parseBaseline } from '../src/lab/measure/baseline.ts';
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { join, relative, resolve } from 'node:path';
+import { BaselineError, parseBaseline } from '../src/lab/measure/baseline.ts';
 import type { Baseline } from '../src/lab/measure/baseline.ts';
 import { deriveFrom, renderDerivationMarkdown } from '../src/lab/measure/derive.ts';
 
@@ -28,19 +28,30 @@ function main(argv: string[]): number {
   let outDir = join(root, 'docs/results/perf');
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i] as string;
-    if (arg === '--baseline-dir') baselineDir = join(process.cwd(), argv[(i += 1)] ?? '');
-    else if (arg === '--out-dir') outDir = join(process.cwd(), argv[(i += 1)] ?? '');
-    else {
+    if (arg === '--baseline-dir' || arg === '--out-dir') {
+      const value = argv[(i += 1)];
+      if (!value) {
+        console.error(`${arg} needs a directory`);
+        return 2;
+      }
+      if (arg === '--baseline-dir') baselineDir = resolve(process.cwd(), value);
+      else outDir = resolve(process.cwd(), value);
+    } else {
       console.error(
         `unknown option ${arg}\nusage: npx tsx perf/derive.ts [--baseline-dir DIR] [--out-dir DIR]`,
       );
       return 2;
     }
   }
-  const files: Array<{ file: string; baseline: Baseline }> = baselineFiles(baselineDir).map((file) => ({
-    file: relative(root, file),
-    baseline: parseBaseline(readFileSync(file, 'utf8'), file),
-  }));
+  const files: Array<{ file: string; baseline: Baseline }> = [];
+  try {
+    for (const file of existsSync(baselineDir) ? baselineFiles(baselineDir) : [])
+      files.push({ file: relative(root, file), baseline: parseBaseline(readFileSync(file, 'utf8'), file) });
+  } catch (error) {
+    if (!(error instanceof BaselineError)) throw error;
+    console.error(`PROBLEM: ${error.message}`);
+    return 2;
+  }
   if (files.length === 0) {
     console.error(`no baseline under ${baselineDir}`);
     return 2;
