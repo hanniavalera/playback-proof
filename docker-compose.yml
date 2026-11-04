@@ -1,0 +1,65 @@
+# The merge gate on a laptop: a Jenkins controller with no executors, configured as code, and a Linux inbound agent built on the
+# Playwright image (ADR-116, ADR-117 in docs/decisions/ci-jenkins.md). How to use it: jenkins/README.md.
+#
+#   bash jenkins/init-env.sh && docker compose up -d --build
+#
+# Host ports of this project: 4700-4709. The UI is on 4700 and bound to loopback only; nothing else is published (the agent
+# connects over WebSocket on the compose network).
+name: playback-proof-jenkins
+
+services:
+  jenkins:
+    build:
+      context: jenkins/controller
+    image: playback-proof/jenkins-controller:2.580.2
+    environment:
+      JENKINS_ADMIN_ID: ${JENKINS_ADMIN_ID:-admin}
+      JENKINS_ADMIN_PASSWORD: '${JENKINS_ADMIN_PASSWORD:?no password, run bash jenkins/init-env.sh to create .env}'
+      AGENT_EXECUTORS: ${AGENT_EXECUTORS:-2}
+      PB_BRANCH: ${PB_BRANCH:-main}
+      # Added to the system properties the image sets in JAVA_OPTS.
+      JENKINS_JAVA_OPTS: -Xms256m -Xmx768m
+    ports:
+      - '127.0.0.1:4700:8080'
+    volumes:
+      - jenkins-home:/var/jenkins_home
+      - agent-secrets:/run/agent-secrets
+      - ${PB_REPO:-.}:/repo:ro
+    mem_limit: 1536m
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', '-o', '/dev/null', 'http://localhost:8080/login']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+    restart: unless-stopped
+
+  agent:
+    build:
+      context: jenkins/agent
+    image: playback-proof/jenkins-agent:pw1.64.1
+    depends_on:
+      jenkins:
+        condition: service_healthy
+    environment:
+      JENKINS_URL: http://jenkins:8080/
+      JENKINS_AGENT_NAME: playwright-1
+    # tini reaps the browsers' children; the host's IPC namespace gives Chromium and Firefox the shared memory they need
+    # (the Playwright image's documentation asks for both).
+    init: true
+    ipc: host
+    cpus: 3
+    mem_limit: 4g
+    volumes:
+      - agent-secrets:/run/agent-secrets:ro
+      - streams-cache:/cache
+      - npm-cache:/home/jenkins/.npm
+      - ${PB_REPO:-.}:/repo:ro
+    restart: unless-stopped
+
+volumes:
+  jenkins-home:
+  agent-secrets:
+  # The generated streams, shared by every build (ADR-118).
+  streams-cache:
+  npm-cache:

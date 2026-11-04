@@ -1,0 +1,60 @@
+Console log of build 2 of playback-proof, cut down to the stage markers, the tool versions and the summary of each gate.
+The full log stays in Jenkins; 334 lines of progress output were left out. Credentials are redacted. Times are UTC.
+
+Started by user admin
+Obtained Jenkinsfile from git file:///repo
+[... 11 lines left out ...]
+[Pipeline] { (Checks)
+[2026-11-04T04:43:00.243Z] Running on playwright-1 in /home/jenkins/agent/workspace/playback-proof
+[Pipeline] { (Install)
+[... 12 lines left out ...]
+[2026-11-04T04:43:01.649Z] Checking out Revision fd6708764d7e5a0193d46c8096d671ac772ce6f7 (refs/remotes/origin/p4/jenkins)
+[... 9 lines left out ...]
+[2026-11-04T04:43:03.884Z] added 136 packages in 2s
+[... 7 lines left out ...]
+[2026-11-04T04:43:04.191Z] tool-version node v24.22.1
+[2026-11-04T04:43:04.191Z] tool-version npm 11.19.1
+[2026-11-04T04:43:04.192Z] tool-version ffmpeg ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers
+[2026-11-04T04:43:04.192Z] tool-version java openjdk version "21.0.12.1" 2026-08-18
+[2026-11-04T04:43:04.759Z] tool-version playwright Version 1.64.1
+[Pipeline] { (Static)
+[... 11 lines left out ...]
+[2026-11-04T04:43:13.485Z] All matched files use Prettier code style!
+[2026-11-04T04:43:13.485Z] docs:check ok (14 markdown files, 57 catalog rows, generated blocks up to date)
+[2026-11-04T04:43:13.743Z] codec matrix ok: docs/CODEC_MATRIX.md is what the committed results render to
+[Pipeline] { (Unit)
+[... 200 lines left out ...]
+[2026-11-04T04:44:37.806Z]      × generates the same bytes every time (the committed results name the files by hash) 21861ms
+[2026-11-04T04:44:37.806Z]  FAIL  tests/unit/probe/media.test.ts > ensureProbeMedia with ffmpeg > generates the same bytes every time (the committed results name the files by hash)
+[2026-11-04T04:44:37.806Z] AssertionError: v-vp8.webm: expected '6944a33cc42766483a9d17dc2ee983b6d1345…' to be '74f61328344a586fd67fe1a7fe52f13478b73…' // Object.is equality
+[2026-11-04T04:44:37.806Z] Expected: "74f61328344a586fd67fe1a7fe52f13478b734f6173d3f3b5faa0c0bfc6951b2"
+[2026-11-04T04:44:37.806Z] Received: "6944a33cc42766483a9d17dc2ee983b6d13451baa03bc13eb2ead79b42a2a784"
+[... 8 lines left out ...]
+[2026-11-04T04:44:37.806Z]  Test Files  1 failed | 65 passed (66)
+[2026-11-04T04:44:37.806Z]       Tests  1 failed | 1706 passed (1707)
+[2026-11-04T04:44:37.806Z]    Start at  04:43:14
+[2026-11-04T04:44:37.806Z]    Duration  79.11s (tests 96%, transform 2%, import 2%)
+[Pipeline] { (Streams)
+Stage "Streams" skipped due to earlier failure(s)
+[... 7 lines left out ...]
+[2026-11-04T04:44:38.051Z] Archiving artifacts
+[... 14 lines left out ...]
+[Pipeline] { (Merge gate)
+Stage "Merge gate" skipped due to earlier failure(s)
+[... 7 lines left out ...]
+[Pipeline] { (chromium)
+[Pipeline] { (firefox)
+[Pipeline] { (chromium-cpu4x)
+[Pipeline] { (webkit)
+Stage "chromium" skipped due to earlier failure(s)
+Stage "firefox" skipped due to earlier failure(s)
+Stage "chromium-cpu4x" skipped due to earlier failure(s)
+Stage "webkit" skipped due to earlier failure(s)
+[... 7 lines left out ...]
+[2026-11-04T04:44:38.699Z] Failed in branch chromium
+[2026-11-04T04:44:38.709Z] Failed in branch firefox
+[2026-11-04T04:44:38.722Z] Failed in branch chromium-cpu4x
+[2026-11-04T04:44:38.735Z] Failed in branch webkit
+[... 12 lines left out ...]
+ERROR: script returned exit code 1
+Finished: FAILURE

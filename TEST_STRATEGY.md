@@ -210,7 +210,7 @@ The matrix below is the design; the CI jobs arrive in Phase 4. Chromium and Fire
 | --- | --- | --- | --- | --- | --- |
 | GitHub Actions, Linux | yes | yes | no (documented gap) | yes | The merge gate for three of the four projects, the performance gate, nightly and release jobs. |
 | GitHub Actions, macOS | not needed | no | yes | no | The WebKit merge job, WebKit performance and release jobs. |
-| Jenkins, Linux agent (run locally with docker-compose) | yes | yes | no (needs a macOS agent) | yes | The same `gate:*` stages as GitHub Actions: parity of the pipeline, not extra coverage. |
+| Jenkins, Linux agent (run locally with docker-compose) | yes | yes | experimental (Linux WebKit; the macOS job has no local equivalent) | yes | The same `gate:*` stages as GitHub Actions: parity of the pipeline, not extra coverage ([jenkins/README.md](jenkins/README.md)). |
 | Development host, macOS (arm64) | yes | no (does not launch: "Could not find profile folder") | yes | yes | The inner loop. |
 | Docker, Linux (the Playwright image, arm64 here) | yes | yes | no | yes | Firefox from a macOS host, and reproducing CI locally (`npm run docker:pw`). |
 
