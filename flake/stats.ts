@@ -3,6 +3,7 @@
 //
 //   per test    (id, project): the last `windowRuns` executions -> flake rate, failure rate, a verdict
 //   per engine  project: the merge-tier tests of the last `windowRuns` builds -> the suite rate against the budget
+//   per test    (id, project): the last `windowRuns` scheduled executions -> the share of invalid runs against its budget
 //
 // The flake rate is METRICS.md's: passed only after a retry / executions. Three choices of this module are not in that line, and each
 // is argued in docs/decisions/flake.md:
@@ -12,21 +13,28 @@
 //     window" can only mean its own window. The suite rate, the budget of the gate, is the one that leaves quarantined executions out.
 //   - The suite rate is judged once the window holds `minRunsToJudge` builds: the policy gives a test that minimum, and one flaky
 //     outcome in the first build of a new history would otherwise read as 7 % of the suite.
+//
+// The invalid-run share (ADR-135a) is not a flake rate and shares none of those choices: it counts invalid runs (a skip whose reason
+// starts with `INVALID_RUN_PREFIX`) over the scheduled executions (invalid runs and executions that ran to a verdict), retry or not;
+// documented-gap skips and interrupted tests are neither; and quarantine is not an input, because it is about flakiness and cannot
+// make an environment evaluate a claim: a quarantined test's scheduled executions count like any other.
 import { FLAKE_LIMITS } from '../src/shared/criteria.ts';
-import { executionsOf } from './run.ts';
-import type { ExecutedOutcome, Execution, FlakeRun, Tier } from './run.ts';
+import { executionsOf, scheduledOf } from './run.ts';
+import type { ExecutedOutcome, Execution, FlakeRun, Scheduled, Tier } from './run.ts';
 
 export interface FlakeLimits {
   readonly windowRuns: number;
   readonly minRunsToJudge: number;
   readonly quarantineTriggerRate: number;
   readonly suiteBudgetRate: number;
+  readonly invalidRunBudgetRate: number;
 }
 
 export const DEFAULT_LIMITS: FlakeLimits = FLAKE_LIMITS;
 
 export type Verdict = 'not-enough-data' | 'ok' | 'watch' | 'over-trigger';
 export type SuiteVerdict = 'not-enough-data' | 'ok' | 'over-budget';
+export type InvalidRunVerdict = 'not-enough-data' | 'ok' | 'over-invalid-budget';
 
 export interface StatsOptions {
   limits?: FlakeLimits;
@@ -100,9 +108,36 @@ export interface SuiteStats {
   experimental: boolean;
 }
 
+export interface LastInvalid {
+  date: string;
+  runId: string;
+  commit: string;
+  /** The reason of the skip, whole: the numbers of the attempt come first (`invalidRunReason`). */
+  reason: string;
+}
+
+export interface InvalidRunStats {
+  id: string;
+  project: string;
+  tier: Tier | null;
+  /** Scheduled executions in the window: the last `windowRuns` that were invalid runs or ran to a verdict. */
+  scheduled: number;
+  /** Of those, the ones ended as invalid runs. */
+  invalid: number;
+  /** invalid / scheduled; 0 without scheduled executions. */
+  share: number;
+  budget: number;
+  verdict: InvalidRunVerdict;
+  /** The newest invalid run of the window. */
+  lastInvalid: LastInvalid | null;
+  experimental: boolean;
+}
+
 export interface FlakeStats {
   tests: TestStats[];
   suites: SuiteStats[];
+  /** Per test and engine with at least one scheduled execution, a test that was only ever an invalid run included. */
+  invalidRuns: InvalidRunStats[];
 }
 
 /** `0.0667` as `6.7%`. */
@@ -240,6 +275,65 @@ export function suiteStats(runs: readonly FlakeRun[], options: StatsOptions = {}
   return out;
 }
 
+function judgeInvalid(invalid: number, scheduled: number, limits: FlakeLimits): InvalidRunVerdict {
+  if (scheduled < limits.minRunsToJudge) return 'not-enough-data';
+  // Above the budget, strictly, as the other two are: 8 invalid runs of 20, or 12 of 30, are exactly 40% and within it.
+  return invalid / scheduled > limits.invalidRunBudgetRate ? 'over-invalid-budget' : 'ok';
+}
+
+/**
+ * The invalid-run share of every test and engine that has a scheduled execution: invalid runs / scheduled executions over the last
+ * `windowRuns` of them, judged from `minRunsToJudge`. A test that was only ever an invalid run is in it (it has no execution, so it is
+ * in no flake statistic: it would otherwise be invisible, which is the case the budget exists for). Quarantine is not an input.
+ */
+export function invalidRunStats(
+  runs: readonly FlakeRun[],
+  limits: FlakeLimits = DEFAULT_LIMITS,
+): InvalidRunStats[] {
+  const groups = new Map<string, Scheduled[]>();
+  for (const scheduled of scheduledOf(runs)) {
+    const k = key(scheduled.id, scheduled.project);
+    const group = groups.get(k);
+    if (group) group.push(scheduled);
+    else groups.set(k, [scheduled]);
+  }
+
+  const out: InvalidRunStats[] = [];
+  for (const history of groups.values()) {
+    const [first] = history;
+    if (!first) continue;
+    const window = lastOf(history, limits.windowRuns);
+    const invalid = window.filter((s) => s.invalid);
+    const newest = invalid[invalid.length - 1];
+    out.push({
+      id: first.id,
+      project: first.project,
+      tier: history[history.length - 1]?.tier ?? null,
+      scheduled: window.length,
+      invalid: invalid.length,
+      share: divide(invalid.length, window.length),
+      budget: limits.invalidRunBudgetRate,
+      verdict: judgeInvalid(invalid.length, window.length, limits),
+      lastInvalid: newest
+        ? { date: newest.date, runId: newest.runId, commit: newest.commit, reason: newest.reason ?? '' }
+        : null,
+      experimental: history.some((s) => s.experimental),
+    });
+  }
+  return out.sort((a, b) => a.id.localeCompare(b.id) || a.project.localeCompare(b.project));
+}
+
+/** The most invalid runs that a full window can hold and still be within the budget: 12 of 30 at 40%. */
+export function invalidRunsAllowed(limits: FlakeLimits = DEFAULT_LIMITS): number {
+  let allowed = 0;
+  while ((allowed + 1) / limits.windowRuns <= limits.invalidRunBudgetRate) allowed += 1;
+  return allowed;
+}
+
 export function flakeStats(runs: readonly FlakeRun[], options: StatsOptions = {}): FlakeStats {
-  return { tests: testStats(runs, options.limits), suites: suiteStats(runs, options) };
+  return {
+    tests: testStats(runs, options.limits),
+    suites: suiteStats(runs, options),
+    invalidRuns: invalidRunStats(runs, options.limits),
+  };
 }

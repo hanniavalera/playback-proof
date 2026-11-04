@@ -13,10 +13,13 @@ import type { AppendResult, FlakeStore } from '../../../flake/store.ts';
 import { makeScratch } from '../support/scratch.ts';
 import { builds } from './fixtures.ts';
 import { git, makeWorld } from './git-world.ts';
+import { INVALID_REASON, pattern } from './invalid-fixtures.ts';
 
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 const TODAY = '2026-11-03';
 const W = FLAKE_LIMITS.windowRuns;
+/** The most invalid runs of a full window that are within the budget: 12 of 30. */
+const AT_BUDGET = Math.round(FLAKE_LIMITS.invalidRunBudgetRate * W);
 const VOD_007 = 6;
 const ENV = 'gha-linux-x64';
 
@@ -121,6 +124,37 @@ describe('PB-LAB-004 flake gate command: the verdict and the exit code', () => {
     const decision = JSON.parse(readFileSync(join(s.dir, 'reports/flake/gate.json'), 'utf8'));
     expect(decision.decision).toBe('fail');
     expect(decision.failures[0]).toMatchObject({ kind: 'over-trigger', subject: 'PB-VOD-007 on webkit' });
+  });
+
+  it('fails a test whose invalid runs are over their budget: exit 1, the failure on screen, and the share in the JSON', async () => {
+    const s = scenario();
+    const runs = pattern('PB-ABR-002', 'p'.repeat(W - AT_BUDGET - 1) + 'i'.repeat(AT_BUDGET + 1));
+    await s.store.append(ENV, runs.slice(0, -1));
+    s.write('reports/flake/run.json', runFile(runs.at(-1) as FlakeRun));
+
+    expect(await gateCommand(s.argv(), s.io)).toBe(1);
+    const text = s.out.join('\n');
+    expect(text).toContain('flake gate: FAIL (1 failure)');
+    expect(text).toContain('[over-invalid-budget] PB-ABR-002 on webkit was an invalid run in');
+    expect(text).toContain('Decision: Fix the machine (load, decode)');
+    const decision = JSON.parse(readFileSync(join(s.dir, 'reports/flake/gate.json'), 'utf8'));
+    expect(decision.decision).toBe('fail');
+    expect(decision.failures[0]).toMatchObject({
+      kind: 'over-invalid-budget',
+      subject: 'PB-ABR-002 on webkit',
+    });
+    expect(decision.invalidRuns).toHaveLength(1);
+    expect(decision.invalidRuns[0]).toMatchObject({
+      id: 'PB-ABR-002',
+      project: 'webkit',
+      invalid: AT_BUDGET + 1,
+      scheduled: W,
+      share: (AT_BUDGET + 1) / W,
+      budget: FLAKE_LIMITS.invalidRunBudgetRate,
+      verdict: 'over-invalid-budget',
+      lastInvalid: { runId: (runs.at(-1) as FlakeRun).runId, reason: INVALID_REASON },
+      quarantined: null,
+    });
   });
 
   it('passes the same build once the test is quarantined with an owner and an expiry', async () => {

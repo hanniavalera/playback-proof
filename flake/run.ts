@@ -1,6 +1,7 @@
 // The record of one Playwright invocation: the unit of the flake history. The reporter writes it (`reports/flake/run.json`), the
 // history keeps a line per record, and the statistics, the gate and the report read it. The shapes are a contract: change one and
 // the version below, together with `parseRun` (history.ts), which refuses what it does not understand.
+import { INVALID_RUN_PREFIX } from '../src/shared/criteria.ts';
 
 export const RUN_SCHEMA_VERSION = 1;
 
@@ -127,6 +128,72 @@ export function executionsOf(runs: readonly FlakeRun[]): Execution[] {
         quarantined: test.quarantined,
         retries: test.retries,
         signature: test.attempts.find((attempt) => attempt.signature !== undefined)?.signature ?? null,
+        experimental: test.experimental === true,
+      });
+    }
+  }
+  return out;
+}
+
+/**
+ * A skip that ended the attempt as an INVALID RUN (docs/FLAKE.md, "Invalid runs"): its reason starts with the prefix that the spec-side
+ * classifier builds it with. Any other skip (a documented gap of `src/lab/gaps.ts`, a `test.skip` with another reason, a skip with no
+ * reason) is not an invalid run and is not budgeted. A test that failed an attempt and was skipped on its retry has the outcome
+ * `failed` (outcomeOf in the reporter), so it is never an invalid run.
+ */
+export function isInvalidRun(test: Pick<TestRecord, 'outcome' | 'skipReason'>): boolean {
+  return test.outcome === 'skipped' && (test.skipReason?.startsWith(INVALID_RUN_PREFIX) ?? false);
+}
+
+/**
+ * What an invalid run says first, for a sentence or a table cell: its reason without the prefix, cut at its first sentence and at `max`
+ * characters (the numbers of the attempt come first: `invalidRunReason`, tests/e2e/abr/bans.ts).
+ */
+export function invalidRunHead(reason: string, max = 200): string {
+  const flat = reason.replace(/\s+/g, ' ').trim();
+  const body = flat.startsWith(INVALID_RUN_PREFIX) ? flat.slice(INVALID_RUN_PREFIX.length).trim() : flat;
+  const end = body.search(/\.(\s|$)/);
+  const sentence = (end === -1 ? body : body.slice(0, end)).trim() || flat;
+  return sentence.length > max ? `${sentence.slice(0, max - 1)}…` : sentence;
+}
+
+/**
+ * A test scheduled in one run, as the invalid-run budget counts it: it ran to a verdict (`invalid: false`) or its attempt was ended as an
+ * invalid run (`invalid: true`). Any other skip and an interrupted test are not scheduled executions: they say nothing about whether the
+ * claim could be evaluated. Unlike a flake observation, a scheduled execution does not need a retry: whether the claim was evaluated
+ * does not depend on what the configuration would have done had it failed.
+ */
+export interface Scheduled {
+  runId: string;
+  invocationId: string;
+  date: string;
+  commit: string;
+  id: string;
+  project: string;
+  tier: Tier | null;
+  invalid: boolean;
+  /** The reason of the skip of an invalid run; null for an execution that ran to a verdict. */
+  reason: string | null;
+  experimental: boolean;
+}
+
+/** Every scheduled execution of the runs, in the order given (oldest first). */
+export function scheduledOf(runs: readonly FlakeRun[]): Scheduled[] {
+  const out: Scheduled[] = [];
+  for (const run of runs) {
+    for (const test of run.tests) {
+      const invalid = isInvalidRun(test);
+      if (!invalid && !isExecuted(test.outcome)) continue;
+      out.push({
+        runId: run.runId,
+        invocationId: run.invocationId,
+        date: run.date,
+        commit: run.commit,
+        id: test.id,
+        project: test.project,
+        tier: test.tier,
+        invalid,
+        reason: invalid ? (test.skipReason ?? null) : null,
         experimental: test.experimental === true,
       });
     }

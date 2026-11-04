@@ -2,8 +2,9 @@
 // history and the quarantine list, and says, for everything that fails, which decision the failure drives.
 //
 //   exit 0  nothing to act on
-//   exit 1  a flaky test above the trigger that is not quarantined; an engine job above the suite budget; an expired quarantine
-//           (and, said apart, an expired quarantine of a merge-tier test); a quarantine list that is not valid
+//   exit 1  a flaky test above the trigger that is not quarantined; an engine job above the suite budget; a test whose invalid runs are
+//           above their budget, quarantined or not (ADR-135a); an expired quarantine (and, said apart, an expired quarantine of a
+//           merge-tier test); a quarantine list that is not valid
 //   exit 2  the gate could not judge: no run file, a history it cannot read, arguments it cannot use
 //
 // It is not a verdict on the pull request's own failures: a test that failed after its retry already failed the browser job.
@@ -39,15 +40,20 @@ import type {
   QuarantineLimits,
   ReadResult,
 } from './quarantine.ts';
-import { isExecuted } from './run.ts';
+import { invalidRunHead, isExecuted, isInvalidRun } from './run.ts';
 import type { FlakeRun } from './run.ts';
-import { flakeStats, percent } from './stats.ts';
-import type { FlakeLimits, SuiteStats, TestStats } from './stats.ts';
+import { flakeStats, invalidRunsAllowed, percent } from './stats.ts';
+import type { FlakeLimits, InvalidRunStats, SuiteStats, TestStats } from './stats.ts';
 import { StoreError } from './store.ts';
 import type { AppendResult, FlakeStore } from './store.ts';
 
 export type FailureKind =
-  'over-trigger' | 'suite-budget' | 'quarantine-expired' | 'merge-quarantine-expired' | 'quarantine-invalid';
+  | 'over-trigger'
+  | 'over-invalid-budget'
+  | 'suite-budget'
+  | 'quarantine-expired'
+  | 'merge-quarantine-expired'
+  | 'quarantine-invalid';
 
 export interface GateFailure {
   kind: FailureKind;
@@ -62,6 +68,12 @@ export interface GateFailure {
 export interface JudgedTest {
   stats: TestStats;
   /** The entry that quarantines the test today, or null. */
+  quarantine: QuarantineEntry | null;
+}
+
+export interface JudgedInvalidRuns {
+  stats: InvalidRunStats;
+  /** The entry that quarantines the test today, or null: shown, and never a reason not to fail. */
   quarantine: QuarantineEntry | null;
 }
 
@@ -90,6 +102,8 @@ export interface GateReport {
   notes: string[];
   /** The tests this build ran, with their window. */
   tests: JudgedTest[];
+  /** The tests this build scheduled (ran, or ended as invalid runs), with the share of invalid runs of their window. */
+  invalidRuns: JudgedInvalidRuns[];
   /** The engine jobs this build ran. */
   suites: SuiteStats[];
   quarantine: { effective: QuarantineEntry[]; expired: ExpiredEntry[]; problems: string[] };
@@ -142,6 +156,27 @@ function suiteFailure(s: SuiteStats, today: string, limits: FlakeLimits & Quaran
   };
 }
 
+function invalidBudgetFailure(
+  s: InvalidRunStats,
+  quarantine: QuarantineEntry | null,
+  limits: FlakeLimits,
+): GateFailure {
+  const last = s.lastInvalid;
+  const where = last
+    ? ` Last invalid run: ${invalidRunHead(last.reason)} (run ${last.runId}, ${last.date.slice(0, 10)}, commit ${last.commit.slice(0, 8)}).`
+    : '';
+  const held = quarantine
+    ? ` It is quarantined until ${quarantine.expires} (owner ${quarantine.owner}): a quarantine is about flakiness and does not cover this.`
+    : '';
+  const clears = limits.windowRuns - invalidRunsAllowed(limits);
+  return {
+    kind: 'over-invalid-budget',
+    subject: `${s.id} on ${s.project}`,
+    message: `${s.id} on ${s.project} was an invalid run in ${s.invalid} of ${s.scheduled} of its last scheduled executions (${percent(s.share)}), the budget is ${percent(s.budget)}: the claim is no longer evaluated on this leg.${where}${held}`,
+    decision: `Fix the machine (load, decode), or declare the leg a documented gap with evidence (src/lab/gaps.ts), or retire the test on this leg: do not widen the budget to make it green. Who: the owner of the ${areaTitle(s.id)} area. By when: before this merge; the gate stays red while more than ${percent(s.budget)} of the last ${plural(limits.windowRuns, 'scheduled execution')} of the leg are invalid runs. A fixed machine clears it only as newer executions push the old invalid runs out of the window (at most ${plural(clears, 'valid execution')} of this leg); a documented gap or a retirement in the same pull request ends the judgement of the leg at once, because its next run no longer schedules the test. A quarantine does not clear it.`,
+  };
+}
+
 function expiredFailure(e: ExpiredEntry, catalog: CatalogFacts): GateFailure {
   const { entry } = e;
   const age = plural(e.daysOver, 'day');
@@ -188,17 +223,25 @@ export function evaluateGate(input: GateInput): GateReport {
   const stats = flakeStats(runs, { limits, quarantined: quarantinedNow });
 
   const ran = new Set<string>();
+  const scheduled = new Set<string>();
   const projects = new Set<string>();
   for (const run of input.current) {
     for (const test of run.tests) {
+      const key = `${test.project}\u0000${test.id}`;
+      // A test is scheduled by this build when it ran or was ended as an invalid run; any other skip (a documented gap) is neither,
+      // so declaring a gap takes the test out of the judgement of its invalid runs in the build that declares it.
+      if (isExecuted(test.outcome) || isInvalidRun(test)) scheduled.add(key);
       if (!isExecuted(test.outcome)) continue;
-      ran.add(`${test.project}\u0000${test.id}`);
+      ran.add(key);
       projects.add(test.project);
     }
   }
   const tests: JudgedTest[] = stats.tests
     .filter((t) => ran.has(`${t.project}\u0000${t.id}`))
     .map((t) => ({ stats: t, quarantine: findQuarantine(assessed.effective, t.id, t.project, today) }));
+  const invalidRuns: JudgedInvalidRuns[] = stats.invalidRuns
+    .filter((s) => scheduled.has(`${s.project}\u0000${s.id}`))
+    .map((s) => ({ stats: s, quarantine: findQuarantine(assessed.effective, s.id, s.project, today) }));
   const suites = stats.suites.filter((s) => projects.has(s.project));
 
   const failures: GateFailure[] = [];
@@ -233,6 +276,15 @@ export function evaluateGate(input: GateInput): GateReport {
       );
     }
   }
+  // Quarantine is not looked at: it is about flakiness, and an environment that cannot evaluate the claim is not fixed by it.
+  for (const { stats: s, quarantine } of invalidRuns) {
+    if (s.verdict === 'over-invalid-budget') failures.push(invalidBudgetFailure(s, quarantine, limits));
+    else if (s.verdict === 'not-enough-data' && s.invalid > 0) {
+      notes.push(
+        `${s.id} on ${s.project}: ${s.invalid} of ${plural(s.scheduled, 'scheduled execution')} ended as invalid runs (${percent(s.share)}); no verdict yet, the invalid-run budget (${percent(s.budget)}) is judged from ${limits.minRunsToJudge}.`,
+      );
+    }
+  }
   const unjudged = tests.filter((t) => t.stats.verdict === 'not-enough-data');
   if (unjudged.length > 0) {
     notes.push(
@@ -245,6 +297,7 @@ export function evaluateGate(input: GateInput): GateReport {
     'merge-quarantine-expired',
     'quarantine-expired',
     'over-trigger',
+    'over-invalid-budget',
     'suite-budget',
   ];
   failures.sort(
@@ -260,6 +313,7 @@ export function evaluateGate(input: GateInput): GateReport {
     failures,
     notes,
     tests,
+    invalidRuns,
     suites,
     quarantine: { effective: assessed.effective, expired, problems: assessed.problems },
   };
@@ -268,6 +322,11 @@ export function evaluateGate(input: GateInput): GateReport {
 /** The tests worth a row in the gate's output: everything that is not a plain `ok`. */
 export function interestingTests(report: GateReport): JudgedTest[] {
   return report.tests.filter((t) => t.stats.verdict !== 'ok' || t.quarantine !== null || t.stats.flaky > 0);
+}
+
+/** The tests of this build that have an invalid run in their window: the others have nothing to show. */
+export function withInvalidRuns(report: GateReport): JudgedInvalidRuns[] {
+  return report.invalidRuns.filter((t) => t.stats.invalid > 0);
 }
 
 export function exitCode(report: GateReport): 0 | 1 {
@@ -340,6 +399,30 @@ export function renderGate(report: GateReport, limits: FlakeLimits = FLAKE_LIMIT
           ]),
         );
       }
+    }
+  }
+
+  const invalidShown = withInvalidRuns(report);
+  if (invalidShown.length > 0) {
+    out.push(
+      '',
+      `Invalid runs of the tests of this build (the last ${limits.windowRuns} scheduled executions each, judged from ${limits.minRunsToJudge}, budget ${percent(limits.invalidRunBudgetRate)}; ${report.invalidRuns.length - invalidShown.length} with none are not listed)`,
+    );
+    out.push(row(['test', 'engine', 'invalid', 'scheduled', 'share', 'budget', 'verdict', 'quarantine']));
+    out.push(row(['---', '---', '---', '---', '---', '---', '---', '---']));
+    for (const { stats: s, quarantine } of invalidShown) {
+      out.push(
+        row([
+          s.id,
+          s.project + (s.experimental ? ' (experimental)' : ''),
+          s.invalid,
+          s.scheduled,
+          percent(s.share),
+          percent(s.budget),
+          s.verdict,
+          quarantine ? `until ${quarantine.expires} (${quarantine.owner})` : 'no',
+        ]),
+      );
     }
   }
 
@@ -429,6 +512,17 @@ function decisionJson(report: GateReport, recorded: AppendResult | null): unknow
       failed: t.failed,
       flakeRate: t.flakeRate,
       verdict: t.verdict,
+      quarantined: quarantine ? { owner: quarantine.owner, expires: quarantine.expires } : null,
+    })),
+    invalidRuns: report.invalidRuns.map(({ stats: s, quarantine }) => ({
+      id: s.id,
+      project: s.project,
+      invalid: s.invalid,
+      scheduled: s.scheduled,
+      share: s.share,
+      budget: s.budget,
+      verdict: s.verdict,
+      lastInvalid: s.lastInvalid,
       quarantined: quarantine ? { owner: quarantine.owner, expires: quarantine.expires } : null,
     })),
     recorded: recorded

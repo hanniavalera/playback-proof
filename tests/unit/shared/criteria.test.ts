@@ -5,6 +5,7 @@ import {
   FLAKE_POLICY,
   GATE_BUDGETS,
   GATE_LIMITS,
+  INVALID_RUN_PREFIX,
   LANE_TIER,
   LIVE_FACTS,
   LIVE_LIMITS,
@@ -248,6 +249,54 @@ describe('PB-LAB-007 flake policy: the binomial arithmetic it quotes is right', 
     expect(F.suiteBudgetRate).toBeGreaterThan(0);
     expect(F.suiteBudgetRate).toBeLessThan(F.quarantineTriggerRate);
     expect(F.mergeQuarantineMaxAgeDays).toBeLessThan(F.quarantineMaxAgeDays);
+  });
+});
+
+describe('PB-LAB-007 invalid-run budget: the prefix that recognises an invalid run, and the number it is judged against', () => {
+  const F = FLAKE_LIMITS;
+  const text = FLAKE_POLICY.invalidRunBudgetRate.basis.text;
+  /** The smallest count of invalid runs in a full window that is above the budget. */
+  const above = Array.from({ length: F.windowRuns + 1 }, (_, n) => n).find(
+    (n) => n / F.windowRuns > F.invalidRunBudgetRate,
+  ) as number;
+
+  it('pins the prefix: the reasons of the histories already recorded start with it, so it is not renamed without a migration', () => {
+    expect(INVALID_RUN_PREFIX).toBe('invalid run:');
+  });
+
+  it('is an assumption placed above the highest share measured on the one runner that shows invalid runs, and below one half', () => {
+    expect(FLAKE_POLICY.invalidRunBudgetRate.basis.kind).toBe('assumption');
+    expect(FLAKE_POLICY.invalidRunBudgetRate.unit).toBe('ratio');
+    // The measured shares the text quotes (5, 6, 8 and 10 of 40) and the budget above the highest of them.
+    for (const [invalid, shares] of [
+      [5, '12.5%'],
+      [10, '25%'],
+    ] as const) {
+      expect(invalid / 40).toBe(Number.parseFloat(shares) / 100);
+      expect(text).toContain(`${shares} `);
+    }
+    expect(text).toContain('(5, 6, 8 and 10 of 40)');
+    expect(F.invalidRunBudgetRate).toBeGreaterThan(10 / 40);
+    expect(F.invalidRunBudgetRate).toBeLessThan(0.5);
+    expect(text).toContain('only leg that has shown invalid runs so far');
+    expect(FLAKE_POLICY.invalidRunBudgetRate.measure).toContain(`\`${INVALID_RUN_PREFIX}\``);
+  });
+
+  it('is judged from the same minimum as a test, in the same window, so it needs no number of its own', () => {
+    expect(F.minRunsToJudge).toBeLessThanOrEqual(F.windowRuns);
+    // An invalid run is one of at most `window` scheduled executions: above the budget needs a whole number of them.
+    expect(above / F.windowRuns).toBeGreaterThan(F.invalidRunBudgetRate);
+    expect((above - 1) / F.windowRuns).toBeLessThanOrEqual(F.invalidRunBudgetRate);
+  });
+
+  it('quotes the right chance that a full window is over the budget for a leg that really ends a share of its attempts as invalid', () => {
+    expect(above).toBe(13);
+    const chance = (p: number): number => atLeast(above, F.windowRuns, p);
+    expect(text).toContain(
+      `ends 25% of its attempts as invalid runs is over the budget in ${percent(chance(0.25))} of full windows`,
+    );
+    expect(text).toContain(`one at 20% in ${percent(chance(0.2))})`);
+    expect(text).toContain(`fails (in ${Math.round(chance(0.5) * 100)}% of windows)`);
   });
 });
 

@@ -14,6 +14,7 @@ import { percent } from '../../../flake/stats.ts';
 import { parseCatalog } from '../../../tools/catalog.ts';
 import { makeScratch } from '../support/scratch.ts';
 import { builds, record, run } from './fixtures.ts';
+import { INVALID_REASON, pattern } from './invalid-fixtures.ts';
 
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 const facts = catalogFacts(parseCatalog(readFileSync(join(ROOT, 'TEST_STRATEGY.md'), 'utf8')));
@@ -181,14 +182,90 @@ describe('PB-LAB-004 flake report: what it builds', () => {
   });
 });
 
+describe('PB-LAB-004 flake report: the invalid runs against their budget', () => {
+  const share = (invalid: number, total: number): string => 'p'.repeat(total - invalid) + 'i'.repeat(invalid);
+  const BUDGET = FLAKE_LIMITS.invalidRunBudgetRate;
+  const OVER = Math.round(BUDGET * W) + 1;
+
+  /** PB-ABR-002 on webkit over its budget, PB-ABR-001 with too few runs, PB-ABR-006 within it, and two tests with no invalid run. */
+  function invalidHistory(): FlakeRun[] {
+    return [
+      ...pattern('PB-ABR-002', share(OVER, W), { project: 'webkit' }),
+      ...pattern('PB-ABR-001', share(3, 10), { project: 'webkit' }),
+      ...pattern('PB-ABR-006', share(5, 25), { project: 'webkit' }),
+      ...pattern('PB-ABR-002', share(0, W), { project: 'chromium' }),
+      ...pattern('PB-VOD-001', share(0, W), { project: 'chromium' }),
+    ];
+  }
+
+  it('lists every test and engine with its invalid runs, share, budget and verdict, the worst first', () => {
+    const report = buildReport(input({ runs: invalidHistory() }));
+    expect(
+      report.invalidRuns.map((t) => `${t.id} ${t.project} ${t.invalid}/${t.scheduled} ${t.verdict}`),
+    ).toEqual([
+      `PB-ABR-002 webkit ${OVER}/${W} over-invalid-budget`,
+      'PB-ABR-001 webkit 3/10 not-enough-data',
+      'PB-ABR-006 webkit 5/25 ok',
+      `PB-ABR-002 chromium 0/${W} ok`,
+      `PB-VOD-001 chromium 0/${W} ok`,
+    ]);
+    expect(report.invalidRuns[0]).toMatchObject({ share: OVER / W, budget: BUDGET, quarantine: null });
+    expect(report.limits.invalidRunBudgetRate).toBe(BUDGET);
+  });
+
+  it('prints them in a table of their own: N of M, the share, the budget, the verdict and the last invalid run, and counts the rest', () => {
+    const report = buildReport(input({ runs: invalidHistory() }));
+    const text = renderMarkdown(report);
+    const section = text.slice(text.indexOf('## Invalid runs'), text.indexOf('## Quarantine'));
+    expect(text).toContain(`the invalid-run budget ${percent(BUDGET)}.`);
+    expect(section).toContain(
+      '| Test | Engine | Tier | Invalid runs | Share | Budget | Verdict | Quarantine | Last invalid run |',
+    );
+    const lastDate = (report.invalidRuns[0]?.lastInvalid?.date ?? '').slice(0, 10);
+    expect(section).toContain(
+      `| PB-ABR-002 | webkit | merge | ${OVER} of ${W} | ${percent(OVER / W)} | ${percent(BUDGET)} | over-invalid-budget | - | ${lastDate}: forced climb to 360p 3.3 s after the step down, 13 of 1104 frames dropped |`,
+    );
+    expect(section).toContain(
+      `| PB-ABR-001 | webkit | merge | 3 of 10 | ${percent(0.3)} | ${percent(BUDGET)} | not-enough-data |`,
+    );
+    expect(section).toContain(
+      `| PB-ABR-006 | webkit | merge | 5 of 25 | ${percent(0.2)} | ${percent(BUDGET)} | ok |`,
+    );
+    // The two with no invalid run are counted, not listed.
+    expect(section).not.toContain('PB-VOD-001');
+    expect(section).toContain('2 tests and engines with no invalid run in their window are not listed.');
+  });
+
+  it('shows a quarantine next to the overrun, and does not take the overrun back', () => {
+    const entries = [entry({ id: 'PB-ABR-002', project: 'webkit' })];
+    const report = buildReport(input({ runs: invalidHistory(), quarantine: { entries, problems: [] } }));
+    expect(report.invalidRuns[0]).toMatchObject({
+      id: 'PB-ABR-002',
+      project: 'webkit',
+      verdict: 'over-invalid-budget',
+      quarantine: expect.objectContaining({ owner: '@owner' }),
+    });
+    expect(renderMarkdown(report)).toContain(`| over-invalid-budget | until ${addDays(TODAY, 3)} (@owner) |`);
+  });
+
+  it('says plainly when no test has an invalid run, and when nothing was scheduled', () => {
+    expect(renderMarkdown(buildReport(input()))).toContain('No test has an invalid run in its window.');
+    expect(buildReport(input()).invalidRuns.every((t) => t.invalid === 0)).toBe(true);
+    const empty = buildReport(input({ runs: [] }));
+    expect(empty.invalidRuns).toEqual([]);
+    expect(renderMarkdown(empty)).toContain('No test has been scheduled in the history.');
+  });
+});
+
 describe('PB-LAB-004 flake report: the markdown', () => {
-  it('has a section for the engine jobs, the tests, the quarantine, the skips and what the numbers do not say', () => {
+  it('has a section for the engine jobs, the tests, the invalid runs, the quarantine, the skips and what the numbers do not say', () => {
     const text = renderMarkdown(buildReport(input({ quarantine: { entries: [entry()], problems: [] } })));
     const headings = text.split('\n').filter((l) => l.startsWith('#'));
     expect(headings).toEqual([
       `# Flake report: ${ENV}`,
       '## Engine jobs: the suite flake rate',
       `## Tests: the last ${W} executions of each`,
+      '## Invalid runs: the share of scheduled executions that could not evaluate their claim',
       '## Quarantine',
       '## Skipped',
       '## Notes',
@@ -277,6 +354,28 @@ describe('PB-LAB-004 flake report command', () => {
     expect(json.tests[0]).toMatchObject({ id: 'PB-VOD-007', verdict: 'over-trigger' });
     expect(json.suites[0]).toMatchObject({ project: 'chromium', builds: W });
     expect(json.generatedAt).toBe(`${TODAY}T22:00:00.000Z`);
+  });
+
+  it('writes the invalid runs, their share and the budget in the JSON', async () => {
+    const s = setup();
+    const over = Math.round(FLAKE_LIMITS.invalidRunBudgetRate * W) + 1;
+    await s.store.append(ENV, pattern('PB-ABR-002', 'p'.repeat(W - over) + 'i'.repeat(over)));
+    expect(await reportCommand(s.argv('--env', ENV), s.io)).toBe(0);
+    const json = JSON.parse(readFileSync(join(s.dir, 'reports/flake/report.json'), 'utf8'));
+    expect(json.limits.invalidRunBudgetRate).toBe(FLAKE_LIMITS.invalidRunBudgetRate);
+    expect(json.invalidRuns).toHaveLength(1);
+    expect(json.invalidRuns[0]).toMatchObject({
+      id: 'PB-ABR-002',
+      project: 'webkit',
+      invalid: over,
+      scheduled: W,
+      share: over / W,
+      budget: FLAKE_LIMITS.invalidRunBudgetRate,
+      verdict: 'over-invalid-budget',
+      lastInvalid: { reason: INVALID_REASON },
+      quarantine: null,
+    });
+    expect(s.out.join('\n')).toContain('| PB-ABR-002 | webkit | merge |');
   });
 
   it('adds to the job summary when there is one, and includes run files that are not recorded yet', async () => {
