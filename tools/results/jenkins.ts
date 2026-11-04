@@ -138,7 +138,7 @@ export function renderJenkins(files: FileSet): Rendered {
     builds.map((b) => [
       link(String(b.build), b.path),
       `${day(b.startedAt)}, ${code(b.branch)}, ${code(b.commit.slice(0, 7))}`,
-      shorten(b.label, 230),
+      shorten(b.label, 340),
       resultText(b),
       seconds(b.durationMs),
       describeStages(b.stages),
