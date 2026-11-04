@@ -1,0 +1,18 @@
+measure: soak, engine webkit, runner ubuntu-24.04
+label: soakrel-webkit-a
+started: 2026-11-04T17:18:58Z
+commit: 0d62c1d0d480ecb0c18b3daaad49cc61b1527f89 (main)
+environment id: gha-linux-x64
+runner: Linux X64, github-hosted, image ubuntu24 20261101.360.1
+uname: Linux runnervm7aw5e 7.0.0-1017-azure #17~24.04.1-Ubuntu SMP PREEMPT Thu Sep 24 18:46:57 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+cpus: 4
+cpu: AMD EPYC 9V45 96-Core Processor
+memory: 15983 MiB
+os: Ubuntu 24.04.5 LTS
+uptime:  17:18:59 up 1 min,  0 user,  load average: 0.64, 0.17, 0.06
+node: v22.23.4, npm: 10.9.9
+playwright: Version 1.64.1
+ffmpeg: not installed (the streams come from the streams job)
+
+finished: 2026-11-04T17:49:06Z
+uptime:  17:49:06 up 31 min,  0 user,  load average: 1.07, 1.04, 0.92

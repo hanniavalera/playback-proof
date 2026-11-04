@@ -19,7 +19,7 @@ import type {
   RestoreSample,
   StallRun,
 } from '../../../src/lab/readiness/evaluators.ts';
-import { aggregate, judge } from '../../../src/lab/readiness/verdict.ts';
+import { aggregate, formatMs, judge } from '../../../src/lab/readiness/verdict.ts';
 import type { Evaluation } from '../../../src/lab/readiness/verdict.ts';
 
 // The evaluators decide GO or NO-GO, so every one is checked at its limit (the limit itself is within it, a step over is not), with the
@@ -60,6 +60,13 @@ describe('judge and aggregate', () => {
     expect(aggregate([line('GO'), line('NO-GO', 'advisory')])).toBe('GO');
     expect(aggregate([])).toBe('INCONCLUSIVE');
     expect(aggregate([line('N/A')])).toBe('INCONCLUSIVE');
+  });
+
+  it('writes a time in seconds from the first millisecond that rounds to one, so that no sentence says 1,000 ms', () => {
+    expect(formatMs(999.4)).toBe('999 ms');
+    expect(formatMs(999.6)).toBe('1.00 s');
+    expect(formatMs(1000)).toBe('1.00 s');
+    expect(formatMs(-999.6)).toBe('-1.00 s');
   });
 });
 

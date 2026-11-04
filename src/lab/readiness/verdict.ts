@@ -92,7 +92,9 @@ const thousands = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
 
 /** `6.21 s` for a time of a second or more, `850 ms` below. Latencies and limits read the same way in every sentence. */
 export function formatMs(ms: number): string {
-  return Math.abs(ms) >= 1000 ? `${(ms / 1000).toFixed(2)} s` : `${thousands.format(Math.round(ms))} ms`;
+  return Math.abs(Math.round(ms)) >= 1000
+    ? `${(ms / 1000).toFixed(2)} s`
+    : `${thousands.format(Math.round(ms))} ms`;
 }
 
 export function formatPercent(ratio: number): string {

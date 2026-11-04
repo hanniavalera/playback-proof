@@ -1,0 +1,211 @@
+{
+  "schemaVersion": 1,
+  "repository": "hanniavalera/playback-proof",
+  "workflow": "measure.yml",
+  "runs": [
+    {
+      "label": "rdy-chromium",
+      "runId": 41876070337,
+      "task": "readiness",
+      "file": "docs/results/readiness/gha-linux-x64-chromium.json",
+      "uploadedAs": "readiness/gha-linux-x64-chromium.json",
+      "sha256": "682717b64210c96e61ed15290a07b617349447ce595bc2b1bb04dd505fd3837d"
+    },
+    {
+      "label": "rdy-firefox",
+      "runId": 41876079060,
+      "task": "readiness",
+      "file": "docs/results/readiness/gha-linux-x64-firefox.json",
+      "uploadedAs": "readiness/gha-linux-x64-firefox.json",
+      "sha256": "b4a8423b6b995164f5799df1778be0762c842232ef024d6e5cc61c48bd717a66"
+    },
+    {
+      "label": "rdy-webkit-linux",
+      "runId": 41876086545,
+      "task": "readiness",
+      "file": "docs/results/readiness/gha-linux-x64-webkit.json",
+      "uploadedAs": "readiness/gha-linux-x64-webkit.json",
+      "sha256": "e5f7754eb382ca5add3b8510dc63fe1d94071c9e0511f03658582068e3ee2f03"
+    },
+    {
+      "label": "rdy-webkit-macos",
+      "runId": 41876094919,
+      "task": "readiness",
+      "file": "docs/results/readiness/gha-macos-arm64-webkit.json",
+      "uploadedAs": "readiness/gha-macos-arm64-webkit.json",
+      "sha256": "6a25e07cf4e7d21a23c1bf331a988d3bcf7814f2d7bdc7333ed547be5047479f"
+    },
+    {
+      "label": "soakci-chromium-a",
+      "runId": 41876103805,
+      "task": "soak",
+      "file": "docs/results/soak/gha-linux-x64-chromium-5m.json",
+      "uploadedAs": "soak/gha-linux-x64-chromium-5m.json",
+      "sha256": "cdd95fd1677634c73bfe87ce12e5df5b91c4817a270913e4b1b90ff10415a674"
+    },
+    {
+      "label": "soakci-chromium-ls",
+      "runId": 41876112038,
+      "task": "soak",
+      "file": "docs/results/soak/gha-linux-x64-chromium-5m-live-sync.json",
+      "uploadedAs": "soak/gha-linux-x64-chromium-5m.json",
+      "sha256": "6089a407e750376c4756fab0e2b90810f6c9c7ab409b54089e19b87b458a5694"
+    },
+    {
+      "label": "soakci-firefox-a",
+      "runId": 41876120714,
+      "task": "soak",
+      "file": "docs/results/soak/gha-linux-x64-firefox-5m.json",
+      "uploadedAs": "soak/gha-linux-x64-firefox-5m.json",
+      "sha256": "90fe2bea001e232ccea35d220a905af78c3a7bf4016073f78897b4cee82969b3"
+    },
+    {
+      "label": "soakci-firefox-ls",
+      "runId": 41876128028,
+      "task": "soak",
+      "file": "docs/results/soak/gha-linux-x64-firefox-5m-live-sync.json",
+      "uploadedAs": "soak/gha-linux-x64-firefox-5m.json",
+      "sha256": "df74f7167c2450e3a591b7faa20bbeee9d93f14be4737d1b523e7f4e3c673f01"
+    },
+    {
+      "label": "soakci-webkit-a",
+      "runId": 41876136269,
+      "task": "soak",
+      "file": "docs/results/soak/gha-linux-x64-webkit-5m.json",
+      "uploadedAs": "soak/gha-linux-x64-webkit-5m.json",
+      "sha256": "09f6c57f2ba755cdd34be4e1338af1a7906e304a6d16e449812cb30ecaf64f1b"
+    },
+    {
+      "label": "soakci-webkit-ls",
+      "runId": 41876144771,
+      "task": "soak",
+      "file": "docs/results/soak/gha-linux-x64-webkit-5m-live-sync.json",
+      "uploadedAs": "soak/gha-linux-x64-webkit-5m.json",
+      "sha256": "bf9c444292f5a326963e7d67aacadc933a4d98463cc45cb26917e590882ab2b2"
+    },
+    {
+      "label": "soakci-webkit-macos-a",
+      "runId": 41876154174,
+      "task": "soak",
+      "file": "docs/results/soak/gha-macos-arm64-webkit-5m.json",
+      "uploadedAs": "soak/gha-macos-arm64-webkit-5m.json",
+      "sha256": "cc1fa9bfaed2ad27028f6f296edd91d297aff393f856302fbbd6fb856b02c810"
+    },
+    {
+      "label": "soakci-webkit-macos-ls",
+      "runId": 41876162923,
+      "task": "soak",
+      "file": "docs/results/soak/gha-macos-arm64-webkit-5m-live-sync.json",
+      "uploadedAs": "soak/gha-macos-arm64-webkit-5m.json",
+      "sha256": "a6c9e6a2d62a76071ac7f828136c400f910c67c8fcdd27c18d1738bacef7a721"
+    },
+    {
+      "label": "soakrel-chromium-a",
+      "runId": 41876171880,
+      "task": "soak",
+      "file": "docs/results/soak/gha-linux-x64-chromium-30m.json",
+      "uploadedAs": "soak/gha-linux-x64-chromium-30m.json",
+      "sha256": "c63460cebfe4e425d66c42ba26d020cdf26ed1df5dba9926b78c1e9436a612ea"
+    },
+    {
+      "label": "soakrel-chromium-ls",
+      "runId": 41876180263,
+      "task": "soak",
+      "file": "docs/results/soak/gha-linux-x64-chromium-30m-live-sync.json",
+      "uploadedAs": "soak/gha-linux-x64-chromium-30m.json",
+      "sha256": "51bc927927deef4b26ac2c8faf13ab67ababa5865e5aa6cffa7859e2a6a0d680"
+    },
+    {
+      "label": "soakrel-firefox-a",
+      "runId": 41876188537,
+      "task": "soak",
+      "file": "docs/results/soak/gha-linux-x64-firefox-30m.json",
+      "uploadedAs": "soak/gha-linux-x64-firefox-30m.json",
+      "sha256": "067db277163d8641fa7192fd3e4fcab6b43c245d5dfb8262295b7b1f2f72772f"
+    },
+    {
+      "label": "soakrel-firefox-ls",
+      "runId": 41876197319,
+      "task": "soak",
+      "file": "docs/results/soak/gha-linux-x64-firefox-30m-live-sync.json",
+      "uploadedAs": "soak/gha-linux-x64-firefox-30m.json",
+      "sha256": "513c6ca06f725ee377fe2d3556e9b709fcd8f03ca9ab502c1725b226a5027460"
+    },
+    {
+      "label": "soakrel-webkit-a",
+      "runId": 41876205904,
+      "task": "soak",
+      "file": "docs/results/soak/gha-linux-x64-webkit-30m.json",
+      "uploadedAs": "soak/gha-linux-x64-webkit-30m.json",
+      "sha256": "9843430d74440924708c59e788622a2d8b6bf7704102e9dc59094b91a7559aa0"
+    },
+    {
+      "label": "soakrel-webkit-ls",
+      "runId": 41876214329,
+      "task": "soak",
+      "file": "docs/results/soak/gha-linux-x64-webkit-30m-live-sync.json",
+      "uploadedAs": "soak/gha-linux-x64-webkit-30m.json",
+      "sha256": "4d96836291bd31207de1e0795ee66e0529872e3f1b18f79d637960c779f7edc7"
+    },
+    {
+      "label": "stale-webkit-ls",
+      "runId": 41892387342,
+      "task": "soak",
+      "file": "docs/results/soak/gha-linux-x64-webkit-8m-nostall-stale2m-live-sync.json",
+      "uploadedAs": "soak/gha-linux-x64-webkit-8m.json",
+      "sha256": "9592e8cd1927c37ce3b6d0d3e5db4438ba33b3701f3556c355dc9416ef3f8c42",
+      "batch": "extra",
+      "args": "--minutes 8 --no-stall --stale-at-minutes 2 --candidate live-sync"
+    },
+    {
+      "label": "stale-webkit-a",
+      "runId": 41892396172,
+      "task": "soak",
+      "file": "docs/results/soak/gha-linux-x64-webkit-8m-nostall-stale2m.json",
+      "uploadedAs": "soak/gha-linux-x64-webkit-8m.json",
+      "sha256": "8d0a448ba7059d46bca3d67b96878625ebeff19fbfa6abc82449418872f3a8a3",
+      "batch": "extra",
+      "args": "--minutes 8 --no-stall --stale-at-minutes 2"
+    },
+    {
+      "label": "stale-chromium-ls",
+      "runId": 41892404014,
+      "task": "soak",
+      "file": "docs/results/soak/gha-linux-x64-chromium-8m-nostall-stale2m-live-sync.json",
+      "uploadedAs": "soak/gha-linux-x64-chromium-8m.json",
+      "sha256": "25be7a6c348e9de41c9829ef08467a92be106512a6eb362ec3b6510fcccac46d",
+      "batch": "extra",
+      "args": "--minutes 8 --no-stall --stale-at-minutes 2 --candidate live-sync"
+    },
+    {
+      "label": "stale-firefox-ls",
+      "runId": 41892411630,
+      "task": "soak",
+      "file": "docs/results/soak/gha-linux-x64-firefox-8m-nostall-stale2m-live-sync.json",
+      "uploadedAs": "soak/gha-linux-x64-firefox-8m.json",
+      "sha256": "009d20e060faf02327ffb688193976610e811ba5925a0bd5f33a12f76e20519f",
+      "batch": "extra",
+      "args": "--minutes 8 --no-stall --stale-at-minutes 2 --candidate live-sync"
+    },
+    {
+      "label": "rdy-hls-chromium",
+      "runId": 41892419140,
+      "task": "readiness",
+      "file": "docs/results/readiness/gha-linux-x64-chromium-hls.json",
+      "uploadedAs": "readiness/gha-linux-x64-chromium.json",
+      "sha256": "7e0691eb73455ebbc2690f525ca70f2203b8c79280d9e204a54d8b01b4e41b07",
+      "batch": "extra",
+      "args": "--candidate live-sync --protocol hls"
+    },
+    {
+      "label": "rdy-hls-webkit",
+      "runId": 41892426392,
+      "task": "readiness",
+      "file": "docs/results/readiness/gha-linux-x64-webkit-hls.json",
+      "uploadedAs": "readiness/gha-linux-x64-webkit.json",
+      "sha256": "aeb786fcf4e2a7ac0c03dc9930b2a79a21c161a74b50d1b92fee5b5161e7fe7d",
+      "batch": "extra",
+      "args": "--candidate live-sync --protocol hls"
+    }
+  ]
+}

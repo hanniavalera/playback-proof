@@ -1,0 +1,3099 @@
+{
+  "schemaVersion": 1,
+  "kind": "readiness",
+  "envId": "gha-linux-x64",
+  "engine": "webkit",
+  "generatedAt": "2026-11-04T19:11:34.978Z",
+  "durationMs": 615730,
+  "commit": {
+    "hash": "e0a5be3",
+    "dirty": false
+  },
+  "host": {
+    "os": {
+      "platform": "linux",
+      "arch": "x64",
+      "release": "7.0.0-1017-azure",
+      "name": "Ubuntu 24.04.5 LTS"
+    },
+    "cpus": 4,
+    "memoryGiB": 15.6,
+    "node": "v22.23.4",
+    "playwright": "1.64.1",
+    "git": {
+      "commit": "e0a5be3",
+      "dirty": false
+    }
+  },
+  "load": {
+    "before": {
+      "at": "2026-11-04T19:01:19.247Z",
+      "load1": 0.68,
+      "load5": 0.48,
+      "load15": 0.21,
+      "cpus": 4
+    },
+    "after": {
+      "at": "2026-11-04T19:11:34.978Z",
+      "load1": 2.19,
+      "load5": 2.15,
+      "load15": 1.3,
+      "cpus": 4
+    }
+  },
+  "browser": {
+    "name": "webkit",
+    "version": "27.2",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15"
+  },
+  "stream": {
+    "id": "live-cmaf",
+    "protocol": "hls",
+    "contentHash": "3588aee3b15c6fabc9fbe3548b8d62ee55c1e6e64439932b7a6edb62e56d82a3"
+  },
+  "options": {
+    "checks": [
+      "PB-RDY-001",
+      "PB-RDY-002",
+      "PB-RDY-003",
+      "PB-RDY-004"
+    ],
+    "joins": 5,
+    "stallRuns": 3,
+    "windowSec": 60,
+    "refreshes": 20
+  },
+  "limits": {
+    "startSamples": 5,
+    "startMaxMs": 5000,
+    "latencyTargetMs": 6000,
+    "latencyP95MaxMs": 8000,
+    "latencyMaxMs": 10000,
+    "injectedStallMs": 10000,
+    "stallRecoveryMaxMs": 14000,
+    "latencyRestoreMaxMs": 60000,
+    "manifestPeriodMs": 2000,
+    "manifestMaxGapMs": 4000,
+    "manifestMedianGapMinMs": 1000,
+    "warmupSec": 60,
+    "soakMinutesCi": 5,
+    "soakMinutesRelease": 30,
+    "maxUnrecoveredStalls": 0,
+    "maxCriticalErrors": 0,
+    "maxUnexplainedCriticalErrors": 0,
+    "maxRebufferRatio": 0.005,
+    "maxLatencyDriftMs": 1000,
+    "maxHeapGrowthMb": 20,
+    "maxDroppedFrameRatio": 0.01
+  },
+  "configurations": [
+    {
+      "id": "A",
+      "label": "the library defaults (what ships)",
+      "patch": null,
+      "hypothesis": null,
+      "verdict": "NO-GO",
+      "checks": [
+        {
+          "id": "PB-RDY-001",
+          "title": "Stream start",
+          "verdict": "GO",
+          "evaluations": [
+            {
+              "id": "start.worst",
+              "check": "PB-RDY-001",
+              "label": "Start time, worst of 5 joins",
+              "value": 525,
+              "unit": "ms",
+              "limit": 5000,
+              "bound": "at-most",
+              "limitKey": "startMaxMs",
+              "verdict": "GO",
+              "sentence": "The slowest of 5 fresh joins (join 2) presented its first frame after 525 ms; the limit is <= 5.00 s.",
+              "scope": "criterion",
+              "detail": {
+                "joins": [
+                  {
+                    "join": 1,
+                    "startupMs": 322,
+                    "phaseMs": 426
+                  },
+                  {
+                    "join": 2,
+                    "startupMs": 525,
+                    "phaseMs": 791
+                  },
+                  {
+                    "join": 3,
+                    "startupMs": 339,
+                    "phaseMs": 1187
+                  },
+                  {
+                    "join": 4,
+                    "startupMs": 287,
+                    "phaseMs": 1611
+                  },
+                  {
+                    "join": 5,
+                    "startupMs": 265,
+                    "phaseMs": 3
+                  }
+                ],
+                "requiredJoins": 5
+              }
+            },
+            {
+              "id": "start.p95",
+              "check": "PB-RDY-001",
+              "label": "Start time, p95 of 5 joins",
+              "value": 487.79999999999995,
+              "unit": "ms",
+              "limit": 5000,
+              "bound": "at-most",
+              "limitKey": "startMaxMs",
+              "verdict": "GO",
+              "sentence": "The 95th percentile of the join times is 488 ms (the median is 322 ms); the limit it is compared with is <= 5.00 s. It does not decide: the worst join does.",
+              "scope": "advisory",
+              "detail": {
+                "median": 322
+              }
+            }
+          ],
+          "samples": {
+            "joins": [
+              {
+                "join": 1,
+                "startupMs": 322,
+                "phaseMs": 426
+              },
+              {
+                "join": 2,
+                "startupMs": 525,
+                "phaseMs": 791
+              },
+              {
+                "join": 3,
+                "startupMs": 339,
+                "phaseMs": 1187
+              },
+              {
+                "join": 4,
+                "startupMs": 287,
+                "phaseMs": 1611
+              },
+              {
+                "join": 5,
+                "startupMs": 265,
+                "phaseMs": 3
+              }
+            ],
+            "warmup": {
+              "startupMs": 1079
+            }
+          },
+          "player": {
+            "shakaVersion": "v5.3.3",
+            "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+            "config": "A",
+            "configured": [],
+            "loadMode": null
+          },
+          "durationMs": 7436,
+          "notes": [
+            "5 fresh sessions in fresh browser contexts, started 0.40 s apart inside the 2 s segment interval",
+            "a warm-up join was made first and left out (first frame after 1079 ms): the first page of a browser process pays for the browser, not for the player"
+          ]
+        },
+        {
+          "id": "PB-RDY-002",
+          "title": "Live-edge latency over a window",
+          "verdict": "GO",
+          "evaluations": [
+            {
+              "id": "latency.p95",
+              "check": "PB-RDY-002",
+              "label": "Latency, p95 over the window",
+              "value": 6165.987315430986,
+              "unit": "ms",
+              "limit": 8000,
+              "bound": "at-most",
+              "limitKey": "latencyP95MaxMs",
+              "verdict": "GO",
+              "sentence": "The playhead sat 6.17 s behind the live edge at the 95th percentile of 60 reads (the target is 6.00 s); the limit is <= 8.00 s.",
+              "scope": "criterion",
+              "detail": {
+                "samples": 60,
+                "unreadSamples": 0,
+                "minimumSamples": 20,
+                "medianMs": 6165.445768880978,
+                "targetMs": 6000,
+                "readMaxMs": 6166.257733344239,
+                "playerMaxMs": 6166.257733344239,
+                "rebuffers": 0,
+                "edgeSeeks": 0
+              }
+            },
+            {
+              "id": "latency.max",
+              "check": "PB-RDY-002",
+              "label": "Latency, maximum over the window",
+              "value": 6166.257733344239,
+              "unit": "ms",
+              "limit": 10000,
+              "bound": "at-most",
+              "limitKey": "latencyMaxMs",
+              "verdict": "GO",
+              "sentence": "The largest latency of the window (the player's own maximum or any read) was 6.17 s; the limit is <= 10.00 s.",
+              "scope": "criterion",
+              "detail": {
+                "samples": 60,
+                "unreadSamples": 0,
+                "minimumSamples": 20,
+                "medianMs": 6165.445768880978,
+                "targetMs": 6000,
+                "readMaxMs": 6166.257733344239,
+                "playerMaxMs": 6166.257733344239,
+                "rebuffers": 0,
+                "edgeSeeks": 0
+              }
+            }
+          ],
+          "samples": {
+            "windowSec": 60,
+            "reads": [
+              {
+                "mediaTime": 25.076956512,
+                "latencyMs": 6165.039537880983
+              },
+              {
+                "mediaTime": 26.071637302,
+                "latencyMs": 6165.358633440064
+              },
+              {
+                "mediaTime": 27.075609676,
+                "latencyMs": 6165.386207941651
+              },
+              {
+                "mediaTime": 28.069788431,
+                "latencyMs": 6165.207410979981
+              },
+              {
+                "mediaTime": 29.076527074,
+                "latencyMs": 6165.46897588098
+              },
+              {
+                "mediaTime": 30.076235408,
+                "latencyMs": 6165.760641880983
+              },
+              {
+                "mediaTime": 31.080478983,
+                "latencyMs": 6165.517015382569
+              },
+              {
+                "mediaTime": 32.075282947,
+                "latencyMs": 6165.7129369416525
+              },
+              {
+                "mediaTime": 33.074857191,
+                "latencyMs": 6165.138765420899
+              },
+              {
+                "mediaTime": 34.077883751,
+                "latencyMs": 6165.112226401732
+              },
+              {
+                "mediaTime": 35.079718212,
+                "latencyMs": 6165.277858861813
+              },
+              {
+                "mediaTime": 36.075794031,
+                "latencyMs": 6165.201852941649
+              },
+              {
+                "mediaTime": 37.083981224,
+                "latencyMs": 6166.014722884157
+              },
+              {
+                "mediaTime": 38.076530273,
+                "latencyMs": 6165.465776880978
+              },
+              {
+                "mediaTime": 39.073930326,
+                "latencyMs": 6165.065702900144
+              },
+              {
+                "mediaTime": 40.075850859,
+                "latencyMs": 6165.145024941651
+              },
+              {
+                "mediaTime": 41.084511232,
+                "latencyMs": 6165.484714884158
+              },
+              {
+                "mediaTime": 42.075998065,
+                "latencyMs": 6165.997984880981
+              },
+              {
+                "mediaTime": 43.080930972,
+                "latencyMs": 6165.065026382571
+              },
+              {
+                "mediaTime": 44.085738307,
+                "latencyMs": 6166.257733344239
+              },
+              {
+                "mediaTime": 45.076282907,
+                "latencyMs": 6165.713142880982
+              },
+              {
+                "mediaTime": 46.076472916,
+                "latencyMs": 6165.523133880981
+              },
+              {
+                "mediaTime": 47.077033867,
+                "latencyMs": 6165.962110401736
+              },
+              {
+                "mediaTime": 48.079831005,
+                "latencyMs": 6165.165065861814
+              },
+              {
+                "mediaTime": 49.07601726,
+                "latencyMs": 6165.978789880981
+              },
+              {
+                "mediaTime": 50.071033433,
+                "latencyMs": 6165.962502440067
+              },
+              {
+                "mediaTime": 51.073885033,
+                "latencyMs": 6165.110995900143
+              },
+              {
+                "mediaTime": 52.074660435,
+                "latencyMs": 6165.3355214209005
+              },
+              {
+                "mediaTime": 53.076096832,
+                "latencyMs": 6165.899217880984
+              },
+              {
+                "mediaTime": 54.084382535,
+                "latencyMs": 6165.613411884152
+              },
+              {
+                "mediaTime": 55.075756192,
+                "latencyMs": 6165.239691941651
+              },
+              {
+                "mediaTime": 56.074951218,
+                "latencyMs": 6165.044738420896
+              },
+              {
+                "mediaTime": 57.07681157,
+                "latencyMs": 6165.184479880984
+              },
+              {
+                "mediaTime": 58.080312135,
+                "latencyMs": 6165.683863382568
+              },
+              {
+                "mediaTime": 59.075395358,
+                "latencyMs": 6165.600525941649
+              },
+              {
+                "mediaTime": 60.083410432,
+                "latencyMs": 6165.585587363403
+              },
+              {
+                "mediaTime": 61.081476068,
+                "latencyMs": 6165.5198579033195
+              },
+              {
+                "mediaTime": 62.075842964,
+                "latencyMs": 6165.152919941647
+              },
+              {
+                "mediaTime": 63.078399381,
+                "latencyMs": 6165.596523922488
+              },
+              {
+                "mediaTime": 64.076622161,
+                "latencyMs": 6165.3738888809785
+              },
+              {
+                "mediaTime": 65.079474885,
+                "latencyMs": 6165.52118586182
+              },
+              {
+                "mediaTime": 66.081861531,
+                "latencyMs": 6165.134394903319
+              },
+              {
+                "mediaTime": 67.075498327,
+                "latencyMs": 6165.497556941645
+              },
+              {
+                "mediaTime": 68.081571244,
+                "latencyMs": 6165.424681903318
+              },
+              {
+                "mediaTime": 69.075898956,
+                "latencyMs": 6165.096927941648
+              },
+              {
+                "mediaTime": 70.075374337,
+                "latencyMs": 6165.621546941651
+              },
+              {
+                "mediaTime": 71.076009296,
+                "latencyMs": 6165.986753880987
+              },
+              {
+                "mediaTime": 72.082138164,
+                "latencyMs": 6165.857689424072
+              },
+              {
+                "mediaTime": 73.076351872,
+                "latencyMs": 6165.644177880978
+              },
+              {
+                "mediaTime": 74.075782092,
+                "latencyMs": 6165.213791941653
+              },
+              {
+                "mediaTime": 75.07521484,
+                "latencyMs": 6165.78104394165
+              },
+              {
+                "mediaTime": 76.075495978,
+                "latencyMs": 6165.499905941644
+              },
+              {
+                "mediaTime": 77.071881141,
+                "latencyMs": 6165.114794440058
+              },
+              {
+                "mediaTime": 78.075632605,
+                "latencyMs": 6165.363278941655
+              },
+              {
+                "mediaTime": 79.076570289,
+                "latencyMs": 6165.4257608809785
+              },
+              {
+                "mediaTime": 80.080797813,
+                "latencyMs": 6165.198185382565
+              },
+              {
+                "mediaTime": 81.075858469,
+                "latencyMs": 6165.137414941654
+              },
+              {
+                "mediaTime": 82.058714556,
+                "latencyMs": 6165.281367995974
+              },
+              {
+                "mediaTime": 83.058809738,
+                "latencyMs": 6165.186185995978
+              },
+              {
+                "mediaTime": 84.059341223,
+                "latencyMs": 6165.65462851672
+              }
+            ],
+            "playerMaxMs": 6166.257733344239,
+            "rebuffers": 0,
+            "edgeSeeks": 0,
+            "errors": 0
+          },
+          "player": {
+            "shakaVersion": "v5.3.3",
+            "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+            "config": "A",
+            "configured": [],
+            "loadMode": null
+          },
+          "durationMs": 60632,
+          "notes": []
+        },
+        {
+          "id": "PB-RDY-003",
+          "title": "Stall recovery after an injected origin stall",
+          "verdict": "NO-GO",
+          "evaluations": [
+            {
+              "id": "stall.recovery",
+              "check": "PB-RDY-003",
+              "label": "Stall recovery, worst of 3",
+              "value": 3995,
+              "unit": "ms",
+              "limit": 14000,
+              "bound": "at-most",
+              "limitKey": "stallRecoveryMaxMs",
+              "verdict": "GO",
+              "sentence": "After the 10.00 s outage the player stalled for 4.00 s in its worst of 3 runs; the limit is <= 14.00 s.",
+              "scope": "criterion",
+              "detail": {
+                "runs": [
+                  {
+                    "run": 1,
+                    "stalled": true,
+                    "recoveryMs": 3989,
+                    "waitedMs": null
+                  },
+                  {
+                    "run": 2,
+                    "stalled": true,
+                    "recoveryMs": 3995,
+                    "waitedMs": null
+                  },
+                  {
+                    "run": 3,
+                    "stalled": true,
+                    "recoveryMs": 3980,
+                    "waitedMs": null
+                  }
+                ],
+                "outageMs": 10000,
+                "runsWithoutStall": 0
+              }
+            },
+            {
+              "id": "stall.restore",
+              "check": "PB-RDY-003",
+              "label": "Latency restored after the stall, worst of 3",
+              "value": 65980.68067,
+              "unit": "ms",
+              "limit": 60000,
+              "bound": "at-most",
+              "limitKey": "latencyRestoreMaxMs",
+              "verdict": "NO-GO",
+              "sentence": "Latency was not back within 10.00 s in 3 runs of 3, after at least 65.98 s of observation; the limit is <= 60.00 s. It stood at 10.18 s when the observation ended, 4.00 s further behind than before the outage (6.18 s), against a maximum of 10.00 s.",
+              "scope": "criterion",
+              "censored": true,
+              "detail": {
+                "maxLatencyMs": 10000,
+                "holdMs": 5000,
+                "maxPlaybackRate": 1,
+                "runs": [
+                  {
+                    "run": 1,
+                    "latencyBeforeMs": 6177.841858305907,
+                    "restoredAtMs": null,
+                    "finalLatencyMs": 10177.147880123783,
+                    "sustainedLatencyMs": 10177.182715603025,
+                    "lostMs": 3999.3408572971175,
+                    "observedMs": 65976.118747
+                  },
+                  {
+                    "run": 2,
+                    "latencyBeforeMs": 6170.860249344237,
+                    "restoredAtMs": null,
+                    "finalLatencyMs": 10173.193259625365,
+                    "sustainedLatencyMs": 10172.797677162109,
+                    "lostMs": 4001.937427817872,
+                    "observedMs": 65980.68067
+                  },
+                  {
+                    "run": 3,
+                    "latencyBeforeMs": 6200.500216775513,
+                    "restoredAtMs": null,
+                    "finalLatencyMs": 10186.673210436893,
+                    "sustainedLatencyMs": 10186.646974936892,
+                    "lostMs": 3986.146758161379,
+                    "observedMs": 65006.03751500003
+                  }
+                ]
+              }
+            },
+            {
+              "id": "stall.restore-relative",
+              "check": "PB-RDY-003",
+              "label": "Latency at its own level, worst of 3",
+              "value": 65980.68067,
+              "unit": "ms",
+              "limit": 60000,
+              "bound": "at-most",
+              "limitKey": "latencyRestoreMaxMs",
+              "verdict": "NO-GO",
+              "sentence": "Latency was not back within 2.00 s of its own level before the outage in 3 runs of 3, after at least 65.98 s of observation; the limit is <= 60.00 s. It stood at 10.18 s when the observation ended, 4.00 s further behind than before the outage (6.18 s).",
+              "scope": "advisory",
+              "censored": true,
+              "detail": {
+                "toleranceMs": 2000,
+                "holdMs": 5000,
+                "maxLatencyMs": 10000,
+                "runs": [
+                  {
+                    "run": 1,
+                    "levelBeforeMs": 6177.841858305907,
+                    "levelBeforeReadsMs": [
+                      6177.841858305907,
+                      6177.32368682666,
+                      6178.077235286743
+                    ],
+                    "ceilingMs": 8177.841858305907,
+                    "restoredAtMs": null,
+                    "finalLatencyMs": 10177.147880123783,
+                    "sustainedLatencyMs": 10177.182715603025,
+                    "observedMs": 65976.118747
+                  },
+                  {
+                    "run": 2,
+                    "levelBeforeMs": 6170.860249344237,
+                    "levelBeforeReadsMs": [
+                      6170.831188903321,
+                      6170.860249344237,
+                      6171.12040088098
+                    ],
+                    "ceilingMs": 8170.860249344237,
+                    "restoredAtMs": null,
+                    "finalLatencyMs": 10173.193259625365,
+                    "sustainedLatencyMs": 10172.797677162109,
+                    "observedMs": 65980.68067
+                  },
+                  {
+                    "run": 3,
+                    "levelBeforeMs": 6200.500216775513,
+                    "levelBeforeReadsMs": [
+                      6200.182250254759,
+                      6200.73440429309,
+                      6200.500216775513
+                    ],
+                    "ceilingMs": 8200.500216775512,
+                    "restoredAtMs": null,
+                    "finalLatencyMs": 10186.673210436893,
+                    "sustainedLatencyMs": 10186.646974936892,
+                    "observedMs": 65006.03751500003
+                  }
+                ]
+              }
+            }
+          ],
+          "samples": {
+            "runs": [
+              {
+                "run": 1,
+                "stalled": true,
+                "recoveryMs": 3989,
+                "waitedMs": null,
+                "latencyBeforeMs": 6177.841858305907,
+                "latencyBeforeReadsMs": [
+                  6177.841858305907,
+                  6177.32368682666,
+                  6178.077235286743
+                ],
+                "after": [
+                  {
+                    "sinceResumeMs": 4.707480000011856,
+                    "latencyMs": 10212.99600701196,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 980.1122530000139,
+                    "latencyMs": 10176.913761625365,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 1976.7648250000057,
+                    "latencyMs": 10177.26828964453,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 2975.7449030000134,
+                    "latencyMs": 10176.838645603028,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 3980.6475850000134,
+                    "latencyMs": 10177.409202564697,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 4975.595652000004,
+                    "latencyMs": 10176.833379603026,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 5975.784886000009,
+                    "latencyMs": 10177.422717123782,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 6981.477889000002,
+                    "latencyMs": 10176.6954445647,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 7975.497350000005,
+                    "latencyMs": 10176.75100160303,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 8977.295070000007,
+                    "latencyMs": 10177.336753644531,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 9976.167870000005,
+                    "latencyMs": 10177.259454123778,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 10975.829524,
+                    "latencyMs": 10177.262924123781,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 11973.768234000003,
+                    "latencyMs": 10177.406193663699,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 12975.833660000004,
+                    "latencyMs": 10177.27074012378,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 13975.514497000011,
+                    "latencyMs": 10176.525332603027,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 14982.226737000005,
+                    "latencyMs": 10176.82169908545,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 15975.205321000001,
+                    "latencyMs": 10176.974652603029,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 16976.355739000006,
+                    "latencyMs": 10177.14518212378,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 17975.777309000012,
+                    "latencyMs": 10177.354453123777,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 18977.391334,
+                    "latencyMs": 10176.570345644528,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 19975.374504000007,
+                    "latencyMs": 10176.906463603025,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 20975.35427200001,
+                    "latencyMs": 10176.826108663698,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 21978.54664300001,
+                    "latencyMs": 10176.477328583864,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 22977.63513400001,
+                    "latencyMs": 10176.630458644531,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 23976.056041000003,
+                    "latencyMs": 10177.186247123786,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 24977.681987000004,
+                    "latencyMs": 10176.596453644535,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 25974.439656000002,
+                    "latencyMs": 10177.378935663697,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 26977.398140000005,
+                    "latencyMs": 10176.675568644527,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 27974.686771000008,
+                    "latencyMs": 10177.350353603031,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 28975.475888,
+                    "latencyMs": 10176.517867603025,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 29976.007360000003,
+                    "latencyMs": 10177.433539123782,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 30979.13717,
+                    "latencyMs": 10176.76453010462,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 31975.73635800001,
+                    "latencyMs": 10177.42629512378,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 32982.579914,
+                    "latencyMs": 10177.355664606197,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 33973.85026600001,
+                    "latencyMs": 10177.271657663696,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 34976.79466100001,
+                    "latencyMs": 10176.602446123781,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 35975.488257000005,
+                    "latencyMs": 10176.552145603026,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 36976.710680000004,
+                    "latencyMs": 10176.59249412378,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 37972.23053900001,
+                    "latencyMs": 10177.173442622192,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 38978.32057900001,
+                    "latencyMs": 10176.576076583857,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 39971.61862000001,
+                    "latencyMs": 10176.493250101445,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 40976.245544000005,
+                    "latencyMs": 10176.84654512378,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 41976.18844300002,
+                    "latencyMs": 10177.281060123774,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 42971.97343700001,
+                    "latencyMs": 10176.50959610144,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 43975.34572400001,
+                    "latencyMs": 10176.78643860303,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 44976.34840300001,
+                    "latencyMs": 10176.537829603021,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 45977.71651699999,
+                    "latencyMs": 10176.451331644528,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 46976.00960000002,
+                    "latencyMs": 10177.227256123786,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 47974.85975900001,
+                    "latencyMs": 10177.401296603022,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 48976.368730999995,
+                    "latencyMs": 10177.038304123784,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 49973.88744200001,
+                    "latencyMs": 10177.01670214295,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 50981.672769,
+                    "latencyMs": 10177.314294085449,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 51975.717164,
+                    "latencyMs": 10176.657433603026,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 52979.11874599999,
+                    "latencyMs": 10177.107844104612,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 53974.109421,
+                    "latencyMs": 10176.493282142943,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 54972.439526,
+                    "latencyMs": 10177.150422622191,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 55976.187153000006,
+                    "latencyMs": 10177.307074123775,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 56974.937554000004,
+                    "latencyMs": 10177.157671603027,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 57980.807677000004,
+                    "latencyMs": 10177.079513564691,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 58976.37147100002,
+                    "latencyMs": 10176.617987123776,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 59975.510866,
+                    "latencyMs": 10177.445630123784,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 60975.564044,
+                    "latencyMs": 10177.416350123778,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 61974.813144000014,
+                    "latencyMs": 10177.182715603025,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 62975.851379,
+                    "latencyMs": 10177.237448123777,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 63976.894052999996,
+                    "latencyMs": 10177.20383064453,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 64976.66316900001,
+                    "latencyMs": 10176.523916123784,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 65976.091667,
+                    "latencyMs": 10177.147880123783,
+                    "playbackRate": 1
+                  }
+                ],
+                "observedMs": 65976.118747
+              },
+              {
+                "run": 2,
+                "stalled": true,
+                "recoveryMs": 3995,
+                "waitedMs": null,
+                "latencyBeforeMs": 6170.860249344237,
+                "latencyBeforeReadsMs": [
+                  6170.831188903321,
+                  6170.860249344237,
+                  6171.12040088098
+                ],
+                "after": [
+                  {
+                    "sinceResumeMs": 4.569739999977173,
+                    "latencyMs": 10212.99600701196,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 972.9755249999871,
+                    "latencyMs": 10173.474205622191,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 1973.565613999992,
+                    "latencyMs": 10172.63705362219,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 2968.409746999998,
+                    "latencyMs": 10172.625784660526,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 3972.8973339999793,
+                    "latencyMs": 10172.561083101442,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 4980.0215169999865,
+                    "latencyMs": 10173.034391104615,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 5972.615303999977,
+                    "latencyMs": 10172.673167101444,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 6974.624744999979,
+                    "latencyMs": 10172.825003142947,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 7971.871092999994,
+                    "latencyMs": 10173.05524716211,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 8972.443193999992,
+                    "latencyMs": 10172.674490101443,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 9974.641727999988,
+                    "latencyMs": 10172.623908142945,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 10972.718794999993,
+                    "latencyMs": 10173.506339622194,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 11973.807306000002,
+                    "latencyMs": 10173.196546142946,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 12970.635428999987,
+                    "latencyMs": 10173.496096641358,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 13980.249649000005,
+                    "latencyMs": 10172.713453104614,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 14976.37360999998,
+                    "latencyMs": 10172.600470603029,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 15972.995808999985,
+                    "latencyMs": 10173.485692622195,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 16972.394922999985,
+                    "latencyMs": 10172.744369101438,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 17977.41350299999,
+                    "latencyMs": 10173.42599606311,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 18972.462872999982,
+                    "latencyMs": 10172.62640710144,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 19978.442205,
+                    "latencyMs": 10173.385122583859,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 20974.135309000005,
+                    "latencyMs": 10172.630644622195,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 21971.373458999995,
+                    "latencyMs": 10173.005251162109,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 22971.798471999995,
+                    "latencyMs": 10173.438452101444,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 23977.643375999993,
+                    "latencyMs": 10172.535399123773,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 24972.723888999986,
+                    "latencyMs": 10173.015760101436,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 25972.594658999995,
+                    "latencyMs": 10173.391836622188,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 26970.84001299998,
+                    "latencyMs": 10173.486982120608,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 27977.261032999988,
+                    "latencyMs": 10172.65324412378,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 28971.593242000003,
+                    "latencyMs": 10172.86714716211,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 29973.870643000002,
+                    "latencyMs": 10173.27725614294,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 30972.59004099999,
+                    "latencyMs": 10172.70433410144,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 31972.902123999986,
+                    "latencyMs": 10172.794078101448,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 32972.449276,
+                    "latencyMs": 10172.797267101445,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 33972.405256,
+                    "latencyMs": 10172.570200101447,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 34972.464196999994,
+                    "latencyMs": 10173.485348622195,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 35978.348704,
+                    "latencyMs": 10172.538539063113,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 36972.865220999985,
+                    "latencyMs": 10173.418035622191,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 37974.44357199999,
+                    "latencyMs": 10173.223534142948,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 38979.206850999995,
+                    "latencyMs": 10172.932202583866,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 39980.963675999985,
+                    "latencyMs": 10172.937028625369,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 40972.349744999985,
+                    "latencyMs": 10172.617466101443,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 41973.57480099998,
+                    "latencyMs": 10172.804397622187,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 42971.33192,
+                    "latencyMs": 10172.957254162115,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 43973.38695399999,
+                    "latencyMs": 10172.645246622196,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 44972.76072399999,
+                    "latencyMs": 10173.462691622191,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 45977.10318799998,
+                    "latencyMs": 10172.759308123772,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 46971.323975999985,
+                    "latencyMs": 10173.064848162114,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 47972.21168899999,
+                    "latencyMs": 10173.032029101436,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 48972.328542,
+                    "latencyMs": 10172.931039101442,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 49970.32724299998,
+                    "latencyMs": 10172.552568660522,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 50972.261791,
+                    "latencyMs": 10172.68964810144,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 51972.313478,
+                    "latencyMs": 10172.76850810144,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 52980.92631099999,
+                    "latencyMs": 10172.93338662536,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 53972.085714999994,
+                    "latencyMs": 10172.925627101435,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 54979.430896999984,
+                    "latencyMs": 10173.411215104608,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 55976.71054499998,
+                    "latencyMs": 10173.096010123785,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 56972.129976,
+                    "latencyMs": 10172.923526101442,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 57977.15729199999,
+                    "latencyMs": 10172.670452123783,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 58973.828213,
+                    "latencyMs": 10173.394410142948,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 59972.329968000005,
+                    "latencyMs": 10173.355558162115,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 60978.186763000005,
+                    "latencyMs": 10173.224046063111,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 61971.658524,
+                    "latencyMs": 10172.797677162109,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 62972.72375399998,
+                    "latencyMs": 10172.673032101444,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 63972.38468699998,
+                    "latencyMs": 10172.685887101437,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 64973.095035999984,
+                    "latencyMs": 10173.029047622194,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 65980.66452999998,
+                    "latencyMs": 10173.193259625365,
+                    "playbackRate": 1
+                  }
+                ],
+                "observedMs": 65980.68067
+              },
+              {
+                "run": 3,
+                "stalled": true,
+                "recoveryMs": 3980,
+                "waitedMs": null,
+                "latencyBeforeMs": 6200.500216775513,
+                "latencyBeforeReadsMs": [
+                  6200.182250254759,
+                  6200.73440429309,
+                  6200.500216775513
+                ],
+                "after": [
+                  {
+                    "sinceResumeMs": 5.154424000007566,
+                    "latencyMs": 10221.665611976803,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 1003.4851510000299,
+                    "latencyMs": 10186.996522456056,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 2008.3989670000155,
+                    "latencyMs": 10187.162541999143,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 3007.979439000017,
+                    "latencyMs": 10187.174870478393,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 4005.887182000035,
+                    "latencyMs": 10186.37433949756,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 5006.137388000032,
+                    "latencyMs": 10186.59166843689,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 6009.363993000006,
+                    "latencyMs": 10186.418605999144,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 7012.311517000024,
+                    "latencyMs": 10186.344385979979,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 8006.950473000004,
+                    "latencyMs": 10186.643261436891,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 9014.021294999984,
+                    "latencyMs": 10186.542252440064,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 10007.58526100003,
+                    "latencyMs": 10187.044395478395,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 11007.829897999996,
+                    "latencyMs": 10186.690968478395,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 12006.054230000009,
+                    "latencyMs": 10187.31300795764,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 13005.657499000023,
+                    "latencyMs": 10186.53620949756,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 14004.832174999989,
+                    "latencyMs": 10186.79476549756,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 15006.589221000031,
+                    "latencyMs": 10187.20694395764,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 16006.402341999987,
+                    "latencyMs": 10187.256164957638,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 17006.239194000023,
+                    "latencyMs": 10186.43524343689,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 18014.47491400002,
+                    "latencyMs": 10186.812414960812,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 19005.849866000004,
+                    "latencyMs": 10186.814730436887,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 20008.841168000014,
+                    "latencyMs": 10186.621412999144,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 21007.538887000002,
+                    "latencyMs": 10186.320782957644,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 22012.873341,
+                    "latencyMs": 10186.442314919319,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 23008.837679999997,
+                    "latencyMs": 10186.77674499915,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 24013.48715400003,
+                    "latencyMs": 10186.837003440061,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 25006.865361000004,
+                    "latencyMs": 10186.582909957637,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 26004.39188900002,
+                    "latencyMs": 10187.17377249756,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 27006.077399,
+                    "latencyMs": 10187.260796436889,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 28010.42744,
+                    "latencyMs": 10186.887508938484,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 29005.330350000004,
+                    "latencyMs": 10186.40424249756,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 30006.71260800003,
+                    "latencyMs": 10187.082938957645,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 31012.630525999994,
+                    "latencyMs": 10186.77850691931,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 32006.281405000016,
+                    "latencyMs": 10186.368256436894,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 33004.815170000016,
+                    "latencyMs": 10186.664761976801,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 34005.55583200004,
+                    "latencyMs": 10186.360319497553,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 35008.84035499999,
+                    "latencyMs": 10187.295123999149,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 36006.925376,
+                    "latencyMs": 10186.49043295764,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 37013.11725400004,
+                    "latencyMs": 10187.252320440066,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 38007.85503700003,
+                    "latencyMs": 10186.59112247839,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 39013.35179600003,
+                    "latencyMs": 10186.937358440062,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 40004.183502,
+                    "latencyMs": 10187.316373497551,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 41006.37310900004,
+                    "latencyMs": 10187.248096957646,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 42005.75730900001,
+                    "latencyMs": 10186.685262436897,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 43006.263168000034,
+                    "latencyMs": 10186.443687436891,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 44007.893026000005,
+                    "latencyMs": 10186.49310547839,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 45010.085357,
+                    "latencyMs": 10187.222547459229,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 46013.41810100002,
+                    "latencyMs": 10186.86241544006,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 47005.87350400002,
+                    "latencyMs": 10186.794992436888,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 48007.11058899999,
+                    "latencyMs": 10187.26292047839,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 49008.446149000025,
+                    "latencyMs": 10186.34366043689,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 50012.362580000015,
+                    "latencyMs": 10187.009160919317,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 51014.50861600001,
+                    "latencyMs": 10186.855340960818,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 52007.576899000036,
+                    "latencyMs": 10187.025068478391,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 53005.51487300004,
+                    "latencyMs": 10186.990348436893,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 54006.06115600001,
+                    "latencyMs": 10186.925432436894,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 55007.29036099999,
+                    "latencyMs": 10186.371195957649,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 56001.939887000015,
+                    "latencyMs": 10186.402349995973,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 57007.43197100004,
+                    "latencyMs": 10186.895539957646,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 58014.162794,
+                    "latencyMs": 10187.22373496081,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 59006.113793,
+                    "latencyMs": 10186.474088436895,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 60006.524111000006,
+                    "latencyMs": 10187.28207995764,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 61008.045828,
+                    "latencyMs": 10186.854627957644,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 62006.07734900003,
+                    "latencyMs": 10186.62073943689,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 63006.046417000005,
+                    "latencyMs": 10186.474681436892,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 64005.92768299999,
+                    "latencyMs": 10186.442672436882,
+                    "playbackRate": 1
+                  },
+                  {
+                    "sinceResumeMs": 65006.015213000006,
+                    "latencyMs": 10186.673210436893,
+                    "playbackRate": 1
+                  }
+                ],
+                "observedMs": 65006.03751500003
+              }
+            ],
+            "outages": [
+              {
+                "atNumber": 20,
+                "ms": 10000
+              },
+              {
+                "atNumber": 20,
+                "ms": 10000
+              },
+              {
+                "atNumber": 21,
+                "ms": 10000
+              }
+            ],
+            "outageMs": 10000,
+            "relativeToleranceMs": 2000
+          },
+          "player": {
+            "shakaVersion": "v5.3.3",
+            "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+            "config": "A",
+            "configured": [],
+            "loadMode": null
+          },
+          "durationMs": 260895,
+          "notes": []
+        },
+        {
+          "id": "PB-RDY-004",
+          "title": "Manifest update cadence",
+          "verdict": "GO",
+          "evaluations": [
+            {
+              "id": "cadence.median",
+              "check": "PB-RDY-004",
+              "label": "Manifest refresh, median gap",
+              "value": 1999,
+              "unit": "ms",
+              "limit": 1000,
+              "bound": "at-least",
+              "limitKey": "manifestMedianGapMinMs",
+              "verdict": "GO",
+              "sentence": "The player asked for the manifest every 2.00 s at the median over 20 gaps (the origin advertises 2.00 s); the limit is >= 1.00 s.",
+              "scope": "criterion",
+              "detail": {
+                "requests": 21,
+                "gaps": 20,
+                "minimumGaps": 10,
+                "periodMs": 2000,
+                "excludedWindows": 0
+              }
+            },
+            {
+              "id": "cadence.longest",
+              "check": "PB-RDY-004",
+              "label": "Manifest refresh, longest gap",
+              "value": 2039,
+              "unit": "ms",
+              "limit": 4000,
+              "bound": "at-most",
+              "limitKey": "manifestMaxGapMs",
+              "verdict": "GO",
+              "sentence": "The longest wait between two manifest requests was 2.04 s; the limit is <= 4.00 s.",
+              "scope": "criterion",
+              "detail": {
+                "requests": 21,
+                "gaps": 20,
+                "minimumGaps": 10,
+                "periodMs": 2000,
+                "excludedWindows": 0
+              }
+            }
+          ],
+          "samples": {
+            "series": "media playlist of a-aac",
+            "arrivalsMs": [
+              1793819208629,
+              1793819210668,
+              1793819212650,
+              1793819214650,
+              1793819216647,
+              1793819218646,
+              1793819220630,
+              1793819222629,
+              1793819224628,
+              1793819226628,
+              1793819228612,
+              1793819230611,
+              1793819232609,
+              1793819234608,
+              1793819236593,
+              1793819238595,
+              1793819240594,
+              1793819242595,
+              1793819244579,
+              1793819246578,
+              1793819248576
+            ],
+            "statuses": [
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200
+            ]
+          },
+          "player": {
+            "shakaVersion": "v5.3.3",
+            "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+            "config": "A",
+            "configured": [],
+            "loadMode": null
+          },
+          "durationMs": 40371,
+          "notes": []
+        }
+      ]
+    },
+    {
+      "id": "live-sync",
+      "label": "A plus streaming.liveSync.enabled",
+      "patch": {
+        "streaming": {
+          "liveSync": {
+            "enabled": true
+          }
+        }
+      },
+      "hypothesis": "Shaka 5.3.3's `streaming.liveSync` (off by default) holds the playhead near the live edge by changing the playback rate: when the distance from `seekRange().end` to the playhead exceeds `targetLatency + targetLatencyTolerance` (0.5 s + 0.5 s by default) it plays at `maxPlaybackRate` (1.1) until it is back. After a 10 s origin outage the defaults leave the playhead 4 s further behind the edge for good (docs/decisions/e2e-rec.md), which is above the 10 s latency maximum; with live sync on, the playhead gains 0.1 s per second and latency is back under the maximum within seconds. Expected: PB-RDY-003 shows GO for the restore line; PB-RDY-001, 002 and 004 stay GO (a healthy join sits within a second of `seekRange().end`, so the rate stays 1). Rejected if latency is not restored within the limit, or if the healthy checks regress (a sustained rate above 1 on a healthy stream, a longer join).",
+      "verdict": "GO",
+      "checks": [
+        {
+          "id": "PB-RDY-001",
+          "title": "Stream start",
+          "verdict": "GO",
+          "evaluations": [
+            {
+              "id": "start.worst",
+              "check": "PB-RDY-001",
+              "label": "Start time, worst of 5 joins",
+              "value": 271,
+              "unit": "ms",
+              "limit": 5000,
+              "bound": "at-most",
+              "limitKey": "startMaxMs",
+              "verdict": "GO",
+              "sentence": "The slowest of 5 fresh joins (join 4) presented its first frame after 271 ms; the limit is <= 5.00 s.",
+              "scope": "criterion",
+              "detail": {
+                "joins": [
+                  {
+                    "join": 1,
+                    "startupMs": 260,
+                    "phaseMs": 409
+                  },
+                  {
+                    "join": 2,
+                    "startupMs": 264,
+                    "phaseMs": 769
+                  },
+                  {
+                    "join": 3,
+                    "startupMs": 269,
+                    "phaseMs": 1167
+                  },
+                  {
+                    "join": 4,
+                    "startupMs": 271,
+                    "phaseMs": 1580
+                  },
+                  {
+                    "join": 5,
+                    "startupMs": 259,
+                    "phaseMs": 24
+                  }
+                ],
+                "requiredJoins": 5
+              }
+            },
+            {
+              "id": "start.p95",
+              "check": "PB-RDY-001",
+              "label": "Start time, p95 of 5 joins",
+              "value": 270.6,
+              "unit": "ms",
+              "limit": 5000,
+              "bound": "at-most",
+              "limitKey": "startMaxMs",
+              "verdict": "GO",
+              "sentence": "The 95th percentile of the join times is 271 ms (the median is 264 ms); the limit it is compared with is <= 5.00 s. It does not decide: the worst join does.",
+              "scope": "advisory",
+              "detail": {
+                "median": 264
+              }
+            }
+          ],
+          "samples": {
+            "joins": [
+              {
+                "join": 1,
+                "startupMs": 260,
+                "phaseMs": 409
+              },
+              {
+                "join": 2,
+                "startupMs": 264,
+                "phaseMs": 769
+              },
+              {
+                "join": 3,
+                "startupMs": 269,
+                "phaseMs": 1167
+              },
+              {
+                "join": 4,
+                "startupMs": 271,
+                "phaseMs": 1580
+              },
+              {
+                "join": 5,
+                "startupMs": 259,
+                "phaseMs": 24
+              }
+            ],
+            "warmup": {
+              "startupMs": 255
+            }
+          },
+          "player": {
+            "shakaVersion": "v5.3.3",
+            "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+            "config": "A",
+            "configured": [
+              {
+                "streaming": {
+                  "liveSync": {
+                    "enabled": true
+                  }
+                }
+              }
+            ],
+            "loadMode": null
+          },
+          "durationMs": 3940,
+          "notes": [
+            "5 fresh sessions in fresh browser contexts, started 0.40 s apart inside the 2 s segment interval",
+            "a warm-up join was made first and left out (first frame after 255 ms): the first page of a browser process pays for the browser, not for the player"
+          ]
+        },
+        {
+          "id": "PB-RDY-002",
+          "title": "Live-edge latency over a window",
+          "verdict": "GO",
+          "evaluations": [
+            {
+              "id": "latency.p95",
+              "check": "PB-RDY-002",
+              "label": "Latency, p95 over the window",
+              "value": 6171.045005378236,
+              "unit": "ms",
+              "limit": 8000,
+              "bound": "at-most",
+              "limitKey": "latencyP95MaxMs",
+              "verdict": "GO",
+              "sentence": "The playhead sat 6.17 s behind the live edge at the 95th percentile of 60 reads (the target is 6.00 s); the limit is <= 8.00 s.",
+              "scope": "criterion",
+              "detail": {
+                "samples": 60,
+                "unreadSamples": 0,
+                "minimumSamples": 20,
+                "medianMs": 6170.550863622189,
+                "targetMs": 6000,
+                "readMaxMs": 6171.074080861814,
+                "playerMaxMs": 6171.26808459021,
+                "rebuffers": 0,
+                "edgeSeeks": 0
+              }
+            },
+            {
+              "id": "latency.max",
+              "check": "PB-RDY-002",
+              "label": "Latency, maximum over the window",
+              "value": 6171.26808459021,
+              "unit": "ms",
+              "limit": 10000,
+              "bound": "at-most",
+              "limitKey": "latencyMaxMs",
+              "verdict": "GO",
+              "sentence": "The largest latency of the window (the player's own maximum or any read) was 6.17 s; the limit is <= 10.00 s.",
+              "scope": "criterion",
+              "detail": {
+                "samples": 60,
+                "unreadSamples": 0,
+                "minimumSamples": 20,
+                "medianMs": 6170.550863622189,
+                "targetMs": 6000,
+                "readMaxMs": 6171.074080861814,
+                "playerMaxMs": 6171.26808459021,
+                "rebuffers": 0,
+                "edgeSeeks": 0
+              }
+            }
+          ],
+          "samples": {
+            "windowSec": 60,
+            "reads": [
+              {
+                "mediaTime": 25.070150732,
+                "latencyMs": 6170.845151941652
+              },
+              {
+                "mediaTime": 26.077672468,
+                "latencyMs": 6170.3233854240725
+              },
+              {
+                "mediaTime": 27.069391672,
+                "latencyMs": 6170.6042844209005
+              },
+              {
+                "mediaTime": 28.073880739,
+                "latencyMs": 6170.115165922485
+              },
+              {
+                "mediaTime": 29.076903886,
+                "latencyMs": 6170.09203990332
+              },
+              {
+                "mediaTime": 30.077278041,
+                "latencyMs": 6170.717812424073
+              },
+              {
+                "mediaTime": 31.075234751,
+                "latencyMs": 6170.761247382568
+              },
+              {
+                "mediaTime": 32.080768299,
+                "latencyMs": 6170.227575404908
+              },
+              {
+                "mediaTime": 33.072161667,
+                "latencyMs": 6170.83431040173
+              },
+              {
+                "mediaTime": 34.079523282,
+                "latencyMs": 6170.472664884159
+              },
+              {
+                "mediaTime": 35.072379075,
+                "latencyMs": 6170.616902401733
+              },
+              {
+                "mediaTime": 36.073487015,
+                "latencyMs": 6170.5088899224875
+              },
+              {
+                "mediaTime": 37.076238186,
+                "latencyMs": 6170.7577399033225
+              },
+              {
+                "mediaTime": 38.079894272,
+                "latencyMs": 6170.1016748841585
+              },
+              {
+                "mediaTime": 39.075816422,
+                "latencyMs": 6170.179576382566
+              },
+              {
+                "mediaTime": 40.080866542,
+                "latencyMs": 6170.129332404905
+              },
+              {
+                "mediaTime": 41.07392199,
+                "latencyMs": 6171.074080861814
+              },
+              {
+                "mediaTime": 42.080666796,
+                "latencyMs": 6170.329078404904
+              },
+              {
+                "mediaTime": 43.072320456,
+                "latencyMs": 6170.675521401734
+              },
+              {
+                "mediaTime": 44.075550512,
+                "latencyMs": 6170.445486382569
+              },
+              {
+                "mediaTime": 45.075825819,
+                "latencyMs": 6170.170179382566
+              },
+              {
+                "mediaTime": 46.076557857,
+                "latencyMs": 6170.438068903323
+              },
+              {
+                "mediaTime": 47.07320313,
+                "latencyMs": 6170.792774922482
+              },
+              {
+                "mediaTime": 48.076310651,
+                "latencyMs": 6170.6852749033205
+              },
+              {
+                "mediaTime": 49.077012504,
+                "latencyMs": 6170.98334942407
+              },
+              {
+                "mediaTime": 50.079646353,
+                "latencyMs": 6170.349593884154
+              },
+              {
+                "mediaTime": 51.081084388,
+                "latencyMs": 6170.911652344237
+              },
+              {
+                "mediaTime": 52.075882669,
+                "latencyMs": 6170.113329382566
+              },
+              {
+                "mediaTime": 53.083084047,
+                "latencyMs": 6170.911848385742
+              },
+              {
+                "mediaTime": 54.076282006,
+                "latencyMs": 6170.713919903321
+              },
+              {
+                "mediaTime": 55.077939674,
+                "latencyMs": 6171.056345363404
+              },
+              {
+                "mediaTime": 56.072220433,
+                "latencyMs": 6170.775544401735
+              },
+              {
+                "mediaTime": 57.075903292,
+                "latencyMs": 6170.092706382568
+              },
+              {
+                "mediaTime": 58.075875124,
+                "latencyMs": 6170.120874382569
+              },
+              {
+                "mediaTime": 59.07965948,
+                "latencyMs": 6170.336466884159
+              },
+              {
+                "mediaTime": 60.08274514,
+                "latencyMs": 6170.25082786499
+              },
+              {
+                "mediaTime": 61.075660929,
+                "latencyMs": 6170.335069382567
+              },
+              {
+                "mediaTime": 62.075589238,
+                "latencyMs": 6170.406760382569
+              },
+              {
+                "mediaTime": 63.076007806,
+                "latencyMs": 6170.988119903321
+              },
+              {
+                "mediaTime": 64.079246587,
+                "latencyMs": 6170.749359884156
+              },
+              {
+                "mediaTime": 65.074966382,
+                "latencyMs": 6171.029616382569
+              },
+              {
+                "mediaTime": 66.075553423,
+                "latencyMs": 6170.442575382566
+              },
+              {
+                "mediaTime": 67.080098255,
+                "latencyMs": 6170.897619404912
+              },
+              {
+                "mediaTime": 68.075429704,
+                "latencyMs": 6170.566294382567
+              },
+              {
+                "mediaTime": 69.075487132,
+                "latencyMs": 6170.508866382562
+              },
+              {
+                "mediaTime": 70.076579893,
+                "latencyMs": 6170.416032903318
+              },
+              {
+                "mediaTime": 71.080987791,
+                "latencyMs": 6171.00824934424
+              },
+              {
+                "mediaTime": 72.07430194,
+                "latencyMs": 6170.694130861819
+              },
+              {
+                "mediaTime": 73.075685252,
+                "latencyMs": 6170.310746382569
+              },
+              {
+                "mediaTime": 74.075478307,
+                "latencyMs": 6170.517691382571
+              },
+              {
+                "mediaTime": 75.077906123,
+                "latencyMs": 6170.089730424067
+              },
+              {
+                "mediaTime": 76.075950934,
+                "latencyMs": 6171.044991903315
+              },
+              {
+                "mediaTime": 77.07617065,
+                "latencyMs": 6170.825275903326
+              },
+              {
+                "mediaTime": 78.074239821,
+                "latencyMs": 6170.75624986181
+              },
+              {
+                "mediaTime": 79.075848774,
+                "latencyMs": 6170.147224382575
+              },
+              {
+                "mediaTime": 80.074761602,
+                "latencyMs": 6170.234468861821
+              },
+              {
+                "mediaTime": 81.083985444,
+                "latencyMs": 6171.010617325066
+              },
+              {
+                "mediaTime": 82.075004792,
+                "latencyMs": 6170.991206382567
+              },
+              {
+                "mediaTime": 83.071950716,
+                "latencyMs": 6171.04526140173
+              },
+              {
+                "mediaTime": 84.074460638,
+                "latencyMs": 6170.535432861811
+              }
+            ],
+            "playerMaxMs": 6171.26808459021,
+            "rebuffers": 0,
+            "edgeSeeks": 0,
+            "errors": 0
+          },
+          "player": {
+            "shakaVersion": "v5.3.3",
+            "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+            "config": "A",
+            "configured": [
+              {
+                "streaming": {
+                  "liveSync": {
+                    "enabled": true
+                  }
+                }
+              }
+            ],
+            "loadMode": null
+          },
+          "durationMs": 60700,
+          "notes": []
+        },
+        {
+          "id": "PB-RDY-003",
+          "title": "Stall recovery after an injected origin stall",
+          "verdict": "GO",
+          "evaluations": [
+            {
+              "id": "stall.recovery",
+              "check": "PB-RDY-003",
+              "label": "Stall recovery, worst of 3",
+              "value": 3745,
+              "unit": "ms",
+              "limit": 14000,
+              "bound": "at-most",
+              "limitKey": "stallRecoveryMaxMs",
+              "verdict": "GO",
+              "sentence": "After the 10.00 s outage the player stalled for 3.75 s in its worst of 3 runs; the limit is <= 14.00 s.",
+              "scope": "criterion",
+              "detail": {
+                "runs": [
+                  {
+                    "run": 1,
+                    "stalled": true,
+                    "recoveryMs": 3730,
+                    "waitedMs": null
+                  },
+                  {
+                    "run": 2,
+                    "stalled": true,
+                    "recoveryMs": 3736,
+                    "waitedMs": null
+                  },
+                  {
+                    "run": 3,
+                    "stalled": true,
+                    "recoveryMs": 3745,
+                    "waitedMs": null
+                  }
+                ],
+                "outageMs": 10000,
+                "runsWithoutStall": 0
+              }
+            },
+            {
+              "id": "stall.restore",
+              "check": "PB-RDY-003",
+              "label": "Latency restored after the stall, worst of 3",
+              "value": 2728.761872999952,
+              "unit": "ms",
+              "limit": 60000,
+              "bound": "at-most",
+              "limitKey": "latencyRestoreMaxMs",
+              "verdict": "GO",
+              "sentence": "Latency was back within 10.00 s 2.73 s after the recovery in the worst of 3 runs; the limit is <= 60.00 s; the player raised its playback rate to 1.10 to catch up.",
+              "scope": "criterion",
+              "detail": {
+                "maxLatencyMs": 10000,
+                "holdMs": 5000,
+                "maxPlaybackRate": 1.1,
+                "runs": [
+                  {
+                    "run": 1,
+                    "latencyBeforeMs": 6176.9294979064925,
+                    "restoredAtMs": 1792.0857449999894,
+                    "finalLatencyMs": 7619.886874328245,
+                    "sustainedLatencyMs": 7848.299040449647,
+                    "lostMs": 1671.3695425431542,
+                    "observedMs": 25433.72873099998
+                  },
+                  {
+                    "run": 2,
+                    "latencyBeforeMs": 6166.643881401733,
+                    "restoredAtMs": 1804.7094560000114,
+                    "finalLatencyMs": 7619.939010328252,
+                    "sustainedLatencyMs": 7847.980859428893,
+                    "lostMs": 1681.3369780271605,
+                    "observedMs": 25444.130227999995
+                  },
+                  {
+                    "run": 3,
+                    "latencyBeforeMs": 6190.585048328248,
+                    "restoredAtMs": 2728.761872999952,
+                    "finalLatencyMs": 7568.492520011958,
+                    "sustainedLatencyMs": 7796.4185513937355,
+                    "lostMs": 1605.833503065487,
+                    "observedMs": 26366.242732999963
+                  }
+                ]
+              }
+            },
+            {
+              "id": "stall.restore-relative",
+              "check": "PB-RDY-003",
+              "label": "Latency at its own level, worst of 3",
+              "value": 20910.151633,
+              "unit": "ms",
+              "limit": 60000,
+              "bound": "at-most",
+              "limitKey": "latencyRestoreMaxMs",
+              "verdict": "GO",
+              "sentence": "Latency was back within 2.00 s of its own level before the outage 20.91 s after the recovery in the worst of 3 runs; the limit is <= 60.00 s.",
+              "scope": "advisory",
+              "detail": {
+                "toleranceMs": 2000,
+                "holdMs": 5000,
+                "maxLatencyMs": 10000,
+                "runs": [
+                  {
+                    "run": 1,
+                    "levelBeforeMs": 6176.9294979064925,
+                    "levelBeforeReadsMs": [
+                      6176.9294979064925,
+                      6176.481728404909,
+                      6177.396478532713
+                    ],
+                    "ceilingMs": 8176.9294979064925,
+                    "restoredAtMs": 19971.174505000003,
+                    "finalLatencyMs": 7619.886874328245,
+                    "sustainedLatencyMs": 7848.299040449647,
+                    "observedMs": 25433.72873099998
+                  },
+                  {
+                    "run": 2,
+                    "levelBeforeMs": 6166.643881401733,
+                    "levelBeforeReadsMs": [
+                      6166.643881401733,
+                      6166.361650880983,
+                      6167.28241734424
+                    ],
+                    "ceilingMs": 8166.643881401733,
+                    "restoredAtMs": 19977.24390499998,
+                    "finalLatencyMs": 7619.939010328252,
+                    "sustainedLatencyMs": 7847.980859428893,
+                    "observedMs": 25444.130227999995
+                  },
+                  {
+                    "run": 3,
+                    "levelBeforeMs": 6190.585048328248,
+                    "levelBeforeReadsMs": [
+                      6191.129194350588,
+                      6190.544588829834,
+                      6190.585048328248
+                    ],
+                    "ceilingMs": 8190.585048328248,
+                    "restoredAtMs": 20910.151633,
+                    "finalLatencyMs": 7568.492520011958,
+                    "sustainedLatencyMs": 7796.4185513937355,
+                    "observedMs": 26366.242732999963
+                  }
+                ]
+              }
+            }
+          ],
+          "samples": {
+            "runs": [
+              {
+                "run": 1,
+                "stalled": true,
+                "recoveryMs": 3730,
+                "waitedMs": null,
+                "latencyBeforeMs": 6176.9294979064925,
+                "latencyBeforeReadsMs": [
+                  6176.9294979064925,
+                  6176.481728404909,
+                  6177.396478532713
+                ],
+                "after": [
+                  {
+                    "sinceResumeMs": 7.0883259999682195,
+                    "latencyMs": 10207.995892571042,
+                    "playbackRate": 0.95
+                  },
+                  {
+                    "sinceResumeMs": 882.2700360000017,
+                    "latencyMs": 10075.712915072629,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 1792.0857449999894,
+                    "latencyMs": 9984.74890090332,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 2701.6519209999824,
+                    "latencyMs": 9893.74447279468,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 3608.687152999977,
+                    "latencyMs": 9802.885161644532,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 4517.967781999963,
+                    "latencyMs": 9711.553002535886,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 5425.724747999979,
+                    "latencyMs": 9620.908418906496,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 6336.336022999953,
+                    "latencyMs": 9530.159509737181,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 7244.258891999954,
+                    "latencyMs": 9439.754812628544,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 8153.5248370000045,
+                    "latencyMs": 9348.509950938478,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 9069.686506999948,
+                    "latencyMs": 9256.323803312256,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 9978.601066000003,
+                    "latencyMs": 9165.361166622191,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 10888.338317999966,
+                    "latencyMs": 9074.772466034305,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 11793.983828999975,
+                    "latencyMs": 8984.608302363406,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 12701.992727999983,
+                    "latencyMs": 8893.93267673401,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 13608.71092599997,
+                    "latencyMs": 8803.058688644533,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 14517.125,
+                    "latencyMs": 8712.189968535888,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 15434.422380000004,
+                    "latencyMs": 8620.123256848998,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 16332.366958999948,
+                    "latencyMs": 8530.732352756346,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 17252.276258999947,
+                    "latencyMs": 8438.362400050295,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 18153.543558999954,
+                    "latencyMs": 8348.733931938476,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 19069.024493000004,
+                    "latencyMs": 8257.020431312256,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 19971.174505000003,
+                    "latencyMs": 8166.268070200438,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 20880.111653,
+                    "latencyMs": 8076.174294091799,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 21789.51849399996,
+                    "latencyMs": 7984.6514779224835,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 22701.981499999994,
+                    "latencyMs": 7893.727353734008,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 23609.658668999968,
+                    "latencyMs": 7802.870727165285,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 24517.078582999995,
+                    "latencyMs": 7712.3418590151405,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 25433.706739999994,
+                    "latencyMs": 7619.886874328245,
+                    "playbackRate": 1.1
+                  }
+                ],
+                "observedMs": 25433.72873099998
+              },
+              {
+                "run": 2,
+                "stalled": true,
+                "recoveryMs": 3736,
+                "waitedMs": null,
+                "latencyBeforeMs": 6166.643881401733,
+                "latencyBeforeReadsMs": [
+                  6166.643881401733,
+                  6166.361650880983,
+                  6167.28241734424
+                ],
+                "after": [
+                  {
+                    "sinceResumeMs": 3.972684999986086,
+                    "latencyMs": 10196.995974587033,
+                    "playbackRate": 0.95
+                  },
+                  {
+                    "sinceResumeMs": 896.2961490000016,
+                    "latencyMs": 10074.51549747205,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 1804.7094560000114,
+                    "latencyMs": 9984.202479363405,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 2715.477878000005,
+                    "latencyMs": 9892.861252194094,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 3625.0325089999824,
+                    "latencyMs": 9801.881185606198,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 4535.811071000004,
+                    "latencyMs": 9710.30159543689,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 5442.518335999979,
+                    "latencyMs": 9620.048068286742,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 6354.712406000006,
+                    "latencyMs": 9529.16860867969,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 7262.03114799998,
+                    "latencyMs": 9438.15402152954,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 8172.414402999973,
+                    "latencyMs": 9346.767022941649,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 9078.936595999985,
+                    "latencyMs": 9256.613958791504,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 9987.163731999986,
+                    "latencyMs": 9165.771161162113,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 10896.683785000001,
+                    "latencyMs": 9074.394822472044,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 11803.839468999999,
+                    "latencyMs": 8984.293543842654,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 12711.94495699997,
+                    "latencyMs": 8893.441503213253,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 13618.666185999988,
+                    "latencyMs": 8802.45424612378,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 14528.006195999973,
+                    "latencyMs": 8711.854316954465,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 15437.125988999964,
+                    "latencyMs": 8620.101014325073,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 16345.51039900002,
+                    "latencyMs": 8529.402778216428,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 17253.832374999998,
+                    "latencyMs": 8438.492384587036,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 18171.061132000003,
+                    "latencyMs": 8347.114530420897,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 19073.372791,
+                    "latencyMs": 8256.86135882983,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 19977.24390499998,
+                    "latencyMs": 8166.047004178104,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 20897.584732000018,
+                    "latencyMs": 8074.412474992798,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 21803.460357000004,
+                    "latencyMs": 7983.45577890332,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 22712.811884999974,
+                    "latencyMs": 7893.249683734012,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 23617.96997700003,
+                    "latencyMs": 7802.712035123775,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 24527.99187799997,
+                    "latencyMs": 7711.844168015134,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 25444.113406999968,
+                    "latencyMs": 7619.939010328252,
+                    "playbackRate": 1.1
+                  }
+                ],
+                "observedMs": 25444.130227999995
+              },
+              {
+                "run": 3,
+                "stalled": true,
+                "recoveryMs": 3745,
+                "waitedMs": null,
+                "latencyBeforeMs": 6190.585048328248,
+                "latencyBeforeReadsMs": [
+                  6191.129194350588,
+                  6190.544588829834,
+                  6190.585048328248
+                ],
+                "after": [
+                  {
+                    "sinceResumeMs": 3.577346000005491,
+                    "latencyMs": 10224.99585251672,
+                    "playbackRate": 0.95
+                  },
+                  {
+                    "sinceResumeMs": 902.1880949999904,
+                    "latencyMs": 10115.710072363407,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 1819.563703999971,
+                    "latencyMs": 10023.659868197265,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 2728.761872999952,
+                    "latencyMs": 9932.49892756787,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 3634.358428000007,
+                    "latencyMs": 9841.505445478397,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 4547.411989000044,
+                    "latencyMs": 9750.591018289917,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 5456.791242999956,
+                    "latencyMs": 9659.848682702026,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 6364.785287000006,
+                    "latencyMs": 9568.915971072634,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 7271.168556999997,
+                    "latencyMs": 9478.103412401737,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 8176.665691999951,
+                    "latencyMs": 9388.198318312256,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 9086.183394999942,
+                    "latencyMs": 9296.715823203613,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 9994.443913000054,
+                    "latencyMs": 9206.340632992798,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 10903.059598000022,
+                    "latencyMs": 9114.708109363406,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 11819.687560999999,
+                    "latencyMs": 9023.589471197269,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 12726.238482999965,
+                    "latencyMs": 8932.454325107792,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 13633.322231999948,
+                    "latencyMs": 8841.604131957645,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 14540.488410999998,
+                    "latencyMs": 8751.745517328245,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 15450.527420999948,
+                    "latencyMs": 8660.678760740353,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 16358.058896000031,
+                    "latencyMs": 8569.466777590207,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 17267.353674000013,
+                    "latencyMs": 8478.273688900146,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 18177.40445599996,
+                    "latencyMs": 8388.10807183301,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 19083.679635999957,
+                    "latencyMs": 8297.397174162106,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 20000.94567399996,
+                    "latencyMs": 8205.142638475223,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 20910.151633,
+                    "latencyMs": 8114.235121366576,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 21819.86513499997,
+                    "latencyMs": 8023.387354197268,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 22730.572846999974,
+                    "latencyMs": 7932.067457609378,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 23639.20146500005,
+                    "latencyMs": 7841.470221919309,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 24539.677248999942,
+                    "latencyMs": 7751.366880868161,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 25448.702136000036,
+                    "latencyMs": 7660.163758178101,
+                    "playbackRate": 1.1
+                  },
+                  {
+                    "sinceResumeMs": 26366.22666299995,
+                    "latencyMs": 7568.492520011958,
+                    "playbackRate": 1.1
+                  }
+                ],
+                "observedMs": 26366.242732999963
+              }
+            ],
+            "outages": [
+              {
+                "atNumber": 20,
+                "ms": 10000
+              },
+              {
+                "atNumber": 20,
+                "ms": 10000
+              },
+              {
+                "atNumber": 21,
+                "ms": 10000
+              }
+            ],
+            "outageMs": 10000,
+            "relativeToleranceMs": 2000
+          },
+          "player": {
+            "shakaVersion": "v5.3.3",
+            "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+            "config": "A",
+            "configured": [
+              {
+                "streaming": {
+                  "liveSync": {
+                    "enabled": true
+                  }
+                }
+              }
+            ],
+            "loadMode": null
+          },
+          "durationMs": 141144,
+          "notes": []
+        },
+        {
+          "id": "PB-RDY-004",
+          "title": "Manifest update cadence",
+          "verdict": "GO",
+          "evaluations": [
+            {
+              "id": "cadence.median",
+              "check": "PB-RDY-004",
+              "label": "Manifest refresh, median gap",
+              "value": 1999,
+              "unit": "ms",
+              "limit": 1000,
+              "bound": "at-least",
+              "limitKey": "manifestMedianGapMinMs",
+              "verdict": "GO",
+              "sentence": "The player asked for the manifest every 2.00 s at the median over 20 gaps (the origin advertises 2.00 s); the limit is >= 1.00 s.",
+              "scope": "criterion",
+              "detail": {
+                "requests": 21,
+                "gaps": 20,
+                "minimumGaps": 10,
+                "periodMs": 2000,
+                "excludedWindows": 0
+              }
+            },
+            {
+              "id": "cadence.longest",
+              "check": "PB-RDY-004",
+              "label": "Manifest refresh, longest gap",
+              "value": 2040,
+              "unit": "ms",
+              "limit": 4000,
+              "bound": "at-most",
+              "limitKey": "manifestMaxGapMs",
+              "verdict": "GO",
+              "sentence": "The longest wait between two manifest requests was 2.04 s; the limit is <= 4.00 s.",
+              "scope": "criterion",
+              "detail": {
+                "requests": 21,
+                "gaps": 20,
+                "minimumGaps": 10,
+                "periodMs": 2000,
+                "excludedWindows": 0
+              }
+            }
+          ],
+          "samples": {
+            "series": "media playlist of a-aac",
+            "arrivalsMs": [
+              1793819454795,
+              1793819456835,
+              1793819458818,
+              1793819460815,
+              1793819462814,
+              1793819464813,
+              1793819466796,
+              1793819468798,
+              1793819470800,
+              1793819472800,
+              1793819474784,
+              1793819476782,
+              1793819478781,
+              1793819480779,
+              1793819482762,
+              1793819484764,
+              1793819486765,
+              1793819488765,
+              1793819490748,
+              1793819492747,
+              1793819494745
+            ],
+            "statuses": [
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200,
+              200
+            ]
+          },
+          "player": {
+            "shakaVersion": "v5.3.3",
+            "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+            "config": "A",
+            "configured": [
+              {
+                "streaming": {
+                  "liveSync": {
+                    "enabled": true
+                  }
+                }
+              }
+            ],
+            "loadMode": null
+          },
+          "durationMs": 40380,
+          "notes": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import { LIVE_LIMITS } from '../../shared/criteria.ts';
 import type { CheckResult } from './checks.ts';
+import { injectionPart, isBusy, loadPerCpu, soakVerdictToday } from './report.ts';
 import type { ConfigurationResult, LoadReading, MachineLoad, ReadinessReport, SoakReport } from './report.ts';
 import type { Engine } from './soak-evaluators.ts';
 import { formatLimit, formatValue } from './verdict.ts';
@@ -102,15 +103,51 @@ const describeBrowser = (report: { browser: { name: string; version: string }; e
 const describeCommit = (commit: { hash: string | null; dirty: boolean | null }): string =>
   `${commit.hash ?? 'unknown commit'}${commit.dirty === null ? '' : commit.dirty ? ', modified' : ', clean'}`;
 
-/** `machine load average (1, 5, 15 min) before 4.89 3.43 2.29, after 5.12 3.9 2.6, on 12 CPUs`, or nothing for a file that has none. */
+/**
+ * `machine load average (1, 5, 15 min) before 4.89 3.43 2.29, after 5.12 3.9 2.6, on 12 CPUs`, or nothing for a file that has none; and a
+ * line when the machine was busy at the start (a 1-minute load above the number of CPUs), because what is measured then is partly the
+ * machine's. Only the start is judged: at the end the load includes the run's own browser, service and harness, which is no reason to doubt
+ * the run. The harness records the load and says so; it does not wait for the machine to be quiet and no verdict depends on it (ADR-159e).
+ */
 function describeLoad(load: MachineLoad | undefined): string[] {
   if (!load) return [];
   const averages = (reading: LoadReading): string =>
     [reading.load1, reading.load5, reading.load15].map((value) => value.toFixed(2)).join(' ');
   return [
     `machine load average (1, 5, 15 min): ${averages(load.before)} before, ${averages(load.after)} after, on ${load.after.cpus} CPUs`,
+    ...(isBusy(load.before)
+      ? [
+          `the machine was busy when the run started: a 1-minute load of ${load.before.load1.toFixed(1)} on ${load.before.cpus} CPUs (${loadPerCpu(load.before).toFixed(1)} per CPU), so what was measured in its first minutes was measured under load`,
+        ]
+      : []),
   ];
 }
+
+/** ` [busy at the start: load 66.4 on 3 CPUs]` for a result whose run started on a busy machine, for the lines of the checklist. */
+const busyAtStart = (report: { load?: MachineLoad | undefined }): string =>
+  report.load && isBusy(report.load.before)
+    ? ` [busy at the start: load ${report.load.before.load1.toFixed(1)} on ${report.load.before.cpus} CPUs]`
+    : '';
+
+/** What a soak did to its origin, as the sheet and the checklist say it: `nothing`, or each fault with its length and its minute. */
+const injectedFaults = (report: SoakReport): string =>
+  report.faults.length === 0
+    ? 'nothing'
+    : report.faults
+        .map(
+          (fault) =>
+            `${fault.kind} for ${Math.round((fault.endMs - fault.startMs) / 1000)} s at minute ${((fault.startMs - report.firstFrameMs) / 60_000).toFixed(1)}`,
+        )
+        .join('; ');
+
+const injectedLine = (report: SoakReport): string => `injected: ${injectedFaults(report)}`;
+
+/**
+ * ` (not the policy's plan: stale-manifest for 10 s at minute 2.0)` for a soak that injected something else than the plan its length has, so
+ * that the line of a soak with a stale manifest and no outage cannot be read as the CI soak of the policy.
+ */
+const planNote = (report: SoakReport): string =>
+  injectionPart(report.options) === '' ? '' : ` (not the policy's plan: ${injectedFaults(report)})`;
 
 /** The whole sheet of a readiness run: where and when it was measured, every configuration, and the comparison when a candidate was evaluated. */
 export function renderReadinessReport(report: ReadinessReport): string {
@@ -129,6 +166,7 @@ export function renderReadinessReport(report: ReadinessReport): string {
 export function renderSoakReport(report: SoakReport): string {
   const criteria = report.evaluations.filter((evaluation) => evaluation.scope === 'criterion');
   const advisory = report.evaluations.filter((evaluation) => evaluation.scope === 'advisory');
+  const today = soakVerdictToday(report);
   const lengthText =
     report.length === 'release'
       ? 'release soak'
@@ -139,11 +177,15 @@ export function renderSoakReport(report: SoakReport): string {
     `Soak (PB-RDY-005): ${describeBrowser(report)}, ${report.configuration.id}`,
     `commit ${describeCommit(report.commit)}, stream ${report.stream.id} over ${report.stream.protocol}, ${Number(report.options.minutes.toFixed(2))} min (${lengthText}), warm-up ${report.options.warmupSec} s, measured ${report.generatedAt}`,
     ...describeLoad(report.load),
-    report.faults.length === 0
-      ? 'injected: nothing'
-      : `injected: ${report.faults.map((fault) => `${fault.kind} for ${Math.round((fault.endMs - fault.startMs) / 1000)} s at minute ${((fault.startMs - report.firstFrameMs) / 60_000).toFixed(1)}`).join('; ')}`,
+    injectedLine(report),
     '',
     `${pad('Soak verdict', 64)}${report.verdict}`,
+    ...(today.verdict === report.verdict
+      ? []
+      : [
+          `${pad("Judged by today's criteria (ADR-159c)", 64)}${today.verdict}`,
+          `  This file was measured when the latency of the soak after the faults was evidence and decided nothing; it is a criterion now, and ${today.changedBy.map((line) => `${line.label} ${valueText(line)} against ${formatLimit(line.limit, line.unit, line.bound)}`).join(', ')} decide${today.changedBy.length === 1 ? 's' : ''} it.`,
+        ]),
     ...criteria.map((evaluation) => evaluationLine(evaluation, '  ')),
     ...(advisory.length > 0
       ? [
@@ -217,7 +259,8 @@ const statusOf = (verdicts: readonly Verdict[]): ItemStatus =>
       ? 'open'
       : 'done';
 
-const label = (report: { engine: Engine; envId: string }): string => `${report.engine} (${report.envId})`;
+const label = (report: { engine: Engine; envId: string; stream: { protocol: string } }): string =>
+  `${report.engine} (${report.envId}${report.stream.protocol === 'dash' ? '' : `, ${report.stream.protocol}`})`;
 
 function engineCoverage(have: readonly Engine[]): string[] {
   const missing = ENGINE_ORDER.filter((engine) => !have.includes(engine));
@@ -234,15 +277,29 @@ export function checklist(input: ChecklistInput): ChecklistItem[] {
   });
   const items: ChecklistItem[] = [];
 
-  // 1. The build is identified.
+  // 1. The build is identified. A line says what each result was measured on, and with which configuration: a candidate's soak is not A's,
+  // and the same line from two results (the CI soak and the release soak of one engine) is said once.
   const builds = [
     ...input.readiness.map((report) => ({
       report,
       shaka: report.configurations.flatMap((c) => c.checks).find((c) => c.player)?.player?.shakaVersion,
+      configuration: 'A',
     })),
-    ...input.soaks.map((report) => ({ report, shaka: report.player?.shakaVersion })),
+    ...input.soaks.map((report) => ({
+      report,
+      shaka: report.player?.shakaVersion,
+      configuration: report.configuration.id,
+    })),
   ];
   const commits = [...new Set(builds.map(({ report }) => report.commit.hash ?? 'unknown'))];
+  const buildLines = [
+    ...new Set(
+      builds.map(
+        ({ report, shaka, configuration }) =>
+          `${label(report)}: commit ${describeCommit(report.commit)}, Shaka Player ${shaka ?? 'unknown'}, configuration ${configuration}, ${report.stream.id} over ${report.stream.protocol}`,
+      ),
+    ),
+  ];
   items.push({
     number: 1,
     text: 'The build is identified: commit, Shaka Player version, player configuration (A or B), and the stream flavour each engine plays.',
@@ -251,10 +308,7 @@ export function checklist(input: ChecklistInput): ChecklistItem[] {
       builds.length === 0
         ? ['no result files']
         : [
-            ...builds.map(
-              ({ report, shaka }) =>
-                `${label(report)}: commit ${describeCommit(report.commit)}, Shaka Player ${shaka ?? 'unknown'}, configuration A, ${report.stream.id} over ${report.stream.protocol}`,
-            ),
+            ...buildLines,
             ...(commits.length > 1
               ? [
                   `the results are from ${commits.length} different commits (${commits.join(', ')}): they are not one build`,
@@ -280,7 +334,7 @@ export function checklist(input: ChecklistInput): ChecklistItem[] {
   };
   const lines3 = input.readiness.map(
     (report) =>
-      `${label(report)}: ${four.map((id) => `${id.slice(-3)} ${shipped(report)?.checks.some((c) => c.id === id) ? verdictsOf(report, id) : 'not run'}`).join(', ')}`,
+      `${label(report)}: ${four.map((id) => `${id.slice(-3)} ${shipped(report)?.checks.some((c) => c.id === id) ? verdictsOf(report, id) : 'not run'}`).join(', ')}${busyAtStart(report)}`,
   );
   const verdicts3 = input.readiness.flatMap((report) => four.map((id) => verdictsOf(report, id)));
   const covered = ENGINE_ORDER.every((engine) => input.readiness.some((report) => report.engine === engine));
@@ -292,28 +346,46 @@ export function checklist(input: ChecklistInput): ChecklistItem[] {
     owner: false,
   });
 
-  // 4. The release soak passed in every engine.
+  // 4. The release soak passed in every engine. A stored soak is judged by today's criteria (`soakVerdictToday`): the file keeps what it
+  // measured, and when it says GO because the latency of the soak was only evidence then, the line says what it is judged as now.
+  const todayOf = (report: SoakReport): Verdict => soakVerdictToday(report).verdict;
+  const changedNote = (report: SoakReport): string => {
+    const { verdict, changedBy } = soakVerdictToday(report);
+    return verdict === report.verdict
+      ? ''
+      : ` (measured ${report.verdict}, when the latency of the soak was evidence and not a criterion; ${changedBy.map((line) => `${line.label} ${valueText(line)} against ${formatLimit(line.limit, line.unit, line.bound)}`).join(', ')} decide it now, ADR-159c)`;
+  };
+  const kindOf = (report: SoakReport, ci: string): string =>
+    report.length === 'release' ? 'release soak' : report.length === 'ci' ? ci : 'short run';
   const releaseSoaks = input.soaks.filter((report) => report.configuration.id === 'A');
   const soakLines = releaseSoaks.map(
     (report) =>
-      `${label(report)}: ${report.length === 'release' ? 'release soak' : report.length === 'ci' ? 'CI soak only' : 'short run'} of ${Number(report.options.minutes.toFixed(2))} min: ${report.verdict}`,
+      `${label(report)}: ${kindOf(report, 'CI soak only')} of ${Number(report.options.minutes.toFixed(2))} min${planNote(report)}: ${todayOf(report)}${changedNote(report)}${busyAtStart(report)}`,
   );
+  // A candidate's soak is evidence for a decision about the candidate, never for the build as it ships: it is listed and does not count.
+  const candidateLines = input.soaks
+    .filter((report) => report.configuration.id !== 'A')
+    .map(
+      (report) =>
+        `${label(report)}: ${kindOf(report, 'CI soak')} of ${Number(report.options.minutes.toFixed(2))} min${planNote(report)} of the candidate ${report.configuration.id}: ${todayOf(report)} (evidence for a decision about the candidate, not about the build)${changedNote(report)}${busyAtStart(report)}`,
+    );
   const releaseVerdicts = ENGINE_ORDER.map((engine): Verdict => {
     const forEngine = releaseSoaks.filter((report) => report.engine === engine);
     const release = forEngine.filter((report) => report.length === 'release');
-    if (release.some((report) => report.verdict === 'NO-GO')) return 'NO-GO';
-    if (forEngine.some((report) => report.verdict === 'NO-GO')) return 'NO-GO';
-    return release.length > 0 && release.every((report) => report.verdict === 'GO') ? 'GO' : 'INCONCLUSIVE';
+    if (release.some((report) => todayOf(report) === 'NO-GO')) return 'NO-GO';
+    if (forEngine.some((report) => todayOf(report) === 'NO-GO')) return 'NO-GO';
+    return release.length > 0 && release.every((report) => todayOf(report) === 'GO') ? 'GO' : 'INCONCLUSIVE';
   });
   items.push({
     number: 4,
-    text: 'The release soak passed in every engine: no unrecovered stall, no critical error and none that no injected fault explains, rebuffer ratio, latency drift and dropped frames within their limits, and heap growth within its limit in Chromium.',
+    text: 'The release soak passed in every engine: no unrecovered stall, no critical error and none that no injected fault explains, rebuffer ratio, latency drift, the latency level after the faults and dropped frames within their limits, and heap growth within its limit in Chromium.',
     status: statusOf(releaseVerdicts),
     evidence: [
       ...soakLines,
       ...ENGINE_ORDER.filter(
         (engine) => !releaseSoaks.some((report) => report.engine === engine && report.length === 'release'),
       ).map((engine) => `no release soak (${LIVE_LIMITS.soakMinutesRelease} min) on record for ${engine}`),
+      ...candidateLines,
     ],
     owner: false,
   });
