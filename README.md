@@ -1,6 +1,6 @@
 # Playback Proof
 
-Playback Proof is a test lab for a web video player (Shaka Player on Media Source Extensions). It generates its own streams, injects network faults on purpose and plays the result in Chromium, Firefox and WebKit, so that startup, adaptation, recovery and live behaviour can be tested, measured and gated on a merge. Every number below is rendered from a result file committed in this repository, counted by a command that the text names, or taken from a document or a CI run that the text cites.
+Playback Proof is a test lab for a web video player (Shaka Player on Media Source Extensions). It generates its own streams, injects network faults on purpose and plays the result in Chromium, Firefox and WebKit, so that startup, adaptation, recovery and live behaviour can be tested in each of them, and startup, rebuffering and frame rate measured and gated on a merge in Chromium. Every number below is rendered from a result file committed in this repository, counted by a command that the text names, or taken from a document or a CI run that the text cites.
 
 Stack: TypeScript (strict), Node.js 22, Shaka Player 5.3.3, Playwright 1.64.1, Vitest 5, ffmpeg.
 
