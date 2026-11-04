@@ -104,3 +104,39 @@ export function historyOf(
 export function sequence(n: number, at: Record<number, ExecutedOutcome> = {}): ExecutedOutcome[] {
   return Array.from({ length: n }, (_, i) => at[i] ?? 'passed');
 }
+
+export interface BuildsOptions {
+  /** Tests per build; their ids are PB-VOD-001, PB-VOD-002... */
+  tests?: number;
+  project?: string;
+  flaky?: (build: number, test: number) => boolean;
+  quarantined?: (build: number, test: number) => boolean;
+  tier?: 'merge' | 'release';
+  retries?: number;
+  firstBuild?: number;
+  envId?: string;
+}
+
+/** `count` builds of one engine job, each running `tests` merge-tier tests; `flaky(build, test)` says which of them flake. */
+export function builds(count: number, options: BuildsOptions = {}): FlakeRun[] {
+  const tests = options.tests ?? 15;
+  const project = options.project ?? 'chromium';
+  return Array.from({ length: count }, (_, build) =>
+    run(
+      Array.from({ length: tests }, (_, test) =>
+        record({
+          id: `PB-VOD-${String(test + 1).padStart(3, '0')}`,
+          project,
+          tier: options.tier ?? 'merge',
+          retries: options.retries ?? 1,
+          outcome: options.flaky?.(build, test) ? 'flaky' : 'passed',
+          quarantined: options.quarantined?.(build, test) ?? false,
+        }),
+      ),
+      {
+        runId: `build-${project}-${(options.firstBuild ?? 0) + build}`,
+        ...(options.envId ? { envId: options.envId } : {}),
+      },
+    ),
+  );
+}

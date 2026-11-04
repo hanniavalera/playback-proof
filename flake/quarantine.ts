@@ -151,60 +151,96 @@ export interface ValidateOptions {
   limits?: QuarantineLimits;
 }
 
-/** The rules of the policy applied to entries of the right shape. An expired entry is valid here: expiry is the gate's finding. */
-export function validateQuarantine(entries: readonly QuarantineEntry[], options: ValidateOptions): string[] {
+/** One thing wrong with the list. `entry` is the entry it is about, or null for the list as a whole. */
+export interface QuarantineProblem {
+  entry: QuarantineEntry | null;
+  message: string;
+}
+
+/**
+ * The rules of the policy applied to entries of the right shape. An expired entry is valid here: expiry is the gate's finding.
+ * The entry a problem is about is named, so that one entry with a typo does not take the others' protection away.
+ */
+export function validateQuarantine(
+  entries: readonly QuarantineEntry[],
+  options: ValidateOptions,
+): QuarantineProblem[] {
   const { catalog, today } = options;
   const limits = options.limits ?? FLAKE_LIMITS;
   const todayNumber = dayNumber(today);
-  const problems: string[] = [];
-  if (todayNumber === null) return [`today "${today}" is not a day written YYYY-MM-DD`];
+  const problems: QuarantineProblem[] = [];
+  if (todayNumber === null)
+    return [{ entry: null, message: `today "${today}" is not a day written YYYY-MM-DD` }];
 
   const seen: QuarantineEntry[] = [];
   for (const entry of entries) {
+    const problem = (message: string): number => problems.push({ entry, message });
     const fact = catalog.get(entry.id);
     if (!fact) {
-      problems.push(
+      problem(
         `${entry.id}: not a test of the catalog (TEST_STRATEGY.md section 9); a quarantine names the id of a catalog row`,
       );
       continue;
     }
     if (entry.project !== undefined && !fact.engines.includes(entry.project)) {
-      problems.push(
+      problem(
         `${entry.id}: project "${entry.project}" is not an engine this test runs in (${fact.engines.join(', ') || 'none'})`,
       );
     }
     const since = dayNumber(entry.since);
     const expires = dayNumber(entry.expires);
     if (since !== null && since > todayNumber) {
-      problems.push(`${entry.id}: since ${entry.since} is in the future (today is ${today})`);
+      problem(`${entry.id}: since ${entry.since} is in the future (today is ${today})`);
     }
     if (since !== null && expires !== null) {
       const age = expires - since;
       const max = maxAgeDays(fact.tier, limits);
-      if (age < 0) problems.push(`${entry.id}: expires ${entry.expires} is before since ${entry.since}`);
+      if (age < 0) problem(`${entry.id}: expires ${entry.expires} is before since ${entry.since}`);
       else if (age > max) {
-        problems.push(
+        problem(
           `${entry.id}: expires ${entry.expires} is ${age} days after since ${entry.since}; a ${fact.tier}-tier test may be quarantined for at most ${max} days`,
         );
       }
     }
     const earlier = seen.filter((e) => e.id === entry.id);
     if (earlier.some((e) => e.project === entry.project)) {
-      problems.push(
+      problem(
         `${entry.id}: quarantined twice${entry.project ? ` in ${entry.project}` : ''}; one entry per test and engine`,
       );
     } else if (entry.project === undefined && earlier.length > 0) {
-      problems.push(
-        `${entry.id}: already quarantined in one engine; an entry without a project would overlap it`,
-      );
+      problem(`${entry.id}: already quarantined in one engine; an entry without a project would overlap it`);
     } else if (entry.project !== undefined && earlier.some((e) => e.project === undefined)) {
-      problems.push(
+      problem(
         `${entry.id}: already quarantined in every engine; an entry for ${entry.project} would overlap it`,
       );
     }
     seen.push(entry);
   }
   return problems;
+}
+
+export interface QuarantineAssessment {
+  /** Every problem, in words: the shape of the file first, then the policy. */
+  problems: string[];
+  /** The entries that have no problem. Only these quarantine a test: a list with a typo in it protects nothing that it names wrongly. */
+  effective: QuarantineEntry[];
+}
+
+/** The shape problems of a read and the policy problems of its entries, and the entries that can be trusted. */
+export function assessQuarantine(read: ReadResult, options: ValidateOptions): QuarantineAssessment {
+  const policy = validateQuarantine(read.entries, options);
+  const rejected = new Set(policy.map((p) => p.entry));
+  return {
+    problems: [...read.problems, ...policy.map((p) => p.message)],
+    effective: read.entries.filter((entry) => !rejected.has(entry)),
+  };
+}
+
+/** `day` plus `n` days, as `YYYY-MM-DD`. */
+export function addDays(day: string, n: number): string {
+  const base = dayNumber(day);
+  if (base === null) throw new RangeError(`"${day}" is not a day written YYYY-MM-DD`);
+  return new Date((base + n) * MS_PER_DAY).toISOString().slice(0, 10);
 }
 
 function covers(entry: QuarantineEntry, id: string, project: string): boolean {

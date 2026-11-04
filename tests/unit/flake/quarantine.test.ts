@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { FLAKE_LIMITS } from '../../../src/shared/criteria.ts';
 import {
+  addDays,
+  assessQuarantine,
   catalogFacts,
   dayNumber,
   expiredEntries,
@@ -24,11 +26,6 @@ const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 const facts = catalogFacts(parseCatalog(readFileSync(join(ROOT, 'TEST_STRATEGY.md'), 'utf8')));
 const TODAY = '2026-11-03';
 
-function addDays(day: string, n: number): string {
-  const base = dayNumber(day) as number;
-  return new Date((base + n) * 86_400_000).toISOString().slice(0, 10);
-}
-
 /** PB-VOD-007 is a merge-tier test that runs in every engine and the throttled project; PB-VOD-008 is release-tier. */
 const MERGE_ID = 'PB-VOD-007';
 const RELEASE_ID = 'PB-VOD-008';
@@ -46,7 +43,7 @@ function entry(overrides: Partial<QuarantineEntry> = {}): QuarantineEntry {
 }
 
 const problemsOf = (entries: QuarantineEntry[], today = TODAY): string[] =>
-  validateQuarantine(entries, { catalog: facts, today });
+  validateQuarantine(entries, { catalog: facts, today }).map((p) => p.message);
 
 describe('PB-LAB-004 the quarantine file: its shape', () => {
   it('reads an entry with every field, with and without a project', () => {
@@ -214,6 +211,45 @@ describe('PB-LAB-004 the quarantine file: the policy', () => {
 
   it('refuses a `today` that is not a day, rather than judging against nothing', () => {
     expect(problemsOf([entry()], 'soon')).toEqual(['today "soon" is not a day written YYYY-MM-DD']);
+  });
+
+  it('trusts an entry only if it has no problem: a typo in one entry takes nothing from the others', () => {
+    const good = entry({ id: RELEASE_ID, since: addDays(TODAY, -2), expires: addDays(TODAY, 5) });
+    const tooLong = entry({
+      since: TODAY,
+      expires: addDays(TODAY, FLAKE_LIMITS.mergeQuarantineMaxAgeDays + 3),
+    });
+    const shape = readQuarantine({
+      schemaVersion: 1,
+      entries: [good, tooLong, { ...entry({ id: 'PB-VOD-001' }), owner: '' }],
+    });
+    const assessed = assessQuarantine(shape, { catalog: facts, today: TODAY });
+    expect(assessed.effective).toEqual([good]);
+    expect(assessed.problems).toHaveLength(2);
+    // The shape problems come first, then the policy ones.
+    expect(assessed.problems[0]).toMatch(/PB-VOD-001: "owner" must be a non-empty string/);
+    expect(assessed.problems[1]).toMatch(
+      /PB-VOD-007: expires .* a merge-tier test may be quarantined for at most/,
+    );
+    // The invalid entry protects nothing, in the list of what is quarantined today either.
+    expect(isQuarantined(assessed.effective, MERGE_ID, 'chromium', TODAY)).toBe(false);
+    expect(isQuarantined(assessed.effective, RELEASE_ID, 'chromium', TODAY)).toBe(true);
+
+    // The second of two entries for the same test is the one in the wrong; the first keeps its protection.
+    const twice = assessQuarantine(readQuarantine({ schemaVersion: 1, entries: [good, { ...good }] }), {
+      catalog: facts,
+      today: TODAY,
+    });
+    expect(twice.effective).toHaveLength(1);
+    expect(twice.problems).toHaveLength(1);
+  });
+
+  it('adds days to a day, across months and leap days', () => {
+    expect(addDays('2026-11-03', 7)).toBe('2026-11-10');
+    expect(addDays('2026-12-30', 3)).toBe('2027-01-02');
+    expect(addDays('2028-02-28', 1)).toBe('2028-02-29');
+    expect(addDays('2026-11-03', -3)).toBe('2026-10-31');
+    expect(() => addDays('soon', 1)).toThrow(/not a day/);
   });
 
   it('reads the real catalog: tier and engines of the rows the tests use', () => {

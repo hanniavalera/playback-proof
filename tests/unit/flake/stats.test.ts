@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { FLAKE_LIMITS, FLAKE_POLICY } from '../../../src/shared/criteria.ts';
 import type { FlakeRun } from '../../../flake/run.ts';
 import { flakeStats, percent, suiteStats, testStats } from '../../../flake/stats.ts';
-import { historyOf, record, run, sequence } from './fixtures.ts';
+import { builds, historyOf, record, run, sequence } from './fixtures.ts';
 
 const W = FLAKE_LIMITS.windowRuns;
 const MIN = FLAKE_LIMITS.minRunsToJudge;
@@ -228,37 +228,6 @@ describe('PB-LAB-004 flake rate per test: the arithmetic of the policy', () => {
     expect(only(testStats(history, small)).executions).toBe(4);
   });
 });
-
-/** `count` builds of one engine job, each running `tests` merge-tier tests; `flaky(build, test)` says which of them flake. */
-function builds(
-  count: number,
-  options: {
-    tests?: number;
-    project?: string;
-    flaky?: (build: number, test: number) => boolean;
-    quarantined?: (build: number, test: number) => boolean;
-    tier?: 'merge' | 'release';
-    retries?: number;
-    firstBuild?: number;
-  } = {},
-): FlakeRun[] {
-  const tests = options.tests ?? 15;
-  return Array.from({ length: count }, (_, build) =>
-    run(
-      Array.from({ length: tests }, (_, test) =>
-        record({
-          id: `PB-VOD-${String(test + 1).padStart(3, '0')}`,
-          project: options.project ?? 'chromium',
-          tier: options.tier ?? 'merge',
-          retries: options.retries ?? 1,
-          outcome: options.flaky?.(build, test) ? 'flaky' : 'passed',
-          quarantined: options.quarantined?.(build, test) ?? false,
-        }),
-      ),
-      { runId: `build-${options.project ?? 'chromium'}-${(options.firstBuild ?? 0) + build}` },
-    ),
-  );
-}
 
 describe('PB-LAB-004 suite flake rate per engine job: the budget of the gate', () => {
   const TESTS = 15;
