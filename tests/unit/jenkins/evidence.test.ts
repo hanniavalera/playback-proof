@@ -59,6 +59,9 @@ describe('excerptConsole', () => {
     stamp('Running on playwright-1 in /home/jenkins/agent/workspace/playback-proof'),
     stamp('Cloning repository file:///repo'),
     stamp(' > git fetch --tags --force --progress'),
+    stamp(' > git checkout -f fd6708764d7e5a0193d46c8096d671ac772ce6f7'),
+    stamp(' > git config core.sparsecheckout'),
+    stamp('npm warn install-scripts 2 packages have install scripts not yet covered by allowScripts'),
     stamp('added 136 packages in 2s'),
     stamp('tool-version node v24.22.1'),
     '',
@@ -92,9 +95,10 @@ describe('excerptConsole', () => {
       stamp('  3 passed (21.5s)'),
       'Finished: SUCCESS',
     ]);
-    // Two lines between the runner line and the install summary, one before the Unit marker (a blank line is not counted).
-    expect(omitted).toBe(3);
-    expect(lines).toContain('[... 2 lines left out ...]');
+    // Five lines of progress between the runner line and the install summary are marked; the one line before the Unit summary is
+    // not (a gap under four lines is not worth a marker), but it is counted. A blank line is not a line.
+    expect(omitted).toBe(6);
+    expect(lines.filter((l) => l.startsWith('[... '))).toEqual(['[... 5 lines left out ...]']);
     expect(text.endsWith('\n')).toBe(true);
   });
 

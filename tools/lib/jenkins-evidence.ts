@@ -44,7 +44,7 @@ const KEPT: readonly RegExp[] = [
   /^Obtained Jenkinsfile from /,
   /^Running on /,
   /^Checking out Revision /,
-  /^\[Pipeline\] \{ \(/,
+  /^\[Pipeline\] \{ \((?!Branch: )/,
   /^tool-version /,
   /^added \d+ packages/,
   /^All matched files use Prettier code style/,
@@ -57,7 +57,8 @@ const KEPT: readonly RegExp[] = [
   /^\s+(✓|✘|-)\s+\d+ \[/,
   /^\s+\d+ (passed|failed|flaky|skipped|did not run)\b/,
   /^\s+\d+\) \[/,
-  /^\s+(Error|Expected|Received|TimeoutError)\b/,
+  /^\s*(Error|AssertionError|Expected|Received|TimeoutError)\b/,
+  /^\s*(FAIL|×)\s/,
   /^Archiving artifacts/,
   /^Stage ".+" skipped due to earlier failure/,
   /^Failed in branch /,
@@ -72,27 +73,33 @@ export interface Excerpt {
   omitted: number;
 }
 
+/** A gap shorter than this is not marked: a marker for every two lines of progress output would be most of the excerpt. */
+const MARKED_GAP = 4;
+
 /**
- * The lines of a console log that show what ran and how each gate ended, in order, with a marker where lines were left out. A line
- * is compared without its timestamp and the colour codes, and kept as it is. The log is redacted before it gets here.
+ * The lines of a console log that show what ran and how each gate ended, in order, with a marker where a long stretch was left
+ * out. A line is compared without its timestamp and the colour codes, and kept as it is. The log is redacted before it gets here.
+ * `omitted` counts every line left out, marked or not.
  */
 export function excerptConsole(log: string): Excerpt {
   const out: string[] = [];
   let omitted = 0;
   let gap = 0;
+  const closeGap = (): void => {
+    if (gap >= MARKED_GAP) out.push(`[... ${gap} lines left out ...]`);
+    omitted += gap;
+    gap = 0;
+  };
   for (const line of log.split('\n')) {
     const plain = stripAnsi(stripTimestamp(line));
     if (KEPT.some((pattern) => pattern.test(plain))) {
-      if (gap > 0) out.push(`[... ${gap} lines left out ...]`);
-      omitted += gap;
-      gap = 0;
+      closeGap();
       out.push(stripAnsi(line).replace(/\s+$/, ''));
     } else if (plain.trim() !== '') {
       gap++;
     }
   }
-  if (gap > 0) out.push(`[... ${gap} lines left out ...]`);
-  omitted += gap;
+  closeGap();
   return { text: `${out.join('\n')}\n`, kept: out.filter((l) => !l.startsWith('[... ')).length, omitted };
 }
 
