@@ -1,0 +1,542 @@
+import { describe, expect, it } from 'vitest';
+import {
+  REDACTED,
+  buildEvidence,
+  excerptConsole,
+  groupStages,
+  parseSkippedStages,
+  parseToolVersions,
+  redact,
+  stringifyEvidence,
+  summarizePlaywright,
+  worstStatus,
+} from '../../../tools/lib/jenkins-evidence.ts';
+import type { EvidenceInput, RawStage, StageSteps } from '../../../tools/lib/jenkins-evidence.ts';
+
+// The evidence of a Jenkins build is what a reader trusts instead of the build: these tests keep it from leaking a credential, from
+// reporting a skipped stage as a second failure, and from calling a red merge gate green (the stage view does that for a group).
+
+const stamp = (line: string, time = '04:41:35.738'): string => `[2026-11-04T${time}Z] ${line}`;
+
+describe('redact', () => {
+  it('removes a known secret wherever it appears, as often as it appears', () => {
+    const text = `login as admin with s3cret-value-1234 then s3cret-value-1234 again`;
+    expect(redact(text, ['s3cret-value-1234'])).toBe(
+      `login as admin with ${REDACTED} then ${REDACTED} again`,
+    );
+  });
+
+  it('never blanks a log because a secret is empty', () => {
+    expect(redact('plain text', [''])).toBe('plain text');
+  });
+
+  it('removes credentials by their shape: authorization, crumb, agent secret, userinfo of a URL', () => {
+    const hex = 'ab'.repeat(32);
+    const text = [
+      'Authorization: Basic YWRtaW46aHVudGVyMg==',
+      'Jenkins-Crumb: 0123456789abcdef',
+      `java -jar agent.jar -name x -secret ${hex}`,
+      'fetching https://admin:hunter2@example.test/repo.git',
+    ].join('\n');
+    const out = redact(text);
+    for (const leaked of ['YWRtaW46aHVudGVyMg', '0123456789abcdef', hex, 'hunter2'])
+      expect(out, leaked).not.toContain(leaked);
+    expect(out).toContain('https://[redacted]@example.test/repo.git');
+  });
+
+  it('leaves what only looks similar: a secret passed as a file, a hash, a URL without userinfo', () => {
+    const text =
+      '-secret @/run/agent-secrets/playwright-1\nsha256 ' + 'cd'.repeat(32) + '\nhttp://jenkins:8080/login';
+    expect(redact(text)).toBe(text);
+  });
+});
+
+describe('excerptConsole', () => {
+  const log = [
+    'Started by user admin',
+    'Obtained Jenkinsfile from git file:///repo',
+    '[Pipeline] { (Install)',
+    stamp('Running on playwright-1 in /home/jenkins/agent/workspace/playback-proof'),
+    stamp('Cloning repository file:///repo'),
+    stamp(' > git fetch --tags --force --progress'),
+    stamp('added 136 packages in 2s'),
+    stamp('tool-version node v24.22.1'),
+    '',
+    '[Pipeline] { (Unit)',
+    stamp(' ✓ tests/unit/shared/profiles.test.ts (33 tests) 7ms'),
+    stamp(' Test Files  66 passed (66)'),
+    stamp('      Tests  1707 passed (1707)'),
+    stamp('   Duration  79.11s (tests 96%, transform 2%, import 2%)'),
+    '[Pipeline] { (chromium)',
+    stamp('  ✓  1 [chromium] › tests/e2e/env.spec.ts:19:1 › PB-ENV-001 the engine plays (4.1s)'),
+    stamp('  3 passed (21.5s)'),
+    'Finished: SUCCESS',
+  ].join('\n');
+
+  it('keeps the markers, the tools and the summary of each gate, in order, and says how much it left out', () => {
+    const { text, omitted } = excerptConsole(log);
+    const lines = text.trimEnd().split('\n');
+    expect(lines.filter((l) => !l.startsWith('[... '))).toEqual([
+      'Started by user admin',
+      'Obtained Jenkinsfile from git file:///repo',
+      '[Pipeline] { (Install)',
+      stamp('Running on playwright-1 in /home/jenkins/agent/workspace/playback-proof'),
+      stamp('added 136 packages in 2s'),
+      stamp('tool-version node v24.22.1'),
+      '[Pipeline] { (Unit)',
+      stamp(' Test Files  66 passed (66)'),
+      stamp('      Tests  1707 passed (1707)'),
+      stamp('   Duration  79.11s (tests 96%, transform 2%, import 2%)'),
+      '[Pipeline] { (chromium)',
+      stamp('  ✓  1 [chromium] › tests/e2e/env.spec.ts:19:1 › PB-ENV-001 the engine plays (4.1s)'),
+      stamp('  3 passed (21.5s)'),
+      'Finished: SUCCESS',
+    ]);
+    // Two lines between the runner line and the install summary, one before the Unit marker (a blank line is not counted).
+    expect(omitted).toBe(3);
+    expect(lines).toContain('[... 2 lines left out ...]');
+    expect(text.endsWith('\n')).toBe(true);
+  });
+
+  it('keeps everything that says why a build is red, and which stages were skipped', () => {
+    const red = [
+      stamp(' FAIL  tests/unit/probe/media.test.ts > ensureProbeMedia > generates the same bytes'),
+      stamp('Stage "Streams" skipped due to earlier failure(s)'),
+      stamp('  1) [chromium] › tests/e2e/vod-start.spec.ts:44:1 › PB-VOD-001 DASH VOD starts'),
+      stamp(
+        '    Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe(\u001b[32mexpected\u001b[39m)',
+      ),
+      stamp('    Expected: 4'),
+      stamp('    Received: 3'),
+      stamp('  1 failed'),
+      stamp('Failed in branch chromium'),
+      'ERROR: script returned exit code 1',
+      'Finished: FAILURE',
+    ].join('\n');
+    const kept = excerptConsole(red).text;
+    for (const needle of [
+      'Stage "Streams" skipped',
+      '1) [chromium]',
+      'Error: expect(received).toBe(expected)',
+      'Expected: 4',
+      'Received: 3',
+      '1 failed',
+      'Failed in branch chromium',
+      'ERROR: script returned exit code 1',
+      'Finished: FAILURE',
+    ])
+      expect(kept, needle).toContain(needle);
+    expect(kept).not.toContain('\u001b');
+  });
+
+  it('produces just the newline for a log with nothing in it', () => {
+    expect(excerptConsole('')).toEqual({ text: '\n', kept: 0, omitted: 0 });
+  });
+});
+
+describe('parseToolVersions and parseSkippedStages', () => {
+  it('reads what the tools said, with the timestamps in front, and reports only what it understood', () => {
+    const log = [
+      stamp('tool-version node v24.22.1'),
+      stamp('tool-version npm 11.19.1'),
+      stamp(
+        'tool-version ffmpeg ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers',
+      ),
+      stamp('tool-version java openjdk version "21.0.12.1" 2026-08-18'),
+      stamp('tool-version playwright Version 1.64.1'),
+      stamp('tool-version git something unrecognizable'),
+      stamp('tool-version npm not a version'),
+    ].join('\n');
+    expect(parseToolVersions(log)).toEqual({
+      node: 'v24.22.1',
+      npm: '11.19.1',
+      ffmpeg: '6.1.1-3ubuntu5',
+      java: '21.0.12.1',
+      playwright: '1.64.1',
+    });
+    expect(parseToolVersions('no tools here')).toEqual({});
+  });
+
+  it('lists the stages that were skipped, by name', () => {
+    const log = [
+      'Stage "Streams" skipped due to earlier failure(s)',
+      stamp('Stage "Merge gate" skipped due to earlier failure(s)'),
+      'Stage "Unit" is fine',
+    ].join('\n');
+    expect([...parseSkippedStages(log)]).toEqual(['Streams', 'Merge gate']);
+  });
+});
+
+// The shape of /wfapi/describe as the scratch pipeline of this lab returned it: the groups report a few milliseconds and a green status
+// of their own; the two branches that waited for an executor started their step seconds after their stage.
+const T0 = 1_000_000;
+const stage = (
+  id: string,
+  name: string,
+  status: string,
+  start: number,
+  duration: number,
+  error?: string,
+): RawStage => ({
+  id,
+  name,
+  status,
+  startTimeMillis: T0 + start,
+  durationMillis: duration,
+  ...(error ? { error: { message: error, type: 'hudson.AbortException' } } : {}),
+});
+const ran = (start: number): StageSteps => ({ stepCount: 2, firstStepStartMillis: T0 + start });
+const group: StageSteps = { stepCount: 0, firstStepStartMillis: null };
+
+describe('groupStages', () => {
+  const stages = [
+    stage('6', 'Checks', 'SUCCESS', 1_000, 196),
+    stage('10', 'Install', 'SUCCESS', 1_200, 800),
+    stage('15', 'Static', 'SUCCESS', 2_000, 1_200),
+    stage('34', 'Merge gate', 'SUCCESS', 4_000, 58),
+    stage('44', 'chromium', 'SUCCESS', 4_060, 3_900),
+    stage('46', 'firefox', 'SUCCESS', 4_070, 3_900),
+    stage('48', 'chromium-cpu4x', 'SUCCESS', 4_080, 7_800),
+    stage('50', 'webkit', 'FAILED', 4_090, 7_800, 'script returned exit code 1'),
+  ];
+  const steps = new Map<string, StageSteps>([
+    ['6', group],
+    ['10', ran(1_250)],
+    ['15', ran(2_010)],
+    ['34', group],
+    ['44', ran(4_100)],
+    ['46', ran(4_110)],
+    ['48', ran(8_000)],
+    ['50', ran(8_010)],
+  ]);
+
+  it('nests the stages under the group that precedes them and gives the group the worst status of its stages', () => {
+    const out = groupStages(stages, steps, T0);
+    expect(out.map((s) => [s.name, s.group, s.status])).toEqual([
+      ['Checks', null, 'SUCCESS'],
+      ['Install', 'Checks', 'SUCCESS'],
+      ['Static', 'Checks', 'SUCCESS'],
+      ['Merge gate', null, 'FAILED'],
+      ['chromium', 'Merge gate', 'SUCCESS'],
+      ['firefox', 'Merge gate', 'SUCCESS'],
+      ['chromium-cpu4x', 'Merge gate', 'SUCCESS'],
+      ['webkit', 'Merge gate', 'FAILED'],
+    ]);
+  });
+
+  it('gives a group the wall-clock of its stages, not the few milliseconds the stage view reports', () => {
+    const out = groupStages(stages, steps, T0);
+    const gate = out.find((s) => s.name === 'Merge gate');
+    // From the start of the group (4 000) to the end of the last branch (4 080 + 7 800 and 4 090 + 7 800).
+    expect(gate).toMatchObject({ startMs: 4_000, durationMs: 7_890 });
+    expect(out.find((s) => s.name === 'Checks')).toMatchObject({ startMs: 1_000, durationMs: 2_200 });
+  });
+
+  it('separates the wait for an executor from the time a stage ran', () => {
+    const out = groupStages(stages, steps, T0);
+    expect(out.map((s) => [s.name, s.waitedMs])).toEqual([
+      ['Checks', 0],
+      ['Install', 50],
+      ['Static', 10],
+      ['Merge gate', 0],
+      ['chromium', 40],
+      ['firefox', 40],
+      ['chromium-cpu4x', 3_920],
+      ['webkit', 3_920],
+    ]);
+  });
+
+  it('does not report a skipped stage as a second failure, and keeps the real one', () => {
+    const failed = [
+      stage('12', 'Checks', 'SUCCESS', 0, 52),
+      stage('28', 'Unit', 'FAILED', 100, 84_118, 'script returned exit code 1'),
+      stage('33', 'Streams', 'FAILED', 84_300, 41, 'script returned exit code 1'),
+      stage('49', 'Merge gate', 'SUCCESS', 84_400, 99),
+      stage('60', 'chromium', 'FAILED', 84_500, 173, 'script returned exit code 1'),
+    ];
+    const failedSteps = new Map<string, StageSteps>([
+      ['12', group],
+      ['28', ran(150)],
+      // A skipped stage resolves its context: one step, but it never started anything.
+      ['33', ran(84_310)],
+      ['49', ran(84_410)],
+      ['60', ran(84_510)],
+    ]);
+    const out = groupStages(failed, failedSteps, T0, new Set(['Streams', 'Merge gate', 'chromium']));
+    expect(out.map((s) => [s.name, s.group, s.status, s.error ?? null, s.waitedMs])).toEqual([
+      ['Checks', null, 'FAILED', null, 0],
+      ['Unit', 'Checks', 'FAILED', 'script returned exit code 1', 50],
+      ['Streams', null, 'NOT_EXECUTED', null, 0],
+      ['Merge gate', null, 'NOT_EXECUTED', null, 0],
+      ['chromium', null, 'NOT_EXECUTED', null, 0],
+    ]);
+  });
+
+  it('ranks statuses: a failure outweighs an abort, a skip counts for least', () => {
+    expect(worstStatus(['SUCCESS', 'FAILED', 'NOT_EXECUTED'])).toBe('FAILED');
+    expect(worstStatus(['SUCCESS', 'ABORTED', 'UNSTABLE'])).toBe('ABORTED');
+    expect(worstStatus(['NOT_EXECUTED', 'SUCCESS'])).toBe('SUCCESS');
+    expect(worstStatus(['NOT_EXECUTED', 'NOT_EXECUTED'])).toBe('NOT_EXECUTED');
+  });
+});
+
+describe('summarizePlaywright', () => {
+  const ansiError = '\u001b[31mError: expect(received).toBe(expected)\u001b[39m\n\nExpected: 4\nReceived: 3';
+  const report = {
+    stats: { duration: 21_534.4 },
+    suites: [
+      {
+        specs: [],
+        suites: [
+          {
+            specs: [
+              {
+                title: 'PB-ENV-001 the engine plays the selected flavour',
+                tests: [
+                  {
+                    projectName: 'chromium',
+                    status: 'expected',
+                    annotations: [
+                      {
+                        type: 'environment',
+                        description: 'jenkins-linux-arm64: chromium 156.0.8078.4; evidence: none',
+                      },
+                    ],
+                    results: [{ duration: 4_100.2 }],
+                  },
+                ],
+              },
+              {
+                title: 'PB-VOD-001 DASH VOD starts',
+                tests: [
+                  {
+                    projectName: 'chromium',
+                    status: 'unexpected',
+                    results: [
+                      {
+                        duration: 9_000,
+                        error: { message: ansiError },
+                        attachments: [{ name: 'qa-events.json' }, { name: 'screenshot' }],
+                      },
+                      {
+                        duration: 8_000,
+                        error: { message: ansiError },
+                        attachments: [{ name: 'qa-events.json' }, { name: 'request-log.json' }],
+                      },
+                    ],
+                  },
+                ],
+              },
+              {
+                title: 'PB-VOD-002 HLS VOD starts',
+                tests: [
+                  {
+                    projectName: 'chromium',
+                    status: 'flaky',
+                    results: [{ duration: 3_000, error: { message: 'timeout' } }, { duration: 2_000 }],
+                  },
+                ],
+              },
+              {
+                title: 'PB-VOD-003 something skipped',
+                tests: [{ projectName: 'chromium', status: 'skipped', results: [{ duration: 0 }] }],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+
+  it('counts what happened per project, with the id, the attempts, the first line of the failure and the attachments', () => {
+    const [summary] = summarizePlaywright(report);
+    expect(summary).toMatchObject({
+      project: 'chromium',
+      tests: 4,
+      passed: 1,
+      failed: 1,
+      flaky: 1,
+      skipped: 1,
+      runDurationMs: 21_534,
+      environment: 'jenkins-linux-arm64: chromium 156.0.8078.4; evidence: none',
+    });
+    expect(summary?.results).toEqual([
+      { id: 'PB-ENV-001', status: 'passed', durationMs: 4_100 },
+      {
+        id: 'PB-VOD-001',
+        status: 'failed',
+        durationMs: 17_000,
+        attempts: 2,
+        error: 'Error: expect(received).toBe(expected)',
+        attachments: ['qa-events.json', 'screenshot', 'request-log.json'],
+      },
+      { id: 'PB-VOD-002', status: 'flaky', durationMs: 5_000, attempts: 2, error: 'timeout' },
+      { id: 'PB-VOD-003', status: 'skipped', durationMs: 0 },
+    ]);
+  });
+
+  it('yields nothing for a document that is not a Playwright report', () => {
+    expect(summarizePlaywright(null)).toEqual([]);
+    expect(summarizePlaywright({ unrelated: true })).toEqual([]);
+  });
+});
+
+describe('buildEvidence', () => {
+  const base: EvidenceInput = {
+    job: 'playback-proof',
+    build: 3,
+    label: 'test',
+    expected: 'SUCCESS',
+    result: 'SUCCESS',
+    startedAtMs: Date.UTC(2026, 10, 4, 5, 0, 0),
+    durationMs: 600_000,
+    queuedMs: 4,
+    commit: 'fd67087',
+    branch: 'p4/jenkins',
+    jenkinsVersion: '2.580.2',
+    controllerExecutors: 0,
+    plugins: { git: '5.11.0', 'configuration-as-code': '2144.ve8c697101488' },
+    agents: [{ name: 'playwright-1', executors: 2, labels: ['playwright'] }],
+    tools: { node: 'v24.22.1' },
+    stages: [
+      { name: 'Merge gate', group: null, status: 'SUCCESS', startMs: 100, durationMs: 9_000, waitedMs: 0 },
+      {
+        name: 'chromium',
+        group: 'Merge gate',
+        status: 'SUCCESS',
+        startMs: 100,
+        durationMs: 4_000,
+        waitedMs: 500,
+      },
+      {
+        name: 'firefox',
+        group: 'Merge gate',
+        status: 'SUCCESS',
+        startMs: 100,
+        durationMs: 4_500,
+        waitedMs: 100,
+      },
+      {
+        name: 'webkit',
+        group: 'Merge gate',
+        status: 'SUCCESS',
+        startMs: 4_600,
+        durationMs: 4_500,
+        waitedMs: 4_000,
+      },
+    ],
+    playwright: [],
+    artifacts: ['reports/chromium/playwright.json'],
+  };
+
+  it('compares the merge gate with the same engines run one after the other', () => {
+    const evidence = buildEvidence(base);
+    expect(evidence.mergeGate).toEqual({
+      wallClockMs: 9_000,
+      branchesMs: 3_500 + 4_400 + 500,
+      waitedMs: 4_600,
+      branches: 3,
+    });
+    expect(evidence).toMatchObject({ asExpected: true, startedAt: '2026-11-04T05:00:00.000Z' });
+    expect(evidence.failure).toBeUndefined();
+    expect(Object.keys(evidence.jenkins)).toEqual([
+      'version',
+      'executorsOnController',
+      'pluginCount',
+      'plugins',
+    ]);
+    expect(evidence.jenkins.plugins).toEqual(['configuration-as-code:2144.ve8c697101488', 'git:5.11.0']);
+    expect(evidence.jenkins.pluginCount).toBe(2);
+  });
+
+  it('names the stage and the tests of a red build, and says whether red was the point', () => {
+    const red = buildEvidence({
+      ...base,
+      result: 'FAILURE',
+      expected: 'FAILURE',
+      stages: [
+        { name: 'Merge gate', group: null, status: 'FAILED', startMs: 100, durationMs: 9_000, waitedMs: 0 },
+        {
+          name: 'chromium',
+          group: 'Merge gate',
+          status: 'FAILED',
+          startMs: 100,
+          durationMs: 4_000,
+          waitedMs: 0,
+          error: 'script returned exit code 1',
+        },
+        {
+          name: 'firefox',
+          group: 'Merge gate',
+          status: 'SUCCESS',
+          startMs: 100,
+          durationMs: 4_500,
+          waitedMs: 0,
+        },
+      ],
+      playwright: [
+        {
+          project: 'chromium',
+          tests: 2,
+          passed: 1,
+          failed: 1,
+          flaky: 0,
+          skipped: 0,
+          runDurationMs: 8_000,
+          environment: null,
+          results: [
+            { id: 'PB-ENV-001', status: 'passed', durationMs: 1 },
+            { id: 'PB-VOD-001', status: 'failed', durationMs: 2, attachments: ['qa-events.json'] },
+          ],
+        },
+      ],
+    });
+    expect(red.asExpected).toBe(true);
+    expect(red.failure).toEqual({
+      stage: 'chromium',
+      message: 'script returned exit code 1',
+      tests: [
+        {
+          project: 'chromium',
+          test: { id: 'PB-VOD-001', status: 'failed', durationMs: 2, attachments: ['qa-events.json'] },
+        },
+      ],
+    });
+    expect(buildEvidence({ ...base, result: 'FAILURE' }).asExpected).toBe(false);
+  });
+});
+
+describe('stringifyEvidence', () => {
+  it('writes what fits on one line on one line, and expands the rest', () => {
+    const value = {
+      a: [1, 2, 3],
+      b: { c: 'x' },
+      rows: [
+        { name: 'chromium', status: 'SUCCESS', startMs: 100, durationMs: 4_000, waitedMs: 500 },
+        { name: 'firefox', status: 'SUCCESS', startMs: 100, durationMs: 4_500, waitedMs: 100 },
+      ],
+    };
+    const text = stringifyEvidence(value);
+    expect(text).toContain('  "a": [1, 2, 3],');
+    expect(text).toContain('  "b": { "c": "x" },');
+    expect(text).toContain(
+      '    { "name": "chromium", "status": "SUCCESS", "startMs": 100, "durationMs": 4000, "waitedMs": 500 },',
+    );
+    expect(text.endsWith('}\n')).toBe(true);
+    expect(JSON.parse(text)).toEqual(value);
+  });
+
+  it('fills a long list of strings line by line, within 120 columns, so that the plugins stay short', () => {
+    const plugins = Array.from({ length: 40 }, (_, i) => `plugin-number-${i}:1.${i}.0-abcdef`);
+    const text = stringifyEvidence({ jenkins: { plugins } });
+    const lines = text.split('\n');
+    expect(lines.length).toBeLessThan(plugins.length * 0.75);
+    expect(Math.max(...lines.map((l) => l.length))).toBeLessThanOrEqual(120);
+    expect(JSON.parse(text)).toEqual({ jenkins: { plugins } });
+  });
+
+  it('drops undefined members like JSON does, and keeps null', () => {
+    const text = stringifyEvidence({ keep: null, drop: undefined, list: [undefined, 1] });
+    expect(JSON.parse(text)).toEqual({ keep: null, list: [null, 1] });
+  });
+});

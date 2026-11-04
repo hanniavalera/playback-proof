@@ -66,6 +66,11 @@ pipeline {
                     }
                 }
                 stage('Unit') {
+                    // The repository's own limit (4 workers, vitest.config.ts) is sized for runners with more cores than this agent's
+                    // quota of 3 CPUs: with it the media determinism test failed once under load (ADR-116, build 2 of the evidence).
+                    environment {
+                        VITEST_MAX_WORKERS = '2'
+                    }
                     steps {
                         sh 'npm run gate:unit'
                     }
