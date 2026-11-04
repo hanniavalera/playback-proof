@@ -105,9 +105,9 @@ describe('the stages', () => {
     expect(called.length).toBeGreaterThan(5);
     for (const { file, script } of called)
       expect(scripts[script], `${file}: npm run ${script}`).toBeDefined();
-    // Only the stages that exist: a stage whose script is not there yet (perf, triage) is not a job yet.
+    // Only the stages that exist: a stage whose script is not there yet (perf) is not a job yet.
     const stages = new Set([...code(ci).matchAll(/npm run (gate:[\w-]+)/g)].map((m) => m[1] ?? ''));
-    expect(stages).toEqual(new Set(['gate:static', 'gate:unit', 'gate:merge', 'gate:flake']));
+    expect(stages).toEqual(new Set(['gate:static', 'gate:unit', 'gate:merge', 'gate:flake', 'gate:triage']));
   });
 
   it('call gate:static, gate:unit and gate:merge from the merge gate, with the project of the leg and its time limit', () => {

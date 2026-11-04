@@ -183,3 +183,36 @@ jobs:
       - name: Check that both environments are in the history
         if: ${{ !cancelled() }}
         run: jq -e -s 'all(.[]; .recorded != null)' reports/flake/gate-linux.json reports/flake/gate-macos.json
+
+  # The triage of ci.yml for the runs of this workflow (see there): the @release tests fail here first, and a nightly nobody is
+  # watching is the build whose red most needs explaining. It never decides anything and is skipped when the run is green. The name
+  # says `nightly` for the reason the flake jobs' do.
+  triage:
+    name: triage (nightly)
+    needs: [release, flake]
+    if: ${{ failure() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Set up Node and the dependencies
+        uses: ./.github/actions/setup
+      - name: Download the reports of the legs
+        uses: actions/download-artifact@v8
+        with:
+          pattern: reports-*
+          path: artifacts
+      - name: Triage the failures
+        run: npm run gate:triage -- --from artifacts --out reports/triage
+      - name: Upload the triage report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: triage
+          path: reports/triage
+          retention-days: 14
+          overwrite: true

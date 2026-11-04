@@ -29,6 +29,11 @@ pull_request  |  push to main  |  manual run                     (ci.yml)
 
   The jobs run in parallel. The five legs wait for `streams` and nothing else; the flake jobs wait for the five legs.
 
+  after the legs and the flake judge, only when one of them is red (needs: merge-gate, flake; if: failure()):
+
+  +-- triage         npm run gate:triage -- --from artifacts   cluster the failures by cause     ubuntu-24.04
+                     contents: read; not a required check; exits 0 whatever it finds; skipped on a green run
+
 every night 04:41 UTC  |  manual run  |  a pull request that changes nightly.yml       (nightly.yml)
 
   streams ---- the same workflow, the same cache
@@ -37,6 +42,7 @@ every night 04:41 UTC  |  manual run  |  a pull request that changes nightly.yml
   |
   +-- flake (nightly)          the judge of ci.yml, for these runs (it runs on the pull request too)
   +-- flake-record (nightly)   the recorder of ci.yml; schedule and manual runs on main only
+  +-- triage (nightly)         the triage of ci.yml, when a leg or the judge is red
 
 by hand only (workflow_dispatch, read-only token)                                      (measure.yml)
 
@@ -45,8 +51,8 @@ by hand only (workflow_dispatch, read-only token)                               
   +-- measure (<task>, <engine>, <runner>)   one long measurement on ubuntu-24.04 or macos-15, then the artifact
                                              measure-<task>-<label>-<runner>  (the section "Measurements on GitHub runners")
 
-Arrive with their phase, as jobs that need `streams` (nothing of them exists yet):
-  performance gate (Phase 5), A/B runs (6), soak and readiness (7), triage (8).
+Arrives with the baselines of the runner: the performance gate. The A/B runs, the soak and the readiness checks are long measurements that
+run by hand through `measure.yml`, not merge stages.
 ```
 
 ## The jobs
@@ -65,6 +71,8 @@ Budgets are the design numbers of [TEST_STRATEGY.md section 6.3](../TEST_STRATEG
 | `streams`, `release (<leg>)` of the nightly | `schedule` (04:41 UTC), manual, and a pull request that changes `nightly.yml` (a schedule and a manual run exist only for a file on the default branch, so a change would otherwise be seen the night after the merge) | as the gate | 15 min per engine (the release budget) | 30 min, stop at 26; 45 on macOS, stop at 41 | `reports-<leg>` (30 days) | `CI=true npm run docker:pw -- npm run test:e2e -- --grep "@merge\|@release" --project=<project>` |
 | `flake (nightly)` | the nightly's triggers, the pull request included; not when the run is cancelled | `ubuntu-24.04` | as `flake` | 10 min | none | as `flake`, with the `reports-<leg>` of the nightly run |
 | `flake-record (nightly)` | `schedule` and a manual run **on `main`**; never the pull request | `ubuntu-24.04` | as `flake` | 10 min | none | as `flake-record` |
+| `triage` | pull request, push to `main`, manual; only when `merge-gate` or `flake` failed (`if: failure()`), so it is skipped on a green run | `ubuntu-24.04` | none: it explains a red build and never decides one ([TRIAGE.md](TRIAGE.md)) | 10 min | `triage` (`reports/triage/`, 14 days) | `npm run gate:triage -- --from <directory of the downloaded reports-<leg> artifacts> --out reports/triage` |
+| `triage (nightly)` | the nightly's triggers, when a leg or the judge failed | `ubuntu-24.04` | as `triage` | 10 min | `triage` | as `triage`, with the `reports-<leg>` of the nightly run |
 
 The legs and what each one is for:
 
@@ -212,4 +220,4 @@ Done on the development host (Apple M2 Pro, macOS 27.2, Docker Desktop), 2026-11
 
 ## Adding a job
 
-A stage that gets its own script in `package.json` gets its own job in `ci.yml` (and its call in the Jenkinsfile): `gate:perf` and `gate:triage` when `perf/` and `triage/` exist (`gate:flake` was added this way). A script that a pipeline gives arguments (`npm run gate:x -- --flag`) runs its command itself and is not an alias of another npm script: npm gives the arguments of an alias to itself, and they never reach the command (`gate:flake` had that defect, and `gate:perf` still has the alias form). A job that needs the streams says `needs: streams`, checks out, and calls `./.github/actions/setup` with `streams: 'true'`. The nightly's soak, readiness and A/B jobs go after `streams` in [`nightly.yml`](../.github/workflows/nightly.yml), where the comment says so. `npm run test:unit` fails if a new workflow asks for a write permission outside `flake-record`, uses a third-party action, runs a job without a timeout, or calls an `npm` script that does not exist. A job that really needs to write is a decision: `flake-record` is the one so far, named in the test with its reason, and its job, not the whole workflow, carries the permission.
+A stage that gets its own script in `package.json` gets its own job in `ci.yml` (and its call in the Jenkinsfile): `gate:triage` was added this way after `gate:flake`, and `gate:perf` gets its job when the baselines of the runner are committed. A script that a pipeline gives arguments (`npm run gate:x -- --flag`) runs its command itself and is not an alias of another npm script: npm gives the arguments of an alias to itself, and they never reach the command (`gate:flake` and `gate:perf` had that defect, and both now run their command itself). A job that needs the streams says `needs: streams`, checks out, and calls `./.github/actions/setup` with `streams: 'true'`. The nightly's soak, readiness and A/B jobs go after `streams` in [`nightly.yml`](../.github/workflows/nightly.yml), where the comment says so. `npm run test:unit` fails if a new workflow asks for a write permission outside `flake-record`, uses a third-party action, runs a job without a timeout, or calls an `npm` script that does not exist. A job that really needs to write is a decision: `flake-record` is the one so far, named in the test with its reason, and its job, not the whole workflow, carries the permission.

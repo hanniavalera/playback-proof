@@ -237,12 +237,14 @@ describe('the parity of the Jenkinsfile and the GitHub workflows', () => {
       'gate:unit',
       'gate:merge',
       'gate:flake',
+      'gate:triage',
     ]);
     expect(gatesOf(jenkinsCalls(sources.jenkinsfile))).toEqual([
       'gate:static',
       'gate:unit',
       'gate:merge',
       'gate:flake',
+      'gate:triage',
     ]);
   });
 
