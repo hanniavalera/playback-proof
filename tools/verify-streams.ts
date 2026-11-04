@@ -21,17 +21,19 @@ import { randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import { STREAM_IDS, type StreamId } from '../src/shared/streams.ts';
+import { STREAM_IDS, type DrmInfo, type StreamId } from '../src/shared/streams.ts';
 import { parseServicePath } from '../src/shared/urls.ts';
 import {
   checkStreamDir,
   defaultCacheDir,
   initFileName,
+  readStreamFile,
   segmentFileName,
   streamDir,
 } from '../src/server/media/cache.ts';
 import { CommandError, ffmpegBinary, ffmpegVersion, ffprobeBinary, run } from '../src/server/media/ffmpeg.ts';
 import { parseWebmInit } from '../src/server/media/ebml.ts';
+import { generateStreams } from '../src/server/media/generate.ts';
 import { createMediaStore } from '../src/server/media/index.ts';
 import { checkStreamIndex } from '../src/server/media/invariants.ts';
 import { liveTiming } from '../src/server/media/live.ts';
@@ -278,6 +280,49 @@ const endTicksOf = (packets: ProbePacket[], st: ProbeStream | undefined): number
 const ffprobeCodecName = (codecs: string): string =>
   codecs.startsWith('vp09') ? 'vp9' : codecs.startsWith('mp4a') ? 'aac' : codecs === 'opus' ? 'opus' : codecs;
 
+/** ffmpeg input options that decrypt an encrypted file or a DASH manifest, when the stream is encrypted (the key is public, StreamInfo.drm). */
+const decryptOptions = (key: string | undefined, via: 'file' | 'dash' = 'file'): string[] =>
+  key ? [via === 'dash' ? '-cenc_decryption_key' : '-decryption_key', key] : [];
+
+/** Per decoded frame (or per copied packet) of a file: ffmpeg's framemd5 line, `stream, dts, pts, duration, size, md5`. */
+async function frameHashes(file: string, input: string[] = [], output: string[] = []): Promise<string[]> {
+  try {
+    const { stdout } = await run(
+      ffmpegBinary(),
+      ['-hide_banner', '-nostdin', '-v', 'quiet', ...input, '-i', file, ...output, '-f', 'framemd5', '-'],
+      { timeoutMs: 300_000 },
+    );
+    return stdout
+      .toString('utf8')
+      .split('\n')
+      .filter((l) => l !== '' && !l.startsWith('#'));
+  } catch (e) {
+    return [`decoding failed: ${reason(e)}`];
+  }
+}
+
+/**
+ * What an init segment says about protection, by a literal scan for the boxes' four-character codes and fixed offsets: no code of this
+ * repository, so it cannot share a bug with the parser. `tenc` payload: version/flags 4, reserved 2, isProtected 1, IV size 1, KID 16.
+ */
+function scanProtection(init: Buffer): { original?: string; scheme?: string; kid?: string; ivSize?: number } {
+  const out: { original?: string; scheme?: string; kid?: string; ivSize?: number } = {};
+  const frma = init.indexOf('frma', 0, 'latin1');
+  if (frma >= 0) out.original = init.toString('latin1', frma + 4, frma + 8);
+  const schm = init.indexOf('schm', 0, 'latin1');
+  if (schm >= 0) out.scheme = init.toString('latin1', schm + 8, schm + 12);
+  const tenc = init.indexOf('tenc', 0, 'latin1');
+  if (tenc >= 0) {
+    out.ivSize = init[tenc + 11];
+    out.kid = init.subarray(tenc + 12, tenc + 28).toString('hex');
+  }
+  return out;
+}
+
+/** 32 hex digits written as the UUID text `cenc:default_KID` uses. */
+const uuidText = (hex: string): string =>
+  [hex.slice(0, 8), hex.slice(8, 12), hex.slice(12, 16), hex.slice(16, 20), hex.slice(20)].join('-');
+
 /** Ticks a demuxer subtracts from block timestamps: the Opus CodecDelay of a WebM init segment, 0 for everything else. */
 function demuxerOffset(init: Buffer): number {
   if (init.subarray(0, 4).readUInt32BE(0) !== 0x1a45dfa3) return 0; // not EBML: an ISO BMFF init (no edit list, no offset)
@@ -312,13 +357,14 @@ async function verifyRepFiles(
   const video = r.rep.track === 'video';
   const mp4 = index.info.packaging === 'cmaf';
 
-  // ---- 1. decode the concatenation with ffmpeg and count frames with ffprobe
-  const errors = await decodeErrors(file);
+  // ---- 1. decode the concatenation with ffmpeg and count frames with ffprobe (an encrypted stream is decrypted with its public key)
+  const decrypt = decryptOptions(index.info.drm?.key);
+  const errors = await decodeErrors(file, decrypt);
   record(label, 'concatenation decodes without error', errors === '', errors.split('\n')[0] ?? '');
-  const probed = await probeStreams(file, ['-count_frames']);
+  const probed = await probeStreams(file, [...decrypt, '-count_frames']);
   const st = probed.streams[0];
   const frames = Number(st?.nb_read_frames);
-  const packets = await probePackets(file);
+  const packets = await probePackets(file, decrypt);
   note(`${label}: ffprobe stream ${JSON.stringify(st)}`);
   note(`${label}: first packets ${JSON.stringify(packets.slice(0, 2))}`);
   const grid = mp4 ? AAC_GRID : OPUS_WEBM_GRID;
@@ -416,6 +462,90 @@ async function verifyRepFiles(
   return { packets, endTicks };
 }
 
+/**
+ * Encryption, checked by ffmpeg and not by the repository's parser: the init segments name the right key id (a literal byte scan),
+ * and ffmpeg with the key decrypts the segments to exactly what the unencrypted stream of the same spec holds, as copied packets
+ * (the plaintext bytes) and as decoded frames (what a viewer sees). Without the key, or with a wrong one, it must not.
+ * The unencrypted twin is generated here, into the scratch directory, by the same generator with the encryption left out.
+ */
+async function verifyEncryption(
+  id: StreamId,
+  spec: StreamSpec,
+  index: StreamIndex,
+  dir: string,
+  scratch: string,
+): Promise<void> {
+  const drm = index.info.drm;
+  if (!drm) return;
+  record(
+    id,
+    'declares ClearKey with a 16-byte key id and key',
+    /^[0-9a-f]{32}$/.test(drm.keyId) && /^[0-9a-f]{32}$/.test(drm.key) && drm.keyId !== drm.key,
+    '',
+  );
+  for (const r of index.reps) {
+    const init = readFileSync(join(dir, initFileName(r.rep)));
+    const found = scanProtection(init);
+    const original = r.rep.track === 'video' ? 'vp09' : 'mp4a';
+    const entry = r.rep.track === 'video' ? 'encv' : 'enca';
+    record(
+      `${id}/${r.rep.id}`,
+      `init segment: ${entry} entry of a ${original} track, scheme cenc, 8-byte IVs, default KID == the key id`,
+      init.indexOf(entry, 0, 'latin1') >= 0 &&
+        found.original === original &&
+        found.scheme === 'cenc' &&
+        found.ivSize === 8 &&
+        found.kid === drm.keyId,
+      JSON.stringify(found),
+    );
+  }
+
+  const { drm: _drm, ...clearSpec } = spec;
+  const twinCache = join(scratch, `twin-${id}`);
+  await generateStreams({ cacheDir: twinCache, specs: [clearSpec], threads: 4 });
+  const twinDir = streamDir(twinCache, clearSpec);
+  const twin = readStreamFile(twinDir).index;
+  const wrongKey = drm.key.replace(/^./, (c) => (c === '0' ? '1' : '0'));
+  for (const r of index.reps) {
+    const label = `${id}/${r.rep.id}`;
+    const clearRep = twin.reps.find((t) => t.rep.id === r.rep.id) as RepIndex;
+    const clearFile = join(scratch, `${id}-clear-${r.rep.id}.${r.rep.initExt}`);
+    writeFileSync(
+      clearFile,
+      Buffer.concat([
+        readFileSync(join(twinDir, initFileName(clearRep.rep))),
+        ...clearRep.segments.map((s) => readFileSync(join(twinDir, segmentFileName(clearRep.rep, s.number)))),
+      ]),
+    );
+    const encFile = join(scratch, `${id}-${r.rep.id}.${r.rep.initExt}`); // written by verifyRepFiles
+    for (const [what, output] of [
+      ['packets (the plaintext bytes)', ['-c', 'copy']],
+      ['decoded frames', []],
+    ] as const) {
+      const want = await frameHashes(clearFile, [], [...output]);
+      const got = await frameHashes(encFile, decryptOptions(drm.key), [...output]);
+      const at = got.findIndex((line, i) => line !== want[i]);
+      record(
+        label,
+        `decrypted with the key, the ${what} equal the unencrypted twin's, one by one (${want.length})`,
+        want.length > 0 && got.length === want.length && at < 0,
+        at >= 0 ? `first difference at ${at}: ${got[at]} vs ${want[at]}` : `${got.length} vs ${want.length}`,
+      );
+    }
+    const want = await frameHashes(clearFile);
+    const same = async (key: string | undefined): Promise<boolean> => {
+      const got = await frameHashes(encFile, decryptOptions(key));
+      return got.length === want.length && got.every((line, i) => line === want[i]);
+    };
+    record(
+      label,
+      'without the key, or with a wrong one, the frames are NOT the unencrypted ones',
+      !(await same(undefined)) && !(await same(wrongKey)),
+      '',
+    );
+  }
+}
+
 async function verifyStreamFiles(
   id: StreamId,
   cacheDir: string,
@@ -445,6 +575,7 @@ async function verifyStreamFiles(
 
   const perRep = new Map<string, RepProbe>();
   for (const r of index.reps) perRep.set(r.rep.id, await verifyRepFiles(id, spec, index, r, dir, scratch));
+  if (index.info.drm) await verifyEncryption(id, spec, index, dir, scratch);
 
   // Rungs of one stream: identical first-pts per segment, taken from ffprobe, not from the parser.
   const video = index.reps.filter((r) => r.rep.track === 'video');
@@ -608,6 +739,7 @@ async function verifyDashRep(
   scenario: Scenario | undefined,
   scratch: string,
   spec: StreamSpec,
+  manifestKid: string | undefined,
 ): Promise<void> {
   const info = store.index(id).info;
   const idx = store.index(id).reps.find((x) => x.rep.id === r.id);
@@ -634,9 +766,22 @@ async function verifyDashRep(
   writeFileSync(file, Buffer.concat([init.body, ...bodies]));
   const mp4 = info.packaging === 'cmaf';
   const video = r.contentType === 'video';
-  const probed = await probeStreams(file);
+  const decrypt = decryptOptions(info.drm?.key);
+  const probed = await probeStreams(file, decrypt);
   const st = probed.streams[0];
-  const packets = await probePackets(file);
+  const packets = await probePackets(file, decrypt);
+  if (info.drm) {
+    // The key id the manifest announces is the one the init segment carries (read by a literal scan, not by the lab's parser).
+    const found = scanProtection(init.body);
+    record(
+      label,
+      `${tag}: the MPD's cenc:default_KID is the default KID of the init segment`,
+      manifestKid !== undefined &&
+        found.kid !== undefined &&
+        uuidText(found.kid) === manifestKid.toLowerCase(),
+      `init ${found.kid}, MPD ${manifestKid}`,
+    );
+  }
 
   // What the manifest says about the media, against what the demuxer finds in it.
   const codecOk = st?.codec_name === ffprobeCodecName(r.codecs);
@@ -708,7 +853,7 @@ async function verifyDashRep(
       packets[0]?.pts === expected,
       `got ${packets[0]?.pts}`,
     );
-    const errors = await decodeErrors(file);
+    const errors = await decodeErrors(file, decrypt);
     record(label, `${tag}: the window decodes without error`, errors === '', errors.split('\n')[0] ?? '');
   }
   // Declared bandwidth is the peak over every segment of the source loop; a window can only be at or below it.
@@ -722,6 +867,41 @@ async function verifyDashRep(
     bandwidthOk,
     '',
   );
+}
+
+/** ContentProtection: present, with the key id and the ClearKey system, exactly when the stream is encrypted; never the key itself. */
+function verifyManifestProtection(
+  label: string,
+  name: string,
+  manifest: DashManifest,
+  drm: DrmInfo | undefined,
+  text: string,
+): void {
+  for (const set of manifest.adaptationSets) {
+    if (!drm) {
+      const found = set.contentProtection.map((c) => c.schemeIdUri);
+      record(
+        label,
+        `${name}: AdaptationSet ${set.id} has no ContentProtection (the stream is not encrypted)`,
+        found.length === 0,
+        found.join(' '),
+      );
+      continue;
+    }
+    const generic = set.contentProtection.find((c) => c.schemeIdUri === 'urn:mpeg:dash:mp4protection:2011');
+    const clearkey = set.contentProtection.find(
+      (c) => c.schemeIdUri === 'urn:uuid:e2719d58-a985-b3c9-781a-b030af78d30e',
+    );
+    record(
+      label,
+      `${name}: AdaptationSet ${set.id} declares mp4protection (cenc, default_KID ${uuidText(drm.keyId)}) and the ClearKey system id`,
+      generic?.value === 'cenc' &&
+        generic.defaultKid?.toLowerCase() === uuidText(drm.keyId) &&
+        clearkey !== undefined,
+      JSON.stringify(set.contentProtection),
+    );
+  }
+  if (drm) record(label, `${name}: the manifest does not contain the key`, !text.includes(drm.key), '');
 }
 
 async function verifyDash(
@@ -758,6 +938,7 @@ async function verifyDash(
     manifest.type === (scenario ? 'dynamic' : 'static') && manifest.profiles === expectedProfile,
     `${manifest.type} ${manifest.profiles}`,
   );
+  verifyManifestProtection(label, name, manifest, info.drm, text);
   if (scenario) {
     const p = liveParams(scenario);
     record(
@@ -813,7 +994,12 @@ async function verifyDash(
       '',
     );
   }
-  for (const r of manifest.representations) await verifyDashRep(label, r, store, id, scenario, scratch, spec);
+  for (const r of manifest.representations) {
+    const kid = manifest.adaptationSets
+      .find((s) => s.id === r.adaptationSetId)
+      ?.contentProtection.find((c) => c.defaultKid !== undefined)?.defaultKid;
+    await verifyDashRep(label, r, store, id, scenario, scratch, spec, kid);
+  }
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------
@@ -889,8 +1075,11 @@ async function verifyThroughFfmpeg(
   const info = index.info;
   const name = `${kind.toUpperCase()} ${scenario ? `live window ${scenario.firstNumber}..${scenario.lastNumber}` : 'VOD'} via ffmpeg's demuxer`;
   // `-live_start_index` is an option of the HLS demuxer only; the DASH demuxer starts a SegmentTimeline window at its first segment
-  // when the window is shorter than 60 s, which both scenarios are.
-  const input = scenario && kind === 'hls' ? ['-live_start_index', '0'] : [];
+  // when the window is shorter than 60 s, which both scenarios are. The DASH demuxer decrypts with `-cenc_decryption_key`.
+  const input = [
+    ...(scenario && kind === 'hls' ? ['-live_start_index', '0'] : []),
+    ...decryptOptions(info.drm?.key, kind === 'dash' ? 'dash' : 'file'),
+  ];
   try {
     const probed = await probeStreams(url, input);
     note(
@@ -940,11 +1129,14 @@ async function verifyThroughFfmpeg(
           '',
         );
       }
-      const maps = kind === 'dash' ? ['-map', '0:v:1', '-map', '0:a:0'] : [];
-      const errors = await decodeErrors(url, [], maps);
+      // The middle rung (v360 of three; the only one of the encrypted stream) and the audio.
+      const videoReps = info.reps.filter((r) => r.track === 'video');
+      const pick = Math.min(1, videoReps.length - 1);
+      const maps = kind === 'dash' ? ['-map', `0:v:${pick}`, '-map', '0:a:0'] : [];
+      const errors = await decodeErrors(url, input, maps);
       record(
         id,
-        `${name}: decodes end to end${maps.length ? ' (v360 + audio)' : ' (default variant)'}`,
+        `${name}: decodes end to end${maps.length ? ` (${videoReps[pick]?.id} + audio)` : ' (default variant)'}`,
         errors === '',
         errors.split('\n')[0] ?? '',
       );
