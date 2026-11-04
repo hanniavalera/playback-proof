@@ -126,7 +126,7 @@ describe('PB-LAB-006 the generated policy tables', () => {
     expect(table).toContain('| Latency, p95 | 8,000 ms (8 s) |');
     expect(table).toContain('| Rebuffer ratio | 0.5 % |');
     expect(table).toMatch(/Arithmetic: Target plus one segment/);
-    expect(table).toMatch(/Assumption: .*Phase 7 replaces it/);
+    expect(table).toMatch(/Assumption: .*a margin is a measurement \(ADR-159b/);
   });
 
   it('is deterministic', () => {

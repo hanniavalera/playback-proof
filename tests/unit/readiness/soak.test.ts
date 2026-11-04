@@ -60,7 +60,22 @@ describe('the soak loop', () => {
     expect(times).toEqual([...times].sort((a, b) => a - b));
   });
 
-  it('passes the injected outage and its recovery: the stall is one the soak expects, and the soak is GO', async () => {
+  it('passes the injected outage and its recovery: the stall is one the soak expects, and a player that came back is GO', async () => {
+    const recorded = soak({
+      minutes: 8,
+      faults: [fault(240, 10)],
+      episodes: [episode(246, 4)],
+      latency: (sec) => (sec < 250 ? 6200 : sec < 300 ? 10_100 : 6200),
+    });
+    const run = await runSoak(new VirtualDriver({ recorded }), options({ minutes: 8 }));
+    expect(run.start.faults).toHaveLength(1);
+    expect(run.evaluation.verdict).toBe('GO');
+    expect(get(run.evaluation.evaluations, 'soak.stalls').detail?.episodes).toBe(1);
+    expect(get(run.evaluation.evaluations, 'soak.latency-max').verdict).toBe('GO');
+    expect(get(run.evaluation.evaluations, 'soak.latency-drift').verdict).toBe('GO');
+  });
+
+  it('is NO-GO for a player that recovers from the outage and stays 4 s further behind for good: not a drift, not a stall, a latency level', async () => {
     const recorded = soak({
       minutes: 8,
       faults: [fault(240, 10)],
@@ -68,12 +83,11 @@ describe('the soak loop', () => {
       latency: (sec) => (sec < 250 ? 6200 : 10_100),
     });
     const run = await runSoak(new VirtualDriver({ recorded }), options({ minutes: 8 }));
-    expect(run.start.faults).toHaveLength(1);
-    expect(run.evaluation.verdict).toBe('GO');
-    expect(get(run.evaluation.evaluations, 'soak.stalls').detail?.episodes).toBe(1);
-    // The player stayed 4 s further behind for good, which the soak reports as evidence and PB-RDY-003 judges; it is not a drift.
-    expect(get(run.evaluation.evaluations, 'soak.latency-max').verdict).toBe('NO-GO');
+    expect(run.evaluation.verdict).toBe('NO-GO');
+    expect(get(run.evaluation.evaluations, 'soak.stalls').verdict).toBe('GO');
     expect(get(run.evaluation.evaluations, 'soak.latency-drift').verdict).toBe('GO');
+    expect(get(run.evaluation.evaluations, 'soak.latency-max').verdict).toBe('NO-GO');
+    expect(get(run.evaluation.evaluations, 'soak.latency-p95').verdict).toBe('NO-GO');
   });
 
   it('is NO-GO for a heap that climbs, and the series is in the file for a reader to see it climb', async () => {

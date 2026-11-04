@@ -9,8 +9,12 @@ import {
   parseReadinessReport,
   parseSoakReport,
   limitsSnapshot,
-  readinessFileName,
+  readinessFileNameOf,
+  readinessIdentity,
   ResultFileError,
+  soakFileName,
+  soakFileNameOf,
+  soakIdentity,
 } from './report.ts';
 import type {
   BrowserInfo,
@@ -115,29 +119,97 @@ export function writeResult(dir: string, file: string, report: ReadinessReport |
 }
 
 export const writeReadinessReport = (root: string, report: ReadinessReport): string =>
-  writeResult(readinessDir(root), readinessFileName(report.envId, report.engine), report);
+  writeResult(readinessDir(root), readinessFileNameOf(report), report);
 
 export interface LoadedResults {
   readiness: ReadinessReport[];
   soaks: SoakReport[];
+  /** What the reader did that a person reading the checklist should know: a file named by another convention than its content, two files that hold the same run. */
+  notes: string[];
+}
+
+interface Found<T> {
+  name: string;
+  report: T;
 }
 
 /**
  * Every committed result under `root`, read strictly: a file that does not validate throws `ResultFileError` with the list of what is
  * wrong with it. A broken record must never read as "no result": the checklist would then say "not run" about something that was.
+ *
+ * What a file is comes from its content, never from its name. A file whose name is not the one its content gets today is still read
+ * as what it holds, and says so in `notes`: the soaks of a candidate that were written before the candidate was part of the name carry
+ * A's name and would be overwritten by the next soak of A (ADR-159a). Two files that hold the same run (the same environment, engine,
+ * protocol, length and configuration) are not merged: the newer one is used, and the note names both.
  */
 export function loadResults(root: string): LoadedResults {
-  const read = <T>(dir: string, parse: (text: string, file: string) => T): T[] =>
-    existsSync(dir)
+  const notes: string[] = [];
+  const read = <T extends { generatedAt: string }>(
+    dir: string,
+    folder: string,
+    parse: (text: string, file: string) => T,
+    nameOf: (report: T) => string,
+    identityOf: (report: T) => string,
+    describe: (report: T) => string,
+    oldName?: (report: T) => string,
+  ): T[] => {
+    const files: Array<Found<T>> = existsSync(dir)
       ? readdirSync(dir)
           .filter((name) => name.endsWith('.json'))
           .sort()
-          .map((name) => parse(readFileSync(join(dir, name), 'utf8'), name))
+          .map((name) => ({ name, report: parse(readFileSync(join(dir, name), 'utf8'), name) }))
       : [];
-  return {
-    readiness: read(readinessDir(root), parseReadinessReport),
-    soaks: read(soakDir(root), parseSoakReport),
+    for (const { name, report } of files) {
+      const expected = nameOf(report);
+      if (name === expected) continue;
+      notes.push(
+        oldName && name === oldName(report)
+          ? `${folder}/${name}: holds ${describe(report)} under the name of the build as it ships (how soaks were named before the candidate was in the name): it is read as what it holds, and its name is ${expected}; rename it, or the next soak of A overwrites it`
+          : `${folder}/${name}: holds ${describe(report)}, which is not the name that its content gets (${expected}): it is read from its content`,
+      );
+    }
+    const byIdentity = new Map<string, Array<Found<T>>>();
+    for (const file of files) {
+      const key = identityOf(file.report);
+      byIdentity.set(key, [...(byIdentity.get(key) ?? []), file]);
+    }
+    const kept: T[] = [];
+    for (const group of byIdentity.values()) {
+      const newest = group.reduce((best, file) =>
+        Date.parse(file.report.generatedAt) > Date.parse(best.report.generatedAt) ? file : best,
+      );
+      if (group.length > 1)
+        notes.push(
+          `${folder}: ${group.map((file) => file.name).join(' and ')} hold the same run (${describe(newest.report)}): the newer one, ${newest.name} (measured ${newest.report.generatedAt}), is used`,
+        );
+      kept.push(newest.report);
+    }
+    // In name order, as the files are listed, whatever order the identities were met in.
+    return files.map((file) => file.report).filter((report) => kept.includes(report));
   };
+  const readiness = read(
+    readinessDir(root),
+    'readiness',
+    parseReadinessReport,
+    readinessFileNameOf,
+    readinessIdentity,
+    (report) =>
+      `a readiness run of ${report.envId} ${report.engine} over ${report.stream?.protocol ?? 'dash'} (${report.configurations.map((c) => c.id).join(', ')})`,
+  );
+  const soaks = read(
+    soakDir(root),
+    'soak',
+    parseSoakReport,
+    soakFileNameOf,
+    soakIdentity,
+    (report) =>
+      `the ${Number(report.options.minutes.toFixed(2))}-minute soak of ${report.configuration.id} on ${report.engine} (${report.envId}, ${report.stream?.protocol ?? 'dash'})`,
+    (report) =>
+      soakFileName(report.envId, report.engine, report.options.minutes, {
+        protocol: report.stream?.protocol ?? 'dash',
+      }),
+  );
+  return { readiness, soaks, notes };
 }
 
 export { ResultFileError };
