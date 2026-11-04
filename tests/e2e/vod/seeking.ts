@@ -1,24 +1,13 @@
+import { expect } from '@playwright/test';
 import type { RequestLogEntry } from '../../../src/shared/api.ts';
 import type { QAEvent } from '../../../src/shared/qa.ts';
 import type { StreamInfo, Track } from '../../../src/shared/streams.ts';
 import type { PlayerHandle } from '../support/player.ts';
 import type { TestSession } from '../support/session.ts';
-import { failure } from './fail.ts';
-import { distinctAscending, middleOfSegment, repsOfTrack, segmentNumbers } from './segments.ts';
 import { requestsFor } from '../support/waiting.ts';
-
-/**
- * How far from the target a seek may land, in seconds: measured at 0.000 to 0.001 s in Chromium and WebKit (the clock is where it was
- * told to be when `seeked` fires and has not run on yet). A quarter of a second is a wide margin over that and a quarter of what a
- * landing at the start of the GOP costs: every target of the specs is the middle of a segment, a whole second from either boundary.
- */
-export const SEEK_LANDING_TOLERANCE_SEC = 0.25;
-
-/** How much media a player must play after a seek for "playback continues from the target" to be shown. */
-export const CONTINUE_AFTER_SEEK_SEC = 1;
-
-/** How far the clock may be past the position a wait was for: the wait is driven by `timeupdate` and by frames, so it overshoots by a frame or two. */
-export const CLOCK_OVERSHOOT_TOLERANCE_SEC = 0.5;
+import { checked, failure } from './fail.ts';
+import { distinctAscending, middleOfSegment, repsOfTrack, segmentNumbers } from './segments.ts';
+import { CLOCK_OVERSHOOT_TOLERANCE_SEC, SEEK_LANDING_TOLERANCE_SEC } from './tolerances.ts';
 
 export interface RecordedSeek {
   /** The cursor taken before the seek: `qa.events(since)` is the timeline of the seek and what followed. */
@@ -43,6 +32,26 @@ export async function seekAndRecord(qa: PlayerHandle, target: number): Promise<R
     );
   }
   return { since, seeking, seeked };
+}
+
+/** The seek finished where it was asked to: the media time of its `seeked` event is within `SEEK_LANDING_TOLERANCE_SEC` of the target. */
+export function expectLanded(seeked: Pick<QAEvent, 'mediaTime'>, target: number): void {
+  checked(() => {
+    expect(
+      Math.abs(seeked.mediaTime - target),
+      `distance in seconds between the media time of the seeked event (${seeked.mediaTime} s) and the target (${target} s)`,
+    ).toBeLessThanOrEqual(SEEK_LANDING_TOLERANCE_SEC);
+  });
+}
+
+/** The clock moved on continuously: a wait for `waitedFor` seconds of media time returned `reached`, and a jump of the clock would have taken it far beyond. */
+export function expectClockContinued(reached: number, waitedFor: number, explanation: string): void {
+  checked(() => {
+    expect(
+      reached - waitedFor,
+      `media time reached (${reached} s) beyond the ${waitedFor} s the wait was for: ${explanation}`,
+    ).toBeLessThanOrEqual(CLOCK_OVERSHOOT_TOLERANCE_SEC);
+  });
 }
 
 /** The log of a session split at a cursor (`requestLogCursor`): what the origin had been asked for by then, and what it was asked for since. */

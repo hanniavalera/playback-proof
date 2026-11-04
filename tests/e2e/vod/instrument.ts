@@ -6,24 +6,6 @@ import { repsOfTrack } from './segments.ts';
 
 // What PB-VOD-012 holds the hook's numbers against: things the browser and the origin say that do not come from the hook.
 
-/**
- * How many frames the decoded and the presented counters of an uninterrupted play may differ by. The decoder runs ahead of the
- * presentation by the frames its output queue holds: measured at 3 to 5 frames in Chromium and WebKit (decoded 95 or 96 against 91
- * to 93 presented at about 3 s) and with the presented counter ahead by up to 3 in Firefox (ADR-065). Ten frames are a third of a
- * second of 30 fps video, and about 1.4 times the largest difference measured; a counter that doubles, repeats or restarts differs by
- * a second of video or more.
- */
-export const FRAME_AGREEMENT_TOLERANCE = 10;
-
-/** The effective frame rate of a window may be this share off the frame rate of the stream (27 to 33 fps for 30): 60 presented frames in 2.000 s were measured in every engine. */
-export const FPS_TOLERANCE_SHARE = 0.1;
-
-/** The media time `measureFrames` looks at: long enough to hold sixty frames, short enough for a test of a few seconds. */
-export const FRAME_WINDOW_SEC = 2;
-
-/** The resolution of the clocks compared across processes (the origin's milliseconds are integers or hundredths, the page's are fractions): two milliseconds. */
-export const CLOCK_RESOLUTION_MS = 2;
-
 /** The frame rate of the title's video, from the catalog: the lab's streams are 30 fps on every rung. */
 export function videoFrameRate(info: StreamInfo): number {
   const rates = new Set(

@@ -1,20 +1,21 @@
+import { expect } from '@playwright/test';
 import type { QAEvent } from '../../../src/shared/qa.ts';
 import type { StreamInfo } from '../../../src/shared/streams.ts';
 import type { PlayerHandle } from '../support/player.ts';
 import type { TestSession } from '../support/session.ts';
-import { failure } from './fail.ts';
+import { checked, failure } from './fail.ts';
 import { allSegments, distinctAscending, segmentNumbers } from './segments.ts';
+import { END_MARGIN_MS, END_TOLERANCE_SEC } from './tolerances.ts';
 
-/**
- * How close to the end of the title `ended` must fire, in seconds. The video track is exactly as long as the title (`durationSec`),
- * the audio ends up to one frame (21.3 ms) before it, and the last video frame is 33 ms long: an `ended` that comes from the clock
- * reaching the end of the media is within about 55 ms of `durationSec`, and 0.1 s (three video frames) leaves room for the event's own
- * dispatch. A title cut short by a missing last segment ends two seconds early, or never.
- */
-export const END_TOLERANCE_SEC = 0.1;
-
-/** Real time allowed on top of the media still to play. The wait is on the media clock's `ended` event: a slow runner takes longer, not fail. */
-export const END_MARGIN_MS = 15_000;
+/** The clock reached the end of the title: the media time of the `ended` event is within `END_TOLERANCE_SEC` of the catalog's duration. */
+export function expectEndedAtTheEnd(ended: Pick<QAEvent, 'mediaTime'>, info: StreamInfo): void {
+  checked(() => {
+    expect(
+      Math.abs(ended.mediaTime - info.durationSec),
+      `distance in seconds between the media time of the \`ended\` event (${ended.mediaTime} s) and the end of the title (${info.durationSec} s)`,
+    ).toBeLessThanOrEqual(END_TOLERANCE_SEC);
+  });
+}
 
 /** What the player and the origin say about how far a title got, for the message of a wait that gave up. */
 async function describeProgress(qa: PlayerHandle, session: TestSession, info: StreamInfo): Promise<string> {

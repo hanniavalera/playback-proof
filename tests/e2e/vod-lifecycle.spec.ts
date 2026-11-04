@@ -3,27 +3,16 @@ import { expectNoErrors, expectNoRebuffer } from './support/assertions.ts';
 import { expect, test } from './support/fixtures.ts';
 import { streamInfoOf } from './support/session.ts';
 import { requestLogCursor, requestsFor } from './support/waiting.ts';
-import { END_TOLERANCE_SEC, waitForEnded } from './vod/ending.ts';
-import { SEEK_LANDING_TOLERANCE_SEC, logAround, seekAndRecord } from './vod/seeking.ts';
+import { expectEndedAtTheEnd, waitForEnded } from './vod/ending.ts';
+import { expectClockContinued, expectLanded, logAround, seekAndRecord } from './vod/seeking.ts';
 import { allSegments, distinctAscending, middleOfSegment, segmentNumbers } from './vod/segments.ts';
-
-/**
- * The window of a negative observation, in animation frames of the page (`observeFrames`): 30 frames are about half a second at 60 Hz
- * and the media clock of a playing player moved 0.49 to 0.52 s across them in Chromium and WebKit on the machine of ADR-092.
- */
-const OBSERVED_FRAMES = 30;
-/** What the media clock of a PLAYING player must advance in that window for the observation to mean anything: three video frames. */
-const MIN_CONTROL_ADVANCE_SEC = 0.1;
-/**
- * How far the media time of the resumed player may be from where it was paused. A resume is not exactly instantaneous (the `playing`
- * event came 4 to 63 ms of media time after the pause position in the measurements of ADR-092), and a jump is a segment or a GOP long
- * (2 s; the pause is placed in the middle of one, so a rewind to its start is 1 s away): 0.5 s separates the two by a factor of 8 and 2.
- */
-const RESUME_TOLERANCE_SEC = 0.5;
-/** How much media a resumed player must play for "playback continued from there" to be shown. */
-const CONTINUE_SEC = 1;
-/** How far from the start of the title the first `playing` of a restart may be: the resume of a pause was measured at 4 to 63 ms past the paused position. */
-const RESTART_TOLERANCE_SEC = 0.5;
+import {
+  CONTINUE_SEC,
+  MIN_CONTROL_ADVANCE_SEC,
+  OBSERVED_FRAMES,
+  RESTART_TOLERANCE_SEC,
+  RESUME_TOLERANCE_SEC,
+} from './vod/tolerances.ts';
 
 test(
   'PB-VOD-003 plays a short title to the end (vod-cmaf-short): ended fires near the duration, no rebuffer, no error',
@@ -40,10 +29,7 @@ test(
     const ended = await waitForEnded(qa, session, info);
 
     // The player's side: the clock reached the end of the title (the catalog's duration, not the player's own idea of it).
-    expect(
-      Math.abs(ended.mediaTime - info.durationSec),
-      `distance in seconds between the media time of the \`ended\` event (${ended.mediaTime} s) and the end of the title (${info.durationSec} s)`,
-    ).toBeLessThanOrEqual(END_TOLERANCE_SEC);
+    expectEndedAtTheEnd(ended, info);
     const metrics = await qa.metrics();
     expect(metrics.state, 'player state (metrics.state) after the end of the title').toBe('ended');
     expectNoRebuffer(metrics);
@@ -130,10 +116,7 @@ test(
       Math.abs(resumedAt - pausedAt),
       `distance in seconds between the media time of the playing event after the resume (${resumedAt} s) and of the paused event (${pausedAt} s)`,
     ).toBeLessThanOrEqual(RESUME_TOLERANCE_SEC);
-    expect(
-      reached - (pausedAt + CONTINUE_SEC),
-      `media time reached (${reached} s) beyond the ${pausedAt + CONTINUE_SEC} s the wait was for: the clock jumped forward after the resume`,
-    ).toBeLessThanOrEqual(RESUME_TOLERANCE_SEC);
+    expectClockContinued(reached, pausedAt + CONTINUE_SEC, 'the clock jumped forward after the resume');
     // No seek: the element did not seek to resume.
     expect(
       timeline.filter((event) => event.name === 'seeking' || event.name === 'seeked'),
@@ -165,14 +148,8 @@ test(
       remainingSec: info.durationSec - target,
     });
 
-    expect(
-      Math.abs(seek.seeked.mediaTime - target),
-      `distance in seconds between the media time of the seeked event (${seek.seeked.mediaTime} s) and the target (${target} s)`,
-    ).toBeLessThanOrEqual(SEEK_LANDING_TOLERANCE_SEC);
-    expect(
-      Math.abs(ended.mediaTime - info.durationSec),
-      `distance in seconds between the media time of the \`ended\` event (${ended.mediaTime} s) and the end of the title (${info.durationSec} s)`,
-    ).toBeLessThanOrEqual(END_TOLERANCE_SEC);
+    expectLanded(seek.seeked, target);
+    expectEndedAtTheEnd(ended, info);
     expect((await qa.metrics()).state, 'player state (metrics.state) after the end of the title').toBe(
       'ended',
     );
@@ -215,10 +192,7 @@ test(
       restartedAt,
       `media time of the playing event after play() (qa.events()); the title had ended at ${info.durationSec} s`,
     ).toBeLessThanOrEqual(RESTART_TOLERANCE_SEC);
-    expect(
-      reached - CONTINUE_SEC,
-      `media time reached (${reached} s) beyond the ${CONTINUE_SEC} s the wait was for: the clock did not restart from the beginning`,
-    ).toBeLessThanOrEqual(RESUME_TOLERANCE_SEC);
+    expectClockContinued(reached, CONTINUE_SEC, 'the clock did not restart from the beginning');
     const metrics = await qa.metrics();
     expect(metrics.state, 'player state (metrics.state) after play() on an ended title').toBe('playing');
 

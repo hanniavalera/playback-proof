@@ -5,9 +5,8 @@ import { streamInfoOf } from './support/session.ts';
 import { requestLogCursor } from './support/waiting.ts';
 import { middleOfSegment, segmentCovering, segmentNumbers } from './vod/segments.ts';
 import {
-  CLOCK_OVERSHOOT_TOLERANCE_SEC,
-  CONTINUE_AFTER_SEEK_SEC,
-  SEEK_LANDING_TOLERANCE_SEC,
+  expectClockContinued,
+  expectLanded,
   farTarget,
   fetchedAgain,
   logAround,
@@ -15,9 +14,7 @@ import {
   refetched,
   seekAndRecord,
 } from './vod/seeking.ts';
-
-/** How long the player plays at the far position before the way back: enough for it to append there and move its playhead on. */
-const EVICTION_PLAY_SEC = 3;
+import { CONTINUE_SEC, EVICTION_PLAY_SEC } from './vod/tolerances.ts';
 
 test(
   'PB-VOD-006 seek forward inside the buffered range: seeked fires and playback continues from the target with no rebuffer',
@@ -43,17 +40,11 @@ test(
 
     const logCursor = await requestLogCursor(session);
     const seek = await seekAndRecord(qa, target);
-    const reached = await qa.waitForMediaTime(target + CONTINUE_AFTER_SEEK_SEC);
+    const reached = await qa.waitForMediaTime(target + CONTINUE_SEC);
 
     // What the viewer got: the seek finished where it was asked to, playback went on from there and did not jump.
-    expect(
-      Math.abs(seek.seeked.mediaTime - target),
-      `distance in seconds between the media time of the seeked event (${seek.seeked.mediaTime} s) and the target (${target} s)`,
-    ).toBeLessThanOrEqual(SEEK_LANDING_TOLERANCE_SEC);
-    expect(
-      reached - (target + CONTINUE_AFTER_SEEK_SEC),
-      `media time reached (${reached} s) beyond the ${target + CONTINUE_AFTER_SEEK_SEC} s the wait was for: the clock jumped after the seek`,
-    ).toBeLessThanOrEqual(CLOCK_OVERSHOOT_TOLERANCE_SEC);
+    expectLanded(seek.seeked, target);
+    expectClockContinued(reached, target + CONTINUE_SEC, 'the clock jumped after the seek');
     expectNoRebuffer(await qa.metrics());
 
     // What the origin saw: a seek inside the buffer is served by the buffer, so nothing the player already had is asked for again.
@@ -83,16 +74,10 @@ test(
     const covering = segmentCovering(info, target);
     const logCursor = await requestLogCursor(session);
     const seek = await seekAndRecord(qa, target);
-    const reached = await qa.waitForMediaTime(target + CONTINUE_AFTER_SEEK_SEC);
+    const reached = await qa.waitForMediaTime(target + CONTINUE_SEC);
 
-    expect(
-      Math.abs(seek.seeked.mediaTime - target),
-      `distance in seconds between the media time of the seeked event (${seek.seeked.mediaTime} s) and the target (${target} s)`,
-    ).toBeLessThanOrEqual(SEEK_LANDING_TOLERANCE_SEC);
-    expect(
-      reached - (target + CONTINUE_AFTER_SEEK_SEC),
-      `media time reached (${reached} s) beyond the ${target + CONTINUE_AFTER_SEEK_SEC} s the wait was for: the clock jumped after the seek`,
-    ).toBeLessThanOrEqual(CLOCK_OVERSHOOT_TOLERANCE_SEC);
+    expectLanded(seek.seeked, target);
+    expectClockContinued(reached, target + CONTINUE_SEC, 'the clock jumped after the seek');
 
     // The origin's side. The player may start a segment early (Shaka looks the first segment up `inaccurateManifestTolerance` before the
     // target, 2 s, in the engines that do not use cross-boundary logic), so what is required is the covering segment and no refetch.
@@ -131,16 +116,10 @@ test(
 
     const logCursor = await requestLogCursor(session);
     const back = await seekAndRecord(qa, early);
-    const reached = await qa.waitForMediaTime(early + CONTINUE_AFTER_SEEK_SEC);
+    const reached = await qa.waitForMediaTime(early + CONTINUE_SEC);
 
-    expect(
-      Math.abs(back.seeked.mediaTime - early),
-      `distance in seconds between the media time of the seeked event (${back.seeked.mediaTime} s) and the target (${early} s)`,
-    ).toBeLessThanOrEqual(SEEK_LANDING_TOLERANCE_SEC);
-    expect(
-      reached - (early + CONTINUE_AFTER_SEEK_SEC),
-      `media time reached (${reached} s) beyond the ${early + CONTINUE_AFTER_SEEK_SEC} s the wait was for: the clock jumped after the seek`,
-    ).toBeLessThanOrEqual(CLOCK_OVERSHOOT_TOLERANCE_SEC);
+    expectLanded(back.seeked, early);
+    expectClockContinued(reached, early + CONTINUE_SEC, 'the clock jumped after the seek back');
 
     // The origin's side, and the proof that the premise held: the segment that covers the target had been fetched at the start and is
     // fetched again, so the buffer did not have it any more.
@@ -148,7 +127,7 @@ test(
     const covering = segmentCovering(info, early);
     expect(
       fetchedAgain(info, 'video', around),
-      `video segment numbers requested at the start and again after the seek back (request log): segment ${covering} covers ${early} s, and it was not requested again, so the player still had it and the position was not evicted`,
+      `video segment numbers requested before the seek back (${segmentNumbers(around.before, info, 'video').join(', ')}) and again after it (${segmentNumbers(around.after, info, 'video').join(', ')}) in the request log: segment ${covering} covers ${early} s, so it must be among the ones fetched again, or the player still had it and the position was not evicted`,
     ).toContain(covering);
   },
 );
@@ -181,6 +160,8 @@ test(
     );
     expect(unresolved, 'seeks that never resolved on a seeked of their own').toEqual([]);
 
+    // The race was run: no seek finished before the last one was issued. Then the last one wins: the seeked that follows the last seeking
+    // is where the clock is, and playback goes on from there.
     const timeline = await qa.events(since);
     const lastSeeking = timeline.filter((event) => event.name === 'seeking').at(-1);
     const settled = timeline.find(
@@ -191,16 +172,9 @@ test(
       'seeked events before the last seeking: a seek finished before the last one was issued, so the five seeks did not overlap and the run did not exercise the race',
     ).toEqual([]);
     expect(settled, 'the seeked event that follows the last seeking (qa.events())').toBeDefined();
-    expect(
-      Math.abs((settled?.mediaTime ?? Number.NaN) - last),
-      `distance in seconds between the media time of the final seeked event (${settled?.mediaTime} s) and the last target (${last} s)`,
-    ).toBeLessThanOrEqual(SEEK_LANDING_TOLERANCE_SEC);
-
-    const reached = await qa.waitForMediaTime(last + CONTINUE_AFTER_SEEK_SEC);
-    expect(
-      reached - (last + CONTINUE_AFTER_SEEK_SEC),
-      `media time reached (${reached} s) beyond the ${last + CONTINUE_AFTER_SEEK_SEC} s the wait was for: the clock jumped after the seeks`,
-    ).toBeLessThanOrEqual(CLOCK_OVERSHOOT_TOLERANCE_SEC);
+    expectLanded({ mediaTime: settled?.mediaTime ?? Number.NaN }, last);
+    const reached = await qa.waitForMediaTime(last + CONTINUE_SEC);
+    expectClockContinued(reached, last + CONTINUE_SEC, 'the clock jumped after the seeks');
     const metrics = await qa.metrics();
     expect(
       metrics.state,

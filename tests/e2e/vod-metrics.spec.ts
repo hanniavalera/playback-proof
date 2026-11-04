@@ -3,21 +3,19 @@ import { expectHealthyPlayback, expectNoErrors, expectNoRebuffer } from './suppo
 import { expect, test } from './support/fixtures.ts';
 import { streamInfoOf } from './support/session.ts';
 import { requestsFor } from './support/waiting.ts';
+import { originStartupSpanMs, sinceLoadRequested, videoFrameRate } from './vod/instrument.ts';
+import { allSegments, distinctAscending, segmentNumbers } from './vod/segments.ts';
 import {
   CLOCK_RESOLUTION_MS,
   FPS_TOLERANCE_SHARE,
   FRAME_AGREEMENT_TOLERANCE,
   FRAME_WINDOW_SEC,
-  originStartupSpanMs,
-  sinceLoadRequested,
-  videoFrameRate,
-} from './vod/instrument.ts';
-import { allSegments, distinctAscending, segmentNumbers } from './vod/segments.ts';
+} from './vod/tolerances.ts';
 
 test(
   'PB-VOD-012 metrics integrity on a clean network: decoded frames above zero, dropped no more than decoded, presented frames agree with decoded, no rebuffer, startup defined, no error',
   { tag: ['@merge', '@dash'] },
-  async ({ newSession, streamFor, player }) => {
+  async ({ newSession, streamFor, player }, testInfo) => {
     const session = await newSession({
       stream: streamFor('vod', 'dash'),
       protocol: 'dash',
@@ -37,6 +35,11 @@ test(
     const metrics = await qa.metrics();
     const events = await qa.events();
     const log = await session.service.log(session.id);
+    const firstFrame = events.find((event) => event.name === 'firstframe');
+    testInfo.annotations.push({
+      type: 'readings',
+      description: `decoded ${metrics.frames.decoded}, presented ${metrics.frames.presented}, dropped ${metrics.frames.dropped}; the first frame at ${firstFrame?.mediaTime} s of media time; the window: ${measured.presented} presented and ${measured.decoded} decoded frames in ${measured.mediaSeconds} s, ${measured.fps} fps; startup ${metrics.startupMs} ms`,
+    });
 
     // Frames. Decoded and dropped are the browser's own counters; presented is counted from the browser's frame callbacks.
     const { decoded, dropped, droppedRatio, presented } = metrics.frames;
@@ -57,7 +60,6 @@ test(
     // The decoded counter counts every frame since the load; the presented one counts from the first frame callback, so the frames the
     // clock ran through before the first presented frame (a slow first paint: media time 0.35 s at the first frame in a loaded Linux WebKit,
     // 0.00 to 0.02 s elsewhere) are decoded and never presented. They are the startup's, and are added back before the two are compared.
-    const firstFrame = events.find((event) => event.name === 'firstframe');
     const beforeFirstFrame = Math.round(frameRate * (firstFrame?.mediaTime ?? 0));
     expect(
       Math.abs((presented as number) + beforeFirstFrame - decoded),
