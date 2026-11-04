@@ -22,7 +22,7 @@ describe('PB-LAB-006 results tables: the README and the real files', () => {
     expect(checkResultBlocks(readme, real).problems).toStrictEqual([]);
   });
 
-  it('keep the blocks that wait for data optional, and the ones the README shows required', () => {
+  it('keep every block the README shows required, and say which ones the README must hold', () => {
     const required = RESULT_BLOCKS.filter((b) => b.required).map((b) => b.name);
     expect(required).toStrictEqual([
       'RESULTS_CODEC',
@@ -33,8 +33,9 @@ describe('PB-LAB-006 results tables: the README and the real files', () => {
       'RESULTS_FLAKE',
       'RESULTS_READINESS',
       'RESULTS_SOAK',
+      'RESULTS_AB',
     ]);
-    expect(RESULT_BLOCKS.filter((b) => !b.required).map((b) => b.name)).toStrictEqual(['RESULTS_AB']);
+    expect(RESULT_BLOCKS.filter((b) => !b.required)).toStrictEqual([]);
     for (const name of required) expect(readme).toContain(`<!-- BEGIN:${name} -->`);
     expect(new Set(RESULT_BLOCKS.map((b) => b.name)).size).toBe(RESULT_BLOCKS.length);
   });
@@ -166,6 +167,53 @@ describe('PB-LAB-006 results tables: mutation checks on a copy of the real files
     expect(failing(edited)).toMatch(
       /generated block RESULTS_READINESS cannot be rendered: .*is not what the job uploaded/,
     );
+  });
+
+  it('catches an A/B report edited, an exploratory run given a verdict, and a verdict changed', () => {
+    const [experiment = ''] = real.list('docs/results/ab', /^PB-AB-002\..*\.report\.json$/);
+    const [exploratory = ''] = real.list('docs/results/ab', /^exploratory-.*\.report\.json$/);
+    const [pilot = ''] = real.list('docs/results/ab', /^PB-AB-001-high-latency\..*\.report\.json$/);
+    expect(real.text(experiment)).toContain('"verdict": "equivalent"');
+    const wider = changed(real, experiment, (r) => {
+      r.conditions[0].analysis.metrics[0].effect.high = 60;
+    });
+    expect(failing(wider)).toMatch(/generated block RESULTS_AB is out of date/);
+    const harmed = changed(real, experiment, (r) => {
+      r.conditions[0].analysis.decision.headline = 'A better: B is worse than the margin (do not ship B)';
+    });
+    expect(failing(harmed)).toMatch(/generated block RESULTS_AB is out of date/);
+    const decided = changed(real, exploratory, (r) => {
+      r.conditions[0].analysis.decision = { headline: 'B better: ship B (ship B)' };
+    });
+    expect(failing(decided)).toMatch(
+      /generated block RESULTS_AB cannot be rendered: .*an exploratory run has no verdict, and this report prints one/,
+    );
+    const significant = changed(real, pilot, (r) => {
+      r.calibrations[0].result.falsePositives = 400;
+      r.calibrations[0].result.rate = 0.2;
+    });
+    expect(failing(significant)).toMatch(/generated block RESULTS_AB is out of date/);
+  });
+
+  it('catches an A/B pilot that lost its calibration, sessions that do not add up, and a plan or a report that is gone', () => {
+    const [experiment = ''] = real.list('docs/results/ab', /^PB-AB-003\..*\.report\.json$/);
+    const [pilot = ''] = real.list('docs/results/ab', /^PB-AB-001-high-latency\..*\.report\.json$/);
+    const uncalibrated = changed(real, pilot, (r) => {
+      r.calibrations = [];
+    });
+    expect(failing(uncalibrated)).toMatch(
+      /generated block RESULTS_AB cannot be rendered: .*the A\/A pilot has no calibration for the condition "high-latency"/,
+    );
+    const uneven = changed(real, experiment, (r) => {
+      r.conditions[0].analysis.analysed.A = 40;
+    });
+    expect(failing(uneven)).toMatch(
+      /generated block RESULTS_AB cannot be rendered: .*the sessions do not add up/,
+    );
+    expect(failing(real.without('ab/prereg/PB-AB-003.json'))).toContain(
+      'generated block RESULTS_AB cannot be rendered: ab/prereg/PB-AB-003.json: the file is missing',
+    );
+    expect(failing(real.without(experiment))).toMatch(/generated block RESULTS_AB is out of date/);
   });
 
   it.each([

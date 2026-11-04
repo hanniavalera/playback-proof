@@ -11,6 +11,7 @@ import {
   writeResultBlocks,
 } from '../../../tools/results-tables.ts';
 import type { ResultsBlock } from '../../../tools/results-tables.ts';
+import { renderAb } from '../../../tools/results/ab.ts';
 import { FileSet, ResultsError, data, emptyState, loadFileSet } from '../../../tools/results/files.ts';
 import { readCollections, renderFlake } from '../../../tools/results/flake.ts';
 import {
@@ -28,7 +29,6 @@ import { margin, parseSensitivity, renderPerf } from '../../../tools/results/per
 import { renderReadiness, renderSoak } from '../../../tools/results/readiness.ts';
 import { parseLegs, parsePerfLegs, parseSelection, renderSuites } from '../../../tools/results/suites.ts';
 import { renderTriage } from '../../../tools/results/triage.ts';
-import { waiting } from '../../../tools/results/waiting.ts';
 import { serializeHistory } from '../../../flake/history.ts';
 import { makeScratch } from '../support/scratch.ts';
 import { record, run } from '../flake/fixtures.ts';
@@ -180,21 +180,23 @@ describe('PB-LAB-006 results tables: checking and writing the blocks of a docume
     expect(notes[0]).toContain('<!-- BEGIN:T -->');
   });
 
-  it('says in the same way that results exist which no renderer reads yet', () => {
-    const files = new FileSet({ 'docs/results/ab/one.json': '{}' });
-    const ab = block({
-      name: 'RESULTS_AB',
+  it('says in the same way that results exist which cannot be rendered yet', () => {
+    const files = new FileSet({ 'docs/results/x/one.json': '{}' });
+    const pending = block({
+      name: 'RESULTS_X',
       required: false,
-      render: waiting({ what: 'A/B results', dir: 'docs/results/ab', match: /\.json$/ }),
+      render: () => {
+        throw new ResultsError('docs/results/x holds 1 result file(s) but no renderer reads them yet');
+      },
     });
-    const { problems, notes } = checkResultBlocks('# none\n', files, [ab]);
+    const { problems, notes } = checkResultBlocks('# none\n', files, [pending]);
     expect(problems).toStrictEqual([]);
     expect(notes[0]).toMatch(
-      /RESULTS_AB: the README has no such block, and the results cannot be rendered yet: .*no renderer/,
+      /RESULTS_X: the README has no such block, and the results cannot be rendered yet: .*no renderer/,
     );
     // Once the README holds the block, the same state is a problem: the README claims something nothing can render.
-    expect(checkResultBlocks(doc('x', 'RESULTS_AB'), files, [ab]).problems[0]).toMatch(
-      /generated block RESULTS_AB cannot be rendered: .*no renderer reads them yet/,
+    expect(checkResultBlocks(doc('x', 'RESULTS_X'), files, [pending]).problems[0]).toMatch(
+      /generated block RESULTS_X cannot be rendered: .*no renderer reads them yet/,
     );
   });
 
@@ -909,19 +911,173 @@ describe('PB-LAB-006 results tables: the readiness and soak blocks, through the 
   });
 });
 
-describe('PB-LAB-006 results tables: blocks that wait for data', () => {
-  const render = waiting({ what: 'A/B results', dir: 'docs/results/ab', match: /\.json$/ });
+describe('PB-LAB-006 results tables: the A/B block', () => {
+  const reportPath = (prefix: string): string =>
+    real.list('docs/results/ab', new RegExp(`^${prefix}\\..*\\.report\\.json$`))[0] ?? '';
+  const report = (prefix: string): Loose => JSON.parse(real.text(reportPath(prefix))) as Loose;
+  const render = (files: FileSet = real): string => {
+    const outcome = renderAb(files);
+    if (outcome.kind !== 'data') throw new Error(outcome.markdown);
+    return outcome.markdown;
+  };
+  const rows = (markdown: string, start: string): string[] =>
+    markdown.split('\n').filter((line) => line.startsWith(start));
+  const primary = (prefix: string): Loose =>
+    report(prefix).conditions[0].analysis.metrics.find((m: Loose) => m.role === 'primary');
 
-  it('shows an empty state, with no number in it, while there are no files', () => {
-    expect(render(new FileSet({ 'docs/results/ab/notes.md': 'x' }))).toStrictEqual(
-      emptyState('A/B results', 'docs/results/ab'),
+  it('counts the reports by kind, says where they were measured, and leaves the pipeline check out', () => {
+    const markdown = render();
+    const reports = real.list('docs/results/ab', /^[^/]+\.report\.json$/);
+    expect(reports).toHaveLength(6);
+    expect(markdown).toContain(
+      `Counted from the ${reports.length} reports under [\`docs/results/ab\`](docs/results/ab): 2 pre-registered experiments, 3 A/A pilots of the harness itself and 1 exploratory run.`,
     );
-    expect(emptyState('A/B results', 'docs/results/ab').markdown).not.toMatch(/\d/);
+    expect(markdown).toContain(
+      'Every report was measured in Chromium 156.0.8078.4 on `local-darwin-arm64`, a local workstation (macOS 27.2, 12 CPUs, 16 GiB): one engine on one machine, not replicated on a GitHub runner.',
+    );
+    expect(markdown).toContain('The pipeline check of Part 1 (2 measured sessions per arm, plumbing only');
+    expect(markdown).not.toContain('pipeline-check.local-darwin-arm64');
   });
 
-  it('says that a renderer is missing the day files appear', () => {
-    expect(() =>
-      render(new FileSet({ 'docs/results/ab/one.json': '{}', 'docs/results/ab/two.json': '{}' })),
-    ).toThrow(/docs\/results\/ab holds 2 result file\(s\) .* but no renderer reads them yet/);
+  it('tabulates the two experiments with the numbers of their reports', () => {
+    const markdown = render();
+    const startup = primary('PB-AB-002');
+    const [row = ''] = rows(markdown, '| [`PB-AB-002`]');
+    expect(row).toContain(
+      `${fixed(startup.summaryA.median, 1)} ms median (p90 ${fixed(startup.summaryA.p90, 1)}), 30 sessions`,
+    );
+    expect(row).toContain(
+      `${fixed(startup.summaryB.median, 1)} ms median (p90 ${fixed(startup.summaryB.p90, 1)}), 30 sessions`,
+    );
+    expect(row).toContain(
+      `+${fixed(startup.effect.estimate, 1)} ms (${fixed(startup.effect.low, 1)} to +${fixed(startup.effect.high, 1)})`,
+    );
+    expect(row).toContain('Startup time (margin ±100 ms)');
+    expect(row).toContain('`high-latency`: 300 ms of latency (jitter 100 ms)');
+    expect(row).toContain('**Equivalent within the margin (keep A)** | Yes, 7 of 7 gates |');
+    const [harm = ''] = rows(markdown, '| [`PB-AB-003`]');
+    expect(harm).toContain('0 of 39 sessions | 0 of 39 sessions | 0 points (-9 to +9) |');
+    expect(harm).toContain('Share of sessions with a rebuffer (margin ±20 points)');
+    expect(harm).toContain('`bandwidth-drop-finite`: link of 20,000 kbps, then 600 kbps from 8 s');
+  });
+
+  it('prints no verdict for the exploratory run, labels it, and says what the report says of itself', () => {
+    const markdown = render();
+    const exploratory = rows(markdown, '| **Exploratory**');
+    expect(exploratory).toHaveLength(2);
+    for (const row of exploratory) {
+      expect(row).toContain('None: exploratory, estimates only');
+      expect(row).not.toMatch(/Equivalent|better|Inconclusive/);
+    }
+    expect(markdown).toContain(
+      'The exploratory run says of itself: “This is an exploratory comparison: it estimates and decides nothing.”',
+    );
+    expect(exploratory[1]).toContain('`constrained-1500`: link of 1,500 kbps');
+  });
+
+  it('says what the PB-AB-003 report says about the sessions it left out', () => {
+    const markdown = render();
+    const [row = ''] = rows(markdown, '| [`PB-AB-003`]').slice(-1);
+    expect(row).toContain('| 40 | 40 / 40 | 1 / 1 | 39 / 39 | Not tripped |');
+    const [note = ''] = rows(markdown, '- **PB-AB-003**: 2 of 80');
+    expect(note).toContain(
+      '2 of 80 measured sessions failed (reported, never dropped): under the pre-registered maximum of 10 % of an arm, and the arms failed alike.',
+    );
+    expect(note).toContain(
+      'session 73 of arm A (`page`: the player page did not boot: ReferenceError: shaka is not defined)',
+    );
+    expect(note).toContain(
+      'session 74 of arm B (`timeout`: PB-AB-003 bandwidth-drop-finite B #74 did not finish within 180000 ms)',
+    );
+    expect(note).not.toContain('http://');
+  });
+
+  it('says that PB-AB-003 can only show harm, and that the arms started on different rungs', () => {
+    const markdown = render();
+    expect(markdown).toContain(
+      '- **PB-AB-003** can only show harm: A has 0 of 39 sessions with a rebuffer, and a share cannot fall below 0, so B could be shown worse than A and never better.',
+    );
+    expect(markdown).not.toContain('**PB-AB-002** can only show harm');
+    expect(markdown).toContain(
+      '- **PB-AB-003** (`bandwidth-drop-finite`): A started on 720p in 39 sessions, B on 240p in 39 sessions: the arms never started on the same rung, so a startup difference includes the first rung.',
+    );
+  });
+
+  it('shows each A/A pilot with its splits, and says which could not fail', () => {
+    const markdown = render();
+    const [startup = ''] = rows(markdown, '| [`PB-AB-001-high-latency`]').slice(-1);
+    const calibration = report('PB-AB-001-high-latency').calibrations[0].result;
+    expect(startup).toContain(
+      `${calibration.falsePositives} of 2,000 (5.00 %); the rate's 95 % interval is 4.09 to 6.05 %`,
+    );
+    expect(startup).toContain('Pass; the real A/A: Equivalent within the margin (keep A)');
+    expect(startup).toContain('Yes: the sessions vary (504 to 806 ms)');
+    for (const name of ['PB-AB-001-bandwidth-drop-finite', 'PB-AB-001-bandwidth-drop-finite-40s']) {
+      const [row = ''] = rows(markdown, `| [\`${name}\`]`).slice(-1);
+      expect(row).toContain("0 of 2,000 (0.00 %); the rate's 95 % interval is 0.00 to 0.18 %");
+      expect(row).toContain('No: 0 of 60 sessions with a rebuffer, so no split can be significant');
+    }
+  });
+
+  it('shows an empty state with no number when there is no report, and when there is only the pipeline check', () => {
+    expect(renderAb(new FileSet())).toStrictEqual(emptyState('A/B reports', 'docs/results/ab'));
+    expect(emptyState('A/B reports', 'docs/results/ab').markdown).not.toMatch(/\d/);
+    const pipeline = real.list('docs/results/ab/pipeline-check', /\.report\.json$/);
+    expect(pipeline).toHaveLength(1);
+    const only = new FileSet(
+      [...pipeline, 'ab/prereg/pipeline-check.json'].map((path) => [path, real.text(path)] as const),
+    );
+    expect(renderAb(only)).toStrictEqual(emptyState('A/B reports', 'docs/results/ab'));
+  });
+
+  it('does not act on the verdict of a run that is not valid', () => {
+    const edited = changed(real, reportPath('PB-AB-002'), (r) => {
+      r.validity.valid = false;
+      r.validity.gates[3].passed = false;
+    });
+    const [row = ''] = rows(render(edited), '| [`PB-AB-002`]');
+    expect(row).toContain('Not acted on: the run is not valid (Equivalent within the margin (keep A))');
+    expect(row).toContain('**No**: Condition applied, the same in both arms');
+    expect(row).not.toContain('**Equivalent');
+  });
+
+  it('refuses what would let an estimate pass for a finding', () => {
+    const [check = ''] = real.list('docs/results/ab/pipeline-check', /\.report\.json$/);
+    const evidence = changed(real, check, (r) => {
+      r.validity.evidence = true;
+    });
+    expect(() => renderAb(evidence)).toThrow(
+      /a run of this kind is evidence and this report says it is not|plumbing only/,
+    );
+    const unknown = changed(real, reportPath('PB-AB-002'), (r) => {
+      r.experiment.kind = 'confirmation';
+    });
+    expect(() => renderAb(unknown)).toThrow(/\$\.experiment\.kind: unknown kind "confirmation"/);
+    const contradicted = changed(real, reportPath('PB-AB-002'), (r) => {
+      r.validity.gates[0].passed = false;
+    });
+    expect(() => renderAb(contradicted)).toThrow(/the report says valid and its gates say otherwise/);
+    const wider = changed(real, reportPath('PB-AB-002'), (r) => {
+      r.conditions[0].analysis.metrics[0].effect.level = 0.9;
+    });
+    expect(() => renderAb(wider)).toThrow(
+      /expected the 95 % interval that the tables are headed with but found 0.9/,
+    );
+    const undecided = changed(real, reportPath('PB-AB-003'), (r) => {
+      r.conditions[0].analysis.decision = null;
+    });
+    expect(() => renderAb(undecided)).toThrow(/a pre-registered run has a verdict, and this report has none/);
+  });
+
+  it('shows a rule of a plan that it does not know as it is written, and refuses a condition the plan lacks', () => {
+    const plan = 'ab/prereg/PB-AB-002.json';
+    const edited = changed(real, plan, (r) => {
+      r.conditions[0].rules = [{ type: 'status', code: 503 }];
+    });
+    expect(render(edited)).toContain('`high-latency`: `{"type":"status","code":503}`');
+    const renamed = changed(real, plan, (r) => {
+      r.conditions[0].id = 'another';
+    });
+    expect(() => renderAb(renamed)).toThrow(/the plan has no condition "high-latency", which its report ran/);
   });
 });

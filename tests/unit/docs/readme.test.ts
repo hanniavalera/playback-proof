@@ -6,7 +6,9 @@ import { checkReadmeFile } from '../../../tools/check-docs.ts';
 import { parseCatalog } from '../../../tools/catalog.ts';
 import { RESULT_BLOCKS, loadResultFiles } from '../../../tools/results-tables.ts';
 import { readCollections } from '../../../tools/results/flake.ts';
+import { fixed as digits } from '../../../tools/results/format.ts';
 import { parseLegs, parsePerfLegs } from '../../../tools/results/suites.ts';
+import { configFor, flattenPatch } from '../../../src/player/configs.ts';
 import { parseResultFile } from '../../../src/lab/probe/report.ts';
 import type { Loose } from '../support/results-files.ts';
 
@@ -40,9 +42,6 @@ const slug = (heading: string): string =>
 
 const headingsOf = (markdown: string): string[] =>
   [...markdown.replace(/```[\s\S]*?```/g, '').matchAll(/^#{1,6} (.+)$/gm)].map((m) => slug(m[1] ?? ''));
-
-/** Paths that appear in the README for results that are measured by changes that have not landed. Each must still be absent. */
-const PENDING_PATHS = ['docs/results/ab', 'ab'];
 
 /** Paths that commands create: they exist after the steps of the quick start, not in a clone. */
 const RUNTIME_PATHS = ['dist/player', '.cache/streams', 'reports/html', 'reports/playwright.json', '.cache'];
@@ -132,22 +131,11 @@ describe('PB-LAB-006 README: links, paths and scripts', () => {
     expect(checked.length).toBeGreaterThan(5);
   });
 
-  it('names only paths that exist, apart from those a command creates and the results that are pending', () => {
+  it('names only paths that exist, apart from those a command creates', () => {
     const missing = repoPaths(prose).filter(
-      (path) =>
-        !existsSync(join(ROOT, path)) && !RUNTIME_PATHS.includes(path) && !PENDING_PATHS.includes(path),
+      (path) => !existsSync(join(ROOT, path)) && !RUNTIME_PATHS.includes(path),
     );
     expect(missing).toStrictEqual([]);
-  });
-
-  it('keeps its list of pending results honest: each one is named in the README, and none exists yet', () => {
-    for (const path of PENDING_PATHS) {
-      expect(prose, path).toContain(path);
-      expect(
-        existsSync(join(ROOT, path)),
-        `${path} exists now: the README says it does not (What this proves, Results that are not committed yet); add its block and update the sentence, then remove it from PENDING_PATHS`,
-      ).toBe(false);
-    }
   });
 
   it('runs only npm scripts that exist, and lists every script of package.json', () => {
@@ -347,18 +335,18 @@ describe('PB-LAB-006 README: the prose against the files it stands on', () => {
     expect(legs.map((l) => l.profile)).toStrictEqual(['chromium', 'chromium-cpu4x']);
     for (const leg of legs) expect(leg.command).toContain('--paired');
     expect(real.text('Jenkinsfile')).toMatch(/stage\('Perf'\)[\s\S]*gate:perf -- --paired/);
-    expect(readme).toContain(
-      'In progress: the runner and its measurements are in review (pull request #23) and are not on `main`',
-    );
   });
 
-  it('says no A/B result is committed, and that the readiness, soak and flake results are (What this proves)', () => {
+  it('says the readiness, soak and flake results are committed, and the A/B ones too (What this proves)', () => {
     const message = (what: string): string =>
       `${what}: the README says otherwise (What this proves, Real results): update its rows`;
-    for (const path of ['ab', 'docs/results/ab']) {
-      expect(existsSync(resolve(ROOT, path)), message(`${path} exists`)).toBe(false);
-    }
-    for (const path of ['docs/results/readiness', 'docs/results/soak', 'docs/results/flake']) {
+    for (const path of [
+      'docs/results/readiness',
+      'docs/results/soak',
+      'docs/results/flake',
+      'docs/results/ab',
+      'ab',
+    ]) {
       expect(existsSync(resolve(ROOT, path)), message(`${path} is gone`)).toBe(true);
     }
   });
@@ -579,19 +567,188 @@ describe('PB-LAB-006 README: the prose against the files it stands on', () => {
   });
 
   // The file-handle calibration (static.test.ts) was fixed in pull request #22: the helper that waits for pending file operations
-  // names CloseReq next to FSReq. The README says 'in review' until that change is in this tree, and 'fixed' from then on.
-  it('says the file-handle calibration flake is fixed only once the fix is in the repository (Limitations)', () => {
-    const fixed = read('tests/unit/server/static.test.ts').includes('CloseReq');
-    if (fixed) {
-      expect(
-        readme,
-        'the fix of pull request #22 is in this tree: Limitations must say "cause found and fixed in pull request #22"',
-      ).toContain('cause found and fixed in pull request #22');
-      expect(readme).not.toContain('its fix is in review');
-    } else {
-      expect(readme).toContain('has a cause and its fix is in review');
-      expect(readme).toContain('is in review as pull request #22, not on `main`');
-      expect(readme).not.toContain('cause found and fixed');
-    }
+  // names CloseReq next to FSReq.
+  it('says the file-handle calibration flake was fixed in pull request #22, and the fix is in the repository (Limitations)', () => {
+    expect(read('tests/unit/server/static.test.ts')).toContain('CloseReq');
+    expect(readme).toContain('cause found and fixed in pull request #22');
+    expect(readme).not.toContain('its fix is in review');
+  });
+
+  describe('A/B comparisons: the prose against the reports', () => {
+    const reportOf = (prefix: string): Loose =>
+      JSON.parse(
+        real.text(real.list('docs/results/ab', new RegExp(`^${prefix}\\..*\\.report\\.json$`))[0] ?? ''),
+      ) as Loose;
+    const plan = (name: string): Loose => JSON.parse(real.text(`ab/prereg/${name}.json`)) as Loose;
+    const outsideTheBlock = readme.replace(/<!-- BEGIN:RESULTS_AB -->[\s\S]*?<!-- END:RESULTS_AB -->/, '');
+    const minutes = (r: Loose): string => {
+      const seconds = Math.round((Date.parse(r.run.finishedAt) - Date.parse(r.run.startedAt)) / 1000);
+      return `${Math.floor(seconds / 60)} min ${seconds % 60} s`;
+    };
+
+    it('quotes the verdict, the interval and the margin of PB-AB-002, and the condition it ran under', () => {
+      const r = reportOf('PB-AB-002');
+      expect(r.validity.valid).toBe(true);
+      expect(r.validity.gates).toHaveLength(7);
+      expect(r.conditions[0].analysis.decision).toMatchObject({ verdict: 'equivalent', action: 'keep-a' });
+      const startup = r.conditions[0].analysis.metrics[0];
+      expect([startup.id, startup.role, startup.threshold]).toStrictEqual(['startupMs', 'primary', 100]);
+      expect(startup.effect.estimate).toBe(15);
+      expect([digits(startup.effect.low, 1), digits(startup.effect.high, 1)]).toStrictEqual([
+        '-19.2',
+        '51.8',
+      ]);
+      expect(plan('PB-AB-002').conditions[0].rules).toMatchObject([{ type: 'latency', ms: 300 }]);
+      expect(readme).toContain(
+        'Under 300 ms of latency B starts 15 ms after A, and the interval of that difference, -19.2 to +51.8 ms, is inside the margin of 100 ms (PB-AB-002).',
+      );
+      expect(readme).toContain('startup under 300 ms of latency');
+      expect(readme).toContain('both valid (7 of 7 gates) and both *equivalent within the margin* (keep A)');
+    });
+
+    it('quotes PB-AB-003 as a harm check, and what its report says about the sessions it left out', () => {
+      const r = reportOf('PB-AB-003');
+      const analysis = r.conditions[0].analysis;
+      expect(r.validity.gates).toHaveLength(7);
+      expect(r.validity.valid).toBe(true);
+      expect(analysis.decision.verdict).toBe('equivalent');
+      const share = analysis.metrics[0];
+      expect([
+        share.countsA.events,
+        share.countsA.total,
+        share.countsB.events,
+        share.countsB.total,
+      ]).toStrictEqual([0, 39, 0, 39]);
+      expect([
+        digits(share.effect.low * 100, 0),
+        digits(share.effect.high * 100, 0),
+        share.threshold,
+      ]).toStrictEqual(['-9', '9', 0.2]);
+      expect([analysis.attempted, analysis.analysed]).toStrictEqual([
+        { A: 40, B: 40 },
+        { A: 39, B: 39 },
+      ]);
+      const failed = analysis.failures.sessions.map((s: Loose) => [s.index + 1, s.arm, s.kind]);
+      expect(failed).toStrictEqual([
+        [73, 'A', 'page'],
+        [74, 'B', 'timeout'],
+      ]);
+      expect(analysis.failures.sessions[0].message).toContain('did not boot');
+      expect(analysis.failures.guardTripped).toBe(false);
+      const gate = r.validity.gates.find((g: Loose) => g.id === 'failures');
+      expect(gate.detail).toContain('2 of 80 measured sessions failed (reported, never dropped)');
+      expect(gate.detail).toContain('maximum of 10 % of an arm');
+      expect(analysis.startRungs).toMatchObject({ A: { '720': 39 }, B: { '240': 39 }, disjoint: true });
+      for (const quoted of [
+        'no session of either configuration stalled, 0 of 39 against 0 of 39, and the interval of the difference, -9 to +9 points, is inside the margin of 20 points (PB-AB-003)',
+        'It attempted 40 sessions per arm and analysed 39: one session of each arm failed (session 73 of A, the player page did not boot; session 74 of B, a timeout)',
+        'says that 2 of 80 sessions failed, under the maximum of 10 % of an arm, and the failure guard did not trip',
+        '**PB-AB-003 is a harm check, not a comparison.**',
+        'a share cannot fall below 0',
+        'A on 720p, B on 240p',
+      ]) {
+        expect(readme, quoted).toContain(quoted);
+      }
+    });
+
+    it('quotes the A/A pilots: two that could not fail and one that could, and the pilots windows', () => {
+      const bandwidth = ['PB-AB-001-bandwidth-drop-finite', 'PB-AB-001-bandwidth-drop-finite-40s'].map(
+        reportOf,
+      );
+      for (const r of bandwidth) {
+        const share = r.conditions[0].analysis.metrics[0];
+        expect(share.countsA.events + share.countsB.events).toBe(0);
+        expect(share.countsA.total + share.countsB.total).toBe(60);
+        expect(r.calibrations[0].result).toMatchObject({ splits: 2000, falsePositives: 0, pass: true });
+      }
+      const startup = reportOf('PB-AB-001-high-latency').calibrations[0].result;
+      expect([startup.falsePositives, startup.splits, startup.rate]).toStrictEqual([100, 2000, 0.05]);
+      expect([
+        digits(startup.interval.lower * 100, 2),
+        digits(startup.interval.upper * 100, 2),
+      ]).toStrictEqual(['4.09', '6.05']);
+      expect(plan('PB-AB-001-bandwidth-drop-finite').observation.mediaSecondsAfterFirstFrame).toBe(18);
+      expect(plan('PB-AB-001-bandwidth-drop-finite-40s').observation.mediaSecondsAfterFirstFrame).toBe(40);
+      expect(read('docs/results/ab/README.md')).toContain('1.4 s before the window ended');
+      for (const quoted of [
+        'No session of A rebuffered in the two A/A pilots of that condition (0 of 120)',
+        'Nothing stalled in A (0 of 39 in the experiment, 0 of 120 in the two A/A pilots under that condition)',
+        '(0 of 60 in each pilot)',
+        '(100 of 2,000 splits significant, 5.00 %, interval 4.09 to 6.05 %)',
+        "The pilots observed 18 s and 40 s of media after the first frame: in the first, the player's first change of rung after the drop came 1.4 s before the window ended",
+        'Two of the three A/A pilots could not fail.',
+      ]) {
+        expect(readme, quoted).toContain(quoted);
+      }
+    });
+
+    it('says where it was measured, how long a run took, and what the machine was doing', () => {
+      const reports = real
+        .list('docs/results/ab', /^[^/]+\.report\.json$/)
+        .map((p) => JSON.parse(real.text(p)) as Loose);
+      expect(reports).toHaveLength(6);
+      for (const r of reports) {
+        expect([
+          r.environment.envId,
+          r.environment.browser.name,
+          r.environment.browser.version,
+        ]).toStrictEqual(['local-darwin-arm64', 'chromium', '156.0.8078.4']);
+        expect(r.environment.host.cpus).toBe(12);
+      }
+      expect(readme).toContain('Chromium 156.0.8078.4 on `local-darwin-arm64`');
+      expect(readme).toContain('**Chromium on one workstation, not replicated on a runner.**');
+      expect([minutes(reportOf('PB-AB-002')), minutes(reportOf('PB-AB-003'))]).toStrictEqual([
+        '7 min 20 s',
+        '63 min 28 s',
+      ]);
+      expect(readme).toContain('7 min 20 s for PB-AB-002 and 63 min 28 s for PB-AB-003');
+      const narrative = read('docs/results/ab/README.md');
+      expect(narrative).toContain('overloaded the machine for about nine minutes');
+      expect(narrative).toContain('because its A/A check was measured elsewhere');
+      const mdName = readdirSync(join(ROOT, 'docs/results/ab')).find((name) =>
+        /^PB-AB-003\..*\.report\.md$/.test(name),
+      );
+      expect(mdName).toBeDefined();
+      const md = read(`docs/results/ab/${mdName ?? ''}`);
+      expect(md).toContain('bandwidth-drop-finite: 3.7 before, 17.0 after');
+      expect(readme).toContain('the load average after PB-AB-003 was 17.0 on 12 CPUs, against 3.7 before');
+    });
+
+    it('says B differs from A in four settings, and quotes nothing of the exploratory run outside its labelled rows', () => {
+      expect(flattenPatch(configFor('A'))).toHaveLength(0);
+      expect(flattenPatch(configFor('B'))).toHaveLength(4);
+      expect(read('docs/AB.md')).toContain('overrides **four settings at once**');
+      expect(readme).toContain('configuration B differs from A in four settings together');
+      expect(readme).toContain('**B differs from A in four settings together**');
+      expect(readme).toContain('B (four overridden settings)');
+      const exploratory = reportOf('exploratory-constrained-1500');
+      expect(exploratory.experiment.kind).toBe('exploratory');
+      expect(exploratory.conditions[0].analysis.decision).toBeNull();
+      expect(readme).toContain('nothing from it is quoted here as a finding');
+      const estimate = exploratory.conditions[0].analysis.metrics[0].effect.estimate as number;
+      for (const quoted of [digits(-estimate, 0), digits(-estimate, 1), '1698', '1,698']) {
+        expect(
+          outsideTheBlock,
+          `the exploratory estimate ${quoted} is quoted outside its labelled rows`,
+        ).not.toContain(quoted);
+      }
+    });
+
+    it('names the runner, its script, its plans and the decision records it cites', () => {
+      expect(JSON.parse(read('package.json')).scripts.ab).toBe('tsx ab/run.ts');
+      for (const path of [
+        'ab/run.ts',
+        'ab/prereg',
+        'docs/AB.md',
+        'docs/decisions/ab.md',
+        'docs/results/ab/README.md',
+      ]) {
+        expect(existsSync(join(ROOT, path)), path).toBe(true);
+      }
+      const adrs = read('docs/decisions/ab.md');
+      expect(adrs).toContain('## ADR-140:');
+      expect(adrs).toContain('## ADR-149:');
+      expect(readme).toContain('ADR-140 to ADR-149');
+    });
   });
 });

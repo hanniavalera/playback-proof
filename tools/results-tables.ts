@@ -9,6 +9,7 @@
 // tests/unit/docs/results-tables.test.ts runs every one on the real committed files and on synthetic ones. To add a block: write one
 // function in tools/results/, register it in RESULT_BLOCKS below, and put one marker pair where the table belongs (docs/README-TOOLING.md).
 import { blockMarkers, checkBlockFresh, locateBlock, replaceBlock } from './doc-blocks.ts';
+import { AB_DIR, AB_PLAN_DIR, renderAb } from './results/ab.ts';
 import { renderCodec } from './results/codec.ts';
 import { ResultsError, loadFileSet } from './results/files.ts';
 import type { FileSet, Read, Rendered } from './results/files.ts';
@@ -18,7 +19,6 @@ import { BASELINES_DIR, PERF_RESULTS_DIR, renderPerf } from './results/perf.ts';
 import { GATE_MERGE, MERGE_WORKFLOW, NIGHTLY_WORKFLOW, STRATEGY, renderSuites } from './results/suites.ts';
 import { PROVENANCE_DIR, READINESS_DIR, SOAK_DIR, renderReadiness, renderSoak } from './results/readiness.ts';
 import { TRIAGE_DIR, renderTriage } from './results/triage.ts';
-import { waiting } from './results/waiting.ts';
 
 export interface ResultsBlock {
   /** The marker name: `RESULTS_CODEC` is `<!-- BEGIN:RESULTS_CODEC -->` ... `<!-- END:RESULTS_CODEC -->`. */
@@ -113,13 +113,15 @@ export const RESULT_BLOCKS: readonly ResultsBlock[] = [
     required: true,
     render: renderSoak,
   },
-  // The results below are committed by changes that have not landed: each block is optional, and has an empty state, until its data is.
   {
     name: 'RESULTS_AB',
-    title: 'A/B comparisons of player configurations',
-    reads: [{ path: 'docs/results/ab', match: /\.(json|md)$/ }],
-    required: false,
-    render: waiting({ what: 'A/B results', dir: 'docs/results/ab', match: /\.(json|md)$/ }),
+    title: 'A/B comparisons of the player configurations, from the reports of the harness',
+    reads: [
+      { path: AB_DIR, match: /^docs\/results\/ab\/(?:pipeline-check\/)?[^/]+\.report\.json$/ },
+      { path: AB_PLAN_DIR, match: /\.json$/ },
+    ],
+    required: true,
+    render: renderAb,
   },
 ];
 
