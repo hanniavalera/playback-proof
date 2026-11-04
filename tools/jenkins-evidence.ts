@@ -19,6 +19,7 @@ import {
   groupStages,
   parseSkippedStages,
   parseToolVersions,
+  parseWorkspaces,
   redact,
   stringifyEvidence,
   summarizePlaywright,
@@ -34,6 +35,8 @@ const USAGE = `usage: npx tsx tools/jenkins-evidence.ts [options]
   --trigger             start a new build, wait for it to finish, then collect
   --build <n>           collect build n (default: the last build); waits when it is still running
   --expect <result>     the result the run is meant to show: SUCCESS (default) or FAILURE. The exit code is 0 when it matches.
+  --expect-stage <name> for a run that is meant to be red: the stage (or the group, such as "Merge gate") it must turn red in; red
+                        anywhere else does not count as the result the run was meant to show
   --label <text>        one line that says what this run is for (recorded in the evidence)
   --out <dir>           where the files go (default docs/results/jenkins)
   --env-file <file>     where JENKINS_ADMIN_ID and JENKINS_ADMIN_PASSWORD are read when they are not in the environment (default .env)
@@ -197,6 +200,7 @@ async function collect(
   job: string,
   build: number,
   expected: 'SUCCESS' | 'FAILURE',
+  expectedStage: string | undefined,
   label: string,
   secrets: string[],
 ) {
@@ -245,10 +249,12 @@ async function collect(
     build,
     label,
     expected,
+    ...(expectedStage === undefined ? {} : { expectedStage }),
     result: run.result ?? 'UNKNOWN',
     startedAtMs: run.timestamp,
     durationMs: run.duration,
     queuedMs: describe.queueDurationMillis ?? 0,
+    collectedAtMs: Date.now(),
     commit: revision?.SHA1 ?? null,
     branch,
     jenkinsVersion: jenkins.version,
@@ -261,6 +267,7 @@ async function collect(
         executors: c.numExecutors,
         labels: c.assignedLabels.map((l) => l.name),
       })),
+    workspaces: parseWorkspaces(consoleText),
     tools: parseToolVersions(consoleText),
     stages: groupStages(describe.stages, steps, describe.startTimeMillis, parseSkippedStages(consoleText)),
     playwright,
@@ -277,6 +284,7 @@ async function main(): Promise<void> {
       trigger: { type: 'boolean', default: false },
       build: { type: 'string' },
       expect: { type: 'string', default: 'SUCCESS' },
+      'expect-stage': { type: 'string' },
       label: { type: 'string', default: '' },
       out: { type: 'string', default: 'docs/results/jenkins' },
       'env-file': { type: 'string', default: '.env' },
@@ -329,7 +337,15 @@ async function main(): Promise<void> {
   if (!Number.isInteger(build) || build < 1) fail('there is no build to collect');
   await waitForBuild(jenkins, job, build, timeoutMs);
 
-  const { evidence, excerpt } = await collect(jenkins, job, build, expected, values.label, [password]);
+  const { evidence, excerpt } = await collect(
+    jenkins,
+    job,
+    build,
+    expected,
+    values['expect-stage'],
+    values.label,
+    [password],
+  );
   const json = stringifyEvidence(evidence);
   const header = `Console log of build ${build} of ${job}, cut down to the stage markers, the tool versions and the summary of each gate.\nThe full log stays in Jenkins; ${excerpt.omitted} lines of progress output were left out. Credentials are redacted. Times are UTC.\n\n`;
   const text = header + excerpt.text;
@@ -353,7 +369,11 @@ async function main(): Promise<void> {
     writeFileSync(textPath, text);
     log(`wrote ${jsonPath} and ${textPath}`);
   }
-  log(`build ${build}: ${evidence.result} (expected ${expected})`);
+  const where = evidence.failure?.stage ? ` in ${evidence.failure.stage}` : '';
+  const wanted = evidence.expectedStage ? ` in ${evidence.expectedStage}` : '';
+  log(
+    `build ${build}: ${evidence.result}${where} (expected ${expected}${wanted}): ${evidence.asExpected ? 'as expected' : 'NOT as expected'}`,
+  );
   process.exit(evidence.asExpected ? 0 : 1);
 }
 

@@ -29,6 +29,9 @@ The controller is ready when `docker compose ps` says `healthy` (about a minute)
   branch. A git worktree cannot be mounted as it is (its `.git` is a file that points outside the directory), so run a worktree's
   commits through a clone: `git clone --bare --single-branch --branch <branch> . ../clone.git`, then `PB_REPO=../clone.git` and
   `PB_BRANCH=<branch>`, and fetch into the clone before each build.
+- **How many engines run at once:** `AGENT_EXECUTORS` in `.env` (default 2: two of the four engines run while two wait; with 1 they run
+  one after the other, which is what ADR-116 measured it against). Change it, run `docker compose up -d`, and the controller is
+  recreated with the new value.
 
 Check that it is what the documentation says it is: the controller has no executors, the agent has two, and anonymous users get
 nothing.
@@ -55,7 +58,9 @@ report) and, for a failing test, `test-results/**` with the failure attachments 
 long it waited for an executor), the versions of Jenkins, the plugins and the tools on the agent, the tests per engine, the failure
 if there is one, and a console excerpt cut down to the stage markers and the summary of each gate. It writes
 `docs/results/jenkins/build-<n>.json` and `build-<n>-console.txt`, redacted twice (by the values it knows and by the shape of a
-credential) and refuses to write a file that still contains the password. `npx tsx tools/jenkins-evidence.ts --help` lists the options
+credential) and refuses to write a file that still contains the password. It records the agents as they are when it runs
+(`collectedAt`), so run it right after the build; the workspaces the build used are read from the build's own log (two of them mean
+two executors were busy at once). `npx tsx tools/jenkins-evidence.ts --help` lists the options
 (`--build <n>`, `--expect FAILURE` for a run that is meant to be red, `--dry-run`).
 
 ## How it maps to GitHub Actions
@@ -86,10 +91,53 @@ time it waited for an executor, the versions of Jenkins, of its plugins and of t
 that was built) and `build-<n>-console.txt` (the console log cut down to the stage markers and the summary of each gate). The
 numbers are single runs on a Docker VM that other work shared; they are not a benchmark.
 
-| Build | What it was                                                                     | Result  | Stage durations (seconds)                                                                                                                              |
-| ----- | ------------------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 2     | Not planned: four Vitest workers on the 3-CPU agent                              | FAILURE | Install 4.5, Static 9.0, **Unit 84.1: failed** (a media test whose output depends on the load of the machine); Streams and Merge gate skipped         |
-| 3     | The first full build, cold stream cache, two executors, two Vitest workers       | SUCCESS | Install 15.6, Static 12.8, Unit 109.5, Streams 175.6 (generated), Merge gate 54.5 (chromium 27.6, firefox 29.6, chromium-cpu4x 47.3, webkit 54.3, the last two including about 28 and 30 waiting for an executor); 370.7 in all |
+| Build | What it was                                                                                  | Result                                 | Seconds: install, static, unit, streams, merge gate (wall-clock), whole build |
+| ----- | -------------------------------------------------------------------------------------------- | -------------------------------------- | ----------------------------------------------------------------------------- |
+| 2     | Meant to be the first green build; four Vitest workers on the 3-CPU agent                    | **red in `Unit`** (not planned)        | 4.5, 9.0, 84.1 (failed), skipped, skipped; 102.1                              |
+| 3     | The first full build: cold stream cache, two executors, two Vitest workers                   | green                                  | 15.6, 12.8, 109.5, 175.6 (generated), 54.5; 370.7                             |
+| 4     | The second full build: warm cache, **one** executor, so the engines run one after the other  | green                                  | 10.2, 14.6, 120.2, 0.7, 104.5; 260.6                                          |
+| 5     | The first try at the negative run (below)                                                    | **red in `Unit`** (not where planned)  | 6.1, 19.3, 118.7 (failed), skipped, skipped; 149.4                            |
+| 6     | The negative run                                                                             | **red in `Merge gate`**, as planned    | 8.5, 9.6, 109.1, 0.7, 81.9; 211.9                                             |
+
+Per engine, in seconds (the time a stage waited for an executor is inside its duration in the stage view; `waited` is taken out of it
+here). Build 3, two executors: `chromium` 27.4, `firefox` 29.4, `chromium-cpu4x` 19.5 (and 27.7 waited), `webkit` 24.7 (29.7 waited).
+Build 4, one executor: 19.7, 28.7, 24.5 and 30.1, each after the one before it. Build 6: `chromium`, `firefox` and `webkit` red,
+`chromium-cpu4x` green.
+
+Two things these builds found that are not about the pipeline. **Two unit tests depend on how busy the machine is.** Build 2 failed in
+`tests/unit/probe/media.test.ts` ("generates the same bytes every time": the first of two generations of the probe media produced a
+different VP8 file), and build 5 failed in `tests/unit/server/static.test.ts` ("releases the file of every download that the client
+abandons": 84 open descriptors counted where 120 were expected). Both passed alone on an idle agent and in builds 3, 4 and 6; the host
+had a load average of about 18 on 12 cores while they failed. They are reported to the owner of the unit suite, not changed here
+(ADR-116). **PB-ENV-001 has nothing to compare with**: the committed codec matrix has no result for `jenkins-linux-arm64`, so the
+`environment` annotation of each engine in the JSON reports says `no committed probe result for jenkins-linux-arm64`, and Linux WebKit
+runs because of the `RUN_SPECS_IN_LINUX_WEBKIT` override.
+
+### The negative run
+
+A gate that has never failed is not known to work. Build 6 is a run on a **throwaway branch of a copy of the repository** (the real
+checkout is never touched) in which one expectation of `tests/e2e/vod-start.spec.ts` was made false on purpose: the HLS check asserts
+that the player requested at least one media playlist (`toBeGreaterThan(0)`), and the branch asserts that it requested none
+(`toBe(0)`). The result is what the setup is for: `Install`, `Static`, `Unit` and `Streams` green, then `Merge gate` red, in the three
+engines that run PB-VOD-002 (`chromium`, `firefox`, `webkit`), green in the throttled project, which does not; every failing test ran
+twice (one retry, as in CI), and the archived `reports/<engine>/playwright.json` carries the six diagnostics of
+[docs/CONTRACTS.md](../docs/CONTRACTS.md) section 7.2 for both attempts (`qa-events.json`, `qa-metrics.json`, `qa-info.json`,
+`page-console.json`, `session-detail.json`, `request-log.json`), next to the screenshot, the error context and the trace in
+`test-results/`. [`build-6.json`](../docs/results/jenkins/build-6.json) says `failure.stage: chromium`, `group: Merge gate` and
+`asExpected: true`, which the evidence tool computes: a build that is red anywhere else (build 5) is `asExpected: false`.
+
+To repeat it, from the repository root (`<copy>` is a scratch bare repository, which is also where `PB_REPO` points):
+
+```sh
+git clone --bare --single-branch --branch main . ../<copy>.git                 # a copy; nothing below touches this checkout
+git clone ../<copy>.git ../<copy>-work && cd ../<copy>-work && git checkout -b negative/false-expectation
+# edit tests/e2e/vod-start.spec.ts: in expectStartsAndPlays, .toBeGreaterThan(0) -> .toBe(0) for the HLS playlists
+git commit -am "make an expectation false on purpose" && git push origin negative/false-expectation && cd -
+# in .env: PB_REPO=../<copy>.git and PB_BRANCH=negative/false-expectation, then recreate the controller so that the job reads them
+docker compose up -d
+npx tsx tools/jenkins-evidence.ts --trigger --expect FAILURE --expect-stage "Merge gate" --label "negative run"
+# restore: remove both lines from .env, docker compose up -d, and delete ../<copy>.git and ../<copy>-work
+```
 
 ## Tear it down
 

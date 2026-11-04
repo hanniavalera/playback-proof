@@ -176,6 +176,20 @@ export function worstStatus(statuses: readonly string[]): string {
 }
 
 /**
+ * The workspaces the build ran in, from `Running on <agent> in <path>` lines, in order of first appearance. Two workspaces
+ * (`.../playback-proof` and `.../playback-proof@2`) mean that two executors were busy at once: the one fact about the agent's
+ * executors that the build itself records.
+ */
+export function parseWorkspaces(log: string): string[] {
+  const paths: string[] = [];
+  for (const raw of log.split('\n')) {
+    const path = /^Running on \S+ in (\S+)/.exec(stripAnsi(stripTimestamp(raw)))?.[1];
+    if (path !== undefined && !paths.includes(path)) paths.push(path);
+  }
+  return paths;
+}
+
+/**
  * The stages Jenkins skipped because an earlier one failed. The stage view reports such a stage as FAILED with the error of the
  * stage that really failed, which would make every skipped stage look like a second failure; the console says what happened:
  * `Stage "Streams" skipped due to earlier failure(s)`.
@@ -402,8 +416,12 @@ export interface EvidenceInput {
   label: string;
   /** What the run is meant to show: a green build, or a red one (the negative run). */
   expected: 'SUCCESS' | 'FAILURE';
+  /** For a red run: the stage (or the group of stages) it is meant to turn red in. A build that is red somewhere else is not as expected. */
+  expectedStage?: string;
   result: string;
   startedAtMs: number;
+  /** When the evidence was collected: the agents are recorded as they are then, not as they were during the build. */
+  collectedAtMs: number;
   durationMs: number;
   queuedMs: number;
   commit: string | null;
@@ -413,6 +431,8 @@ export interface EvidenceInput {
   controllerExecutors: number;
   plugins: Record<string, string>;
   agents: { name: string; executors: number; labels: string[] }[];
+  /** The workspaces the build ran in (see `parseWorkspaces`). */
+  workspaces: string[];
   tools: Record<string, string>;
   stages: EvidenceStage[];
   playwright: ProjectSummary[];
@@ -426,9 +446,13 @@ export interface Evidence {
   label: string;
   result: string;
   expected: string;
-  /** Whether the result is the one the run was meant to show. */
+  /** For a red run that is meant to turn red in a stage: which one. */
+  expectedStage?: string;
+  /** Whether the result is the one the run was meant to show, in the stage it was meant to show it. */
   asExpected: boolean;
   startedAt: string;
+  /** The agents below are as they were at this time. */
+  collectedAt: string;
   durationMs: number;
   queuedMs: number;
   commit: string | null;
@@ -441,19 +465,34 @@ export interface Evidence {
     plugins: string[];
   };
   agents: { name: string; executors: number; labels: string[] }[];
+  /** Where the build ran, by workspace: `.../playback-proof@2` next to `.../playback-proof` means two executors were busy at once. */
+  workspaces: string[];
   tools: Record<string, string>;
   stages: EvidenceStage[];
   /** The merge gate: how long its engines took together against what they would take one after the other. */
   mergeGate: { wallClockMs: number; branchesMs: number; waitedMs: number; branches: number } | null;
   playwright: ProjectSummary[];
   artifacts: ArtifactSummary;
-  /** Only for a build that did not succeed: the first stage that failed, and the tests that did. */
-  failure?: { stage: string | null; message: string | null; tests: { project: string; test: TestOutcome }[] };
+  /** Only for a build that did not succeed: the first stage that failed (and the group it is in), and the tests that did. */
+  failure?: {
+    stage: string | null;
+    group: string | null;
+    message: string | null;
+    tests: { project: string; test: TestOutcome }[];
+  };
 }
 
 export function buildEvidence(input: EvidenceInput): Evidence {
   const branches = input.stages.filter((s) => s.group === 'Merge gate');
   const group = input.stages.find((s) => s.name === 'Merge gate' && s.group === null);
+  // The stage that failed on its own account: a group takes the status of its stages, and a skipped stage is not failed.
+  const failed = input.stages.find(
+    (s) => s.status === 'FAILED' && !input.stages.some((c) => c.group === s.name),
+  );
+  const inExpectedStage =
+    input.expectedStage === undefined ||
+    failed?.name === input.expectedStage ||
+    failed?.group === input.expectedStage;
   const evidence: Evidence = {
     schemaVersion: 1,
     job: input.job,
@@ -461,8 +500,10 @@ export function buildEvidence(input: EvidenceInput): Evidence {
     label: input.label,
     result: input.result,
     expected: input.expected,
-    asExpected: input.result === input.expected,
+    ...(input.expectedStage === undefined ? {} : { expectedStage: input.expectedStage }),
+    asExpected: input.result === input.expected && (input.result === 'SUCCESS' || inExpectedStage),
     startedAt: new Date(input.startedAtMs).toISOString(),
+    collectedAt: new Date(input.collectedAtMs).toISOString(),
     durationMs: input.durationMs,
     queuedMs: input.queuedMs,
     commit: input.commit,
@@ -476,6 +517,7 @@ export function buildEvidence(input: EvidenceInput): Evidence {
         .map(([name, version]) => `${name}:${version}`),
     },
     agents: input.agents,
+    workspaces: input.workspaces,
     tools: input.tools,
     stages: input.stages,
     mergeGate:
@@ -491,11 +533,9 @@ export function buildEvidence(input: EvidenceInput): Evidence {
     artifacts: summarizeArtifacts(input.artifacts),
   };
   if (input.result !== 'SUCCESS') {
-    const failed = input.stages.find(
-      (s) => s.status === 'FAILED' && !input.stages.some((c) => c.group === s.name),
-    );
     evidence.failure = {
       stage: failed?.name ?? null,
+      group: failed?.group ?? null,
       message: failed?.error ?? null,
       tests: input.playwright.flatMap((p) =>
         p.results

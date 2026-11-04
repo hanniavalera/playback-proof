@@ -1,0 +1,60 @@
+Console log of build 5 of playback-proof, cut down to the stage markers, the tool versions and the summary of each gate.
+The full log stays in Jenkins; 517 lines of progress output were left out. Credentials are redacted. Times are UTC.
+
+Started by user admin
+Obtained Jenkinsfile from git file:///repo
+[... 11 lines left out ...]
+[Pipeline] { (Checks)
+[2026-11-04T05:20:19.799Z] Running on playwright-1 in /home/jenkins/agent/workspace/playback-proof
+[Pipeline] { (Install)
+[... 14 lines left out ...]
+[2026-11-04T05:20:22.549Z] Checking out Revision af7b6d23486fd6f37270d8e70234087563ced734 (refs/remotes/origin/negative/false-hls-playlist-expectation)
+[... 7 lines left out ...]
+[2026-11-04T05:20:24.938Z] added 136 packages in 2s
+[... 7 lines left out ...]
+[2026-11-04T05:20:25.307Z] tool-version node v24.22.1
+[2026-11-04T05:20:25.307Z] tool-version npm 11.19.1
+[2026-11-04T05:20:25.307Z] tool-version ffmpeg ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers
+[2026-11-04T05:20:25.307Z] tool-version java openjdk version "21.0.12.1" 2026-08-18
+[2026-11-04T05:20:25.867Z] tool-version playwright Version 1.64.1
+[Pipeline] { (Static)
+[... 11 lines left out ...]
+[2026-11-04T05:20:43.930Z] All matched files use Prettier code style!
+[2026-11-04T05:20:44.561Z] docs:check ok (16 markdown files, 57 catalog rows, generated blocks up to date)
+[2026-11-04T05:20:45.168Z] codec matrix ok: docs/CODEC_MATRIX.md is what the committed results render to
+[Pipeline] { (Unit)
+[... 201 lines left out ...]
+[2026-11-04T05:20:50.686Z]      × releases the file of every download that the client abandons 2161ms
+[... 180 lines left out ...]
+[2026-11-04T05:22:43.235Z]  FAIL  tests/unit/server/static.test.ts > file handles > releases the file of every download that the client abandons
+[2026-11-04T05:22:43.235Z] AssertionError: expected 84 to be greater than or equal to 120
+[... 8 lines left out ...]
+[2026-11-04T05:22:43.235Z]  Test Files  1 failed | 67 passed (68)
+[2026-11-04T05:22:43.235Z]       Tests  1 failed | 1741 passed (1742)
+[2026-11-04T05:22:43.235Z]    Start at  05:20:46
+[2026-11-04T05:22:43.235Z]    Duration  110.43s (tests 96%, transform 2%, import 1%)
+[... 5 lines left out ...]
+[Pipeline] { (Streams)
+Stage "Streams" skipped due to earlier failure(s)
+[... 7 lines left out ...]
+[2026-11-04T05:22:44.622Z] Archiving artifacts
+[... 15 lines left out ...]
+[Pipeline] { (Merge gate)
+Stage "Merge gate" skipped due to earlier failure(s)
+[... 7 lines left out ...]
+[Pipeline] { (chromium)
+[Pipeline] { (firefox)
+[Pipeline] { (chromium-cpu4x)
+[Pipeline] { (webkit)
+Stage "chromium" skipped due to earlier failure(s)
+Stage "firefox" skipped due to earlier failure(s)
+Stage "chromium-cpu4x" skipped due to earlier failure(s)
+Stage "webkit" skipped due to earlier failure(s)
+[... 7 lines left out ...]
+[2026-11-04T05:22:46.549Z] Failed in branch chromium
+[2026-11-04T05:22:46.557Z] Failed in branch firefox
+[2026-11-04T05:22:46.568Z] Failed in branch chromium-cpu4x
+[2026-11-04T05:22:46.579Z] Failed in branch webkit
+[... 12 lines left out ...]
+ERROR: script returned exit code 1
+Finished: FAILURE

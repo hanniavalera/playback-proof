@@ -6,6 +6,7 @@ import {
   groupStages,
   parseSkippedStages,
   parseToolVersions,
+  parseWorkspaces,
   redact,
   stringifyEvidence,
   summarizeArtifacts,
@@ -169,6 +170,20 @@ describe('parseToolVersions and parseSkippedStages', () => {
       'Stage "Unit" is fine',
     ].join('\n');
     expect([...parseSkippedStages(log)]).toEqual(['Streams', 'Merge gate']);
+  });
+
+  it('lists the workspaces the build ran in once each: two of them mean two executors were busy at once', () => {
+    const log = [
+      stamp('Running on playwright-1 in /home/jenkins/agent/workspace/playback-proof'),
+      stamp('Running on playwright-1 in /home/jenkins/agent/workspace/playback-proof@2'),
+      stamp('Running on playwright-1 in /home/jenkins/agent/workspace/playback-proof'),
+      stamp('Cloning into /home/jenkins/agent/workspace/playback-proof@3'),
+    ].join('\n');
+    expect(parseWorkspaces(log)).toEqual([
+      '/home/jenkins/agent/workspace/playback-proof',
+      '/home/jenkins/agent/workspace/playback-proof@2',
+    ]);
+    expect(parseWorkspaces('nothing ran')).toEqual([]);
   });
 });
 
@@ -423,12 +438,14 @@ describe('buildEvidence', () => {
     startedAtMs: Date.UTC(2026, 10, 4, 5, 0, 0),
     durationMs: 600_000,
     queuedMs: 4,
+    collectedAtMs: Date.UTC(2026, 10, 4, 5, 30, 0),
     commit: 'fd67087',
     branch: 'p4/jenkins',
     jenkinsVersion: '2.580.2',
     controllerExecutors: 0,
     plugins: { git: '5.11.0', 'configuration-as-code': '2144.ve8c697101488' },
     agents: [{ name: 'playwright-1', executors: 2, labels: ['playwright'] }],
+    workspaces: ['/home/jenkins/agent/workspace/playback-proof'],
     tools: { node: 'v24.22.1' },
     stages: [
       { name: 'Merge gate', group: null, status: 'SUCCESS', startMs: 100, durationMs: 9_000, waitedMs: 0 },
@@ -469,7 +486,11 @@ describe('buildEvidence', () => {
       waitedMs: 4_600,
       branches: 3,
     });
-    expect(evidence).toMatchObject({ asExpected: true, startedAt: '2026-11-04T05:00:00.000Z' });
+    expect(evidence).toMatchObject({
+      asExpected: true,
+      startedAt: '2026-11-04T05:00:00.000Z',
+      collectedAt: '2026-11-04T05:30:00.000Z',
+    });
     expect(evidence.failure).toBeUndefined();
     expect(Object.keys(evidence.jenkins)).toEqual([
       'version',
@@ -526,6 +547,7 @@ describe('buildEvidence', () => {
     expect(red.asExpected).toBe(true);
     expect(red.failure).toEqual({
       stage: 'chromium',
+      group: 'Merge gate',
       message: 'script returned exit code 1',
       tests: [
         {
@@ -535,6 +557,44 @@ describe('buildEvidence', () => {
       ],
     });
     expect(buildEvidence({ ...base, result: 'FAILURE' }).asExpected).toBe(false);
+  });
+
+  it('counts a red build as the one that was planned only when it is red where it was meant to be', () => {
+    const stages = (failedName: string): EvidenceInput['stages'] => [
+      {
+        name: 'Unit',
+        group: 'Checks',
+        status: failedName === 'Unit' ? 'FAILED' : 'SUCCESS',
+        startMs: 0,
+        durationMs: 10,
+        waitedMs: 0,
+      },
+      { name: 'Merge gate', group: null, status: 'FAILED', startMs: 20, durationMs: 90, waitedMs: 0 },
+      {
+        name: 'chromium',
+        group: 'Merge gate',
+        status: failedName === 'chromium' ? 'FAILED' : 'SUCCESS',
+        startMs: 20,
+        durationMs: 90,
+        waitedMs: 0,
+      },
+    ];
+    const red = (failedName: string, expectedStage?: string) =>
+      buildEvidence({
+        ...base,
+        result: 'FAILURE',
+        expected: 'FAILURE',
+        ...(expectedStage === undefined ? {} : { expectedStage }),
+        stages: stages(failedName),
+      });
+    expect(red('chromium', 'Merge gate').asExpected).toBe(true);
+    expect(red('chromium', 'chromium').asExpected).toBe(true);
+    expect(red('chromium').asExpected).toBe(true);
+    // The unplanned red: the unit stage failed first, so the merge gate never had its turn.
+    expect(red('Unit', 'Merge gate').asExpected).toBe(false);
+    expect(red('Unit', 'Merge gate').failure).toMatchObject({ stage: 'Unit', group: 'Checks' });
+    expect(red('chromium', 'Unit').asExpected).toBe(false);
+    expect(buildEvidence({ ...base, expectedStage: 'Merge gate' }).asExpected).toBe(true);
   });
 });
 

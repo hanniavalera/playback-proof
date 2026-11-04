@@ -2,11 +2,12 @@
   "schemaVersion": 1,
   "job": "playback-proof",
   "build": 2,
-  "label": "Not planned: the Unit stage caught a load-sensitive test (4 vitest workers on a 3-CPU agent); the stages after it were skipped",
+  "label": "Meant to be the first green build: the Unit stage failed on a load-sensitive test (4 Vitest workers on the 3-CPU agent: tests/unit/probe/media.test.ts, the probe media generated twice did not come out the same), so Streams and the merge gate were skipped",
   "result": "FAILURE",
-  "expected": "FAILURE",
-  "asExpected": true,
+  "expected": "SUCCESS",
+  "asExpected": false,
   "startedAt": "2026-11-04T04:42:56.811Z",
+  "collectedAt": "2026-11-04T05:29:21.980Z",
   "durationMs": 102126,
   "queuedMs": 5,
   "commit": "fd6708764d7e5a0193d46c8096d671ac772ce6f7",
@@ -51,6 +52,7 @@
     ]
   },
   "agents": [{ "name": "playwright-1", "executors": 2, "labels": ["playwright", "playwright-1", "linux"] }],
+  "workspaces": ["/home/jenkins/agent/workspace/playback-proof"],
   "tools": { "node": "v24.22.1", "npm": "11.19.1", "ffmpeg": "6.1.1-3ubuntu5", "java": "21.0.12.1", "playwright": "1.64.1" },
   "stages": [
     { "name": "Checks", "group": null, "status": "FAILED", "startMs": 3398, "durationMs": 97687, "waitedMs": 0 },
@@ -88,6 +90,6 @@
   ],
   "mergeGate": null,
   "playwright": [],
-  "artifacts": [],
-  "failure": { "stage": "Unit", "message": "script returned exit code 1", "tests": [] }
+  "artifacts": { "count": 0, "reports": [], "failureFiles": {} },
+  "failure": { "stage": "Unit", "group": "Checks", "message": "script returned exit code 1", "tests": [] }
 }

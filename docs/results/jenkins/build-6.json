@@ -1,0 +1,255 @@
+{
+  "schemaVersion": 1,
+  "job": "playback-proof",
+  "build": 6,
+  "label": "Negative run: a throwaway branch of a copy of the repository expects that no HLS media playlist was requested, which is false (PB-VOD-002): the merge gate must turn red, engine by engine, with the failure attachments archived",
+  "result": "FAILURE",
+  "expected": "FAILURE",
+  "expectedStage": "Merge gate",
+  "asExpected": true,
+  "startedAt": "2026-11-04T05:23:53.706Z",
+  "collectedAt": "2026-11-04T05:29:32.092Z",
+  "durationMs": 211897,
+  "queuedMs": 14,
+  "commit": "af7b6d23486fd6f37270d8e70234087563ced734",
+  "branch": "negative/false-hls-playlist-expectation",
+  "jenkins": {
+    "version": "2.580.2",
+    "executorsOnController": 0,
+    "pluginCount": 74,
+    "plugins": [
+      "ansicolor:542.v03d235fee02d", "antisamy-markup-formatter:173.v680e3a_b_69ff3",
+      "apache-httpcomponents-client-4-api:4.5.14-269.vfa_2321039a_83", "asm-api:9.11.1-226.vff833a_e4c58e",
+      "bootstrap5-api:5.3.8-1048.va_c299057e35c", "bouncycastle-api:2.30.1.86.2-310.v4655f6742752",
+      "branch-api:2.1303.v9f3b_95dc329d", "caffeine-api:3.3.1-214.v18eb_56b_34920", "checks-api:434.va_a_3dd79d7723",
+      "cloudbees-folder:6.1107.v31f8955765c8", "commons-lang3-api:3.21.0-122.v6a_ea_4fd34049",
+      "commons-text-api:1.15.0-218.va_61573470393", "configuration-as-code:2144.ve8c697101488",
+      "credentials:1514.vb_01eb_014e7d4", "credentials-binding:728.v902a_273b_8947",
+      "display-url-api:2.217.va_6b_de84cc74b_", "durable-task:686.v80ff80875b_82",
+      "echarts-api:6.1.0-1321.v86c4c5114494", "font-awesome-api:7.3.1-1013.v0835a_879ec6d", "git:5.11.0",
+      "git-client:6.6.1", "gson-api:2.15.0-212.v085f60a_8093b_", "instance-identity:203.v15e81a_1b_7a_38",
+      "ionicons-api:94.vcc3065403257", "jackson-annotations2-api:2.22-19.v10a_a_582ea_26e",
+      "jackson2-api:2.22.4-449.v4ee9f4ec4123", "jackson3-api:3.2.4-103.vf5a_b_3f4ea_cec",
+      "jakarta-activation-api:2.1.4-1", "jakarta-mail-api:2.1.5-1", "jakarta-xml-bind-api:4.0.9-19.v2b_a_5b_44d9a_1c",
+      "javax-activation-api:1.2.0-8", "jaxb:2.3.9-143.v5979df3304e6", "job-dsl:3732.v9a_c49a_61a_313",
+      "joda-time-api:2.15.1-211.ve499f52b_da_33", "jquery3-api:3.7.1-687.v68d468e40b_30",
+      "json-api:20260814-226.v20f9685d642c", "junit:1456.vdb_4425ca_0d4d", "mailer:534.v1b_36f5864073",
+      "matrix-project:928.v1effc3f3a_236", "mina-sshd-api-common:2.19.0-192.v2b_a_7b_2c1dc71",
+      "mina-sshd-api-core:2.19.0-192.v2b_a_7b_2c1dc71", "pipeline-graph-analysis:254.v0f63a_a_447dca_",
+      "pipeline-groovy-lib:822.vc95f70dea_db_7", "pipeline-input-step:560.v56198a_642157",
+      "pipeline-model-api:2.2293.v6e7193cec599", "pipeline-model-definition:2.2293.v6e7193cec599",
+      "pipeline-model-extensions:2.2293.v6e7193cec599", "pipeline-rest-api:2.41",
+      "pipeline-stage-step:345.va_96187909426", "pipeline-stage-tags-metadata:2.2293.v6e7193cec599",
+      "pipeline-stage-view:2.41", "plain-credentials:199.v9f8e1f741799", "plugin-util-api:7.1403.vd380b_c42e90c",
+      "prism-api:1.30.0-741.v034eb_0b_0a_a_fa_", "resource-disposer:0.25", "scm-api:728.vc30dcf7a_0df5",
+      "script-security:1436.v1082791135e4", "snakeyaml-api:2.7-152.vc672728cf536",
+      "snakeyaml-engine-api:3.2-18.v885ed7ff698f", "ssh-credentials:372.va_250881b_08cd", "structs:362.va_b_695ef4fdf9",
+      "timestamper:1.30", "variant:70.va_d9f17f859e0", "woodstox-core-api:7.3.0-16.v017f30ed004c",
+      "workflow-api:1429.v7a_1b_efb_a_f7c5", "workflow-basic-steps:1129.v60e3c7e6654d",
+      "workflow-cps:4403.v471713a_cea_19", "workflow-durable-task-step:1479.v56e587f413a_7",
+      "workflow-job:1622.vc41c189cb_e5f", "workflow-multibranch:842.v3a_b_59b_57b_e6e",
+      "workflow-scm-step:487.v41313a_96b_65d", "workflow-step-api:724.v538c2362b_dfb_",
+      "workflow-support:1028.vc22910142650", "ws-cleanup:0.49"
+    ]
+  },
+  "agents": [{ "name": "playwright-1", "executors": 2, "labels": ["playwright", "playwright-1", "linux"] }],
+  "workspaces": ["/home/jenkins/agent/workspace/playback-proof", "/home/jenkins/agent/workspace/playback-proof@2"],
+  "tools": { "node": "v24.22.1", "npm": "11.19.1", "ffmpeg": "6.1.1-3ubuntu5", "java": "21.0.12.1", "playwright": "1.64.1" },
+  "stages": [
+    { "name": "Checks", "group": null, "status": "SUCCESS", "startMs": 934, "durationMs": 128192, "waitedMs": 0 },
+    { "name": "Install", "group": "Checks", "status": "SUCCESS", "startMs": 1039, "durationMs": 8520, "waitedMs": 29 },
+    { "name": "Static", "group": "Checks", "status": "SUCCESS", "startMs": 9571, "durationMs": 9639, "waitedMs": 20 },
+    { "name": "Unit", "group": "Checks", "status": "SUCCESS", "startMs": 19235, "durationMs": 109100, "waitedMs": 96 },
+    { "name": "Streams", "group": "Checks", "status": "SUCCESS", "startMs": 128415, "durationMs": 711, "waitedMs": 43 },
+    { "name": "Merge gate", "group": null, "status": "FAILED", "startMs": 129816, "durationMs": 81871, "waitedMs": 0 },
+    {
+      "name": "chromium",
+      "group": "Merge gate",
+      "status": "FAILED",
+      "startMs": 129986,
+      "durationMs": 42979,
+      "waitedMs": 400,
+      "error": "script returned exit code 1"
+    },
+    {
+      "name": "firefox",
+      "group": "Merge gate",
+      "status": "FAILED",
+      "startMs": 130014,
+      "durationMs": 46564,
+      "waitedMs": 383,
+      "error": "script returned exit code 1"
+    },
+    {
+      "name": "chromium-cpu4x",
+      "group": "Merge gate",
+      "status": "SUCCESS",
+      "startMs": 130031,
+      "durationMs": 70071,
+      "waitedMs": 43262
+    },
+    {
+      "name": "webkit",
+      "group": "Merge gate",
+      "status": "FAILED",
+      "startMs": 130060,
+      "durationMs": 81627,
+      "waitedMs": 46711,
+      "error": "script returned exit code 1"
+    }
+  ],
+  "mergeGate": { "wallClockMs": 81871, "branchesMs": 150485, "waitedMs": 90756, "branches": 4 },
+  "playwright": [
+    {
+      "project": "chromium",
+      "tests": 3,
+      "passed": 2,
+      "failed": 1,
+      "flaky": 0,
+      "skipped": 0,
+      "runDurationMs": 26527,
+      "environment": "jenkins-linux-arm64: chromium 156.0.8078.4; evidence: no committed probe result for jenkins-linux-arm64 (docs/results/codec-matrix/jenkins-linux-arm64.json)",
+      "results": [
+        { "id": "PB-ENV-001", "status": "passed", "durationMs": 7948 },
+        { "id": "PB-VOD-001", "status": "passed", "durationMs": 8892 },
+        {
+          "id": "PB-VOD-002",
+          "status": "failed",
+          "durationMs": 11787,
+          "attempts": 2,
+          "error": "Error: HLS media playlists requested (request log)",
+          "attachments": [
+            "screenshot", "qa-events.json", "qa-metrics.json", "qa-info.json", "page-console.json",
+            "session-detail.json", "request-log.json", "error-context", "trace"
+          ]
+        }
+      ]
+    },
+    {
+      "project": "chromium-cpu4x",
+      "tests": 1,
+      "passed": 1,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "runDurationMs": 11640,
+      "environment": null,
+      "results": [{ "id": "PB-VOD-001", "status": "passed", "durationMs": 8813 }]
+    },
+    {
+      "project": "firefox",
+      "tests": 3,
+      "passed": 2,
+      "failed": 1,
+      "flaky": 0,
+      "skipped": 0,
+      "runDurationMs": 31964,
+      "environment": "jenkins-linux-arm64: firefox 157.0; evidence: no committed probe result for jenkins-linux-arm64 (docs/results/codec-matrix/jenkins-linux-arm64.json)",
+      "results": [
+        { "id": "PB-ENV-001", "status": "passed", "durationMs": 13154 },
+        { "id": "PB-VOD-001", "status": "passed", "durationMs": 14307 },
+        {
+          "id": "PB-VOD-002",
+          "status": "failed",
+          "durationMs": 11055,
+          "attempts": 2,
+          "error": "Error: HLS media playlists requested (request log)",
+          "attachments": [
+            "screenshot", "qa-events.json", "qa-metrics.json", "qa-info.json", "page-console.json",
+            "session-detail.json", "request-log.json", "error-context", "trace"
+          ]
+        }
+      ]
+    },
+    {
+      "project": "webkit",
+      "tests": 3,
+      "passed": 2,
+      "failed": 1,
+      "flaky": 0,
+      "skipped": 0,
+      "runDurationMs": 24761,
+      "environment": "jenkins-linux-arm64: webkit 27.2; evidence: RUN_SPECS_IN_LINUX_WEBKIT is set in tests/e2e/support/gaps.ts: the specs run in Linux WebKit whatever the committed matrix says",
+      "results": [
+        { "id": "PB-ENV-001", "status": "passed", "durationMs": 10259 },
+        { "id": "PB-VOD-001", "status": "passed", "durationMs": 8814 },
+        {
+          "id": "PB-VOD-002",
+          "status": "failed",
+          "durationMs": 10402,
+          "attempts": 2,
+          "error": "Error: HLS media playlists requested (request log)",
+          "attachments": [
+            "screenshot", "qa-events.json", "qa-metrics.json", "qa-info.json", "page-console.json",
+            "session-detail.json", "request-log.json", "error-context", "trace"
+          ]
+        }
+      ]
+    }
+  ],
+  "artifacts": {
+    "count": 96,
+    "reports": [
+      "reports/chromium/html/index.html", "reports/chromium/playwright.json", "reports/chromium-cpu4x/html/index.html",
+      "reports/chromium-cpu4x/playwright.json", "reports/firefox/html/index.html", "reports/firefox/playwright.json",
+      "reports/webkit/html/index.html", "reports/webkit/playwright.json"
+    ],
+    "failureFiles": {
+      "test-results/e2e-vod-start-PB-VOD-002-H-1c2e7-media-time-reached-no-error-chromium": ["error-context.md", "test-failed-1.png", "trace.zip"],
+      "test-results/e2e-vod-start-PB-VOD-002-H-1c2e7-media-time-reached-no-error-chromium-retry1": ["error-context.md", "test-failed-1.png", "trace.zip"],
+      "test-results/e2e-vod-start-PB-VOD-002-H-1c2e7-media-time-reached-no-error-firefox": ["error-context.md", "test-failed-1.png", "trace.zip"],
+      "test-results/e2e-vod-start-PB-VOD-002-H-1c2e7-media-time-reached-no-error-firefox-retry1": ["error-context.md", "test-failed-1.png", "trace.zip"],
+      "test-results/e2e-vod-start-PB-VOD-002-H-1c2e7-media-time-reached-no-error-webkit": ["error-context.md", "test-failed-1.png", "trace.zip"],
+      "test-results/e2e-vod-start-PB-VOD-002-H-1c2e7-media-time-reached-no-error-webkit-retry1": ["error-context.md", "test-failed-1.png", "trace.zip"]
+    }
+  },
+  "failure": {
+    "stage": "chromium",
+    "group": "Merge gate",
+    "message": "script returned exit code 1",
+    "tests": [
+      {
+        "project": "chromium",
+        "test": {
+          "id": "PB-VOD-002",
+          "status": "failed",
+          "durationMs": 11787,
+          "attempts": 2,
+          "error": "Error: HLS media playlists requested (request log)",
+          "attachments": [
+            "screenshot", "qa-events.json", "qa-metrics.json", "qa-info.json", "page-console.json",
+            "session-detail.json", "request-log.json", "error-context", "trace"
+          ]
+        }
+      },
+      {
+        "project": "firefox",
+        "test": {
+          "id": "PB-VOD-002",
+          "status": "failed",
+          "durationMs": 11055,
+          "attempts": 2,
+          "error": "Error: HLS media playlists requested (request log)",
+          "attachments": [
+            "screenshot", "qa-events.json", "qa-metrics.json", "qa-info.json", "page-console.json",
+            "session-detail.json", "request-log.json", "error-context", "trace"
+          ]
+        }
+      },
+      {
+        "project": "webkit",
+        "test": {
+          "id": "PB-VOD-002",
+          "status": "failed",
+          "durationMs": 10402,
+          "attempts": 2,
+          "error": "Error: HLS media playlists requested (request log)",
+          "attachments": [
+            "screenshot", "qa-events.json", "qa-metrics.json", "qa-info.json", "page-console.json",
+            "session-detail.json", "request-log.json", "error-context", "trace"
+          ]
+        }
+      }
+    ]
+  }
+}
