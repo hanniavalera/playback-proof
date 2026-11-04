@@ -43,13 +43,19 @@ export interface ConsoleEntry {
 
 const MAX_CONSOLE_ENTRIES = 200;
 
-/** Playwright wraps what the page threw: "page.evaluate: Error: <message>\n    at <page stack>". The message is all a reader needs. */
+/**
+ * The frames of the PAGE's stack that Playwright appends to the message of what the page threw: V8's are indented ("    at fn (url)"),
+ * Firefox's are not ("fn@url:line:col", also "@debugger eval code:1:44"). The timeline lines the hook prints start with two spaces.
+ */
+const PAGE_FRAME = /^\s+at |^(?:\S[^\n]*)?@[^\n]*:\d+(?::\d+)?$/;
+
+/** Playwright wraps what the page threw: "page.evaluate: Error: <message>" plus the page's stack. The message is all a reader needs. */
 function readable(error: unknown): Error {
   if (!(error instanceof Error)) return atCaller(new Error(String(error)));
   const text = error.message
     .replace(/^page\.(evaluate|waitForFunction): (Error: )?/, '')
     .split('\n')
-    .filter((line) => !/^\s+at /.test(line))
+    .filter((line) => !PAGE_FRAME.test(line))
     .join('\n')
     .trimEnd();
   return atCaller(Object.assign(new Error(text), { name: error.name }));

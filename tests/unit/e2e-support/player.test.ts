@@ -243,6 +243,33 @@ describe('PlayerHandle: errors', () => {
     });
     await expect(handle.seek(5)).rejects.toThrow(/^qa\.seek\(\): nothing is loaded \(readyState 0\)\.$/);
   });
+
+  it("also drops the page's own stack in Firefox's format, which is not indented, and keeps timeline lines that look like one", async () => {
+    const firefox = new Error(
+      [
+        "page.evaluate: Error: qa.waitFor('ended') timed out after 1000 ms (looking from index 0).",
+        '2 events so far, the last 2:',
+        '  #0 t=134.0 media=0.000 load-requested {"uri":"/s/328de5f776ce/vod-cmaf/dash/manifest.mpd"}',
+        '  #1 t=135.0 media=0.000 error {"message":"user@host:4650"}',
+        'failure@http://127.0.0.1:4650/player/player.js:297:14',
+        'waitFor/</waiter.timer<@http://127.0.0.1:4650/player/player.js:223:23',
+        'setTimeout handler*setTimeout@http://127.0.0.1:4650/player/player.js:85:46',
+        '@debugger eval code line 370 > eval:1:20',
+        'evaluate@debugger eval code:372:16',
+        '@debugger eval code:1:62',
+      ].join('\n'),
+    );
+    const { handle } = handleFor({ waitFor: () => Promise.reject(firefox) });
+    const error = await handle.waitFor('ended').catch((e: Error) => e);
+    expect((error as Error).message).toBe(
+      [
+        "qa.waitFor('ended') timed out after 1000 ms (looking from index 0).",
+        '2 events so far, the last 2:',
+        '  #0 t=134.0 media=0.000 load-requested {"uri":"/s/328de5f776ce/vod-cmaf/dash/manifest.mpd"}',
+        '  #1 t=135.0 media=0.000 error {"message":"user@host:4650"}',
+      ].join('\n'),
+    );
+  });
 });
 
 describe('PlayerHandle: what the browser console said', () => {
