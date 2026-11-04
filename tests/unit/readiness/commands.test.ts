@@ -320,7 +320,7 @@ describe('npm run soak', () => {
     const code = await runSoakCommand(['--minutes', '1', '--warmup-sec', '15'], r.deps);
     expect(code).toBe(2);
     expect(r.out.join('\n')).toContain('short run: not a verdict');
-    const file = join(r.root, 'soak', 'test-env-chromium-1m.json');
+    const file = join(r.root, 'soak', 'test-env-chromium-1m-warmup15s.json');
     expect(parseSoakReport(readFileSync(file, 'utf8'), file).length).toBe('short');
   });
 

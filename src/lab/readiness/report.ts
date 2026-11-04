@@ -3,6 +3,7 @@ import type { ShakaConfigPatch } from '../../player/configs.ts';
 import { LIVE_LIMITS } from '../../shared/criteria.ts';
 import type { Protocol, StreamId } from '../../shared/streams.ts';
 import type { HostInfo } from '../probe/host-info.ts';
+import { defaultInjections } from './args.ts';
 import type { CheckResult, PlayerEvidence } from './checks.ts';
 import type {
   Engine,
@@ -134,7 +135,7 @@ export const configurationPart = (
 export const readinessIdentity = (report: ReadinessReport): string =>
   `${report.envId}|${report.engine}|${report.stream?.protocol ?? 'dash'}`;
 export const soakIdentity = (report: SoakReport): string =>
-  `${report.envId}|${report.engine}|${report.stream?.protocol ?? 'dash'}|${Number(report.options.minutes.toFixed(2))}m|${configurationKey(report.configuration)}`;
+  `${report.envId}|${report.engine}|${report.stream?.protocol ?? 'dash'}|${Number(report.options.minutes.toFixed(2))}m${injectionPart(report.options)}|${configurationKey(report.configuration)}`;
 
 /** The name a readiness file gets from what it holds. */
 export const readinessFileNameOf = (report: ReadinessReport): string =>
@@ -220,19 +221,44 @@ export interface SoakReport {
   };
 }
 
+/** What a soak injected, as a name says it, when it is not what the policy names for its length (`defaultInjections`): `-nostall`, `-stall3m`, `-stale2m`, `-nostale`, `-warmup15s`. Nothing for the policy's own plan, so that the soaks of the policy keep their names. */
+export function injectionPart(options: {
+  minutes: number;
+  stallAtMinutes?: number | null | undefined;
+  staleAtMinutes?: number | null | undefined;
+  warmupSec?: number | undefined;
+}): string {
+  const policy = defaultInjections(options.minutes);
+  const at = (minute: number): string => `${Number(minute.toFixed(2))}m`;
+  const parts: string[] = [];
+  if (options.stallAtMinutes !== undefined && options.stallAtMinutes !== policy.stallAtMinutes)
+    parts.push(options.stallAtMinutes === null ? 'nostall' : `stall${at(options.stallAtMinutes)}`);
+  if (options.staleAtMinutes !== undefined && options.staleAtMinutes !== policy.staleAtMinutes)
+    parts.push(options.staleAtMinutes === null ? 'nostale' : `stale${at(options.staleAtMinutes)}`);
+  if (options.warmupSec !== undefined && options.warmupSec !== LIVE_LIMITS.warmupSec)
+    parts.push(`warmup${options.warmupSec}s`);
+  return parts.length === 0 ? '' : `-${parts.join('-')}`;
+}
+
 export const soakFileName = (
   envId: string,
   engine: Engine,
   minutes: number,
-  what: { configuration?: { id: string; patch: unknown } | null; protocol?: Protocol } = {},
+  what: {
+    configuration?: { id: string; patch: unknown } | null;
+    protocol?: Protocol;
+    /** What the soak injected and how long it warmed up: named when it is not the policy's (`injectionPart`). */
+    plan?: { stallAtMinutes?: number | null; staleAtMinutes?: number | null; warmupSec?: number };
+  } = {},
 ): string =>
-  `${envId}-${engine}-${Number(minutes.toFixed(2))}m${protocolPart(what.protocol ?? 'dash')}${configurationPart(what.configuration)}.json`;
+  `${envId}-${engine}-${Number(minutes.toFixed(2))}m${injectionPart({ minutes, ...what.plan })}${protocolPart(what.protocol ?? 'dash')}${configurationPart(what.configuration)}.json`;
 
-/** The name a soak file gets from what it holds: A's is the name it always had, a candidate's carries the candidate. */
+/** The name a soak file gets from what it holds: A's is the name it always had, a candidate's carries the candidate, a plan that is not the policy's is named. */
 export const soakFileNameOf = (report: SoakReport): string =>
   soakFileName(report.envId, report.engine, report.options.minutes, {
     configuration: report.configuration,
     protocol: report.stream?.protocol ?? 'dash',
+    plan: report.options,
   });
 
 // ---------------------------------------------------------------------------------------------------------------------

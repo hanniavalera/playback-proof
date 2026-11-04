@@ -251,15 +251,29 @@ export function checklist(input: ChecklistInput): ChecklistItem[] {
   });
   const items: ChecklistItem[] = [];
 
-  // 1. The build is identified.
+  // 1. The build is identified. A line says what each result was measured on, and with which configuration: a candidate's soak is not A's,
+  // and the same line from two results (the CI soak and the release soak of one engine) is said once.
   const builds = [
     ...input.readiness.map((report) => ({
       report,
       shaka: report.configurations.flatMap((c) => c.checks).find((c) => c.player)?.player?.shakaVersion,
+      configuration: 'A',
     })),
-    ...input.soaks.map((report) => ({ report, shaka: report.player?.shakaVersion })),
+    ...input.soaks.map((report) => ({
+      report,
+      shaka: report.player?.shakaVersion,
+      configuration: report.configuration.id,
+    })),
   ];
   const commits = [...new Set(builds.map(({ report }) => report.commit.hash ?? 'unknown'))];
+  const buildLines = [
+    ...new Set(
+      builds.map(
+        ({ report, shaka, configuration }) =>
+          `${label(report)}: commit ${describeCommit(report.commit)}, Shaka Player ${shaka ?? 'unknown'}, configuration ${configuration}, ${report.stream.id} over ${report.stream.protocol}`,
+      ),
+    ),
+  ];
   items.push({
     number: 1,
     text: 'The build is identified: commit, Shaka Player version, player configuration (A or B), and the stream flavour each engine plays.',
@@ -268,10 +282,7 @@ export function checklist(input: ChecklistInput): ChecklistItem[] {
       builds.length === 0
         ? ['no result files']
         : [
-            ...builds.map(
-              ({ report, shaka }) =>
-                `${label(report)}: commit ${describeCommit(report.commit)}, Shaka Player ${shaka ?? 'unknown'}, configuration A, ${report.stream.id} over ${report.stream.protocol}`,
-            ),
+            ...buildLines,
             ...(commits.length > 1
               ? [
                   `the results are from ${commits.length} different commits (${commits.join(', ')}): they are not one build`,

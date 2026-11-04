@@ -19,11 +19,13 @@ a candidate: a readiness run evaluates A **and** its candidates and writes them 
 the four files of the evidence). They have it in another form: two runs of one environment and engine replace each other, and a run over HLS
 would replace a run over DASH.
 
-**Decision.** (1) A name carries what distinguishes the runs that must be able to be kept side by side. A soak: environment, engine, length, the
-protocol when it is not DASH, the candidate when it is not A (`gha-linux-x64-chromium-30m-live-sync.json`; `custom` carries the first eight
-characters of a SHA-256 of its patch, with the keys in a fixed order, so that two different `--config-json` never share a name). A readiness
+**Decision.** (1) A name carries what distinguishes the runs that must be able to be kept side by side. A soak: environment, engine, length, **what
+it injected when that is not the policy's plan for its length** (`-nostall`, `-stale2m`, `-warmup15s`: a soak with the stale manifest and no
+outage is another experiment, and would otherwise replace the policy's soak of the same length), the protocol when it is not DASH, the candidate
+when it is not A (`gha-linux-x64-chromium-30m-live-sync.json`; `custom` carries the first eight characters of a SHA-256 of its patch, with the
+keys in a fixed order, so that two different `--config-json` never share a name). A readiness
 file: environment, engine and the protocol when it is not DASH; it holds the configurations of one run, A first. **A keeps the names it always
-had.** (2) The writers take the name from what they write (`soakFileNameOf(report)`, `readinessFileNameOf(report)`), so that the name of a file and
+had, and so does every soak of the policy** (the 14 files of the evidence have the names they were uploaded with, the candidate's apart). (2) The writers take the name from what they write (`soakFileNameOf(report)`, `readinessFileNameOf(report)`), so that the name of a file and
 what it holds cannot be made to differ by the code. (3) The readers do not use names. `loadResults` reads every `*.json` of the two directories
 strictly, and what a file is comes from its content: a file whose name is not the one its content gets is read as what it holds, and the reader
 says so (a `note`, printed by `--from-results` and by the checklist). For the one case that exists, a candidate's soak under the name of A's,

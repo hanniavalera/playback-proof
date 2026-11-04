@@ -2,8 +2,9 @@
 //
 // A long live session, sampled by the page at its own cadence, with one injected origin outage (and, in a release soak, a stale manifest) at
 // fixed points, the JS heap after a forced collection in Chromium, the harness's own memory, and the PB-RDY-005 evaluators at the end. It
-// prints the summary and writes docs/results/soak/<env>-<engine>-<minutes>m[-<protocol>][-<candidate>].json (the series decimated, peaks
-// kept; the candidate is in the name, so that the soak of A and the soak of a candidate do not overwrite each other).
+// prints the summary and writes docs/results/soak/<env>-<engine>-<minutes>m[-<injections>][-<protocol>][-<candidate>].json (the series
+// decimated, peaks kept; the candidate and a plan that is not the policy's are in the name, so that two soaks that differ in what was run do
+// not overwrite each other).
 //
 // It needs the machine to itself for its whole length. A soak shorter than the CI length is reported and is not a verdict.
 // `npm run soak -- --help` lists the options. What it does is in src/lab/readiness/commands.ts, where a unit test runs it over fakes; this

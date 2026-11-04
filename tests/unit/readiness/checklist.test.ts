@@ -259,6 +259,27 @@ describe('the checklist of TEST_STRATEGY.md section 8', () => {
     );
   });
 
+  it('names the configuration of every result in item 1, says a repeated line once, and does not call the soak of a candidate A', async () => {
+    const good = await configuration('A', liveSync);
+    const ofCandidate: SoakReport = {
+      ...soakReport('chromium', 30),
+      configuration: {
+        id: 'live-sync',
+        label: 'A plus streaming.liveSync.enabled',
+        patch: liveSync as never,
+      },
+    };
+    const items = checklist({
+      readiness: [report('chromium', [good])],
+      soaks: [soakReport('chromium', 5), soakReport('chromium', 30), ofCandidate],
+    });
+    const lines = items.find((item) => item.number === 1)?.evidence ?? [];
+    // The readiness run, the CI soak and the release soak of A say the same thing about the build, and it is said once.
+    expect(lines.filter((line) => line.includes('configuration A'))).toHaveLength(1);
+    expect(lines.filter((line) => line.includes('configuration live-sync'))).toHaveLength(1);
+    expect(items.find((item) => item.number === 1)?.status).toBe('done');
+  });
+
   it("lists a candidate's soak and does not count it: the release soak of the build as it ships is A's", async () => {
     const good = await configuration('A', liveSync);
     const three = (['chromium', 'firefox', 'webkit'] as const).map((engine) => report(engine, [good]));
@@ -504,11 +525,51 @@ describe('the result files', () => {
     expect(readinessFileNameOf(both)).toBe(readinessFileName(both.envId, 'chromium'));
     const ofA = soakReport('webkit', 30);
     expect(soakFileNameOf(ofA)).toBe(
-      soakFileName(ofA.envId, 'webkit', 30, { configuration: ofA.configuration }),
+      soakFileName(ofA.envId, 'webkit', 30, { configuration: ofA.configuration, plan: ofA.options }),
     );
     const ofCandidate = { ...ofA, configuration: { id: 'live-sync', label: 'x', patch: liveSync } };
     expect(soakFileNameOf(ofCandidate)).toBe(`${soakFileNameOf(ofA).replace(/\.json$/, '')}-live-sync.json`);
     expect(soakIdentity(ofCandidate)).not.toBe(soakIdentity(ofA));
+  });
+
+  it("name what a soak injected only when it is not the policy's plan for its length, so that the soaks of the policy keep their names", () => {
+    const policyCi = { stallAtMinutes: 2.5, staleAtMinutes: null, warmupSec: 60 };
+    const policyRelease = { stallAtMinutes: 10, staleAtMinutes: 20, warmupSec: 60 };
+    expect(soakFileName('x', 'chromium', 5, { plan: policyCi })).toBe('x-chromium-5m.json');
+    expect(soakFileName('x', 'chromium', 30, { plan: policyRelease })).toBe('x-chromium-30m.json');
+    expect(
+      soakFileName('x', 'chromium', 5, { plan: { ...policyCi, stallAtMinutes: null, staleAtMinutes: 2 } }),
+    ).toBe('x-chromium-5m-nostall-stale2m.json');
+    expect(soakFileName('x', 'chromium', 30, { plan: { ...policyRelease, staleAtMinutes: null } })).toBe(
+      'x-chromium-30m-nostale.json',
+    );
+    expect(soakFileName('x', 'chromium', 5, { plan: { ...policyCi, stallAtMinutes: 1.5 } })).toBe(
+      'x-chromium-5m-stall1.5m.json',
+    );
+    expect(
+      soakFileName('x', 'chromium', 1, {
+        plan: { stallAtMinutes: 0.5, staleAtMinutes: null, warmupSec: 15 },
+      }),
+    ).toBe('x-chromium-1m-warmup15s.json');
+    // A plan that is not given is not named: a name is only as exact as what it was asked.
+    expect(soakFileName('x', 'chromium', 5)).toBe('x-chromium-5m.json');
+    // Order: length, plan, protocol, candidate.
+    expect(
+      soakFileName('x', 'webkit', 5, {
+        plan: { ...policyCi, stallAtMinutes: null, staleAtMinutes: 2 },
+        protocol: 'hls',
+        configuration: { id: 'live-sync', patch: {} },
+      }),
+    ).toBe('x-webkit-5m-nostall-stale2m-hls-live-sync.json');
+    // Two soaks that differ only in what they injected are two soaks.
+    const ordinary = soakReport('chromium', 5);
+    const stale = { ...ordinary, options: { ...ordinary.options, stallAtMinutes: null, staleAtMinutes: 2 } };
+    const policy = {
+      ...ordinary,
+      options: { ...ordinary.options, stallAtMinutes: 2.5, staleAtMinutes: null },
+    };
+    expect(soakIdentity(stale)).not.toBe(soakIdentity(policy));
+    expect(soakFileNameOf(stale)).not.toBe(soakFileNameOf(policy));
   });
 
   it('are read back as written, and refused with the list of what is wrong when they are not valid', async () => {
