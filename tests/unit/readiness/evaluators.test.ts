@@ -262,6 +262,12 @@ describe('PB-RDY-003: stall recovery', () => {
     expect(restoreOf(run({ after: reads(() => 9500) }))).toEqual({ restored: true, atMs: 0 });
   });
 
+  it('holds the latency to the maximum with the limit itself inside it: exactly 10 s is restored, a millisecond over is not', () => {
+    const limit = LIVE_LIMITS.latencyMaxMs;
+    expect(restoreOf(run({ after: reads(() => limit) })).restored).toBe(true);
+    expect(restoreOf(run({ after: reads(() => limit + 1) })).restored).toBe(false);
+  });
+
   it('refuses to judge a recovery that was never exercised: the outage did not stall the player', () => {
     const lines = evaluateStallRecovery([run({ stalled: false, recoveryMs: null, after: [] })]);
     expect(byId(lines, 'stall.recovery').verdict).toBe('INCONCLUSIVE');
