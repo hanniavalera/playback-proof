@@ -92,12 +92,55 @@ describe('DASH VOD manifest', () => {
     expect(xml).toContain('maxSegmentDuration="PT2.006S"');
   });
 
-  it('refuses a live stream, a stream without DASH, and an encrypted stream', () => {
+  it('refuses a live stream and a stream without DASH', () => {
     expect(() => buildDashVod(syntheticIndex({ kind: 'live', segmentCount: 12 }))).toThrow(/is live/);
     expect(() => buildDashVod(syntheticIndex({ protocols: ['hls'] }))).toThrow(/not offered as DASH/);
-    const encrypted = syntheticIndex();
-    encrypted.info.drm = { scheme: 'clearkey', keyId: '0'.repeat(32), key: '1'.repeat(32) };
-    expect(() => buildDashVod(encrypted)).toThrow(/encrypted/);
+  });
+});
+
+describe('DASH VOD manifest of an encrypted stream', () => {
+  const keyId = '706c61796261636b70726f6f662d6964';
+  const encrypted = syntheticIndex({ segmentCount: 6 });
+  encrypted.info.drm = { scheme: 'clearkey', keyId, key: '706c61796261636b70726f6f666b6579' };
+  const xml = buildDashVod(encrypted);
+  const mpd = parseDash(xml, MANIFEST_URL);
+
+  it('declares the cenc namespace and, in every AdaptationSet, the CENC element with the default key id and the ClearKey system', () => {
+    expect(mpd.adaptationSets).toHaveLength(2);
+    for (const set of mpd.adaptationSets) {
+      expect(set.contentProtection).toEqual([
+        {
+          schemeIdUri: 'urn:mpeg:dash:mp4protection:2011',
+          value: 'cenc',
+          defaultKid: '706c6179-6261-636b-7072-6f6f662d6964',
+        },
+        { schemeIdUri: 'urn:uuid:e2719d58-a985-b3c9-781a-b030af78d30e', value: 'ClearKey1.0' },
+      ]);
+    }
+    expect(xml).toContain('xmlns:cenc="urn:mpeg:cenc:2013"');
+  });
+
+  it('puts ContentProtection before the SegmentTemplate and the Representations, as the MPD schema orders them', () => {
+    const names = parseXml(xml).children[0]?.children.map((set) =>
+      set.children.map((c) => c.name),
+    ) as string[][];
+    for (const children of names) {
+      expect(children.indexOf('ContentProtection')).toBe(0);
+      expect(children.lastIndexOf('ContentProtection')).toBe(1);
+      expect(children.indexOf('SegmentTemplate')).toBeGreaterThan(1);
+      expect(children.indexOf('Representation')).toBeGreaterThan(children.indexOf('SegmentTemplate'));
+    }
+  });
+
+  it('does not put the key in the manifest, and leaves an unencrypted stream free of any protection element', () => {
+    expect(xml).not.toContain('706c61796261636b70726f6f666b6579');
+    expect(buildDashVod(syntheticIndex({ segmentCount: 6 }))).not.toMatch(/ContentProtection|cenc/);
+  });
+
+  it('refuses a key id that is not 32 lower-case hex digits', () => {
+    const bad = syntheticIndex({ segmentCount: 6 });
+    bad.info.drm = { scheme: 'clearkey', keyId: 'ABC', key: '0'.repeat(32) };
+    expect(() => buildDashVod(bad)).toThrow(/32 lower-case hex digits/);
   });
 });
 

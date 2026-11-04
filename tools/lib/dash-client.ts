@@ -38,11 +38,19 @@ export interface DashRepresentation {
   segments: DashSegment[];
 }
 
+export interface DashContentProtection {
+  schemeIdUri: string;
+  value?: string;
+  /** cenc:default_KID, as written (UUID text, 8-4-4-4-12). */
+  defaultKid?: string;
+}
+
 export interface DashAdaptationSet {
   id: string;
   contentType: string;
   segmentAlignment: boolean;
   startWithSAP?: number;
+  contentProtection: DashContentProtection[];
   representations: DashRepresentation[];
 }
 
@@ -137,6 +145,35 @@ function readTemplate(el: XmlElement): Template {
   };
 }
 
+const CENC_NAMESPACE = 'urn:mpeg:cenc:2013';
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** ContentProtection elements of an AdaptationSet. The cenc prefix must be declared on the MPD, and the elements must precede the rest. */
+function readContentProtection(mpd: XmlElement, set: XmlElement): DashContentProtection[] {
+  const names = set.children.map((c) => c.name);
+  const lastProtection = names.lastIndexOf('ContentProtection');
+  const firstOther = names.findIndex((n) => n === 'SegmentTemplate' || n === 'Representation');
+  if (lastProtection >= 0 && firstOther >= 0 && firstOther < lastProtection)
+    throw new DashError(
+      'ContentProtection must come before SegmentTemplate and Representation (MPD schema order)',
+    );
+  return childrenNamed(set, 'ContentProtection').map((cp) => {
+    const out: DashContentProtection = { schemeIdUri: required(cp, 'schemeIdUri') };
+    if (cp.attrs.value !== undefined) out.value = cp.attrs.value;
+    const kid = cp.attrs['cenc:default_KID'];
+    if (kid !== undefined) {
+      if (mpd.attrs['xmlns:cenc'] !== CENC_NAMESPACE)
+        throw new DashError(
+          `cenc:default_KID is used but xmlns:cenc is '${mpd.attrs['xmlns:cenc']}', not ${CENC_NAMESPACE}`,
+        );
+      if (!UUID.test(kid))
+        throw new DashError(`cenc:default_KID '${kid}' is not a UUID (8-4-4-4-12 hex digits)`);
+      out.defaultKid = kid;
+    }
+    return out;
+  });
+}
+
 export function parseDash(xml: string, manifestUrl: string): DashManifest {
   const mpd = parseXml(xml);
   if (mpd.name !== 'MPD') throw new DashError(`root element is <${mpd.name}>, expected <MPD>`);
@@ -188,6 +225,7 @@ export function parseDash(xml: string, manifestUrl: string): DashManifest {
       id: setId,
       contentType: required(set, 'contentType'),
       segmentAlignment: set.attrs.segmentAlignment === 'true',
+      contentProtection: readContentProtection(mpd, set),
       representations: [],
     };
     if (set.attrs.startWithSAP !== undefined) adaptation.startWithSAP = integer(set, 'startWithSAP');

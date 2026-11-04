@@ -4,7 +4,7 @@
 // (AAC segments are 93 or 94 frames long, see docs/decisions/media.md ADR-042). Every URL is relative to the manifest's own URL
 // (docs/CONTRACTS.md section 3), so the layout works behind any prefix and a manifest needs no session id.
 
-import type { RepInfo } from '../../shared/streams.ts';
+import type { DrmInfo, RepInfo } from '../../shared/streams.ts';
 import { liveTiming } from './live.ts';
 import { isoDuration, isoTimestamp, xmlEscape } from './time.ts';
 import type { DashLiveParams, RepIndex, StreamIndex } from './types.ts';
@@ -121,6 +121,7 @@ function writeAdaptationSet(
   id: number,
   reps: RepIndex[],
   timelineOf: (r: RepIndex) => Timeline,
+  drm: DrmInfo | undefined,
 ): void {
   const first = reps[0] as RepIndex;
   const track = first.rep.track;
@@ -147,6 +148,8 @@ function writeAdaptationSet(
     );
   }
   x.open('AdaptationSet', attrs);
+  // Schema order: ContentProtection comes before the SegmentTemplate and the Representations.
+  if (drm) writeContentProtection(x, drm);
   if (aligned) writeTimeline(x, first, timelines[0] as Timeline);
   reps.forEach((r, i) => {
     if (aligned) {
@@ -172,8 +175,33 @@ function writeAdaptationSet(
 function assertDash(index: StreamIndex): void {
   if (!index.info.protocols.includes('dash'))
     throw new Error(`stream ${index.info.id} is not offered as DASH`);
-  if (index.info.drm)
-    throw new Error(`stream ${index.info.id} is encrypted: this builder does not emit ContentProtection`);
+}
+
+/** The system id of ClearKey (W3C EME, "org.w3.clearkey"). */
+export const CLEARKEY_SYSTEM_ID = 'urn:uuid:e2719d58-a985-b3c9-781a-b030af78d30e';
+const MP4_PROTECTION_SCHEME = 'urn:mpeg:dash:mp4protection:2011';
+const CENC_NAMESPACE = 'urn:mpeg:cenc:2013';
+
+/** 32 hex digits as the UUID text `cenc:default_KID` uses: 8-4-4-4-12. */
+export function keyIdUuid(keyId: string): string {
+  if (!/^[0-9a-f]{32}$/.test(keyId)) throw new Error(`a key id is 32 lower-case hex digits, got '${keyId}'`);
+  return `${keyId.slice(0, 8)}-${keyId.slice(8, 12)}-${keyId.slice(12, 16)}-${keyId.slice(16, 20)}-${keyId.slice(20)}`;
+}
+
+/**
+ * The two elements a DASH client needs to start EME for an encrypted set: the generic CENC one with the default key id (what the client
+ * asks a license for), and the ClearKey system. There is no license URL: the player is configured with the key pair (StreamInfo.drm).
+ */
+function writeContentProtection(x: Xml, drm: DrmInfo): void {
+  x.empty('ContentProtection', [
+    ['schemeIdUri', MP4_PROTECTION_SCHEME],
+    ['value', 'cenc'],
+    ['cenc:default_KID', keyIdUuid(drm.keyId)],
+  ]);
+  x.empty('ContentProtection', [
+    ['schemeIdUri', CLEARKEY_SYSTEM_ID],
+    ['value', 'ClearKey1.0'],
+  ]);
 }
 
 function profileOf(index: StreamIndex): string {
@@ -193,8 +221,9 @@ function writeSets(x: Xml, index: StreamIndex, timelineOf: (r: RepIndex) => Time
   const video = index.reps.filter((r) => r.rep.track === 'video');
   const audio = index.reps.filter((r) => r.rep.track === 'audio');
   let id = 1;
-  if (video.length > 0) writeAdaptationSet(x, id++, video, timelineOf);
-  if (audio.length > 0) writeAdaptationSet(x, id, audio, timelineOf);
+  const drm = index.info.drm;
+  if (video.length > 0) writeAdaptationSet(x, id++, video, timelineOf, drm);
+  if (audio.length > 0) writeAdaptationSet(x, id, audio, timelineOf, drm);
 }
 
 /** The longest representation: audio may run up to one frame short of the video, never past it, so this is the video duration. */
@@ -208,6 +237,7 @@ export function buildDashVod(index: StreamIndex): string {
   const x = new Xml();
   x.open('MPD', [
     ['xmlns', 'urn:mpeg:dash:schema:mpd:2011'],
+    ['xmlns:cenc', index.info.drm ? CENC_NAMESPACE : undefined],
     ['type', 'static'],
     ['profiles', profileOf(index)],
     ['minBufferTime', isoDuration(index.info.segmentDurationSec)],
@@ -252,6 +282,7 @@ export function buildDashLive(index: StreamIndex, params: DashLiveParams): strin
   const x = new Xml();
   x.open('MPD', [
     ['xmlns', 'urn:mpeg:dash:schema:mpd:2011'],
+    ['xmlns:cenc', index.info.drm ? CENC_NAMESPACE : undefined],
     ['type', 'dynamic'],
     ['profiles', profileOf(index)],
     ['availabilityStartTime', isoTimestamp(params.availabilityStartTime)],
