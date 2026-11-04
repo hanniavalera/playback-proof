@@ -39,6 +39,31 @@ const read = (path: string): string => readFileSync(path, 'utf8');
 const offenders = (files: readonly string[], matches: (text: string) => boolean): string[] =>
   files.filter((file) => matches(read(file))).map(relative);
 
+/**
+ * Names that say nothing about a person or a host: the accounts and hosts of CI services and containers, which this repository writes
+ * about (a Jenkins agent runs as `jenkins`: its own documents name it, and the first Jenkins build that ran the unit tests of triage
+ * failed here because of it).
+ */
+const GENERIC_NAMES = [
+  'root',
+  'localhost',
+  'runner',
+  'ubuntu',
+  'github',
+  'jenkins',
+  'agent',
+  'node',
+  'docker',
+  'builder',
+];
+
+/** What of the name of a user and of a host could identify a person or a machine of this repository's authors. */
+function namesOfThisMachine(username: string, host: string): string[] {
+  return [username, host.split('.')[0] ?? '']
+    .map((name) => name.trim())
+    .filter((name) => name.length >= 4 && !GENERIC_NAMES.includes(name.toLowerCase()));
+}
+
 describe('PB-LAB-005 triage: what is committed holds no secret and nothing of a machine', () => {
   it('has the fixtures and the results to check', () => {
     expect(data.filter((file) => file.includes('tests/fixtures/triage/')).length).toBeGreaterThan(100);
@@ -68,12 +93,17 @@ describe('PB-LAB-005 triage: what is committed holds no secret and nothing of a 
     expect(offenders(data, (text) => hostnames.test(text))).toStrictEqual([]);
   });
 
+  it('takes the account of a CI service, or a generic host, for the name of no person, and keeps the names that identify one', () => {
+    expect(namesOfThisMachine('jenkins', 'agent')).toStrictEqual([]);
+    expect(namesOfThisMachine('Jenkins', 'a1b2c3d4e5f6')).toStrictEqual(['a1b2c3d4e5f6']);
+    expect(namesOfThisMachine('runner', 'localhost')).toStrictEqual([]);
+    expect(namesOfThisMachine('root', 'ubuntu.example')).toStrictEqual([]);
+    expect(namesOfThisMachine('alice', 'alices-laptop.local')).toStrictEqual(['alice', 'alices-laptop']);
+    expect(namesOfThisMachine('bob', 'ab')).toStrictEqual([]);
+  });
+
   it('does not carry the name of the person or of the host that ran the experiments', () => {
-    const names = [userInfo().username, hostname().split('.')[0] ?? '']
-      .map((name) => name.trim())
-      .filter(
-        (name) => name.length >= 4 && !['root', 'localhost', 'runner', 'ubuntu', 'github'].includes(name),
-      );
+    const names = namesOfThisMachine(userInfo().username, hostname());
     for (const name of names) {
       const pattern = new RegExp(
         `(?<![A-Za-z0-9])${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![A-Za-z0-9])`,
