@@ -1,0 +1,16 @@
+diff --git a/src/player/configs.ts b/src/player/configs.ts
+index 66a94cd..d495bb5 100644
+--- a/src/player/configs.ts
++++ b/src/player/configs.ts
+@@ -99,7 +99,10 @@ function mergeInto(target: Record<string, unknown>, source: Record<string, unkno
+ 
+ /** The exact object handed to `player.configure()` for a preset: empty for A. A fresh copy on every call. */
+ export function configFor(id: ConfigId): ShakaConfigPatch {
+-  return id === 'B' ? mergePatches(...B_KNOBS.map((knob) => knob.patch)) : {};
++  // Experiment retry-disabled: the control configuration loses its retry and failover policy.
++  return id === 'B'
++    ? mergePatches(...B_KNOBS.map((knob) => knob.patch))
++    : { streaming: { maxDisabledTime: 0, retryParameters: { maxAttempts: 1 } } };
+ }
+ 
+ /** `{ path: 'abr.switchInterval', value: 4 }` for every leaf of a patch, in order. */

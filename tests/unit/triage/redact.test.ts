@@ -80,6 +80,18 @@ describe('PB-LAB-005 triage redaction: what identifies a machine or a person', (
     );
   });
 
+  it('keeps the punctuation that follows a host in a sentence (a real report put a comma after the endpoint of a draft)', () => {
+    expect(redact('endpoint http://127.0.0.1:4731, NOT the live service')).toBe(
+      'endpoint http://<host>, NOT the live service',
+    );
+    expect(redact('hosts http://a.example.com; http://b.example.com, and done')).toBe(
+      'hosts http://<host>; http://<host>, and done',
+    );
+    // Said twice, it says the same.
+    const once = redact('endpoint http://127.0.0.1:4731, NOT the live service');
+    expect(redact(once)).toBe(once);
+  });
+
   it('leaves a URL that has no query or fragment with just its host replaced, and a URL in prose with its full stop', () => {
     expect(redact('see https://example.com/docs.')).toBe('see https://<host>/docs.');
     expect(redact('GET http://127.0.0.1:4750/health -> 200')).toBe('GET http://<host>/health -> 200');

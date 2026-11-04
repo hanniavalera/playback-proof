@@ -115,12 +115,10 @@ function draftLabel(report: TriageReport, record: SummaryRecord): string {
   const run = report.summaryRun;
   const model = record.model ?? run?.model ?? 'a model';
   const live = run === null || run.endpoint === DEFAULT_BASE_URL;
+  // A cached draft came from the endpoint of this run (the cache is keyed by it): a local test double is said to be one either way.
+  const source = live ? 'live service' : `endpoint ${run.endpoint}, NOT the live service`;
   const where =
-    record.status === 'cached'
-      ? 'from the cache'
-      : live
-        ? 'live service'
-        : `endpoint ${run.endpoint}, NOT the live service`;
+    record.status === 'cached' ? `from the cache of the ${live ? 'live service' : source}` : source;
   return `model draft (${model}, ${where}): a suggestion for a person, never a verdict`;
 }
 
@@ -339,11 +337,11 @@ export function renderMarkdown(report: TriageReport): string {
         '',
         'A cluster is one signature, which is the words of one failure. When the same rule found the same cause behind several clusters, the tests worded one cause in several ways; they are listed here as one.',
         '',
-        '| Root cause | Failures | Clusters | Engines | Tests | Category · rule | What is broken |',
-        '| --- | --- | --- | --- | --- | --- | --- |',
+        '| Failures | Clusters | Engines | Tests | Category · rule | What is broken |',
+        '| --- | --- | --- | --- | --- | --- |',
         ...sharedCauses(report).map(
           (c) =>
-            `| ${c.rank} | ${c.size} | ${ranks(c)} | ${cell(c.projects.join(', '))} | ${cell(listTests(c.tests, 6))} | \`${c.category}\` · \`${c.rule}\` | ${cell(c.cause ?? '', 200)} |`,
+            `| ${c.size} | ${ranks(c)} | ${cell(c.projects.join(', '))} | ${cell(listTests(c.tests, 6))} | \`${c.category}\` · \`${c.rule}\` | ${cell(c.cause ?? '', 200)} |`,
         ),
         '',
       );

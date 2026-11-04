@@ -72,7 +72,7 @@ const TLDS = 'com|net|org|io|dev|app|cloud|internal|local|lan|corp|intranet|home
 const PLACEHOLDER = '<[a-z-]+>';
 const URL_PART = (stop: string): string => `(?:${PLACEHOLDER}|[^\\s${stop}'"\`)\\]}<>])*`;
 const URL_PATTERN = new RegExp(
-  `\\b((?:https?|wss?|ftp):\\/\\/)(${URL_PART('/?#')})(${URL_PART('?#')})(\\?${URL_PART('#')})?(#${URL_PART('')})?`,
+  `\\b((?:https?|wss?|ftp):\\/\\/)(${URL_PART('/?#,;')})(${URL_PART('?#')})(\\?${URL_PART('#')})?(#${URL_PART('')})?`,
   'gi',
 );
 

@@ -142,7 +142,7 @@ describe('PB-LAB-005 triage report: root causes behind several clusters', () => 
     const markdown = renderMarkdown(shared);
     expect(markdown).toContain('## Root causes shared by several clusters');
     expect(markdown).toContain(
-      '| 1 | 3 | #1, #3 | chromium, webkit | PB-REC-001, PB-VOD-001 | `origin-error` · `origin-failed-without-fault` | the origin answered 503 on segment to requests no fault rule named |',
+      '| 3 | #1, #3 | chromium, webkit | PB-REC-001, PB-VOD-001 | `origin-error` · `origin-failed-without-fault` | the origin answered 503 on segment to requests no fault rule named |',
     );
     expect(markdown).toContain(
       '- **Root cause** shared with the clusters #3: the origin answered 503 on segment to requests no fault rule named',

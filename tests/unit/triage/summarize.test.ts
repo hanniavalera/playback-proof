@@ -679,11 +679,16 @@ describe('PB-LAB-005 triage summaries: the cache, by cluster signature', () => {
     await summarize([one as Cluster], options({ cacheDir: dir, model: 'claude-sonnet-5-5' }));
     expect(mock.requests).toHaveLength(3);
 
-    const file = join(dir, `${one?.key}-claude-haiku-5-5-p${PROMPT_VERSION}.json`);
+    const file = join(
+      dir,
+      readdirSync(dir).find((name) => name.startsWith(`${one?.key}-claude-haiku-5-5-`)) as string,
+    );
+    expect(file).toMatch(new RegExp(`-claude-haiku-5-5-[0-9a-f]{6}-p${PROMPT_VERSION}\\.json$`));
     expect(JSON.parse(readFileSync(file, 'utf8'))).toMatchObject({
       clusterKey: one?.key,
       signature: one?.signature,
       model: 'claude-haiku-5-5',
+      endpoint: mock.origin,
       promptVersion: PROMPT_VERSION,
     });
     writeFileSync(file, '{ not json');
@@ -695,12 +700,41 @@ describe('PB-LAB-005 triage summaries: the cache, by cluster signature', () => {
         clusterKey: 'another',
         signature: 'x',
         model: 'claude-haiku-5-5',
+        endpoint: mock.origin,
         promptVersion: PROMPT_VERSION,
         text: 'stale',
       }),
     );
     await summarize([one as Cluster], options({ cacheDir: dir }));
     expect(mock.requests).toHaveLength(5);
+  });
+
+  it('never serves a draft of one endpoint to a run that asks another (a mock demo must not leave drafts a real run would show as its own)', async () => {
+    const dir = cacheDir();
+    const [one] = clusters();
+    mock.script({ kind: 'ok', text: 'Likely root cause: written by the first endpoint.' });
+    const first = await summarize([one as Cluster], options({ cacheDir: dir }));
+    expect(first.records[0]?.status).toBe('summarized');
+    const other = await startMock();
+    try {
+      other.script({ kind: 'ok', text: 'Likely root cause: written by the second endpoint.' });
+      const second = await summarize([one as Cluster], options({ cacheDir: dir, baseUrl: other.origin }));
+      expect(second.cacheHits).toBe(0);
+      expect(second.records[0]).toMatchObject({
+        status: 'summarized',
+        text: 'Likely root cause: written by the second endpoint.',
+      });
+      expect(other.requests).toHaveLength(1);
+      // Each endpoint finds its own draft again, and only its own.
+      const again = await summarize([one as Cluster], options({ cacheDir: dir }));
+      expect(again.records[0]).toMatchObject({
+        status: 'cached',
+        text: 'Likely root cause: written by the first endpoint.',
+      });
+      expect(readdirSync(dir).filter((name) => name.endsWith('.json'))).toHaveLength(2);
+    } finally {
+      await other.close();
+    }
   });
 
   it('keeps nothing of a failure, and nothing at all when it has no cache directory', async () => {

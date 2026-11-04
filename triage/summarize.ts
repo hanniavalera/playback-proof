@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { containsSecret, redact, redactSecrets } from './redact.ts';
@@ -220,24 +221,30 @@ export function buildPrompt(
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// The cache: one file per cluster signature, model and prompt version
+// The cache: one file per cluster signature, model, endpoint and prompt version
 
-function cacheFile(dir: string, cluster: Cluster, model: string): string {
+/**
+ * The endpoint is part of the key: a draft written by a local test double must never be served to a run that asks the real service (a real
+ * run of the mock demo left twelve of them in `.cache/triage`, under the same cluster keys and the same model name a real run would use).
+ */
+function cacheFile(dir: string, cluster: Cluster, model: string, endpoint: string): string {
   const slug = model.replace(/[^A-Za-z0-9.-]+/g, '_').slice(0, 48);
-  return join(dir, `${cluster.key}-${slug}-p${PROMPT_VERSION}.json`);
+  const where = createHash('sha256').update(endpoint).digest('hex').slice(0, 6);
+  return join(dir, `${cluster.key}-${slug}-${where}-p${PROMPT_VERSION}.json`);
 }
 
 interface CacheEntry {
   clusterKey: string;
   signature: string;
   model: string;
+  endpoint: string;
   promptVersion: number;
   text: string;
   usage?: { inputTokens: number; outputTokens: number };
 }
 
-function readCache(dir: string, cluster: Cluster, model: string): CacheEntry | null {
-  const file = cacheFile(dir, cluster, model);
+function readCache(dir: string, cluster: Cluster, model: string, endpoint: string): CacheEntry | null {
+  const file = cacheFile(dir, cluster, model, endpoint);
   if (!existsSync(file)) return null;
   try {
     const entry = JSON.parse(readFileSync(file, 'utf8')) as Partial<CacheEntry>;
@@ -245,6 +252,7 @@ function readCache(dir: string, cluster: Cluster, model: string): CacheEntry | n
       entry.clusterKey !== cluster.key ||
       entry.signature !== cluster.signature ||
       entry.model !== model ||
+      entry.endpoint !== endpoint ||
       entry.promptVersion !== PROMPT_VERSION ||
       typeof entry.text !== 'string' ||
       entry.text.trim() === ''
@@ -261,7 +269,7 @@ function readCache(dir: string, cluster: Cluster, model: string): CacheEntry | n
 function writeCache(dir: string, cluster: Cluster, entry: CacheEntry): void {
   try {
     mkdirSync(dir, { recursive: true });
-    const file = cacheFile(dir, cluster, entry.model);
+    const file = cacheFile(dir, cluster, entry.model, entry.endpoint);
     const partial = `${file}.${process.pid}.tmp`;
     writeFileSync(partial, `${JSON.stringify(entry, null, 2)}\n`);
     renameSync(partial, file);
@@ -466,7 +474,7 @@ export async function summarize(
     if (index >= settings.maxClusters)
       return skip(cluster, `not summarized: the run is capped at ${plural(settings.maxClusters, 'cluster')}`);
     if (cacheDir !== null && options.refresh !== true) {
-      const cached = readCache(cacheDir, cluster, model);
+      const cached = readCache(cacheDir, cluster, model, endpoint);
       if (cached) {
         result.cacheHits += 1;
         return {
@@ -519,6 +527,7 @@ export async function summarize(
             clusterKey: cluster.key,
             signature: cluster.signature,
             model,
+            endpoint,
             promptVersion: PROMPT_VERSION,
             text: outcome.text,
             ...(outcome.usage ? { usage: outcome.usage } : {}),

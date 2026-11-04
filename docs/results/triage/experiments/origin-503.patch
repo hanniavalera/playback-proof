@@ -1,0 +1,13 @@
+diff --git a/src/server/pipeline.ts b/src/server/pipeline.ts
+index dff029d..5715bd2 100644
+--- a/src/server/pipeline.ts
++++ b/src/server/pipeline.ts
+@@ -253,6 +253,8 @@ export async function serveMedia(
+         plan.status === undefined
+           ? respond(ctx, session, parsed, pathname, resolved.rep, plan, nowMs)
+           : { status: plan.status, headers: {}, body: '' };
++      // Experiment origin-503: every segment fails with a 503 and no fault rule is on it.
++      if (parsed.kind === 'segment') answer = { status: 503, headers: {}, body: '' };
+     }
+     assertDeliverable(answer);
+   } catch (err) {
