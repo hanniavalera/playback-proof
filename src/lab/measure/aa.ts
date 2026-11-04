@@ -30,6 +30,11 @@ export interface AaMetric {
   tails: number[];
   /** The most the first batches were worse than the baseline, in the unit of the metric (negative: better in every pass). */
   worst: { median: number; tail: number };
+  /** For each pass in which the metric was measured, how much worse than ITS baseline the first batch was, and what it was allowed. They differ from pass to pass only when each pass had a baseline of its own (a paired check: ADR-179). */
+  perPass: {
+    worse: { median: number; tail: number };
+    allowed: { median: number | null; tail: number | null };
+  }[];
   /** Passes whose first batch failed this metric. */
   firstBatchAlarms: number;
   /** Of those, the passes in which the fresh batch failed it too: false positives. */
@@ -79,6 +84,16 @@ export interface AaSummary {
     /** The CPU model the baseline was recorded on; null when it does not say. */
     cpuModel: string | null;
   };
+  /**
+   * Present when the passes were PAIRED gates (ADR-179): each pass measured its own control, on the machine it ran on, minutes before the
+   * head, so `baseline` above is the control of the first pass that had one. Null for passes against one committed baseline.
+   */
+  paired: {
+    controlRef: string | null;
+    controlCommit: string | null;
+    headCommit: string | null;
+    aa: boolean;
+  } | null;
   /** Number of passes that ended in each exit code. */
   exitCodes: { '0': number; '1': number; '2': number };
   /** Passes that ended in exit code 1: the regression "reproduced" although nothing changed. Expected 0. */
@@ -108,25 +123,37 @@ export interface AaSummary {
 }
 
 /**
- * What a set of A/A reports must have in common: one environment, one profile, one baseline. The machine is NOT one of them: reports of
- * several jobs (several VMs, several CPU models) are accepted, and the summary says which models the passes ran on. Throws, naming the
- * first difference.
+ * What a set of A/A reports must have in common: one environment, one profile and one baseline, or, for the PAIRED gate (ADR-179), one
+ * control commit and one head commit: each pass of a paired check measured a control of its own, so there is no single baseline to
+ * share. The machine is NOT one of them: reports of several jobs (several VMs, several CPU models) are accepted, and the summary says
+ * which models the passes ran on. Paired and unpaired reports are not mixed. Throws, naming the first difference.
  */
 function assertSameCondition(reports: readonly GateReport[]): void {
   const first = reports[0] as GateReport;
+  const paired = first.paired !== undefined;
   reports.forEach((report, index) => {
     if (report.kind !== 'perf-gate-report') throw new Error(`report ${index + 1} is not a perf gate report`);
+    if ((report.paired !== undefined) !== paired)
+      throw new Error(
+        `report ${index + 1} is ${report.paired !== undefined ? 'paired' : 'not paired'} and the first is ${paired ? 'paired' : 'not paired'}: an A/A check is either one baseline measured again and again or the paired gate measured again and again`,
+      );
     for (const [what, a, b] of [
       ['environment', first.envId, report.envId],
       ['profile', first.profile, report.profile],
-      ['baseline', first.baseline?.generatedAt, report.baseline?.generatedAt],
+      ...(paired
+        ? ([
+            ['control commit', first.paired?.controlCommit, report.paired?.controlCommit],
+            ['head commit', first.paired?.headCommit, report.paired?.headCommit],
+          ] as const)
+        : ([['baseline', first.baseline?.generatedAt, report.baseline?.generatedAt]] as const)),
     ] as const) {
       if (a !== b)
         throw new Error(
-          `report ${index + 1} differs from the first in its ${what} (${String(b)} against ${String(a)}): an A/A check is one baseline measured again and again`,
+          `report ${index + 1} differs from the first in its ${what} (${String(b)} against ${String(a)}): an A/A check is ${paired ? 'one control and one head measured again and again' : 'one baseline measured again and again'}`,
         );
     }
-    if (report.baseline === null)
+    // A paired pass whose control could not be measured ended in exit code 2 and is counted as such: it has no baseline and is no misuse.
+    if (report.baseline === null && !(paired && report.exitCode === 2))
       throw new Error(`report ${index + 1} has no baseline: there is nothing to run an A/A check against`);
     if (report.warnings.some((warning) => /ON PURPOSE/.test(warning)))
       throw new Error(
@@ -201,6 +228,7 @@ export function summarizeAa(given: readonly { file: string; report: GateReport }
             medians: [],
             tails: [],
             worst: { median: -Infinity, tail: -Infinity },
+            perPass: [],
             firstBatchAlarms: 0,
             reproduced: 0,
             betweenBatch: { sd: null, relativeSd: null },
@@ -213,6 +241,10 @@ export function summarizeAa(given: readonly { file: string; report: GateReport }
         entry.tails.push(comparison.tail.current);
         entry.worst.median = Math.max(entry.worst.median, comparison.median.worseBy);
         entry.worst.tail = Math.max(entry.worst.tail, comparison.tail.worseBy);
+        entry.perPass.push({
+          worse: { median: comparison.median.worseBy, tail: comparison.tail.worseBy },
+          allowed: { median: comparison.median.allowed, tail: comparison.tail.allowed },
+        });
         if (final.first.verdict === 'fail') entry.firstBatchAlarms += 1;
         if (final.verdict === 'regression') entry.reproduced += 1;
       }
@@ -251,6 +283,13 @@ export function summarizeAa(given: readonly { file: string; report: GateReport }
   const passesOn = new Map<string, number>();
   for (const run of runs)
     if (run.cpuModel !== null) passesOn.set(run.cpuModel, (passesOn.get(run.cpuModel) ?? 0) + 1);
+  // The baseline of the first pass that had one: every pass has it unpaired; a paired pass whose control failed has none.
+  const withBaseline = reports.find(({ report }) => report.baseline !== null)?.report;
+  const baseline = withBaseline?.baseline;
+  if (!withBaseline || !baseline)
+    throw new Error(
+      'no pass has a baseline (the control of every paired pass failed): there is nothing to summarize',
+    );
   return {
     schemaVersion: 1,
     kind: 'perf-aa',
@@ -259,13 +298,21 @@ export function summarizeAa(given: readonly { file: string; report: GateReport }
     passes: reports.length,
     scenarios: [...scenarios].sort(),
     baseline: {
-      file: (first.baseline as NonNullable<GateReport['baseline']>).file,
-      generatedAt: (first.baseline as NonNullable<GateReport['baseline']>).generatedAt,
-      commit: (first.baseline as NonNullable<GateReport['baseline']>).commit,
-      browserVersion: (first.baseline as NonNullable<GateReport['baseline']>).browserVersion,
-      runsPerScenario: (first.baseline as NonNullable<GateReport['baseline']>).runsPerScenario,
-      cpuModel: first.cpuModels?.baseline ?? null,
+      file: baseline.file,
+      generatedAt: baseline.generatedAt,
+      commit: baseline.commit,
+      browserVersion: baseline.browserVersion,
+      runsPerScenario: baseline.runsPerScenario,
+      cpuModel: withBaseline.cpuModels?.baseline ?? null,
     },
+    paired: first.paired
+      ? {
+          controlRef: first.paired.controlRef,
+          controlCommit: first.paired.controlCommit,
+          headCommit: first.paired.headCommit,
+          aa: first.paired.aa,
+        }
+      : null,
     exitCodes,
     falsePositives: exitCodes['1'],
     firstBatchAlarms,
@@ -361,12 +408,35 @@ function passTable(summary: AaSummary): string[] {
   ];
 }
 
+/**
+ * The most of its allowance a metric used in any pass, each pass against its own baseline (the control it measured, when paired): with one
+ * baseline for every pass it is the worst pass against that baseline.
+ */
+function worstShare(metric: AaMetric, which: 'median' | 'tail'): number | null {
+  let best: number | null = null;
+  for (const pass of metric.perPass) {
+    const used = allowanceUsed(pass.worse[which], pass.allowed[which]);
+    if (used !== null && (best === null || used > best)) best = used;
+  }
+  return best;
+}
+
+/** What the passes were, in a sentence: the committed baseline measured again and again, or the paired gate. */
+function introOf(summary: AaSummary): string {
+  const scenarios = `Scenarios: ${summary.scenarios.join(', ')}.`;
+  const paired = summary.paired;
+  if (paired === null)
+    return `The gate was run **${summary.passes} times** against its own baseline (recorded ${summary.baseline.generatedAt.slice(0, 10)} at commit \`${summary.baseline.commit ?? 'unknown'}\`, browser ${summary.baseline.browserVersion}) on the same build, with nothing changed. ${scenarios}`;
+  const sha = (commit: string | null): string => (commit === null ? 'unknown' : commit.slice(0, 12));
+  return `The **paired** gate was run **${summary.passes} times**: each pass measured its control (commit \`${sha(paired.controlCommit)}\`) with the control's own harness on the machine it ran on, minutes before the head (commit \`${sha(paired.headCommit)}\`), and judged the head against it${paired.aa ? ' (an A/A by construction: the control is the head)' : ''}, with nothing changed. The committed baselines were not used. ${scenarios}`;
+}
+
 /** The A/A summary as Markdown: the verdict first, then, per gated metric, how much of its allowance the honest noise used. */
 export function renderAaMarkdown(summary: AaSummary): string {
   const lines: string[] = [
     `## A/A check: ${summary.profile} in \`${summary.envId}\``,
     '',
-    `The gate was run **${summary.passes} times** against its own baseline (recorded ${summary.baseline.generatedAt.slice(0, 10)} at commit \`${summary.baseline.commit ?? 'unknown'}\`, browser ${summary.baseline.browserVersion}) on the same build, with nothing changed. Scenarios: ${summary.scenarios.join(', ')}.`,
+    introOf(summary),
     '',
     `- **False positives (exit code 1): ${summary.falsePositives} of ${summary.passes}.**`,
     `- Exit codes: 0 x ${summary.exitCodes['0']}, 1 x ${summary.exitCodes['1']}, 2 x ${summary.exitCodes['2']}.`,
@@ -378,14 +448,14 @@ export function renderAaMarkdown(summary: AaSummary): string {
     `- First-batch alarms (a gated metric failed in the first batch and a fresh batch was measured): ${summary.firstBatchAlarms}; of those ${summary.notReproduced} did not reproduce.`,
     machinesBullet(summary),
     '',
-    'How much of its allowance each gated metric used in the worst pass (100 % is exactly at the limit, anything above is an alarm):',
+    `How much of its allowance each gated metric used in the worst pass (100 % is exactly at the limit, anything above is an alarm)${summary.paired ? ', each pass against its own control; the baseline, CV and allowed columns are those of the first pass that had a control' : ''}:`,
     '',
     '| scenario | metric | baseline median / tail | CV | allowed (median / tail) | worst pass: median / tail worse by | allowance used | between-batch SD of the median |',
     '| --- | --- | --- | --- | --- | --- | --- | --- |',
   ];
   for (const m of summary.metrics.filter((metric) => metric.gated)) {
     lines.push(
-      `| ${m.scenario} | ${m.metric} | ${num(m.baseline.median, m.unit)} / ${num(m.baseline.tail, m.unit)} | ${m.baseline.cv === null ? '-' : `${(m.baseline.cv * 100).toFixed(1)} %`} | ${num(m.allowed.median, m.unit)} / ${num(m.allowed.tail, m.unit)} | ${num(m.worst.median, m.unit)} / ${num(m.worst.tail, m.unit)} | ${share(allowanceUsed(m.worst.median, m.allowed.median))} / ${share(allowanceUsed(m.worst.tail, m.allowed.tail))} | ${num(m.betweenBatch.sd, m.unit)}${m.betweenBatch.relativeSd === null ? '' : ` (${(m.betweenBatch.relativeSd * 100).toFixed(1)} %)`} |`,
+      `| ${m.scenario} | ${m.metric} | ${num(m.baseline.median, m.unit)} / ${num(m.baseline.tail, m.unit)} | ${m.baseline.cv === null ? '-' : `${(m.baseline.cv * 100).toFixed(1)} %`} | ${num(m.allowed.median, m.unit)} / ${num(m.allowed.tail, m.unit)} | ${num(m.worst.median, m.unit)} / ${num(m.worst.tail, m.unit)} | ${share(worstShare(m, 'median'))} / ${share(worstShare(m, 'tail'))} | ${num(m.betweenBatch.sd, m.unit)}${m.betweenBatch.relativeSd === null ? '' : ` (${(m.betweenBatch.relativeSd * 100).toFixed(1)} %)`} |`,
     );
   }
   const tracked = summary.metrics.filter((metric) => !metric.gated);

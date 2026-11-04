@@ -3,6 +3,8 @@ import { allowanceUsed, renderAaMarkdown, summarizeAa } from '../../../src/lab/m
 import type { BaselineMachine, PerfHost } from '../../../src/lab/measure/baseline.ts';
 import { runGate } from '../../../src/lab/measure/gate.ts';
 import type { Attempt } from '../../../src/lab/measure/gate.ts';
+import { buildPaired } from '../../../src/lab/measure/paired.ts';
+import type { PairedReport } from '../../../src/lab/measure/paired.ts';
 import { buildGateReport } from '../../../src/lab/measure/report.ts';
 import type { GateReport } from '../../../src/lab/measure/report.ts';
 import type { PerfLimits } from '../../../src/lab/measure/rules.ts';
@@ -35,6 +37,8 @@ async function pass(
     host?: PerfHost;
     /** The baseline the pass was compared with, when it is not the fixture's (which was recorded without a CPU model). */
     against?: typeof BASELINE;
+    /** The paired gate's facts: the baseline is then the control this pass measured on its own machine. */
+    paired?: PairedReport;
   } = {},
 ): Promise<GateReport> {
   const script: Record<string, Script> = {
@@ -43,7 +47,7 @@ async function pass(
   };
   const result = await runGate({
     specs: [STARTUP, REBUFFERING],
-    baseline: BASELINE,
+    baseline: options.against ?? BASELINE,
     limits: LIMITS,
     measure: async (spec, attempt) => {
       const batch = script[spec.id]?.[attempt];
@@ -61,6 +65,7 @@ async function pass(
         ? null
         : { file: 'perf/baselines/local-darwin-arm64/chromium.json', baseline: options.against ?? BASELINE },
     host: options.host ?? HOST,
+    ...(options.paired ? { paired: options.paired } : {}),
     ...(options.machine ? { machine: options.machine } : {}),
     browser: { name: 'chromium', version: '156.0.0.0', userAgent: 'UA', cpuThrottleRate: null },
     ffmpeg: '9.0',
@@ -474,6 +479,175 @@ describe('PB-PERF A/A: the machines the passes ran on (the passes of several job
 
   it('survives JSON unchanged, with the machines in it', async () => {
     const summary = summarizeAa(named(await severalJobs()));
+    expect(JSON.parse(JSON.stringify(summary))).toStrictEqual(summary);
+  });
+});
+
+describe('PB-PERF A/A: the passes of the paired gate (each pass measured a control of its own)', () => {
+  const CONTROL = 'b'.repeat(40);
+  const HEAD_SHA = 'a'.repeat(40);
+  const EPYC = 'AMD EPYC 9V74 80-Core Processor';
+  const info = {
+    controlRef: 'origin/main',
+    controlCommit: CONTROL,
+    headCommit: HEAD_SHA,
+    checkout: 'created' as const,
+    controlDir: null,
+    aa: false,
+    nodeModules: 'linked' as const,
+    cpuModelAtControl: EPYC,
+    wallMs: { controlPrepare: 25_000, controlMeasure: 370_000 },
+  };
+  const pairedWith = (overrides: Partial<typeof info> = {}): PairedReport =>
+    buildPaired({ ...info, ...overrides }, { recordedByControl: EPYC, head: EPYC, headMs: 380_000 });
+  /** The control a pass measured on its own machine: the startup data shifted by `by`, recorded at its own time. */
+  const control = (by: number, minute: number): typeof BASELINE => ({
+    ...baselineOf([
+      { spec: STARTUP, batch: startupBatch(QUIET.map((value) => value + by)) },
+      { spec: REBUFFERING, batch: rebufferBatch(constant(0)) },
+    ]),
+    generatedAt: `2026-11-04T09:${String(minute).padStart(2, '0')}:00.000Z`,
+  });
+  const at = (report: GateReport, minute: number): GateReport => {
+    report.generatedAt = `2026-11-04T10:${String(minute).padStart(2, '0')}:00.000Z`;
+    return report;
+  };
+  const shiftedBy = (by: number): number[] => QUIET.map((value) => value + by);
+
+  async function threeControls(): Promise<GateReport[]> {
+    return [
+      // Control A: median 100, allowed 20 (20 %). The head is 10 worse: half of it.
+      at(
+        await pass(
+          { first: startupBatch(shiftedBy(10)) },
+          { against: control(0, 1), paired: pairedWith(), host: { ...HOST, cpuModel: EPYC } },
+        ),
+        1,
+      ),
+      // Control B, another machine: median 200, allowed 40. The head is 20 worse (half), then 30 worse (three quarters).
+      at(
+        await pass(
+          { first: startupBatch(shiftedBy(120)) },
+          { against: control(100, 2), paired: pairedWith(), host: { ...HOST, cpuModel: EPYC } },
+        ),
+        2,
+      ),
+      at(
+        await pass(
+          { first: startupBatch(shiftedBy(130)) },
+          { against: control(100, 3), paired: pairedWith(), host: { ...HOST, cpuModel: EPYC } },
+        ),
+        3,
+      ),
+    ];
+  }
+
+  it('accepts passes whose controls are not the same baseline, and says that the gate was paired', async () => {
+    const summary = summarizeAa(named(await threeControls()));
+    expect(summary).toMatchObject({
+      passes: 3,
+      exitCodes: { '0': 3, '1': 0, '2': 0 },
+      falsePositives: 0,
+      paired: { controlRef: 'origin/main', controlCommit: CONTROL, headCommit: HEAD_SHA, aa: false },
+    });
+    const markdown = renderAaMarkdown(summary);
+    expect(markdown).toContain(
+      `The **paired** gate was run **3 times**: each pass measured its control (commit \`${CONTROL.slice(0, 12)}\`) with the control's own harness on the machine it ran on, minutes before the head (commit \`${HEAD_SHA.slice(0, 12)}\`), and judged the head against it, with nothing changed. The committed baselines were not used.`,
+    );
+    expect(markdown).toContain('each pass against its own control');
+    expect(markdown).not.toContain('against its own baseline');
+  });
+
+  it('measures how much of the allowance a pass used against ITS control, and reports the worst of them', async () => {
+    const summary = summarizeAa(named(await threeControls()));
+    expect(startupOf(summary).perPass).toStrictEqual([
+      { worse: { median: 10, tail: 10 }, allowed: { median: 20, tail: 55 } },
+      { worse: { median: 20, tail: 20 }, allowed: { median: 40, tail: 105 } },
+      { worse: { median: 30, tail: 30 }, allowed: { median: 40, tail: 105 } },
+    ]);
+    // Against the allowance of the first control the third pass would read 150 %; against its own control it used three quarters.
+    expect(renderAaMarkdown(summary)).toMatch(/\| PB-PERF-001 \| startupMs \|[^\n]*\| 75 % \/ 29 % \|/);
+  });
+
+  it('says it is an A/A by construction when the control was the head', async () => {
+    const reports = [
+      at(
+        await pass(
+          { first: startupBatch(QUIET) },
+          { against: control(0, 1), paired: pairedWith({ aa: true, controlCommit: HEAD_SHA }) },
+        ),
+        1,
+      ),
+      at(
+        await pass(
+          { first: startupBatch(QUIET) },
+          { against: control(0, 2), paired: pairedWith({ aa: true, controlCommit: HEAD_SHA }) },
+        ),
+        2,
+      ),
+    ];
+    const summary = summarizeAa(named(reports));
+    expect(summary.paired).toMatchObject({ aa: true, controlCommit: HEAD_SHA });
+    expect(renderAaMarkdown(summary)).toContain('(an A/A by construction: the control is the head)');
+  });
+
+  it('counts a pass whose control could not be measured as a pass that could not be trusted, and takes the baseline from another', async () => {
+    const failed = at(await pass({ first: startupBatch(QUIET) }, { paired: pairedWith() }), 1);
+    failed.exitCode = 2;
+    failed.verdict = 'problem';
+    failed.baseline = null;
+    failed.scenarios = [];
+    failed.problems = [
+      { scenario: '*', message: 'measuring the control (chromium) failed (exit code 2)\nPROBLEM: x' },
+    ];
+    const good = at(
+      await pass({ first: startupBatch(QUIET) }, { against: control(0, 2), paired: pairedWith() }),
+      2,
+    );
+    const summary = summarizeAa(named([failed, good]));
+    expect(summary.exitCodes).toStrictEqual({ '0': 1, '1': 0, '2': 1 });
+    expect(summary.baseline.generatedAt).toBe('2026-11-04T09:02:00.000Z');
+    expect(summary.runs[0]).toMatchObject({ exitCode: 2, startup: null });
+    expect(renderAaMarkdown(summary)).toContain('| 1 | problem (exit code 2) |');
+  });
+
+  it('has nothing to summarize when the control of every pass failed', async () => {
+    const failed = await pass({ first: startupBatch(QUIET) }, { paired: pairedWith() });
+    failed.exitCode = 2;
+    failed.baseline = null;
+    failed.scenarios = [];
+    expect(() => summarizeAa(named([failed]))).toThrow(
+      /no pass has a baseline \(the control of every paired pass failed\)/,
+    );
+  });
+
+  it('does not mix paired and unpaired passes, and does not mix controls or heads', async () => {
+    const paired = await pass({ first: startupBatch(QUIET) }, { paired: pairedWith() });
+    const unpaired = await pass({ first: startupBatch(QUIET) });
+    expect(() => summarizeAa(named([paired, unpaired]))).toThrow(
+      /report 2 is not paired and the first is paired/,
+    );
+    expect(() => summarizeAa(named([unpaired, paired]))).toThrow(
+      /report 2 is paired and the first is not paired/,
+    );
+    const otherControl = await pass(
+      { first: startupBatch(QUIET) },
+      { paired: pairedWith({ controlCommit: 'c'.repeat(40) }) },
+    );
+    expect(() => summarizeAa(named([paired, otherControl]))).toThrow(
+      /report 2 differs from the first in its control commit .*: an A\/A check is one control and one head measured again and again/,
+    );
+    const otherHead = await pass(
+      { first: startupBatch(QUIET) },
+      { paired: pairedWith({ headCommit: 'd'.repeat(40) }) },
+    );
+    expect(() => summarizeAa(named([paired, otherHead]))).toThrow(
+      /differs from the first in its head commit/,
+    );
+  });
+
+  it('survives JSON unchanged, per-pass allowances and paired facts included', async () => {
+    const summary = summarizeAa(named(await threeControls()));
     expect(JSON.parse(JSON.stringify(summary))).toStrictEqual(summary);
   });
 });
