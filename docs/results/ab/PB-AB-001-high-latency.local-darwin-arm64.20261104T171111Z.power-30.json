@@ -1,0 +1,85 @@
+{
+  "experiment": "PB-AB-001-high-latency",
+  "condition": "high-latency",
+  "sessionsPerArm": 30,
+  "simulations": 1000,
+  "seed": 20261111,
+  "pilotSessions": 60,
+  "metrics": [
+    {
+      "id": "startupMs",
+      "label": "Startup time",
+      "unit": "ms",
+      "pilotSessions": 60,
+      "pilotMedian": 669.5500000417233,
+      "pilotP90": 768.4700000107289,
+      "pilotShare": null,
+      "mde": {
+        "mde": 55.70000579288268,
+        "targetPower": 0.8,
+        "sessionsPerArm": 30,
+        "simulations": 1000,
+        "sides": [
+          {
+            "direction": "increase",
+            "mde": 55.70000579288268,
+            "power": 0.8,
+            "note": null
+          },
+          {
+            "direction": "decrease",
+            "mde": 52.80001097542976,
+            "power": 0.802,
+            "note": null
+          }
+        ],
+        "degenerate": false
+      },
+      "threshold": 100,
+      "curve": [
+        {
+          "shift": 0,
+          "power": 0.046,
+          "lower": 0.03387149854774994,
+          "upper": 0.060883552713745334,
+          "simulations": 1000
+        },
+        {
+          "shift": 100,
+          "power": 0.999,
+          "lower": 0.9944410757201909,
+          "upper": 0.9999746825125087,
+          "simulations": 1000
+        },
+        {
+          "shift": 200,
+          "power": 1,
+          "lower": 0.9963179161031539,
+          "upper": 1,
+          "simulations": 1000
+        }
+      ],
+      "sessionsForThreshold": 30,
+      "verdicts": {
+        "none": {
+          "a-better": 0,
+          "b-better": 0,
+          "equivalent": 0.9966666666666667,
+          "inconclusive": 0.0033333333333333335
+        },
+        "better": {
+          "a-better": 0,
+          "b-better": 0.03333333333333333,
+          "equivalent": 0.023333333333333334,
+          "inconclusive": 0.9433333333333334
+        },
+        "worse": {
+          "a-better": 0.43,
+          "b-better": 0,
+          "equivalent": 0.03333333333333333,
+          "inconclusive": 0.5366666666666666
+        }
+      }
+    }
+  ]
+}

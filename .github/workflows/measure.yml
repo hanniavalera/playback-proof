@@ -12,8 +12,8 @@ run-name: measure ${{ inputs.task }} ${{ inputs.engine }} ${{ inputs.runner }} (
 # What the inputs may do (ADR-175): they reach the shell only through `env:` (no script contains an expression, so an argument is data
 # and never code), `task`, `runner` and `engine` are closed choices, and the token is read-only. tests/unit/ci/measure.test.ts keeps it.
 #
-# Each task runs the command of its npm script. One is not on main yet, and the test lists it as pending with its branch: ab needs
-# ab/run.ts (p6/ab). A branch is measured by dispatching on a ref that has both the code and this file.
+# Each task runs the command of its npm script, and every file they call is on main. A branch that adds one is measured by dispatching
+# on a ref that has both the code and this file; until it merges, the test lists the file as pending with its branch.
 
 on:
   workflow_dispatch:

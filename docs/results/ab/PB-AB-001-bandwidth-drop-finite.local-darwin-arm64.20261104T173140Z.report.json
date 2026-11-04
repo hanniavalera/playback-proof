@@ -1,0 +1,459 @@
+{
+  "schemaVersion": 1,
+  "kind": "ab-report",
+  "experiment": {
+    "id": "PB-AB-001-bandwidth-drop-finite",
+    "kind": "aa",
+    "catalogId": "PB-AB-001",
+    "title": "A/A: configuration A against itself, rebuffering under a bandwidth drop on a finite link (the harness's own check before PB-AB-003)"
+  },
+  "preregistration": {
+    "path": "ab/prereg/PB-AB-001-bandwidth-drop-finite.json",
+    "sha256": "3dd42b48f08401bb8447edfe6e1240bb08fc8c012225a445772348d65fdd94bd",
+    "proves": true,
+    "provenance": "The pre-registration file was committed unmodified in bbca833 on 2026-11-04T11:31:36-06:00, before the run started (2026-11-04T17:31:40.319Z)."
+  },
+  "environment": {
+    "envId": "local-darwin-arm64",
+    "host": {
+      "os": {
+        "platform": "darwin",
+        "arch": "arm64",
+        "release": "27.2.0",
+        "name": "macOS 27.2"
+      },
+      "cpus": 12,
+      "memoryGiB": 16,
+      "node": "v22.11.0",
+      "playwright": "1.64.1",
+      "git": {
+        "commit": "bbca833",
+        "dirty": false
+      }
+    },
+    "browser": {
+      "name": "chromium",
+      "version": "156.0.8078.4",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+    },
+    "ffmpeg": "9.0.2",
+    "streams": {
+      "vod-cmaf": "66738540703f45d7ccfb51c91b8ccd40fe53bec59cb7bbef41fde9d03270ec06",
+      "vod-cmaf-short": "52288c8dbedb24753b7ce482292ae144a3aa33e57d68e145db6dfcdcb17d1dd0",
+      "vod-webm": "ed602bbaec0d94a1adda7ad70fefdc1652fbaf8a0d27001e9f287e85b8630c5e",
+      "live-cmaf": "edf24480e4244b97e3031cb01a542d0b859a148b16bbbaac2b63af5796a4cdb9",
+      "vod-cmaf-clearkey": "f1d6817ae45923e9bad0afba463d325a8050c35c158ea071d28927f5c1cd024a"
+    }
+  },
+  "run": {
+    "startedAt": "2026-11-04T17:31:40.319Z",
+    "finishedAt": "2026-11-04T17:51:19.896Z",
+    "command": "npm run ab -- --prereg ab/prereg/PB-AB-001-bandwidth-drop-finite.json --port 4720"
+  },
+  "design": {
+    "engine": "chromium",
+    "sessionsPerArm": 30,
+    "warmupSessionsPerArm": 2,
+    "alpha": 0.05,
+    "bootstrapResamples": 5000,
+    "seed": 20261112,
+    "interleaving": "blocks of two, the arm that goes first alternates"
+  },
+  "warnings": [],
+  "validity": {
+    "valid": true,
+    "evidence": true,
+    "gates": [
+      {
+        "id": "preregistration",
+        "title": "Pre-registration fixed first",
+        "passed": true,
+        "detail": "The plan embedded in the results hashes to 3dd42b48f08401bb8447edfe6e1240bb08fc8c012225a445772348d65fdd94bd. The pre-registration file was committed unmodified in bbca833 on 2026-11-04T11:31:36-06:00, before the run started (2026-11-04T17:31:40.319Z)."
+      },
+      {
+        "id": "design",
+        "title": "Design followed",
+        "passed": true,
+        "detail": "64 sessions in 1 condition: blocks of two, the arm that goes first alternating, 2 warm-up blocks first, 30 measured per arm, exactly the plan's schedule, rules and stream."
+      },
+      {
+        "id": "configuration",
+        "title": "Configuration proved",
+        "passed": true,
+        "detail": "64 finished sessions: the page reported the configuration of its arm, with exactly its overrides, and played through Media Source Extensions."
+      },
+      {
+        "id": "condition",
+        "title": "Condition applied, the same in both arms",
+        "passed": true,
+        "detail": "64 finished sessions: the service held exactly the registered rules, and every rule fired on at least 6 requests of the session (27 to 27 requests per session); both arms were created with the same rules."
+      },
+      {
+        "id": "failures",
+        "title": "Failures few and even",
+        "passed": true,
+        "detail": "0 of 60 measured sessions failed (reported, never dropped): under the pre-registered maximum of 10 % of an arm, and the arms failed alike."
+      },
+      {
+        "id": "machine",
+        "title": "Machine quiet at the start",
+        "passed": true,
+        "detail": "The 1-minute load average was 2.7 before the first session, on 12 CPUs (the limit is 50 % of them, 6.0)."
+      }
+    ],
+    "summary": "VALID: the experiment was run as pre-registered, on data that pass all 6 gates. The direction of the result does not enter: it drives the decision named for the row."
+  },
+  "conditions": [
+    {
+      "id": "bandwidth-drop-finite",
+      "analysis": {
+        "warmup": {
+          "A": 2,
+          "B": 2
+        },
+        "attempted": {
+          "A": 30,
+          "B": 30
+        },
+        "analysed": {
+          "A": 30,
+          "B": 30
+        },
+        "metrics": [
+          {
+            "id": "rebufferShare",
+            "label": "Share of sessions with a rebuffer",
+            "unit": "share",
+            "kind": "binary",
+            "nA": 30,
+            "nB": 30,
+            "warnings": [],
+            "summaryA": null,
+            "summaryB": null,
+            "countsA": {
+              "events": 0,
+              "total": 30,
+              "share": 0
+            },
+            "countsB": {
+              "events": 0,
+              "total": 30,
+              "share": 0
+            },
+            "effect": {
+              "kind": "share-difference",
+              "estimate": 0,
+              "low": -0.1135133931739688,
+              "high": 0.1135133931739688,
+              "level": 0.95,
+              "method": "difference of the shares, Newcombe's hybrid score interval"
+            },
+            "cliffs": null,
+            "test": {
+              "name": "fisher",
+              "method": "exact (hypergeometric, two-sided)",
+              "p": 1
+            },
+            "ecdf": null,
+            "role": "primary",
+            "direction": "lower-is-better",
+            "threshold": 0.2,
+            "pAdjusted": 1,
+            "significant": false
+          },
+          {
+            "id": "rebufferRatio",
+            "label": "Rebuffer ratio",
+            "unit": "ratio",
+            "kind": "continuous",
+            "nA": 30,
+            "nB": 30,
+            "warnings": [],
+            "summaryA": {
+              "n": 30,
+              "mean": 0,
+              "median": 0,
+              "p10": 0,
+              "p90": 0,
+              "min": 0,
+              "max": 0
+            },
+            "summaryB": {
+              "n": 30,
+              "mean": 0,
+              "median": 0,
+              "p10": 0,
+              "p90": 0,
+              "min": 0,
+              "max": 0
+            },
+            "countsA": null,
+            "countsB": null,
+            "effect": {
+              "kind": "hodges-lehmann",
+              "estimate": 0,
+              "low": 0,
+              "high": 0,
+              "level": 0.95,
+              "method": "Hodges-Lehmann shift, seeded percentile bootstrap interval (5000 resamples)"
+            },
+            "cliffs": {
+              "delta": 0,
+              "label": "negligible"
+            },
+            "test": {
+              "name": "mann-whitney",
+              "method": "exact permutation distribution",
+              "p": 1
+            },
+            "ecdf": {
+              "probabilities": [
+                0.1,
+                0.2,
+                0.3,
+                0.4,
+                0.5,
+                0.6,
+                0.7,
+                0.8,
+                0.9
+              ],
+              "a": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "b": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "role": "secondary",
+            "direction": "lower-is-better",
+            "threshold": null,
+            "pAdjusted": null,
+            "significant": false
+          }
+        ],
+        "family": [
+          "rebufferShare"
+        ],
+        "failures": {
+          "attemptedA": 30,
+          "attemptedB": 30,
+          "failedA": 0,
+          "failedB": 0,
+          "fisherP": 1,
+          "guardTripped": false,
+          "guardWhy": null,
+          "sessions": []
+        },
+        "startRungs": {
+          "A": {
+            "720": 30
+          },
+          "B": {
+            "720": 30
+          },
+          "shared": [
+            "720"
+          ],
+          "disjoint": false,
+          "differs": false,
+          "note": "Both arms started on the same rungs in about the same proportions (A: 720p: 30; B: 720p: 30)."
+        },
+        "recoverableErrors": {
+          "A": 0,
+          "B": 0
+        },
+        "decision": {
+          "verdict": "equivalent",
+          "action": "keep-a",
+          "headline": "Equivalent within the margin: no meaningful difference (keep A)",
+          "reason": "Every primary interval lies inside its margin (Share of sessions with a rebuffer -11.4 pp to +11.4 pp within ±20 pp), so the data show that nothing worth a change is there.",
+          "readings": [
+            {
+              "id": "rebufferShare",
+              "label": "Share of sessions with a rebuffer",
+              "point": 0,
+              "best": -0.1135133931739688,
+              "worst": 0.1135133931739688,
+              "threshold": 0.2,
+              "better": false,
+              "harmful": false,
+              "harmless": true,
+              "equivalent": true,
+              "available": true,
+              "sentence": "Share of sessions with a rebuffer: B minus A is 0 pp (95 % interval -11.4 pp to +11.4 pp), threshold 20 pp, adjusted p = 1.0: equivalent: the whole interval is inside the margin"
+            }
+          ],
+          "failureGuardTripped": false,
+          "steps": [
+            "1. Harm (worse than the threshold with an interval that excludes zero): none.",
+            "2. Benefit (adjusted p < 0.05 and the whole interval beyond the threshold in B's favour): none; worse end of the interval not inside the threshold: none.",
+            "3. Equivalence (the whole interval inside the margin of plus or minus the threshold): 1 of 1 (rebufferShare).",
+            "4. Failed sessions: 0 of 60 failed, guard not tripped."
+          ],
+          "moreSessions": null
+        },
+        "decisionNote": null,
+        "exploratory": [
+          {
+            "title": "Metrics that were not pre-registered",
+            "note": "Recorded in every session and compared here with the same tests, but with raw p-values, no adjustment and no threshold: they describe, they decide nothing, and one in twenty of them will look significant by chance.",
+            "rows": [
+              {
+                "label": "Startup time",
+                "unit": "ms",
+                "kind": "continuous",
+                "nA": 30,
+                "nB": 30,
+                "effect": -0.4999999701976776,
+                "low": -1.8999999769032,
+                "high": 0.9000000357627869,
+                "p": 0.5443572220646886,
+                "note": "not pre-registered"
+              },
+              {
+                "label": "Rebuffer count",
+                "unit": "count",
+                "kind": "continuous",
+                "nA": 30,
+                "nB": 30,
+                "effect": 0,
+                "low": 0,
+                "high": 0,
+                "p": 1,
+                "note": "not pre-registered"
+              },
+              {
+                "label": "Rebuffer duration",
+                "unit": "ms",
+                "kind": "continuous",
+                "nA": 30,
+                "nB": 30,
+                "effect": 0,
+                "low": 0,
+                "high": 0,
+                "p": 1,
+                "note": "not pre-registered"
+              },
+              {
+                "label": "Rung switches",
+                "unit": "count",
+                "kind": "continuous",
+                "nA": 30,
+                "nB": 30,
+                "effect": 0,
+                "low": 0,
+                "high": 0,
+                "p": 1,
+                "note": "not pre-registered"
+              },
+              {
+                "label": "Dropped-frame ratio",
+                "unit": "ratio",
+                "kind": "continuous",
+                "nA": 30,
+                "nB": 30,
+                "effect": 0,
+                "low": 0,
+                "high": 0,
+                "p": 1,
+                "note": "not pre-registered"
+              }
+            ]
+          },
+          {
+            "title": "Startup within the rung the sessions started on (rung-matched)",
+            "note": "Only the rungs that at least 5 sessions of each arm started on can be compared. Which rung a session starts on is decided by the configuration, not by chance, so this is not a randomised comparison.",
+            "rows": [
+              {
+                "label": "Startup time of the sessions that started on 720p",
+                "unit": "ms",
+                "kind": "continuous",
+                "nA": 30,
+                "nB": 30,
+                "effect": -0.4999999701976776,
+                "low": -1.8999999769032,
+                "high": 0.9000000357627869,
+                "p": 0.5443572220646886,
+                "note": "exploratory: a stratum, not randomised"
+              }
+            ]
+          }
+        ]
+      },
+      "aa": {
+        "significant": false,
+        "verdict": "equivalent",
+        "ideal": true,
+        "acceptable": true,
+        "reason": "The A/A verdict is \"equivalent within the margin\": the intervals of two copies of configuration A lie inside the practical thresholds, so this harness found no meaningful difference between them."
+      }
+    }
+  ],
+  "calibrations": [
+    {
+      "condition": "bandwidth-drop-finite",
+      "result": {
+        "poolSessions": 60,
+        "sessionsPerArm": 30,
+        "splits": 2000,
+        "alpha": 0.05,
+        "falsePositives": 0,
+        "rate": 0,
+        "interval": {
+          "lower": 0,
+          "upper": 0.0018427397934059364,
+          "level": 0.95
+        },
+        "perMetric": [
+          {
+            "id": "rebufferShare",
+            "rejectionRates": [
+              {
+                "level": 0.01,
+                "rate": 0
+              },
+              {
+                "level": 0.05,
+                "rate": 0
+              },
+              {
+                "level": 0.1,
+                "rate": 0
+              },
+              {
+                "level": 0.25,
+                "rate": 0
+              }
+            ]
+          }
+        ],
+        "verdicts": {
+          "a-better": 0,
+          "b-better": 0,
+          "equivalent": 2000,
+          "inconclusive": 0
+        },
+        "pass": true,
+        "conservative": true,
+        "reason": "The harness declared 0.00 % (0 of 2000; 95 % interval 0.00 to 0.18 %) of the splits of identical sessions significant: not above the significance level of 5 %, and well below it: it is safe and conservative, so it will under-detect rather than over-claim."
+      }
+    }
+  ]
+}
