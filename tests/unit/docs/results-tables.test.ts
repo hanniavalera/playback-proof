@@ -448,6 +448,32 @@ describe('PB-LAB-006 results tables: the performance block', () => {
     expect(lines.filter((l) => /^\| `(local|docker)-/.test(l))).toHaveLength(baselines.length);
     expect(lines.filter((l) => /^\| (first run|after a harness fix) \|/.test(l))).toHaveLength(aa.length);
   });
+
+  it('links the cross-VM page when it is committed, and says nothing of it when it is not', () => {
+    expect(renderPerf(real).markdown).not.toContain('gha-cross-vm');
+    const linked = renderPerf(real.with('docs/results/perf/gha-cross-vm.md', '# cross-VM\n'));
+    expect(linked.markdown).toContain('[gha-cross-vm.md](docs/results/perf/gha-cross-vm.md)');
+  });
+
+  it('refuses a derivation that is not of the schema it reads, and one that is not a derivation', () => {
+    const path = 'docs/results/perf/threshold-derivation.json';
+    expect(() => renderPerf(changed(real, path, (r) => (r.schemaVersion = 2)))).toThrow(
+      /threshold-derivation\.json: \$\.schemaVersion: this renderer reads schema version 1/,
+    );
+    expect(() => renderPerf(changed(real, path, (r) => (r.kind = 'other')))).toThrow(
+      /\$\.kind: expected "perf-threshold-derivation"/,
+    );
+  });
+
+  it('refuses a baseline filed under the wrong environment (a copied file)', () => {
+    const copied = real.with(
+      'perf/baselines/docker-linux-arm64/chromium.json',
+      real.text('perf/baselines/local-darwin-arm64/chromium.json'),
+    );
+    expect(() => renderPerf(copied)).toThrow(
+      /records chromium of local-darwin-arm64, so it must be perf\/baselines\/local-darwin-arm64\/chromium\.json \(was the file copied\?\)/,
+    );
+  });
 });
 
 describe('PB-LAB-006 results tables: the Jenkins block', () => {

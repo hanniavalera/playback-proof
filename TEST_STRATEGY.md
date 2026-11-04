@@ -639,6 +639,7 @@ A document of numbers is only as good as the tool that refuses it when it is wro
 - **The risk ranking drives the catalog:** the areas are ordered by score, every cited risk is the catalog's, every gate is what its rows are, and every catalog row answers to exactly one area.
 - **The merge tier fits its budget:** the table in section 6.3 is computed from the catalog, and a job over its budget or an engine over the ceiling fails the check.
 - **Every generated block is up to date.** The tier thresholds, the area legend, the budgets, the merge budget, the flake policy, the live criteria and the fault profiles are rendered from code between `BEGIN` and `END` markers. `npm run docs:check -- --write` rewrites them; `-- --print` shows them without writing.
+- **The result tables of the README are up to date.** They are rendered from the committed result files, between the same markers, by [`tools/results-tables.ts`](tools/results-tables.ts): the check fails when one differs from its files, when a file is missing or malformed, and when a required table is gone from [README.md](README.md) ([docs/README-TOOLING.md](docs/README-TOOLING.md)).
 - **Every test id cited anywhere in the documentation exists in the catalog**, and a risk written after an id (`PB-VOD-001 (3x5=15)`) is the catalog's.
 - **Every relative link points at a file that exists.**
 
