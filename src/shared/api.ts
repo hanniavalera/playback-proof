@@ -51,6 +51,7 @@ export interface SessionInfo {
 
 export interface SessionDetail extends SessionInfo {
   faults: FaultRuleWithId[];
+  /** `errors` counts every answer with a status of 400 or more and every aborted response, a client's hang-up included (`RequestLogEntry.abortReason` tells them apart). */
   counters: { requests: number; bytes: number; errors: number; byKind: Record<string, number> };
 }
 
@@ -74,7 +75,15 @@ export interface RequestLogEntry {
   totalMs: number;
   /** ids of the fault rules that fired for this request */
   faults: string[];
+  /** true when the response did not reach the client whole: see `abortReason` for who ended it. A client that hangs up after receiving every byte is not an abort. */
   aborted?: boolean;
+  /**
+   * Who ended the response early; set whenever `aborted` is true, absent otherwise.
+   * - `client-closed`: the client hung up before it had received every byte (a player that cancels an in-flight request when it seeks or switches rung does this; it is not an origin failure).
+   * - `fault-abort`: an `abort` fault cut the connection (the origin did).
+   * - `error`: the service could not write the response (a bug of the service, never expected).
+   */
+  abortReason?: 'client-closed' | 'fault-abort' | 'error';
   /** true while the response is still being written: status, bytes, ttfbMs and totalMs are then the values so far (status 0 until the head is sent). */
   pending?: boolean;
 }

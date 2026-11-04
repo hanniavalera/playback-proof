@@ -59,7 +59,23 @@ describe('describeEntry', () => {
       ),
     ).toBe('#1 GET manifest -> 503 in 4 ms [faults r1]');
     expect(describeEntry(entry(3, { pending: true, status: 0 }))).toBe('#3 GET segment v360 #3 -> pending');
-    expect(describeEntry(entry(4, { aborted: true }))).toBe('#4 GET segment v360 #4 -> 200 aborted in 4 ms');
+    expect(describeEntry(entry(4, { aborted: true }))).toBe('#4 GET segment v360 #4 -> 200, aborted in 4 ms');
+  });
+
+  it('says who ended an aborted request, so a failure message tells a hang-up of the player from an origin that cut one', () => {
+    const line = (abortReason: RequestLogEntry['abortReason'], status = 200): string =>
+      describeEntry(
+        entry(5, { status, aborted: true, abortReason, faults: abortReason === 'fault-abort' ? ['f2'] : [] }),
+      );
+    expect(line('client-closed')).toBe('#5 GET segment v360 #5 -> 200, aborted by the client in 4 ms');
+    expect(line('fault-abort')).toBe('#5 GET segment v360 #5 -> 200, aborted by a fault in 4 ms [faults f2]');
+    expect(line('error', 0)).toBe(
+      '#5 GET segment v360 #5 -> no response, aborted by a service error in 4 ms',
+    );
+    // aborted before the head was sent: there is no status to show
+    expect(line('client-closed', 0)).toBe(
+      '#5 GET segment v360 #5 -> no response, aborted by the client in 4 ms',
+    );
   });
 });
 
@@ -180,6 +196,9 @@ describe('reading the log', () => {
     entry(9, { rep: 'v360', number: 4, pending: true, status: 0 }),
     entry(10, { rep: 'v720', number: 5, aborted: true }),
     entry(11, { kind: 'manifest', rep: 'v360', number: undefined, method: 'HEAD' }),
+    entry(12, { rep: 'v720', number: 6, bytes: 0, aborted: true, abortReason: 'client-closed' }),
+    entry(13, { rep: 'v720', number: 7, aborted: true, abortReason: 'fault-abort', faults: ['f1'] }),
+    entry(14, { rep: 'v720', number: 8, status: 0, bytes: 0, aborted: true, abortReason: 'client-closed' }),
   ];
 
   describe('requestsFor', () => {
@@ -197,15 +216,34 @@ describe('reading the log', () => {
 
     it('filters by status: a code, ok, error; and an unfinished request is neither ok nor an error', () => {
       expect(seqs({ status: 503 })).toStrictEqual([7]);
-      expect(seqs({ kind: 'segment', status: 'ok' })).toStrictEqual([4, 5, 6, 8, 10]);
-      expect(seqs({ status: 'error' })).toStrictEqual([7, 10]);
+      expect(seqs({ kind: 'segment', status: 'ok' })).toStrictEqual([4, 5, 6, 8]);
+      expect(seqs({ status: 'error' })).toStrictEqual([7, 10, 13]);
       expect(seqs({ pending: true })).toStrictEqual([9]);
       expect(seqs({ pending: false, kind: 'segment', rep: 'v360' })).toStrictEqual([7, 8]);
     });
 
+    it('does not count a client that hung up as an error, and not as delivered either: it is its own category', () => {
+      // 12 and 14: the client hung up (after a head, and before one). 13: an abort fault. 10: an abort from a service that does not say who.
+      expect(seqs({ status: 'error', rep: 'v720' })).toStrictEqual([10, 13]);
+      expect(seqs({ status: 'ok', rep: 'v720' })).toStrictEqual([]);
+      expect(seqs({ clientAborted: true })).toStrictEqual([12, 14]);
+      expect(seqs({ clientAborted: false, rep: 'v720' })).toStrictEqual([10, 13]);
+      expect(seqs({ clientAborted: true, status: 'error' })).toStrictEqual([]);
+    });
+
+    it('still counts a 4xx or 5xx as an error when the client also hung up, and a pending request is not a hang-up', () => {
+      const refusedAndGone = entry(1, { status: 404, aborted: true, abortReason: 'client-closed' });
+      const writeFailed = entry(2, { status: 0, aborted: true, abortReason: 'error' });
+      const inFlight = entry(3, { status: 0, pending: true });
+      const small = [refusedAndGone, writeFailed, inFlight];
+      expect(requestsFor(small, { status: 'error' }).map((e) => e.seq)).toStrictEqual([1, 2]);
+      expect(requestsFor(small, { clientAborted: true }).map((e) => e.seq)).toStrictEqual([1]);
+      expect(requestsFor(small, { clientAborted: false }).map((e) => e.seq)).toStrictEqual([2, 3]);
+    });
+
     it('filters by method, and returns everything for an empty filter', () => {
       expect(seqs({ method: 'HEAD' })).toStrictEqual([11]);
-      expect(seqs({})).toHaveLength(11);
+      expect(seqs({})).toHaveLength(14);
     });
 
     it('does not match a number when the entry has none', () => {
@@ -221,10 +259,14 @@ describe('reading the log', () => {
       expect(segmentNumbersFetched(log, 'v999')).toStrictEqual([]);
     });
 
-    it('can keep only the delivered ones, or only the failed ones', () => {
+    it('can keep only the delivered ones, only the failed ones, or only the ones the player hung up on', () => {
       expect(segmentNumbersFetched(log, 'v360', { status: 'ok' })).toStrictEqual([3]);
       expect(segmentNumbersFetched(log, 'v360', { status: 'error' })).toStrictEqual([3]);
       expect(segmentNumbersFetched(log, 'v360', { pending: true })).toStrictEqual([4]);
+      expect(segmentNumbersFetched(log, 'v720')).toStrictEqual([5, 6, 7, 8]);
+      expect(segmentNumbersFetched(log, 'v720', { status: 'ok' })).toStrictEqual([]);
+      expect(segmentNumbersFetched(log, 'v720', { status: 'error' })).toStrictEqual([5, 7]);
+      expect(segmentNumbersFetched(log, 'v720', { clientAborted: true })).toStrictEqual([6, 8]);
     });
   });
 

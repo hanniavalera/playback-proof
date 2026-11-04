@@ -15,14 +15,21 @@ export interface RequestWaitOptions {
   timeoutMs?: number;
 }
 
-/** `#12 GET segment v360 #7 -> 200 in 4 ms`: one entry as a line of a failure message. */
+const ABORTED_BY: Record<NonNullable<RequestLogEntry['abortReason']> | 'unknown', string> = {
+  'client-closed': 'aborted by the client',
+  'fault-abort': 'aborted by a fault',
+  error: 'aborted by a service error',
+  unknown: 'aborted',
+};
+
+/** `#12 GET segment v360 #7 -> 200 in 4 ms`: one entry as a line of a failure message. An aborted one says who ended it. */
 export function describeEntry(entry: RequestLogEntry): string {
   const what = [entry.kind, entry.rep, entry.number === undefined ? undefined : `#${entry.number}`]
     .filter((part) => part !== undefined)
     .join(' ');
-  const outcome = entry.pending
-    ? 'pending'
-    : `${entry.status}${entry.aborted ? ' aborted' : ''} in ${entry.totalMs} ms`;
+  const answer = entry.status === 0 ? 'no response' : String(entry.status);
+  const abort = entry.aborted ? `, ${ABORTED_BY[entry.abortReason ?? 'unknown']}` : '';
+  const outcome = entry.pending ? 'pending' : `${answer}${abort} in ${entry.totalMs} ms`;
   const faults = entry.faults.length > 0 ? ` [faults ${entry.faults.join(', ')}]` : '';
   return `#${entry.seq} ${entry.method} ${what} -> ${outcome}${faults}`;
 }
@@ -89,13 +96,28 @@ export interface RequestFilter {
   rep?: string | readonly string[];
   /** One segment number, or an inclusive range. */
   number?: number | { from: number; to: number };
-  /** A status, `'ok'` (2xx) or `'error'` (4xx, 5xx, or a request the server aborted). A request still in flight has neither. */
+  /**
+   * What the origin answered, for a request that has finished (a request still in flight has none of these):
+   * - a number: that status (an aborted response keeps the status of the head it sent);
+   * - `'ok'`: a 2xx that reached the client whole, so a response that was cut (by anybody) is not ok;
+   * - `'error'`: what the ORIGIN got wrong: a 4xx or 5xx, or a response it cut short (an `abort` fault, or a write failure of the service).
+   *   A client that hung up on an in-flight request is NOT an error: a player cancels requests when it seeks or switches rung, on a slow
+   *   machine more often. A log without `abortReason` (an older service) counts every abort as an error. Ask for those with `clientAborted`.
+   */
   status?: number | 'ok' | 'error';
+  /**
+   * `true`: only the requests the CLIENT ended by hanging up before it had received every byte (`abortReason: 'client-closed'`): the
+   * oracle for "the player cancelled the in-flight request when it seeked or switched rung". `false`: every other request.
+   */
+  clientAborted?: boolean;
   method?: string;
   pending?: boolean;
 }
 
 const asList = <T>(value: T | readonly T[]): readonly T[] => (Array.isArray(value) ? value : [value as T]);
+
+const hungUpOn = (entry: RequestLogEntry): boolean =>
+  entry.aborted === true && entry.abortReason === 'client-closed';
 
 function matches(entry: RequestLogEntry, filter: RequestFilter): boolean {
   if (filter.kind !== undefined && !asList(filter.kind).includes(entry.kind)) return false;
@@ -109,10 +131,19 @@ function matches(entry: RequestLogEntry, filter: RequestFilter): boolean {
   }
   if (filter.status !== undefined) {
     const done = !entry.pending;
-    if (filter.status === 'ok' && !(done && entry.status >= 200 && entry.status < 300)) return false;
-    if (filter.status === 'error' && !(done && (entry.status >= 400 || entry.aborted === true))) return false;
+    if (
+      filter.status === 'ok' &&
+      !(done && entry.status >= 200 && entry.status < 300 && entry.aborted !== true)
+    )
+      return false;
+    if (
+      filter.status === 'error' &&
+      !(done && (entry.status >= 400 || (entry.aborted === true && !hungUpOn(entry))))
+    )
+      return false;
     if (typeof filter.status === 'number' && !(done && entry.status === filter.status)) return false;
   }
+  if (filter.clientAborted !== undefined && hungUpOn(entry) !== filter.clientAborted) return false;
   if (filter.method !== undefined && entry.method !== filter.method) return false;
   if (filter.pending !== undefined && (entry.pending === true) !== filter.pending) return false;
   return true;
@@ -125,12 +156,13 @@ export function requestsFor(log: readonly RequestLogEntry[], filter: RequestFilt
 
 /**
  * The segment numbers requested for one representation, in the order they arrived and with repeats (a refetch shows twice: a seek
- * test asserts there is none). Pass `{ status: 'ok' }` for the ones that were delivered. Manifests and init segments are not segments.
+ * test asserts there is none, and a request the client cancelled and then repeated shows twice as well). Pass `{ status: 'ok' }` for the
+ * ones that were delivered whole, `{ clientAborted: true }` for the ones the player hung up on. Manifests and init segments are not segments.
  */
 export function segmentNumbersFetched(
   log: readonly RequestLogEntry[],
   rep: string,
-  filter: Pick<RequestFilter, 'status' | 'pending'> = {},
+  filter: Pick<RequestFilter, 'status' | 'pending' | 'clientAborted'> = {},
 ): number[] {
   return requestsFor(log, { ...filter, kind: 'segment', rep })
     .map((entry) => entry.number)
