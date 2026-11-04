@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "id": "PB-AB-001-bandwidth-drop-finite",
+  "kind": "aa",
+  "catalogId": "PB-AB-001",
+  "title": "A/A: configuration A against itself, rebuffering under a bandwidth drop on a finite link (the harness's own check before PB-AB-003)",
+  "registeredOn": "2026-11-04",
+  "hypotheses": [
+    {
+      "metric": "rebufferShare",
+      "text": "Both arms run configuration A, so the harness must not find a difference: a primary metric that is significant after Holm's correction, or a verdict of A better or B better, counts as the harness finding a difference that is not there."
+    }
+  ],
+  "engine": "chromium",
+  "stream": "vod-cmaf",
+  "protocol": "dash",
+  "arms": { "A": "A", "B": "A" },
+  "conditions": [
+    {
+      "id": "bandwidth-drop-finite",
+      "profile": null,
+      "rules": [
+        { "type": "throttle", "kbps": 20000 },
+        { "type": "throttle", "kbps": 600, "afterMs": 8000 }
+      ],
+      "rationale": "The catalog profile bandwidth-drop (600 kbps on media requests from 8 s after the first media request) with its first 8 s on a finite 20 000 kbps link instead of an unthrottled one: the player ignores downloads that take under 5 ms, so an unthrottled start would give its estimator nothing to hear, and 20 000 kbps is the fastest link on which the smallest segment still takes six times that. The slowest throttle wins, so the link is 600 kbps from 8 s on. The condition of PB-AB-003, as an explicit variant named in the plan."
+    }
+  ],
+  "observation": { "mediaSecondsAfterFirstFrame": 18, "sessionTimeoutMs": 120000 },
+  "sessionsPerArm": 30,
+  "warmupSessionsPerArm": 2,
+  "alpha": 0.05,
+  "bootstrapResamples": 5000,
+  "metrics": [
+    {
+      "id": "rebufferShare",
+      "role": "primary",
+      "direction": "lower-is-better",
+      "practicalThreshold": 0.2,
+      "thresholdBasis": "One session in five stalling more, or less, often is what a team would change a default for: rebuffering is what viewers feel most. It is the number PB-AB-003 will use unless this pilot says the design cannot detect it, in which case the experiment uses the minimum detectable effect of the pilot, as the strategy requires."
+    },
+    { "id": "rebufferRatio", "role": "secondary", "direction": "lower-is-better" }
+  ],
+  "decisionRule": {
+    "id": "pb-ab-v1",
+    "text": "The rule of the experiments, applied to two copies of configuration A: four verdicts (A better, B better, equivalent within the margin, inconclusive). The harness passes this check when no primary metric is significant after Holm's correction and the verdict is neither A better nor B better, and when the A/A calibration of the pool of sessions (2000 random splits) does not show its false-positive rate above alpha."
+  },
+  "exclusionRule": {
+    "text": "A session that errors or times out is a failed session: it is reported and never silently dropped; its metrics are left out of the comparison. The number of sessions is fixed in advance: there is no interim analysis, no extension and no re-run to improve a result.",
+    "maxFailedShare": 0.1,
+    "abortAfterConsecutiveFailures": 5
+  },
+  "seed": 20261112
+}
