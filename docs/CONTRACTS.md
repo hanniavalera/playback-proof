@@ -127,6 +127,9 @@ with the session id, so a rerun with the same request order sees the same delays
 ## 7. Tests: ids, tiers, tags, waiting
 
 - Test ids look like `PB-VOD-001`. The strategy's catalog (`TEST_STRATEGY.md`, between the `BEGIN:TEST_CATALOG` / `END:TEST_CATALOG` markers) is the list of record; a docs check compares it with the specs.
+- The catalog's columns are `ID | Area | Scenario | Risk | Tier | Engines | Runs in | A failure means`, parsed strictly by `tools/catalog.ts` (`parseCatalog`). `Risk` is `LxI=score`; `Tier` is `merge` or `release` and follows from the risk score and the `Runs in` lane (unit rows always `merge`, `live` and `ab` rows always `release`: TEST_STRATEGY.md section 4.2); `Engines` is a comma-separated list of `chromium`, `firefox`, `webkit`, `chromium-cpu4x`, or `all` (the first three), and `none` for `unit` rows, which use no browser. A scenario marked `(stretch)` may be unimplemented.
+- Tag mapping: tier `merge` is `@merge`, tier `release` is `@release`, an `Engines` list that includes `chromium-cpu4x` is `@cpu`.
+- Policy numbers (readiness limits, gate budgets, flake policy, tiering thresholds) live in `src/shared/criteria.ts`, the named fault profiles in `src/shared/profiles.ts` (`profile(name)`, `originStall(atNumber, ms)`, `staleManifest(ms)`); `TEST_STRATEGY.md` renders its tables from them and `npm run docs:check` fails when they are stale. Code that enforces a limit imports the plain numbers (`LIVE_LIMITS`, `GATE_LIMITS`, `FLAKE_LIMITS`, `RISK_LIMITS`).
 - The id starts the Playwright title: `test('PB-VOD-001 starts and reaches 3 s of media time', { tag: '@merge' }, ...)`.
 - Tags: `@merge` (gates every pull request), `@release` (gates a release / nightly), plus `@cpu` (also runs in the CPU-throttled profile), `@live`, `@hls`, `@dash`, `@eme`, `@soak`.
 - **No fixed sleeps.** Specs wait on player events (`qa.waitFor`, `qa.waitForMediaTime`, cursor-based) or on the server request log. ESLint forbids

@@ -77,3 +77,7 @@ showed:
 **Alternatives.** `expect.poll` on metrics (polling hides ordering and adds latency). Playwright auto-waiting alone (it waits for DOM state, not media state).
 
 **Consequences.** The player carries a small, tested instrumentation layer; in exchange every wait is as short as the event and as long as the system needs.
+
+## More decisions
+
+- [Test strategy (ADR-020 to ADR-027)](decisions/strategy.md): risk-based tiering and the merge threshold, the merge gate and its time budget, the flake and quarantine policy, how the readiness criteria were derived, what the lab refuses to claim, the catalog as a checked list of record, named fault profiles, and the experiment policy.
