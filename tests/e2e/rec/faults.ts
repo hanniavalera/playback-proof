@@ -2,6 +2,8 @@ import type { RequestLogEntry } from '../../../src/shared/api.ts';
 import type { FaultRule } from '../../../src/shared/faults.ts';
 import type { QAError } from '../../../src/shared/qa.ts';
 import type { TestSession } from '../support/fixtures.ts';
+import { DEFAULT_WAIT_MS } from '../support/player.ts';
+import { atCaller } from '../support/stack.ts';
 import { describeEntry, requestsFor, waitForRequests } from '../support/waiting.ts';
 import type { RequestWaitOptions } from '../support/waiting.ts';
 
@@ -10,6 +12,7 @@ import type { RequestWaitOptions } from '../support/waiting.ts';
 // proves nothing: a player that never asks for what the rule matches "recovers" from it too.
 
 const VIDEO_REP = /^v\d+$/;
+const REC_FRAME = /[\\/]tests[\\/]e2e[\\/]rec[\\/]/;
 
 /** The requests a fault fired on, at least one (a wait that succeeded guarantees it): the type that spares the specs a cast. */
 export type Fired = [RequestLogEntry, ...RequestLogEntry[]];
@@ -44,11 +47,44 @@ export async function waitForFault(
   count = 1,
   options: RequestWaitOptions = {},
 ): Promise<Fired> {
-  const fired = await waitForRequests(session, (entry) => firedBy(entry, ruleId) && !entry.pending, {
-    ...options,
-    count,
-  });
-  return fired as Fired;
+  try {
+    const fired = await waitForRequests(session, (entry) => firedBy(entry, ruleId) && !entry.pending, {
+      ...options,
+      count,
+    });
+    return fired as Fired;
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.startsWith('waited ')) throw error;
+    const detail = await session.service.detail(session.id).catch(() => null);
+    const rule = detail?.faults.find((candidate) => candidate.id === ruleId);
+    const what = rule ? `${ruleId} ${JSON.stringify(rule)}` : ruleId;
+    const named = (await session.service.log(session.id).catch(() => [])).filter((entry) =>
+      firedBy(entry, ruleId),
+    ).length;
+    const cause =
+      named === 0
+        ? 'the player never asked for what the rule matches'
+        : 'the player stopped asking for what the rule matches before the rule was used up';
+    // The log part of the library's message is kept: it is what shows what the player did ask for instead.
+    const log = error.message.split('\n').slice(1).join('\n');
+    throw atSpec(
+      new Error(
+        `the fault rule ${what} named ${named} of the ${count} request${count === 1 ? '' : 's'} it was waited for within ${options.timeoutMs ?? DEFAULT_WAIT_MS} ms: ${cause}, so nothing after this line says how the player copes with the fault.\n${log}`,
+      ),
+    );
+  }
+}
+
+/** `error` with the frames of the support library and of these helpers removed, so that the report's code frame is the spec's own line. */
+export function atSpec<E extends Error>(error: E): E {
+  atCaller(error);
+  if (typeof error.stack === 'string') {
+    error.stack = error.stack
+      .split('\n')
+      .filter((line) => !(/^\s+at /.test(line) && REC_FRAME.test(line)))
+      .join('\n');
+  }
+  return error;
 }
 
 /** The last of the requests a fault fired on. */
@@ -59,7 +95,7 @@ export function lastOf(fired: Fired): RequestLogEntry {
 /** The segment number a request was for. A request the fault engine matched by number always has one. */
 export function segmentOf(entry: RequestLogEntry): number {
   if (entry.number === undefined)
-    throw new Error(`the request has no segment number: ${describeEntry(entry)}`);
+    throw atSpec(new Error(`the request has no segment number: ${describeEntry(entry)}`));
   return entry.number;
 }
 
