@@ -38,14 +38,17 @@ export function playwrightWorld(args: {
   protocol: Protocol;
   service: WorldService;
   browser: LaunchedBrowser;
+  /** The harness's monotonic clock in ms: the real one unless a unit test gives the virtual clock its fake page runs on. */
+  now?: () => number;
 }): PlaywrightWorld {
   const { engine, stream, protocol, service, browser } = args;
+  const now = args.now ?? ((): number => performance.now());
   return {
     engine,
     stream,
     protocol,
     service,
-    now: () => performance.now(),
+    now,
     async newRun(request) {
       const info = await service.createSession({
         stream,
