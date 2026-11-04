@@ -9,13 +9,24 @@ import {
   seconds,
 } from './live/edge.ts';
 import { recordMeasured } from './live/measured.ts';
-import { expectHealthyPlayback, expectNoErrors } from './support/assertions.ts';
+import { describeSeries, measuredLatencies, percentile, sampleLatency } from './live/series.ts';
+import { expectHealthyPlayback, expectNoErrors, expectNoRebuffer } from './support/assertions.ts';
 import { expect, test } from './support/fixtures.ts';
 import { requestsFor } from './support/waiting.ts';
 
 // A join plays this much media before the health of the instrument is read: a first frame alone proves the instrument little
 // (the frame counters of some engines lag it), one segment of playing proves the join was not a single picture.
 const PLAYED_AFTER_JOIN_SEC = 2;
+
+/** The window of PB-LIVE-002, in seconds of media time from the first frame (the row says 20 s; media plays at 1x, so it is also 20 s of wall clock). */
+const LATENCY_WINDOW_SEC = 20;
+
+/**
+ * Catch-up jumps to the live edge that a healthy window may contain. None: Shaka's live-sync is off in configurations A and B, so
+ * nothing in the player is supposed to move the playhead on its own; a jump of 2 s or more to the edge means the playhead fell behind
+ * far enough for something to correct it, and repeated jumps are the loop the row is about. The first one is already the finding.
+ */
+const MAX_EDGE_SEEKS = 0;
 
 test(
   'PB-LIVE-001 joins near the live edge: first frame, and latency at the first frame within the p95 limit',
@@ -97,5 +108,66 @@ test(
     const metrics = await qa.metrics();
     expectHealthyPlayback(metrics);
     expectNoErrors(metrics);
+  },
+);
+
+test(
+  'PB-LIVE-002 latency stays bounded over a 20 s window: maximum within the limit, no live-edge seek loop, no rebuffer',
+  { tag: ['@merge', '@live', '@dash'] },
+  async ({ newSession, streamFor, player }, testInfo) => {
+    test.setTimeout(60_000);
+    const session = await newSession({
+      stream: streamFor('live', 'dash'),
+      protocol: 'dash',
+      faults: profile('clean'),
+    });
+    const live = liveClockOf(session);
+    const qa = await player(session).open();
+
+    await qa.waitFor('firstframe');
+    const from = (await qa.metrics()).playback.currentTime;
+    // One read per second of media time, on the media clock: the series is what a failure is read from (drift or jitter).
+    const samples = await sampleLatency(qa, { from, seconds: LATENCY_WINDOW_SEC });
+    const metrics = await qa.metrics();
+    const edge = await publishedEdge(session);
+    const series = measuredLatencies(samples);
+    const first = series[0] ?? null;
+    const last = series.at(-1) ?? null;
+    const behindPublishedMs = (publishedEndSec(live, edge) - metrics.playback.currentTime) * 1000;
+    recordMeasured(testInfo, {
+      latencyMaxMs: metrics.live.latencyMaxMs,
+      latencyP95Ms: percentile(series, 95),
+      latencyFirstMs: first,
+      latencyLastMs: last,
+      driftMs: first === null || last === null ? null : last - first,
+      behindPublishedMs,
+      edgeSeeks: metrics.live.edgeSeeks,
+      rebuffers: metrics.rebuffer.count,
+      windowSec: LATENCY_WINDOW_SEC,
+      series,
+    });
+
+    // The player's maximum since the first frame, over every timeupdate of the window (not only the reads above).
+    expect(
+      metrics.live.latencyMaxMs,
+      'maximum latency (metrics.live.latencyMaxMs) is null: it was never measured',
+    ).not.toBeNull();
+    const maxMs = metrics.live.latencyMaxMs as number;
+    expect(
+      maxMs,
+      `maximum latency over ${LATENCY_WINDOW_SEC} s from the first frame (metrics.live.latencyMaxMs), limit ${seconds(LIVE_LIMITS.latencyMaxMs)} (LIVE_LIMITS.latencyMaxMs). Latency at each second of the window: ${describeSeries(samples, from)}`,
+    ).toBeLessThanOrEqual(LIVE_LIMITS.latencyMaxMs);
+    // The same claim from the origin's side: the playhead against the edge the service had published at the end of the window.
+    expect(
+      behindPublishedMs,
+      `distance behind the edge the origin had published at the end of the window (segment ${edge} ends at ${publishedEndSec(live, edge)} s, the playhead was at ${metrics.playback.currentTime.toFixed(2)} s), limit ${seconds(LIVE_LIMITS.latencyMaxMs)}`,
+    ).toBeLessThanOrEqual(LIVE_LIMITS.latencyMaxMs);
+
+    expect(
+      metrics.live.edgeSeeks,
+      `jumps to the live edge the player made on its own (metrics.live.edgeSeeks, 'live-edge-seek' events): the playhead fell behind and was corrected`,
+    ).toBeLessThanOrEqual(MAX_EDGE_SEEKS);
+    expectNoRebuffer(metrics);
+    expectHealthyPlayback(metrics);
   },
 );
