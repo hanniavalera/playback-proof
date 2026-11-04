@@ -186,7 +186,7 @@ export class Timeline {
   }
 
   waitFor(name: QAEventName, options: QAWaitOptions = {}): Promise<QAEvent> {
-    const { since = 0, predicate, timeoutMs = DEFAULT_WAIT_TIMEOUT_MS } = options;
+    const { since = 0, predicate: userPredicate, detail, timeoutMs = DEFAULT_WAIT_TIMEOUT_MS } = options;
     const label = `qa.waitFor('${String(name)}')`;
     if (!isEventName(name)) {
       return Promise.reject(new Error(`${label}: unknown event name. Known: ${EVENT_NAMES.join(', ')}`));
@@ -196,6 +196,9 @@ export class Timeline {
     }
     const badTimeout = checkTimeout(timeoutMs);
     if (badTimeout) return Promise.reject(new Error(`${label}: ${badTimeout}`));
+    const badDetail = detail === undefined ? null : checkDetail(detail);
+    if (badDetail) return Promise.reject(new Error(`${label}: ${badDetail}`));
+    const predicate = combinePredicates(userPredicate, detail);
 
     // History first, then subscribe: an event that already happened resolves the wait, so there is no window in which it can be missed.
     for (let i = Math.ceil(since); i < this.items.length; i++) {
@@ -224,7 +227,7 @@ export class Timeline {
       };
       waiter.timer = this.timers.setTimeout(() => {
         this.eventWaiters.delete(waiter);
-        const where = `from index ${since}${predicate ? ', with a predicate' : ''}`;
+        const where = `from index ${since}${userPredicate ? ', with a predicate' : ''}${detail ? `, with detail ${JSON.stringify(detail)}` : ''}`;
         reject(this.failure(label, `timed out after ${timeoutMs} ms (looking ${where})`));
       }, timeoutMs);
       this.eventWaiters.add(waiter);
@@ -357,4 +360,33 @@ function checkTimeout(timeoutMs: number): string | null {
     return `timeoutMs must be a finite number > 0, got ${String(timeoutMs)}`;
   }
   return null;
+}
+
+/** A detail filter is a flat object of primitives: nothing else could be compared with `===` after crossing the page boundary. */
+function checkDetail(detail: unknown): string | null {
+  if (typeof detail !== 'object' || detail === null || Array.isArray(detail)) {
+    return 'detail must be an object such as { reason: "abr" }';
+  }
+  for (const [key, value] of Object.entries(detail)) {
+    const primitive = value === null || ['string', 'number', 'boolean'].includes(typeof value);
+    if (!primitive) return `detail.${key} must be a string, a number, a boolean or null`;
+  }
+  return null;
+}
+
+/** One predicate out of the free-form one (in-page callers) and the declarative detail match (Playwright specs). */
+function combinePredicates(
+  predicate: ((event: QAEvent) => boolean) | undefined,
+  detail: Record<string, unknown> | undefined,
+): ((event: QAEvent) => boolean) | undefined {
+  if (!predicate && !detail) return undefined;
+  return (event) => {
+    const wanted = detail ? Object.entries(detail) : [];
+    if (wanted.length > 0) {
+      const actual = event.detail;
+      if (!actual) return false;
+      for (const [key, value] of wanted) if (actual[key] !== value) return false;
+    }
+    return predicate ? predicate(event) : true;
+  };
 }

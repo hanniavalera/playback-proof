@@ -212,6 +212,87 @@ describe('waitFor', () => {
     await expect(timeline.waitFor('ended', { predicate: explode })).rejects.toThrow(/predicate threw/);
   });
 
+  describe('detail: the declarative filter that crosses the Playwright boundary', () => {
+    it('matches the history and later events by strict equality on every key', async () => {
+      const { timeline } = setup();
+      timeline.record('variant-changed', { reason: 'start', height: 240 });
+      const fromHistory = timeline.record('variant-changed', { reason: 'abr', height: 720 });
+      await expect(timeline.waitFor('variant-changed', { detail: { reason: 'abr' } })).resolves.toBe(
+        fromHistory,
+      );
+
+      const wait = track(
+        timeline.waitFor('variant-changed', { since: 2, detail: { reason: 'abr', height: 360 } }),
+      );
+      timeline.record('variant-changed', { reason: 'abr', height: 240 }); // one key matches, the other does not
+      timeline.record('variant-changed', { reason: 'manual', height: 360 });
+      await settle();
+      expect(wait.state).toBe('pending');
+      const wanted = timeline.record('variant-changed', { reason: 'abr', height: 360 });
+      await settle();
+      expect(wait.value).toBe(wanted);
+    });
+
+    it('is strict: "720" is not 720, and an event without detail never matches', async () => {
+      const { timeline } = setup();
+      timeline.record('variant-changed', { height: '720' });
+      timeline.record('variant-changed');
+      const wait = track(timeline.waitFor('variant-changed', { detail: { height: 720 } }));
+      await settle();
+      expect(wait.state).toBe('pending');
+    });
+
+    it('matches null and false, which are values too', async () => {
+      const { timeline } = setup();
+      const event = timeline.record('error', { code: null, recoverable: false });
+      await expect(timeline.waitFor('error', { detail: { code: null, recoverable: false } })).resolves.toBe(
+        event,
+      );
+    });
+
+    it('combines with a predicate: both must hold', async () => {
+      const { timeline } = setup();
+      timeline.record('variant-changed', { reason: 'abr', height: 240 });
+      const wanted = timeline.record('variant-changed', { reason: 'abr', height: 720 });
+      await expect(
+        timeline.waitFor('variant-changed', {
+          detail: { reason: 'abr' },
+          predicate: (event) => (event.detail?.height as number) > 480,
+        }),
+      ).resolves.toBe(wanted);
+    });
+
+    it('an empty detail matches every event of that name', async () => {
+      const { timeline } = setup();
+      const event = timeline.record('paused');
+      await expect(timeline.waitFor('paused', { detail: {} })).resolves.toBe(event);
+    });
+
+    it('rejects at once a filter that cannot be compared after crossing the page boundary', async () => {
+      const { timeline } = setup();
+      const bad = [{ nested: { a: 1 } }, { list: [1] }, { fn: () => 1 }, { missing: undefined }];
+      for (const detail of bad) {
+        await expect(
+          timeline.waitFor('variant-changed', { detail: detail as unknown as Record<string, string> }),
+        ).rejects.toThrow(/detail\.\w+ must be a string, a number, a boolean or null/);
+      }
+      await expect(
+        timeline.waitFor('variant-changed', { detail: [] as unknown as Record<string, string> }),
+      ).rejects.toThrow(/detail must be an object/);
+    });
+
+    it('says which detail it was looking for when it times out', async () => {
+      const { clock, timeline } = setup();
+      const wait = track(
+        timeline.waitFor('variant-changed', { timeoutMs: 100, detail: { reason: 'abr', height: 720 } }),
+      );
+      clock.advance(100);
+      await settle();
+      expect(wait.state).toBe('rejected');
+      expect(wait.error?.message).toContain('with detail {"reason":"abr","height":720}');
+    });
+  });
+
   it('times out with the last 15 events (name, t, media time) in the message, not the older ones', async () => {
     const { clock, timeline } = setup();
     for (let i = 0; i < 20; i++) {

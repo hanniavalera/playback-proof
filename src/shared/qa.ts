@@ -138,8 +138,14 @@ export interface QAWaitOptions {
    * that already happened still resolves it. Take a cursor with qa.cursor() before an action to wait for NEW events only.
    */
   since?: number;
-  /** Extra filter, evaluated in the page (so it must be a function of the QAEvent only). */
+  /** Extra filter, evaluated in the page (so it must be a function of the QAEvent only). Not available from a Playwright spec: a function cannot cross the page boundary and the page's CSP forbids `eval`; use `detail`. */
   predicate?: (event: QAEvent) => boolean;
+  /**
+   * Declarative filter that does cross the page boundary: only an event whose `detail` has every one of these keys with a strictly
+   * equal value matches, for example `{ reason: 'abr', height: 720 }`. Values are strings, numbers, booleans or null; anything else
+   * rejects the wait at once. Combined with `predicate` (both must hold).
+   */
+  detail?: Record<string, string | number | boolean | null>;
 }
 
 export interface QAInfo {
