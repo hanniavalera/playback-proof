@@ -105,9 +105,11 @@ describe('the stages', () => {
     expect(called.length).toBeGreaterThan(5);
     for (const { file, script } of called)
       expect(scripts[script], `${file}: npm run ${script}`).toBeDefined();
-    // Only the stages that exist: a stage whose script is not there yet (perf) is not a job yet.
+    // Only the stages that exist.
     const stages = new Set([...code(ci).matchAll(/npm run (gate:[\w-]+)/g)].map((m) => m[1] ?? ''));
-    expect(stages).toEqual(new Set(['gate:static', 'gate:unit', 'gate:merge', 'gate:flake', 'gate:triage']));
+    expect(stages).toEqual(
+      new Set(['gate:static', 'gate:unit', 'gate:merge', 'gate:perf', 'gate:flake', 'gate:triage']),
+    );
   });
 
   it('call gate:static, gate:unit and gate:merge from the merge gate, with the project of the leg and its time limit', () => {
@@ -120,7 +122,7 @@ describe('the stages', () => {
 
   it('give the nightly one run for both tiers, because two runs would overwrite each other’s report', () => {
     expect(release).toContain(
-      '--grep "@merge|@release" --project=${{ matrix.project }} --global-timeout=${{ matrix.limit }}',
+      '--grep "@merge|@release" --grep-invert "@readiness" --project=${{ matrix.project }} --global-timeout=${{ matrix.limit }}',
     );
     expect(release.match(/npm run test:e2e/g)).toHaveLength(1);
   });

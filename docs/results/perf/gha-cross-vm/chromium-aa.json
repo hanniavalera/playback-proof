@@ -1,0 +1,3119 @@
+{
+  "schemaVersion": 1,
+  "kind": "perf-aa",
+  "envId": "gha-linux-x64",
+  "profile": "chromium",
+  "passes": 18,
+  "scenarios": [
+    "PB-PERF-001",
+    "PB-PERF-002",
+    "PB-PERF-003"
+  ],
+  "baseline": {
+    "file": "/home/runner/work/playback-proof/playback-proof/perf/baselines/gha-linux-x64/chromium.json",
+    "generatedAt": "2026-11-04T16:42:58.596Z",
+    "commit": "5a2cb3e",
+    "browserVersion": "156.0.8078.4",
+    "runsPerScenario": 10,
+    "cpuModel": null
+  },
+  "paired": null,
+  "exitCodes": {
+    "0": 18,
+    "1": 0,
+    "2": 0
+  },
+  "falsePositives": 0,
+  "firstBatchAlarms": 0,
+  "notReproduced": 0,
+  "host": {
+    "cpus": 4,
+    "memoryGiB": 15.6,
+    "node": "v22.23.4",
+    "playwright": "1.64.1",
+    "invokedVia": "direct",
+    "dockerCpus": null
+  },
+  "machines": {
+    "cpuModels": [],
+    "passesWithoutCpuModel": 18
+  },
+  "runs": [
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/chromium-2/pass-1.json",
+      "generatedAt": "2026-11-04T16:48:01.209Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.8,
+        "after": 0.3
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 75.40000000000146,
+        "median": 66.95000000000437,
+        "deviation": -0.11206896551720062
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/chromium-4/pass-1.json",
+      "generatedAt": "2026-11-04T16:48:02.979Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 2.43,
+        "after": 0.55
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 75.40000000000146,
+        "median": 53.20000000000073,
+        "deviation": -0.2944297082228156
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/chromium-5/pass-1.json",
+      "generatedAt": "2026-11-04T16:48:16.311Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.74,
+        "after": 0.38
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 75.40000000000146,
+        "median": 56.849999999998545,
+        "deviation": -0.24602122015918504
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/chromium-6/pass-1.json",
+      "generatedAt": "2026-11-04T16:48:27.502Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.49,
+        "after": 0.47
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 75.40000000000146,
+        "median": 73.05000000001746,
+        "deviation": -0.031167108753102753
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/chromium-3/pass-1.json",
+      "generatedAt": "2026-11-04T16:48:37.074Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.95,
+        "after": 0.41
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 75.40000000000146,
+        "median": 56.30000000000291,
+        "deviation": -0.25331564986734983
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/chromium-1/pass-1.json",
+      "generatedAt": "2026-11-04T16:48:45.295Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 1.03,
+        "after": 0.79
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 75.40000000000146,
+        "median": 55.150000000001455,
+        "deviation": -0.26856763925728927
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/chromium-4/pass-2.json",
+      "generatedAt": "2026-11-04T16:52:46.642Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.55,
+        "after": 0.4
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 75.40000000000146,
+        "median": 54.64999999999418,
+        "deviation": -0.2751989389921336
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/chromium-2/pass-2.json",
+      "generatedAt": "2026-11-04T16:52:49.306Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.3,
+        "after": 0.34
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 75.40000000000146,
+        "median": 66.39999999999418,
+        "deviation": -0.11936339522555839
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/chromium-5/pass-2.json",
+      "generatedAt": "2026-11-04T16:53:00.492Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.38,
+        "after": 0.44
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 75.40000000000146,
+        "median": 56.999999999970896,
+        "deviation": -0.24403183023912736
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/chromium-6/pass-2.json",
+      "generatedAt": "2026-11-04T16:53:15.889Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.47,
+        "after": 0.36
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 75.40000000000146,
+        "median": 74.54999999998836,
+        "deviation": -0.011273209549245097
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/chromium-3/pass-2.json",
+      "generatedAt": "2026-11-04T16:53:22.853Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.85,
+        "after": 0.4
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 75.40000000000146,
+        "median": 57.15000000002328,
+        "deviation": -0.24204244031800823
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/chromium-1/pass-2.json",
+      "generatedAt": "2026-11-04T16:53:31.369Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.79,
+        "after": 0.87
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 75.40000000000146,
+        "median": 60.54999999998836,
+        "deviation": -0.19694960212218582
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/chromium-4/pass-3.json",
+      "generatedAt": "2026-11-04T16:57:30.413Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.4,
+        "after": 0.64
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 75.40000000000146,
+        "median": 54.84999999997672,
+        "deviation": -0.27254641909846605
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/chromium-2/pass-3.json",
+      "generatedAt": "2026-11-04T16:57:35.794Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.34,
+        "after": 0.09
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 75.40000000000146,
+        "median": 74.34999999991851,
+        "deviation": -0.013925729444070632
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/chromium-5/pass-3.json",
+      "generatedAt": "2026-11-04T16:57:44.401Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.44,
+        "after": 0.71
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 75.40000000000146,
+        "median": 50.75,
+        "deviation": -0.3269230769230899
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/chromium-6/pass-3.json",
+      "generatedAt": "2026-11-04T16:58:02.760Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.36,
+        "after": 0.41
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 75.40000000000146,
+        "median": 75.25,
+        "deviation": -0.0019893899204436643
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/chromium-3/pass-3.json",
+      "generatedAt": "2026-11-04T16:58:07.340Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.4,
+        "after": 0.3
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 75.40000000000146,
+        "median": 57.65000000002328,
+        "deviation": -0.23541114058326035
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/chromium-1/pass-3.json",
+      "generatedAt": "2026-11-04T16:58:16.118Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.87,
+        "after": 0.41
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 75.40000000000146,
+        "median": 63.90000000002328,
+        "deviation": -0.1525198938989118
+      }
+    }
+  ],
+  "metrics": [
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "startupMs",
+      "unit": "ms",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 75.40000000000146,
+        "tail": 83.12999999999155,
+        "cv": 0.09654328262829937,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 22.620000000000434,
+        "tail": 24.938999999997467
+      },
+      "passes": 18,
+      "medians": [
+        66.95000000000437,
+        53.20000000000073,
+        56.849999999998545,
+        73.05000000001746,
+        56.30000000000291,
+        55.150000000001455,
+        54.64999999999418,
+        66.39999999999418,
+        56.999999999970896,
+        74.54999999998836,
+        57.15000000002328,
+        60.54999999998836,
+        54.84999999997672,
+        74.34999999991851,
+        50.75,
+        75.25,
+        57.65000000002328,
+        63.90000000002328
+      ],
+      "tails": [
+        76.9399999999965,
+        56.88000000000102,
+        59.67000000000553,
+        76.13000000001047,
+        66.41000000002096,
+        63.480000000007564,
+        59.229999999981366,
+        75.67000000001862,
+        63.89000000001979,
+        78.25000000001164,
+        58.7200000000128,
+        66.06999999996042,
+        57.37999999998137,
+        82.30000000004657,
+        58.98999999992084,
+        77.87999999993481,
+        63.770000000065195,
+        67.12000000000698
+      ],
+      "worst": {
+        "median": -0.1500000000014552,
+        "tail": -0.8299999999449881
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": -8.44999999999709,
+            "tail": -6.189999999995052
+          },
+          "allowed": {
+            "median": 22.620000000000434,
+            "tail": 24.938999999997467
+          }
+        },
+        {
+          "worse": {
+            "median": -22.200000000000728,
+            "tail": -26.249999999990536
+          },
+          "allowed": {
+            "median": 22.620000000000434,
+            "tail": 24.938999999997467
+          }
+        },
+        {
+          "worse": {
+            "median": -18.55000000000291,
+            "tail": -23.459999999986024
+          },
+          "allowed": {
+            "median": 22.620000000000434,
+            "tail": 24.938999999997467
+          }
+        },
+        {
+          "worse": {
+            "median": -2.349999999983993,
+            "tail": -6.999999999981085
+          },
+          "allowed": {
+            "median": 22.620000000000434,
+            "tail": 24.938999999997467
+          }
+        },
+        {
+          "worse": {
+            "median": -19.099999999998545,
+            "tail": -16.719999999970597
+          },
+          "allowed": {
+            "median": 22.620000000000434,
+            "tail": 24.938999999997467
+          }
+        },
+        {
+          "worse": {
+            "median": -20.25,
+            "tail": -19.64999999998399
+          },
+          "allowed": {
+            "median": 22.620000000000434,
+            "tail": 24.938999999997467
+          }
+        },
+        {
+          "worse": {
+            "median": -20.750000000007276,
+            "tail": -23.900000000010188
+          },
+          "allowed": {
+            "median": 22.620000000000434,
+            "tail": 24.938999999997467
+          }
+        },
+        {
+          "worse": {
+            "median": -9.000000000007276,
+            "tail": -7.459999999972936
+          },
+          "allowed": {
+            "median": 22.620000000000434,
+            "tail": 24.938999999997467
+          }
+        },
+        {
+          "worse": {
+            "median": -18.40000000003056,
+            "tail": -19.239999999971765
+          },
+          "allowed": {
+            "median": 22.620000000000434,
+            "tail": 24.938999999997467
+          }
+        },
+        {
+          "worse": {
+            "median": -0.8500000000130967,
+            "tail": -4.8799999999799155
+          },
+          "allowed": {
+            "median": 22.620000000000434,
+            "tail": 24.938999999997467
+          }
+        },
+        {
+          "worse": {
+            "median": -18.249999999978172,
+            "tail": -24.40999999997875
+          },
+          "allowed": {
+            "median": 22.620000000000434,
+            "tail": 24.938999999997467
+          }
+        },
+        {
+          "worse": {
+            "median": -14.850000000013097,
+            "tail": -17.06000000003114
+          },
+          "allowed": {
+            "median": 22.620000000000434,
+            "tail": 24.938999999997467
+          }
+        },
+        {
+          "worse": {
+            "median": -20.55000000002474,
+            "tail": -25.750000000010182
+          },
+          "allowed": {
+            "median": 22.620000000000434,
+            "tail": 24.938999999997467
+          }
+        },
+        {
+          "worse": {
+            "median": -1.050000000082946,
+            "tail": -0.8299999999449881
+          },
+          "allowed": {
+            "median": 22.620000000000434,
+            "tail": 24.938999999997467
+          }
+        },
+        {
+          "worse": {
+            "median": -24.650000000001455,
+            "tail": -24.140000000070714
+          },
+          "allowed": {
+            "median": 22.620000000000434,
+            "tail": 24.938999999997467
+          }
+        },
+        {
+          "worse": {
+            "median": -0.1500000000014552,
+            "tail": -5.250000000056744
+          },
+          "allowed": {
+            "median": 22.620000000000434,
+            "tail": 24.938999999997467
+          }
+        },
+        {
+          "worse": {
+            "median": -17.749999999978172,
+            "tail": -19.35999999992636
+          },
+          "allowed": {
+            "median": 22.620000000000434,
+            "tail": 24.938999999997467
+          }
+        },
+        {
+          "worse": {
+            "median": -11.499999999978172,
+            "tail": -16.009999999984572
+          },
+          "allowed": {
+            "median": 22.620000000000434,
+            "tail": 24.938999999997467
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 8.177116663470589,
+        "relativeSd": 0.10844982312295001
+      }
+    },
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "manifestMs",
+      "unit": "ms",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 25.099999999998545,
+        "tail": 28.039999999999417,
+        "cv": 0.10458401920967855,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 18,
+      "medians": [
+        23.85000000000582,
+        17.049999999999272,
+        18.5,
+        24.64999999999418,
+        18.89999999999418,
+        18.650000000001455,
+        17.54999999998836,
+        24.800000000017462,
+        18.149999999965075,
+        23.450000000040745,
+        18.899999999965075,
+        19,
+        16.54999999998836,
+        24.45000000001164,
+        17.300000000046566,
+        24.500000000058208,
+        18.550000000046566,
+        20.04999999998836
+      ],
+      "tails": [
+        25.71999999999243,
+        19.51999999999971,
+        19.20999999999767,
+        26.00999999999767,
+        22.519999999998255,
+        21.030000000000292,
+        20.35999999999185,
+        25.339999999984865,
+        20.289999999967403,
+        25.139999999979047,
+        22.710000000015135,
+        20.400000000023283,
+        19.710000000055878,
+        26.6199999999837,
+        21.1,
+        25.470000000018626,
+        19.560000000020953,
+        20.770000000030265
+      ],
+      "worst": {
+        "median": -0.2999999999810825,
+        "tail": -1.4200000000157154
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": -1.249999999992724,
+            "tail": -2.320000000006985
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -8.049999999999272,
+            "tail": -8.519999999999708
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -6.599999999998545,
+            "tail": -8.830000000001746
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -0.4500000000043656,
+            "tail": -2.0300000000017455
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -6.200000000004366,
+            "tail": -5.520000000001161
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -6.44999999999709,
+            "tail": -7.009999999999124
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -7.550000000010186,
+            "tail": -7.680000000007567
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -0.2999999999810825,
+            "tail": -2.700000000014551
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -6.950000000033469,
+            "tail": -7.7500000000320135
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -1.6499999999577994,
+            "tail": -2.90000000002037
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -6.200000000033469,
+            "tail": -5.329999999984281
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -6.099999999998545,
+            "tail": -7.639999999976133
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -8.550000000010186,
+            "tail": -8.329999999943539
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -0.6499999999869033,
+            "tail": -1.4200000000157154
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -7.799999999951979,
+            "tail": -6.939999999999415
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -0.5999999999403371,
+            "tail": -2.5699999999807908
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -6.549999999951979,
+            "tail": -8.479999999978464
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -5.050000000010186,
+            "tail": -7.269999999969151
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 3.039453263968415,
+        "relativeSd": 0.12109375553659726
+      }
+    },
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "loadedMs",
+      "unit": "ms",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 34.80000000000291,
+        "tail": 38.51999999999971,
+        "cv": 0.06378068618864065,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 18,
+      "medians": [
+        34.349999999998545,
+        25.049999999999272,
+        26.5,
+        35.75,
+        27.949999999982538,
+        27.10000000000582,
+        25.050000000017462,
+        34.75,
+        25.699999999982538,
+        35.14999999999418,
+        26.699999999982538,
+        28.60000000000582,
+        23.349999999976717,
+        35.25,
+        25.54999999998836,
+        35,
+        26.5,
+        28.199999999953434
+      ],
+      "tails": [
+        35.94999999999563,
+        26.739999999997234,
+        28.509999999999128,
+        36.50999999999476,
+        31.190000000005238,
+        29.160000000006402,
+        28.249999999970896,
+        35.91999999998952,
+        28.17999999996391,
+        35.83999999999069,
+        30.13000000003376,
+        29.8500000000291,
+        26.840000000048896,
+        37.55999999999767,
+        28.60999999998603,
+        35.51999999999534,
+        28.249999999976716,
+        29.480000000062862
+      ],
+      "worst": {
+        "median": 0.9499999999970896,
+        "tail": -0.9600000000020401
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": -0.4500000000043656,
+            "tail": -2.570000000004079
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -9.750000000003638,
+            "tail": -11.780000000002477
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -8.30000000000291,
+            "tail": -10.010000000000584
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0.9499999999970896,
+            "tail": -2.0100000000049505
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -6.850000000020373,
+            "tail": -7.329999999994474
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -7.69999999999709,
+            "tail": -9.35999999999331
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -9.749999999985448,
+            "tail": -10.270000000028816
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -0.05000000000291038,
+            "tail": -2.6000000000101906
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -9.100000000020373,
+            "tail": -10.3400000000358
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0.34999999999126885,
+            "tail": -2.6800000000090236
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -8.100000000020373,
+            "tail": -8.389999999965951
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -6.19999999999709,
+            "tail": -8.66999999997061
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -11.450000000026193,
+            "tail": -11.679999999950816
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0.4499999999970896,
+            "tail": -0.9600000000020401
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -9.250000000014552,
+            "tail": -9.910000000013682
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0.19999999999708962,
+            "tail": -3.00000000000437
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -8.30000000000291,
+            "tail": -10.270000000022996
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -6.6000000000494765,
+            "tail": -9.03999999993685
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 4.394046774768177,
+        "relativeSd": 0.12626571191861521
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "fps",
+      "unit": "fps",
+      "gated": true,
+      "tailStatistic": "p10",
+      "baseline": {
+        "median": 30,
+        "tail": 30,
+        "cv": 0,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 1.5,
+        "tail": 3
+      },
+      "passes": 18,
+      "medians": [
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30
+      ],
+      "tails": [
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": 0
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "droppedRatio",
+      "unit": "ratio",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 0.01,
+        "tail": 0.03
+      },
+      "passes": 18,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "decodedFrames",
+      "unit": "count",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 150,
+        "tail": 150,
+        "cv": 0.0021095915011129954,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 18,
+      "medians": [
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150
+      ],
+      "tails": [
+        150,
+        150,
+        150,
+        150,
+        150.1,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0.09999999999999432
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0.09999999999999432
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": 0
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "droppedFrames",
+      "unit": "count",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 18,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferCount",
+      "unit": "count",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 0,
+        "tail": 1
+      },
+      "passes": 18,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferMs",
+      "unit": "ms",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 250,
+        "tail": 1000
+      },
+      "passes": 18,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferRatio",
+      "unit": "ratio",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 0.01,
+        "tail": 0.05
+      },
+      "passes": 18,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-003",
+      "metric": "switches",
+      "unit": "count",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 1,
+        "tail": 1,
+        "cv": 0,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 18,
+      "medians": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "tails": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": 0
+      }
+    }
+  ]
+}

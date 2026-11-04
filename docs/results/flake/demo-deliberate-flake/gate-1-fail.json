@@ -1,0 +1,47 @@
+{
+  "decision": "fail",
+  "envId": "demo-deliberate-flake",
+  "today": "2026-11-04",
+  "runsJudged": 25,
+  "currentRuns": 1,
+  "failures": [
+    {
+      "kind": "over-trigger",
+      "subject": "PB-VOD-001 on chromium",
+      "message": "PB-VOD-001 on chromium is above the quarantine trigger: 6 flaky of 25 executions (24.0%), the trigger is 5.0%, over the last 25 executions. Last flake: Error: deliberately injected first-attempt failure (this is the demonstration, not the player) (run collect-20261104T161148Z-af9a55-24, 2026-11-04, commit ff169e38).",
+      "decision": "Fix PB-VOD-001 on chromium today, or quarantine it today. Who: the owner of the VOD playback (VOD) area, named as the owner of the entry. To quarantine, add an entry to flake/quarantine.json with the owner, the reason with the evidence that the failure is not deterministic (the same commit failed and passed), the evidence (an issue or a CI run), since 2026-11-04 and an expiry no later than 2026-11-11 (a merge-tier test: at most 7 days). The gate stays red until one of the two has happened. Do not rerun the job: look first at the trace of the first failed attempt, not the green retry."
+    },
+    {
+      "kind": "suite-budget",
+      "subject": "engine job chromium",
+      "message": "The suite flake rate of the chromium engine job is above its budget: 6 flaky of 25 executions (24.0%) over the last 25 builds, the budget is 2.0%. The tests that flaked: PB-VOD-001 (6 of 25).",
+      "decision": "Look at the environment first (the runner, the browser version, PB-ENV-001 in this build), since flakiness spread across tests points there. Then fix, or quarantine today (an expiry no later than 2026-11-11 for a merge-tier test), the tests that contribute most: a quarantined test leaves the suite rate, the old executions with it. Who: the lab maintainer with the owners of those tests. The gate stays red until the rate is within the budget."
+    }
+  ],
+  "notes": [],
+  "suites": [
+    {
+      "project": "chromium",
+      "builds": 25,
+      "executions": 25,
+      "flaky": 6,
+      "flakeRate": 0.24,
+      "budget": 0.02,
+      "verdict": "over-budget",
+      "quarantinedExecutions": 0
+    }
+  ],
+  "tests": [
+    {
+      "id": "PB-VOD-001",
+      "project": "chromium",
+      "executions": 25,
+      "flaky": 6,
+      "failed": 0,
+      "flakeRate": 0.24,
+      "verdict": "over-trigger",
+      "quarantined": null
+    }
+  ],
+  "recorded": null
+}

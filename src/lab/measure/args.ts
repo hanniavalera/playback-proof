@@ -2,6 +2,7 @@ import { parseArgs } from 'node:util';
 import { PERF_LIMITS } from '../../shared/criteria.ts';
 import type { FaultRule } from '../../shared/faults.ts';
 import { SCENARIOS } from './scenarios.ts';
+import { DEFAULT_CONTROL_REF, refProblem } from './paired.ts';
 import { PERF_PROFILES, isPerfProfile } from './types.ts';
 import type { PerfProfile } from './types.ts';
 
@@ -37,6 +38,12 @@ export interface PerfOptions {
   injectOn: 'all' | 'first';
   /** gate: a missing baseline is not a failure (for local use): the numbers are reported and nothing is judged. */
   allowMissingBaseline: boolean;
+  /** gate: judge against a CONTROL (the base build) measured on THIS machine minutes before, not against the committed baselines (ADR-179). */
+  paired: boolean;
+  /** paired: the control build as a git ref or commit; null: `origin/main`, or the checkout named by `controlDir`. */
+  controlRef: string | null;
+  /** paired: an existing checkout of the control, used instead of a detached worktree created for the run. */
+  controlDir: string | null;
   /** run: record the baseline of each profile (`npm run perf:baseline`). */
   writeBaseline: boolean;
   help: boolean;
@@ -69,6 +76,11 @@ stream, a browser that did not start, a run that failed. An environment failure 
   --inject-on all|first     which batches get the injection (default all). first: only the first batch of each scenario, so that the
                      fresh batch of the gate is clean: a one-off disturbance that must not reproduce.
   --allow-missing-baseline   (gate) report the numbers and judge nothing when this environment has no baseline
+  --paired           (gate) judge against a CONTROL measured on THIS machine minutes before, not against the committed baselines: on a
+                     shared runner the machine is part of the measurement. The control is measured by its own harness, then the head is
+                     gated against it with the same rules, thresholds and confirm-on-regression. A control that cannot be measured is exit 2.
+  --control-ref R    (paired) the control build: a git ref or commit (default ${DEFAULT_CONTROL_REF}). The head's own commit makes it an A/A by construction.
+  --control-dir D    (paired) an existing checkout of the control, used instead of a detached worktree created (and removed) for the run
   --write-baseline   (perf) record the baseline of every profile that was measured; refused with --scenario or --inject-faults
   --help
 `;
@@ -151,6 +163,9 @@ export function parsePerfArgs(
         'inject-on': { type: 'string' },
         'allow-missing-baseline': { type: 'boolean' },
         'write-baseline': { type: 'boolean' },
+        paired: { type: 'boolean' },
+        'control-ref': { type: 'string' },
+        'control-dir': { type: 'string' },
         help: { type: 'boolean', short: 'h' },
       },
     }));
@@ -211,10 +226,37 @@ export function parsePerfArgs(
       values['inject-cpu-throttle'] === undefined ? null : parseThrottle(values['inject-cpu-throttle']),
     injectOn: injectOn === 'first' ? 'first' : 'all',
     allowMissingBaseline: values['allow-missing-baseline'] ?? false,
+    paired: values.paired ?? false,
+    controlRef: values['control-ref'] ?? null,
+    controlDir: values['control-dir'] ?? null,
     writeBaseline: values['write-baseline'] ?? false,
     help: values.help ?? false,
   };
 
+  if (mode === 'run' && options.paired)
+    throw new PerfUsageError('--paired belongs to the gate: a measurement has no control to pair with');
+  if (!options.paired && (options.controlRef !== null || options.controlDir !== null))
+    throw new PerfUsageError('--control-ref and --control-dir belong to --paired');
+  if (options.paired) {
+    if (options.controlRef !== null) {
+      const problem = refProblem(options.controlRef);
+      if (problem !== null) throw new PerfUsageError(`--control-ref ${problem}`);
+    }
+    if (options.controlDir !== null && options.controlDir.trim() === '')
+      throw new PerfUsageError('--control-dir is empty');
+    if (options.baselineDir !== null)
+      throw new PerfUsageError(
+        '--paired measures its own baseline: --baseline-dir (the committed baselines) is not used',
+      );
+    if (options.allowMissingBaseline)
+      throw new PerfUsageError(
+        '--allow-missing-baseline does not apply to --paired: the gate always has a control to judge against',
+      );
+    if (options.scenarios !== null)
+      throw new PerfUsageError(
+        '--paired records the whole profile of the control, and judges the whole profile: it cannot be combined with --scenario',
+      );
+  }
   if (mode === 'run' && options.allowMissingBaseline)
     throw new PerfUsageError(
       '--allow-missing-baseline belongs to the gate: a measurement has no baseline to miss',

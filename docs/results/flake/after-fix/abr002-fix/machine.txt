@@ -1,0 +1,17 @@
+measure: flake-collect, engine webkit, runner macos-15
+label: abr002-fix
+started: 2026-11-04T17:23:44Z
+commit: 8f2073cd3f3c062c8436d86aa6331dcb3590857a (fix/abr002-forced-change)
+environment id: gha-macos-arm64
+runner: macOS ARM64, github-hosted, image macos15 20261028.0489.1
+cpus: 3
+cpu: Apple M1 (Virtual)
+memory: 7168 MiB
+os: macOS 15.8.2
+uptime: 17:23  up 1 min, 1 user, load averages: 82.67 33.50 13.21
+node: v22.23.4, npm: 10.9.9
+playwright: Version 1.64.1
+ffmpeg: not installed (the streams come from the streams job)
+
+finished: 2026-11-04T17:51:21Z
+uptime: 17:51  up 29 mins, 1 user, load averages: 1.91 2.83 5.44

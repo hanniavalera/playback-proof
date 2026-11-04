@@ -1,0 +1,116 @@
+{
+  "generatedAt": "2026-11-04T16:14:34.018Z",
+  "envId": "demo-deliberate-flake",
+  "today": "2026-11-04",
+  "history": {
+    "runs": 25,
+    "from": "2026-11-04T16:11:50.135Z",
+    "to": "2026-11-04T16:13:54.477Z"
+  },
+  "limits": {
+    "windowRuns": 30,
+    "minRunsToJudge": 20,
+    "quarantineTriggerRate": 0.05,
+    "suiteBudgetRate": 0.02,
+    "quarantineMaxAgeDays": 14,
+    "mergeQuarantineMaxAgeDays": 7
+  },
+  "suites": [
+    {
+      "project": "chromium",
+      "builds": 25,
+      "executions": 0,
+      "flaky": 0,
+      "failed": 0,
+      "flakeRate": 0,
+      "budget": 0.02,
+      "verdict": "ok",
+      "quarantinedExecutions": 25,
+      "quarantinedFlaky": 6,
+      "unobserved": 0,
+      "contributors": [],
+      "experimental": false
+    }
+  ],
+  "tests": [
+    {
+      "id": "PB-VOD-001",
+      "project": "chromium",
+      "tier": "merge",
+      "executions": 25,
+      "passed": 19,
+      "flaky": 6,
+      "failed": 0,
+      "flakeRate": 0.24,
+      "failureRate": 0,
+      "verdict": "over-trigger",
+      "window": [
+        "passed",
+        "passed",
+        "passed",
+        "flaky",
+        "passed",
+        "passed",
+        "passed",
+        "flaky",
+        "passed",
+        "passed",
+        "passed",
+        "flaky",
+        "passed",
+        "passed",
+        "passed",
+        "flaky",
+        "passed",
+        "passed",
+        "passed",
+        "flaky",
+        "passed",
+        "passed",
+        "passed",
+        "flaky",
+        "passed"
+      ],
+      "quarantinedExecutions": 0,
+      "executionsInHistory": 25,
+      "unobserved": 0,
+      "lastFailure": {
+        "outcome": "flaky",
+        "date": "2026-11-04T16:13:47.252Z",
+        "runId": "collect-20261104T161148Z-af9a55-24",
+        "commit": "ff169e38d43fe97fdf6cccebc17bc9aab6284a14",
+        "signature": "Error: deliberately injected first-attempt failure (this is the demonstration, not the player)"
+      },
+      "cleanWindow": false,
+      "experimental": false,
+      "title": "PB-VOD-001 DEMO deliberately flaky: plays 2 s of media, and its first attempt fails in every fourth run",
+      "quarantine": {
+        "id": "PB-VOD-001",
+        "project": "chromium",
+        "reason": "demonstration: the first attempt fails in every fourth repetition on purpose (tests/e2e/demo-flaky.spec.ts) and the retry passes",
+        "owner": "@hanniavalera",
+        "since": "2026-11-04",
+        "expires": "2026-11-10",
+        "evidence": "25 repetitions of the flake collector: 6 flaky, 0 failed (docs/results/flake/demo-deliberate-flake.md)"
+      }
+    }
+  ],
+  "quarantine": [
+    {
+      "entry": {
+        "id": "PB-VOD-001",
+        "project": "chromium",
+        "reason": "demonstration: the first attempt fails in every fourth repetition on purpose (tests/e2e/demo-flaky.spec.ts) and the retry passes",
+        "owner": "@hanniavalera",
+        "since": "2026-11-04",
+        "expires": "2026-11-10",
+        "evidence": "25 repetitions of the flake collector: 6 flaky, 0 failed (docs/results/flake/demo-deliberate-flake.md)"
+      },
+      "state": "active",
+      "tier": "merge"
+    }
+  ],
+  "quarantineProblems": [],
+  "skips": [],
+  "notes": []
+}

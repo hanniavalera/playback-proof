@@ -1,0 +1,17 @@
+measure: perf-aa, engine chromium-cpu4x, runner ubuntu-24.04
+label: paa-cpu4x-2
+started: 2026-11-04T17:56:15Z
+commit: b971ed3f223fe0883ec4762aa1476932cdbc3532 (integ/paired)
+environment id: gha-linux-x64
+runner: Linux X64, github-hosted, image ubuntu24 20261026.354.1
+cpus: 4
+cpu: AMD EPYC 7763 64-Core Processor
+memory: 15983 MiB
+os: Ubuntu 24.04.5 LTS
+uptime:  17:56:16 up 1 min,  0 user,  load average: 1.33, 0.48, 0.17
+node: v22.23.4, npm: 10.9.9
+playwright: Version 1.64.1
+ffmpeg: not installed (the streams come from the streams job)
+
+finished: 2026-11-04T18:05:06Z
+uptime:  18:05:06 up 10 min,  0 user,  load average: 1.57, 1.39, 0.83

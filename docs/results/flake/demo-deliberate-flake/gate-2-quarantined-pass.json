@@ -1,0 +1,39 @@
+{
+  "decision": "pass",
+  "envId": "demo-deliberate-flake",
+  "today": "2026-11-04",
+  "runsJudged": 25,
+  "currentRuns": 1,
+  "failures": [],
+  "notes": [
+    "PB-VOD-001 on chromium is above the trigger (6 flaky of 25 executions (24.0%)) and quarantined until 2026-11-10 (owner @hanniavalera): it still runs, non-blocking, and is not in the suite rate."
+  ],
+  "suites": [
+    {
+      "project": "chromium",
+      "builds": 25,
+      "executions": 0,
+      "flaky": 0,
+      "flakeRate": 0,
+      "budget": 0.02,
+      "verdict": "ok",
+      "quarantinedExecutions": 25
+    }
+  ],
+  "tests": [
+    {
+      "id": "PB-VOD-001",
+      "project": "chromium",
+      "executions": 25,
+      "flaky": 6,
+      "failed": 0,
+      "flakeRate": 0.24,
+      "verdict": "over-trigger",
+      "quarantined": {
+        "owner": "@hanniavalera",
+        "expires": "2026-11-10"
+      }
+    }
+  ],
+  "recorded": null
+}

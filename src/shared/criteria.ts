@@ -377,7 +377,7 @@ export const GATE_BUDGETS = {
     720,
     's',
     'Wall-clock of one performance job (one environment, its profiles) when no metric fails.',
-    'Twelve minutes. Performance runs are serial (one browser at a time) and must not share the machine; the table in section 6 adds up the scenarios. Measured locally (the workstation of the baselines, not a CI runner): the runs of the job "chromium and chromium-cpu4x" add up to 365 s with their warm-ups (282 s for the three scenarios of Chromium, 83 s for the throttled profile), about 6 to 7 minutes with the starts of the service and of four browsers; to be re-measured in CI.',
+    'Twelve minutes. Performance runs are serial (one browser at a time) and must not share the machine; the table in section 6 adds up the scenarios. Measured locally (the workstation of the baselines): the runs of the job "chromium and chromium-cpu4x" add up to 365 s with their warm-ups (282 s for the three scenarios of Chromium, 83 s for the throttled profile), about 6 to 7 minutes with the starts of the service and of four browsers. Measured on GitHub-hosted runners (the A/A jobs of docs/results/perf/gha-cross-vm.md): 283 to 288 s per pass of Chromium and 84 to 86 s of the throttled profile, the same. This is the budget of ONE measurement of the profiles: the paired gate that CI runs on a shared runner (ADR-179) measures the control and then the head, about twice that (about 12 to 13 minutes of measuring) plus the checkout of the control, its player build and an install when the lock files differ; what budget a paired job gets is an open decision.',
   ),
   perfRemeasureSec: assumption(
     'Performance re-measure',
@@ -629,6 +629,18 @@ export const PERF_LIMITS = limitsOf(PERF_POLICY);
 // The binomial arithmetic behind the numbers (computed, not measured). For a test that really flakes with probability p per run:
 //   P(at least 2 flaky outcomes in 30 runs):  p = 1%: 3.6%   p = 5%: 44.6%   p = 10%: 81.6%   p = 20%: 98.9%
 //   P(a merge job of 15 tests has at least one retried test):  p = 0.5%: 7.2%   p = 1%: 14.0%   p = 2%: 26.1%
+// For a leg that really ends a share p of its attempts as invalid runs, the chance that a full window of 30 scheduled executions holds
+// more than 40% of them (13 or more) and the gate judges it over its budget:
+//   p = 20%: 0.3%   p = 25%: 2.2%   p = 30%: 8.4%   p = 40%: 42.2%   p = 50%: 82%
+
+/**
+ * The start of the reason of a skip that ends an attempt as an INVALID RUN: the attempt could not evaluate its claim, because the
+ * machine pushed the player off the state the claim is about (ADR-106, docs/FLAKE.md "Invalid runs"). The spec-side classifier builds
+ * its reason with this (`invalidRunReason`, tests/e2e/abr/bans.ts) and the flake tracker recognises an invalid run by it
+ * (`isInvalidRun`, flake/run.ts), so the two cannot drift. A documented gap (`documented gap in <environment>:`, src/lab/gaps.ts) is
+ * another kind of skip: it does not start with it and is not budgeted.
+ */
+export const INVALID_RUN_PREFIX = 'invalid run:';
 
 export const FLAKE_POLICY = {
   windowRuns: assumption(
@@ -658,6 +670,13 @@ export const FLAKE_POLICY = {
     'ratio',
     'Retried-then-passed executions / all executions of the merge-tier browser tests of one engine over the window; above it the flake gate fails.',
     'The goal is well under 1% (at 1% per test a merge job of about 15 tests needs a retry in 14% of builds, at 2% in 26%). 2% is the red line: it still tolerates one moderately flaky test, and it fails when flakiness spreads across tests, which points at the environment rather than at one test.',
+  ),
+  invalidRunBudgetRate: assumption(
+    'Invalid-run budget, per test per engine job',
+    0.4,
+    'ratio',
+    'Invalid runs / scheduled executions of one test on one engine job over the window. An invalid run is a skip whose reason starts with `invalid run:` (the attempt could not evaluate its claim, ADR-106); a scheduled execution is an invalid run or an execution that ran to a verdict; a documented-gap skip is neither. Judged from the minimum number of runs; above the budget the flake gate fails whether or not the test is quarantined: the claim is no longer evaluated on that leg.',
+    'Evidence from one runner. PB-ABR-002 on WebKit on the 3 vCPU macOS runner of GitHub Actions is the only leg that has shown invalid runs so far, and four collections of 40 repetitions there measured 12.5% to 25% of the attempts (5, 6, 8 and 10 of 40); before the classifier existed 6 of 60 first attempts failed on the assertion it now turns into a skip (10%); the Linux legs showed none. 40% is above the highest of them, so a normal day on that runner passes (a leg that truly ends 25% of its attempts as invalid runs is over the budget in 2.2% of full windows, one at 20% in 0.3%), and a leg that skips half of its attempts fails (in 82% of windows): a test skipped that often protects nothing and would look green. Not derived from a model of the cause, which is not observed: the number is a judgment placed above what was measured and below "most attempts", and one runner is all there is to place it by.',
   ),
   quarantineMaxAgeDays: assumption(
     'Quarantine, maximum age',

@@ -1,0 +1,3145 @@
+{
+  "schemaVersion": 1,
+  "kind": "perf-aa",
+  "envId": "gha-linux-x64",
+  "profile": "chromium",
+  "passes": 18,
+  "scenarios": [
+    "PB-PERF-001",
+    "PB-PERF-002",
+    "PB-PERF-003"
+  ],
+  "baseline": {
+    "file": "/tmp/pb-paired-bJk4x7/baselines/gha-linux-x64/chromium.json",
+    "generatedAt": "2026-11-04T18:00:37.842Z",
+    "commit": "b971ed3",
+    "browserVersion": "156.0.8078.4",
+    "runsPerScenario": 10,
+    "cpuModel": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz"
+  },
+  "paired": {
+    "controlRef": "HEAD",
+    "controlCommit": "b971ed3f223fe0883ec4762aa1476932cdbc3532",
+    "headCommit": "b971ed3f223fe0883ec4762aa1476932cdbc3532",
+    "aa": true
+  },
+  "exitCodes": {
+    "0": 18,
+    "1": 0,
+    "2": 0
+  },
+  "falsePositives": 0,
+  "firstBatchAlarms": 0,
+  "notReproduced": 0,
+  "host": {
+    "cpus": 4,
+    "memoryGiB": 15.6,
+    "node": "v22.23.4",
+    "playwright": "1.64.1",
+    "invokedVia": "direct",
+    "dockerCpus": null
+  },
+  "machines": {
+    "cpuModels": [
+      {
+        "model": "AMD EPYC 7763 64-Core Processor",
+        "passes": 6
+      },
+      {
+        "model": "AMD EPYC 9V74 80-Core Processor",
+        "passes": 3
+      },
+      {
+        "model": "Intel(R) Xeon(R) 6975P-C",
+        "passes": 3
+      },
+      {
+        "model": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+        "passes": 3
+      },
+      {
+        "model": "INTEL(R) XEON(R) PLATINUM 8573C",
+        "passes": 3
+      }
+    ],
+    "passesWithoutCpuModel": 0
+  },
+  "runs": [
+    {
+      "file": "../../../../tmp/pb-base/paa/chromium-5/reports/perf-aa/pass-1/gha-linux-x64/chromium.json",
+      "generatedAt": "2026-11-04T18:00:38.291Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.7,
+        "after": 0.28
+      },
+      "problems": [],
+      "cpuModel": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 71.14999999999418,
+        "median": 77.25,
+        "deviation": 0.08573436401976556
+      }
+    },
+    {
+      "file": "../../../../tmp/pb-base/paa/chromium-2/reports/perf-aa/pass-1/gha-linux-x64/chromium.json",
+      "generatedAt": "2026-11-04T18:00:40.024Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.24,
+        "after": 0.55
+      },
+      "problems": [],
+      "cpuModel": "INTEL(R) XEON(R) PLATINUM 8573C",
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 67.99999999999636,
+        "median": 77.90000000002328,
+        "deviation": 0.14558823529452133
+      }
+    },
+    {
+      "file": "../../../../tmp/pb-base/paa/chromium-1/reports/perf-aa/pass-1/gha-linux-x64/chromium.json",
+      "generatedAt": "2026-11-04T18:00:55.852Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.36,
+        "after": 0.4
+      },
+      "problems": [],
+      "cpuModel": "AMD EPYC 7763 64-Core Processor",
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 76.40000000000146,
+        "median": 74.85000000003492,
+        "deviation": -0.020287958114744778
+      }
+    },
+    {
+      "file": "../../../../tmp/pb-base/paa/chromium-4/reports/perf-aa/pass-1/gha-linux-x64/chromium.json",
+      "generatedAt": "2026-11-04T18:01:06.452Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.24,
+        "after": 0.27
+      },
+      "problems": [],
+      "cpuModel": "Intel(R) Xeon(R) 6975P-C",
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 54.599999999998545,
+        "median": 52.10000000000582,
+        "deviation": -0.04578754578741375
+      }
+    },
+    {
+      "file": "../../../../tmp/pb-base/paa/chromium-3/reports/perf-aa/pass-1/gha-linux-x64/chromium.json",
+      "generatedAt": "2026-11-04T18:02:18.393Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.21,
+        "after": 0.64
+      },
+      "problems": [],
+      "cpuModel": "AMD EPYC 7763 64-Core Processor",
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 70.04999999998836,
+        "median": 75.19999999998254,
+        "deviation": 0.07351891506060007
+      }
+    },
+    {
+      "file": "../../../../tmp/pb-base/paa/chromium-6/reports/perf-aa/pass-1/gha-linux-x64/chromium.json",
+      "generatedAt": "2026-11-04T18:07:18.406Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.15,
+        "after": 0.73
+      },
+      "problems": [],
+      "cpuModel": "AMD EPYC 9V74 80-Core Processor",
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 61.44999999998254,
+        "median": 60.74999999994179,
+        "deviation": -0.011391375102375008
+      }
+    },
+    {
+      "file": "../../../../tmp/pb-base/paa/chromium-5/reports/perf-aa/pass-2/gha-linux-x64/chromium.json",
+      "generatedAt": "2026-11-04T18:10:12.397Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.43,
+        "after": 0.26
+      },
+      "problems": [],
+      "cpuModel": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 77.75,
+        "median": 76.75,
+        "deviation": -0.012861736334405145
+      }
+    },
+    {
+      "file": "../../../../tmp/pb-base/paa/chromium-2/reports/perf-aa/pass-2/gha-linux-x64/chromium.json",
+      "generatedAt": "2026-11-04T18:10:14.274Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.43,
+        "after": 0.64
+      },
+      "problems": [],
+      "cpuModel": "INTEL(R) XEON(R) PLATINUM 8573C",
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 78.19999999995343,
+        "median": 73.54999999998836,
+        "deviation": -0.05946291560061182
+      }
+    },
+    {
+      "file": "../../../../tmp/pb-base/paa/chromium-1/reports/perf-aa/pass-2/gha-linux-x64/chromium.json",
+      "generatedAt": "2026-11-04T18:10:30.313Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.26,
+        "after": 0.89
+      },
+      "problems": [],
+      "cpuModel": "AMD EPYC 7763 64-Core Processor",
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 77.5,
+        "median": 77.54999999993015,
+        "deviation": 0.0006451612894213007
+      }
+    },
+    {
+      "file": "../../../../tmp/pb-base/paa/chromium-4/reports/perf-aa/pass-2/gha-linux-x64/chromium.json",
+      "generatedAt": "2026-11-04T18:10:34.571Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.33,
+        "after": 0.57
+      },
+      "problems": [],
+      "cpuModel": "Intel(R) Xeon(R) 6975P-C",
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 55.5,
+        "median": 52,
+        "deviation": -0.06306306306306306
+      }
+    },
+    {
+      "file": "../../../../tmp/pb-base/paa/chromium-3/reports/perf-aa/pass-2/gha-linux-x64/chromium.json",
+      "generatedAt": "2026-11-04T18:11:52.349Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 1.16,
+        "after": 1.18
+      },
+      "problems": [],
+      "cpuModel": "AMD EPYC 7763 64-Core Processor",
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 73.95000000001164,
+        "median": 70.5,
+        "deviation": -0.04665314401637726
+      }
+    },
+    {
+      "file": "../../../../tmp/pb-base/paa/chromium-6/reports/perf-aa/pass-2/gha-linux-x64/chromium.json",
+      "generatedAt": "2026-11-04T18:16:49.508Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.55,
+        "after": 0.52
+      },
+      "problems": [],
+      "cpuModel": "AMD EPYC 9V74 80-Core Processor",
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 63.49999999994179,
+        "median": 63.79999999993015,
+        "deviation": 0.004724409448639897
+      }
+    },
+    {
+      "file": "../../../../tmp/pb-base/paa/chromium-5/reports/perf-aa/pass-3/gha-linux-x64/chromium.json",
+      "generatedAt": "2026-11-04T18:19:46.245Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.43,
+        "after": 0.26
+      },
+      "problems": [],
+      "cpuModel": "Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz",
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 69.5,
+        "median": 71.85000000009313,
+        "deviation": 0.0338129496416278
+      }
+    },
+    {
+      "file": "../../../../tmp/pb-base/paa/chromium-2/reports/perf-aa/pass-3/gha-linux-x64/chromium.json",
+      "generatedAt": "2026-11-04T18:19:48.141Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.64,
+        "after": 0.74
+      },
+      "problems": [],
+      "cpuModel": "INTEL(R) XEON(R) PLATINUM 8573C",
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 70.09999999997672,
+        "median": 71.80000000004657,
+        "deviation": 0.02425106990114713
+      }
+    },
+    {
+      "file": "../../../../tmp/pb-base/paa/chromium-4/reports/perf-aa/pass-3/gha-linux-x64/chromium.json",
+      "generatedAt": "2026-11-04T18:20:02.986Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.14,
+        "after": 0.03
+      },
+      "problems": [],
+      "cpuModel": "Intel(R) Xeon(R) 6975P-C",
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 54.550000000046566,
+        "median": 51,
+        "deviation": -0.06507791017495024
+      }
+    },
+    {
+      "file": "../../../../tmp/pb-base/paa/chromium-1/reports/perf-aa/pass-3/gha-linux-x64/chromium.json",
+      "generatedAt": "2026-11-04T18:20:04.689Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 1.09,
+        "after": 0.56
+      },
+      "problems": [],
+      "cpuModel": "AMD EPYC 7763 64-Core Processor",
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 79.44999999995343,
+        "median": 77.25,
+        "deviation": -0.027690371302136228
+      }
+    },
+    {
+      "file": "../../../../tmp/pb-base/paa/chromium-3/reports/perf-aa/pass-3/gha-linux-x64/chromium.json",
+      "generatedAt": "2026-11-04T18:21:26.456Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.66,
+        "after": 0.91
+      },
+      "problems": [],
+      "cpuModel": "AMD EPYC 7763 64-Core Processor",
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 77.55000000004657,
+        "median": 69.50000000011642,
+        "deviation": -0.10380399742005567
+      }
+    },
+    {
+      "file": "../../../../tmp/pb-base/paa/chromium-6/reports/perf-aa/pass-3/gha-linux-x64/chromium.json",
+      "generatedAt": "2026-11-04T18:26:20.368Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.25,
+        "after": 0.2
+      },
+      "problems": [],
+      "cpuModel": "AMD EPYC 9V74 80-Core Processor",
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 65.05000000004657,
+        "median": 59.75,
+        "deviation": -0.0814757878561533
+      }
+    }
+  ],
+  "metrics": [
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "startupMs",
+      "unit": "ms",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 71.14999999999418,
+        "tail": 80.57999999999592,
+        "cv": 0.078338566315574,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 21.344999999998254,
+        "tail": 24.173999999998774
+      },
+      "passes": 18,
+      "medians": [
+        77.25,
+        77.90000000002328,
+        74.85000000003492,
+        52.10000000000582,
+        75.19999999998254,
+        60.74999999994179,
+        76.75,
+        73.54999999998836,
+        77.54999999993015,
+        52,
+        70.5,
+        63.79999999993015,
+        71.85000000009313,
+        71.80000000004657,
+        51,
+        77.25,
+        69.50000000011642,
+        59.75
+      ],
+      "tails": [
+        79.25999999995693,
+        80.2000000000291,
+        78.32000000000698,
+        57.54999999998836,
+        77.5600000000035,
+        65.37000000004191,
+        85.5200000000419,
+        82.79000000001396,
+        79.85000000003492,
+        61.01999999999534,
+        80.75000000006985,
+        66.53000000000466,
+        76.78999999992084,
+        76.41000000005587,
+        56.42999999991152,
+        78,
+        78.9899999998277,
+        65.32999999984168
+      ],
+      "worst": {
+        "median": 9.900000000026921,
+        "tail": 7.2500000000305675
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 6.100000000005821,
+            "tail": -1.3200000000389878
+          },
+          "allowed": {
+            "median": 21.344999999998254,
+            "tail": 24.173999999998774
+          }
+        },
+        {
+          "worse": {
+            "median": 9.900000000026921,
+            "tail": 7.2500000000305675
+          },
+          "allowed": {
+            "median": 20.399999999998908,
+            "tail": 21.88499999999956
+          }
+        },
+        {
+          "worse": {
+            "median": -1.5499999999665306,
+            "tail": 0.07000000000698492
+          },
+          "allowed": {
+            "median": 22.920000000000435,
+            "tail": 23.474999999999998
+          }
+        },
+        {
+          "worse": {
+            "median": -2.499999999992724,
+            "tail": -0.7300000000090208
+          },
+          "allowed": {
+            "median": 16.379999999999562,
+            "tail": 17.483999999999213
+          }
+        },
+        {
+          "worse": {
+            "median": 5.149999999994179,
+            "tail": 4.270000000024453
+          },
+          "allowed": {
+            "median": 21.01499999999651,
+            "tail": 21.986999999993714
+          }
+        },
+        {
+          "worse": {
+            "median": -0.7000000000407454,
+            "tail": -4.899999999976714
+          },
+          "allowed": {
+            "median": 18.434999999994762,
+            "tail": 21.081000000005588
+          }
+        },
+        {
+          "worse": {
+            "median": -1,
+            "tail": 4.23000000008615
+          },
+          "allowed": {
+            "median": 23.325,
+            "tail": 24.386999999986724
+          }
+        },
+        {
+          "worse": {
+            "median": -4.649999999965075,
+            "tail": 0.4500000000814879
+          },
+          "allowed": {
+            "median": 23.459999999986028,
+            "tail": 24.70199999997974
+          }
+        },
+        {
+          "worse": {
+            "median": 0.04999999993015081,
+            "tail": -0.6400000000139698
+          },
+          "allowed": {
+            "median": 23.25,
+            "tail": 24.147000000014668
+          }
+        },
+        {
+          "worse": {
+            "median": -3.5,
+            "tail": 1.899999999976714
+          },
+          "allowed": {
+            "median": 16.65,
+            "tail": 17.73600000000559
+          }
+        },
+        {
+          "worse": {
+            "median": -3.4500000000116415,
+            "tail": 2.0600000000558794
+          },
+          "allowed": {
+            "median": 22.18500000000349,
+            "tail": 23.607000000004188
+          }
+        },
+        {
+          "worse": {
+            "median": 0.29999999998835847,
+            "tail": -4.879999999934796
+          },
+          "allowed": {
+            "median": 19.049999999982536,
+            "tail": 21.422999999981837
+          }
+        },
+        {
+          "worse": {
+            "median": 2.3500000000931323,
+            "tail": -0.12999999991151867
+          },
+          "allowed": {
+            "median": 20.849999999999998,
+            "tail": 23.075999999949705
+          }
+        },
+        {
+          "worse": {
+            "median": 1.7000000000698492,
+            "tail": -1.0699999999022225
+          },
+          "allowed": {
+            "median": 21.029999999993013,
+            "tail": 23.243999999987427
+          }
+        },
+        {
+          "worse": {
+            "median": -3.550000000046566,
+            "tail": -3.8400000002468033
+          },
+          "allowed": {
+            "median": 16.365000000013968,
+            "tail": 18.081000000047496
+          }
+        },
+        {
+          "worse": {
+            "median": -2.199999999953434,
+            "tail": -3.1599999999860273
+          },
+          "allowed": {
+            "median": 23.834999999986028,
+            "tail": 24.347999999995807
+          }
+        },
+        {
+          "worse": {
+            "median": -8.04999999993015,
+            "tail": -0.8100000001722947
+          },
+          "allowed": {
+            "median": 23.26500000001397,
+            "tail": 23.939999999999998
+          }
+        },
+        {
+          "worse": {
+            "median": -5.300000000046566,
+            "tail": -3.8200000002048853
+          },
+          "allowed": {
+            "median": 19.51500000001397,
+            "tail": 20.745000000013967
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 9.50370111942846,
+        "relativeSd": 0.13357274939464844
+      }
+    },
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "manifestMs",
+      "unit": "ms",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 23.95000000001164,
+        "tail": 26.029999999995926,
+        "cv": 0.061880272986124064,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 18,
+      "medians": [
+        25.150000000023283,
+        25,
+        25,
+        17.099999999976717,
+        22.699999999982538,
+        18.349999999976717,
+        26.300000000046566,
+        25.54999999998836,
+        24.04999999998836,
+        17.649999999965075,
+        23.79999999993015,
+        19.999999999883585,
+        25.300000000046566,
+        23.95000000006985,
+        17.199999999953434,
+        24.300000000046566,
+        23.550000000046566,
+        18.900000000023283
+      ],
+      "tails": [
+        28.159999999968566,
+        26.939999999990686,
+        25.980000000016297,
+        20.610000000032596,
+        25.70999999999767,
+        23.259999999974386,
+        27.91000000004424,
+        28.450000000034922,
+        26.129999999993014,
+        20.649999999976718,
+        24.950000000046565,
+        21.41999999990221,
+        27.070000000135042,
+        25.160000000102446,
+        19.439999999897555,
+        26,
+        24.659999999892896,
+        20.88000000002794
+      ],
+      "worst": {
+        "median": 1.2000000000116415,
+        "tail": 2.1299999999726396
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 1.2000000000116415,
+            "tail": 2.1299999999726396
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0.3000000000029104,
+            "tail": 1.7899999999921405
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -0.09999999999854481,
+            "tail": -0.3899999999935986
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -0.5000000000145519,
+            "tail": 0.5000000000261942
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -0.9000000000087311,
+            "tail": 0.8100000000093104
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -1.4500000000116415,
+            "tail": 1.2999999999767162
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0.5,
+            "tail": -0.7699999999371343
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -0.5999999999767169,
+            "tail": 0.7300000000512199
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -0.5,
+            "tail": 0.7300000000745044
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0.24999999994179234,
+            "tail": 1.780000000016301
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -0.8000000001047738,
+            "tail": -0.48999999986263276
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -0.8000000001047738,
+            "tail": -0.30000000005820837
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0.4500000000698492,
+            "tail": 0.9000000000465675
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -0.3499999998603016,
+            "tail": -1.6499999999301487
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -0.4000000001396984,
+            "tail": 0.8299999997718288
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -1.2999999998137355,
+            "tail": -2.9500000000465647
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -0.9499999999534339,
+            "tail": -2.5600000000558794
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -0.4999999998835847,
+            "tail": -0.6699999999720596
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 3.243219422483604,
+        "relativeSd": 0.13541625981135813
+      }
+    },
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "loadedMs",
+      "unit": "ms",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 35.40000000000873,
+        "tail": 38.16999999998079,
+        "cv": 0.04234615220303254,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 18,
+      "medians": [
+        36.20000000001164,
+        36.54999999998836,
+        36.34999999997672,
+        25.150000000023283,
+        34.500000000029104,
+        28.95000000001164,
+        37.649999999965075,
+        36.04999999993015,
+        35.59999999997672,
+        26.100000000034925,
+        34.19999999983702,
+        28.0999999998603,
+        36.45000000006985,
+        34.799999999813735,
+        24.349999999976717,
+        35.10000000009313,
+        34.5,
+        28.75
+      ],
+      "tails": [
+        38.7,
+        38.429999999993015,
+        38.10999999999767,
+        27.95000000001746,
+        36.880000000010476,
+        31.6,
+        39.7,
+        39.87999999999301,
+        37.15999999999767,
+        28.55,
+        35.39999999983702,
+        30.25000000006985,
+        38.140000000083816,
+        35.720000000088476,
+        26.90999999991618,
+        36.70999999996275,
+        35.86999999983236,
+        30.82999999981839
+      ],
+      "worst": {
+        "median": 1.6499999999905413,
+        "tail": 2.7699999999931606
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0.8000000000029104,
+            "tail": 0.5300000000192142
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 1.6499999999905413,
+            "tail": 2.7699999999931606
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0.44999999997526174,
+            "tail": -0.010000000007863719
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -0.5999999999767169,
+            "tail": -0.35999999998603016
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0.45000000004074536,
+            "tail": 0.45000000001454765
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -0.6999999999825377,
+            "tail": 0.05000000001164295
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 1.3999999999650754,
+            "tail": 0.22000000007683695
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -0.4500000000698492,
+            "tail": 1.7599999999860287
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0.09999999997671694,
+            "tail": 1.1999999999534339
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0.04999999998835847,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -0.8500000001513399,
+            "tail": -0.9000000001047681
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -2.300000000104774,
+            "tail": -3.01999999987893
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 1.0000000001164153,
+            "tail": -0.32999999984167516
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -0.6500000000232831,
+            "tail": -1.0899999999441192
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -1.4500000000698492,
+            "tail": 0.2599999999161824
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -2.3499999998603016,
+            "tail": -2.6000000000000014
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -1.25,
+            "tail": -1.5700000002048924
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -0.2999999999301508,
+            "tail": 0.7699999997625113
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 4.462729644771533,
+        "relativeSd": 0.12606580917430601
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "fps",
+      "unit": "fps",
+      "gated": true,
+      "tailStatistic": "p10",
+      "baseline": {
+        "median": 30,
+        "tail": 30,
+        "cv": 0,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 1.5,
+        "tail": 3
+      },
+      "passes": 18,
+      "medians": [
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30
+      ],
+      "tails": [
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 3
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": 0
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "droppedRatio",
+      "unit": "ratio",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 0.01,
+        "tail": 0.03
+      },
+      "passes": 18,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "decodedFrames",
+      "unit": "count",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 150,
+        "tail": 150,
+        "cv": 0.0021095915011129954,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 18,
+      "medians": [
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150
+      ],
+      "tails": [
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150.1,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0.09999999999999432
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0.09999999999999432
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": -0.09999999999999432
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": 0
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "droppedFrames",
+      "unit": "count",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 18,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferCount",
+      "unit": "count",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 0,
+        "tail": 1
+      },
+      "passes": 18,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferMs",
+      "unit": "ms",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 250,
+        "tail": 1000
+      },
+      "passes": 18,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferRatio",
+      "unit": "ratio",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 0.01,
+        "tail": 0.05
+      },
+      "passes": 18,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-003",
+      "metric": "switches",
+      "unit": "count",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 1,
+        "tail": 1,
+        "cv": 0,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 18,
+      "medians": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "tails": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": 0
+      }
+    }
+  ]
+}

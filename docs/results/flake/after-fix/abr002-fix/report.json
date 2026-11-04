@@ -1,0 +1,102 @@
+{
+  "generatedAt": "2026-11-04T19:01:10.357Z",
+  "envId": "gha-macos-arm64",
+  "today": "2026-11-04",
+  "history": {
+    "runs": 40,
+    "from": "2026-11-04T17:23:48.894Z",
+    "to": "2026-11-04T17:50:44.559Z"
+  },
+  "limits": {
+    "windowRuns": 30,
+    "minRunsToJudge": 20,
+    "quarantineTriggerRate": 0.05,
+    "suiteBudgetRate": 0.02,
+    "quarantineMaxAgeDays": 14,
+    "mergeQuarantineMaxAgeDays": 7
+  },
+  "suites": [
+    {
+      "project": "webkit",
+      "builds": 30,
+      "executions": 30,
+      "flaky": 0,
+      "failed": 0,
+      "flakeRate": 0,
+      "budget": 0.02,
+      "verdict": "ok",
+      "quarantinedExecutions": 0,
+      "quarantinedFlaky": 0,
+      "unobserved": 0,
+      "contributors": [],
+      "experimental": false
+    }
+  ],
+  "tests": [
+    {
+      "id": "PB-ABR-002",
+      "project": "webkit",
+      "tier": "merge",
+      "executions": 30,
+      "passed": 30,
+      "flaky": 0,
+      "failed": 0,
+      "flakeRate": 0,
+      "failureRate": 0,
+      "verdict": "ok",
+      "window": [
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed",
+        "passed"
+      ],
+      "quarantinedExecutions": 0,
+      "executionsInHistory": 32,
+      "unobserved": 0,
+      "lastFailure": null,
+      "cleanWindow": true,
+      "experimental": false,
+      "title": "PB-ABR-002 downshifts when bandwidth drops mid-playback (bandwidth-drop): at most one rebuffer, settles on a rung the network can carry",
+      "quarantine": null
+    }
+  ],
+  "quarantine": [],
+  "quarantineProblems": [],
+  "skips": [
+    {
+      "id": "PB-ABR-002",
+      "project": "webkit",
+      "reason": "invalid run: forced climb to 360p 6.0 s after the step down, 16 of 964 frames dropped. The 8 s switch interval allows no decision of the adaptation that soon after the step down, and the load dropped frames: Shaka's dropped-frame protection, which bans the rung that plays for 30 s, fits, and it leaves only rungs above the 240p that the 600 kbps link carries, so this attempt cannot say whether the player flaps (ADR-106). The climb is at media time 25.93 s, 1.9 s after the playhead entered the first 240p segment (media time 24.0 s).",
+      "date": "2026-11-04T17:49:28.739Z",
+      "times": 8,
+      "of": 40
+    }
+  ],
+  "notes": []
+}

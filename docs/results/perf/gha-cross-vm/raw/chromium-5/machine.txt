@@ -1,0 +1,17 @@
+measure: perf-aa, engine chromium, runner ubuntu-24.04
+label: aa-chromium-5
+started: 2026-11-04T16:48:14Z
+commit: 6ab5e9843220e43c6682bdff12375da6421e9058 (perf/gha-baselines)
+environment id: gha-linux-x64
+runner: Linux X64, github-hosted, image ubuntu24 20261026.354.1
+cpus: 4
+cpu: AMD EPYC 9V45 96-Core Processor
+memory: 15983 MiB
+os: Ubuntu 24.04.5 LTS
+uptime:  16:48:15 up 1 min,  0 user,  load average: 0.55, 0.15, 0.05
+node: v22.23.4, npm: 10.9.9
+playwright: Version 1.64.1
+ffmpeg: not installed (the streams come from the streams job)
+
+finished: 2026-11-04T17:02:28Z
+uptime:  17:02:28 up 15 min,  0 user,  load average: 0.71, 0.43, 0.28

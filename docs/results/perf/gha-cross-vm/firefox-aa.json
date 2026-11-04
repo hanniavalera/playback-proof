@@ -1,0 +1,1773 @@
+{
+  "schemaVersion": 1,
+  "kind": "perf-aa",
+  "envId": "gha-linux-x64",
+  "profile": "firefox",
+  "passes": 9,
+  "scenarios": [
+    "PB-PERF-001",
+    "PB-PERF-002",
+    "PB-PERF-003"
+  ],
+  "baseline": {
+    "file": "/home/runner/work/playback-proof/playback-proof/perf/baselines/gha-linux-x64/firefox.json",
+    "generatedAt": "2026-11-04T16:42:59.448Z",
+    "commit": "5a2cb3e",
+    "browserVersion": "157.0",
+    "runsPerScenario": 10,
+    "cpuModel": null
+  },
+  "paired": null,
+  "exitCodes": {
+    "0": 7,
+    "1": 2,
+    "2": 0
+  },
+  "falsePositives": 2,
+  "firstBatchAlarms": 2,
+  "notReproduced": 0,
+  "host": {
+    "cpus": 4,
+    "memoryGiB": 15.6,
+    "node": "v22.23.4",
+    "playwright": "1.64.1",
+    "invokedVia": "direct",
+    "dockerCpus": null
+  },
+  "machines": {
+    "cpuModels": [],
+    "passesWithoutCpuModel": 9
+  },
+  "runs": [
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/firefox-3/pass-1.json",
+      "generatedAt": "2026-11-04T16:48:51.041Z",
+      "exitCode": 1,
+      "alarmedScenarios": [
+        "PB-PERF-001"
+      ],
+      "load": {
+        "before": 0.74,
+        "after": 0.34
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 86.5,
+        "median": 105,
+        "deviation": 0.2138728323699422
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/firefox-2/pass-1.json",
+      "generatedAt": "2026-11-04T16:48:51.901Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.5,
+        "after": 0.43
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 86.5,
+        "median": 94.5,
+        "deviation": 0.09248554913294797
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/firefox-1/pass-1.json",
+      "generatedAt": "2026-11-04T16:49:29.628Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.78,
+        "after": 0.08
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 86.5,
+        "median": 68,
+        "deviation": -0.2138728323699422
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/firefox-2/pass-2.json",
+      "generatedAt": "2026-11-04T16:53:52.047Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.43,
+        "after": 0.14
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 86.5,
+        "median": 96.5,
+        "deviation": 0.11560693641618497
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/firefox-3/pass-2.json",
+      "generatedAt": "2026-11-04T16:54:01.079Z",
+      "exitCode": 1,
+      "alarmedScenarios": [
+        "PB-PERF-001"
+      ],
+      "load": {
+        "before": 0.34,
+        "after": 0.43
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 86.5,
+        "median": 105.5,
+        "deviation": 0.21965317919075145
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/firefox-1/pass-2.json",
+      "generatedAt": "2026-11-04T16:54:23.317Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.08,
+        "after": 0.2
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 86.5,
+        "median": 69.5,
+        "deviation": -0.19653179190751446
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/firefox-2/pass-3.json",
+      "generatedAt": "2026-11-04T16:58:51.756Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.14,
+        "after": 0.76
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 86.5,
+        "median": 96,
+        "deviation": 0.10982658959537572
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/firefox-3/pass-3.json",
+      "generatedAt": "2026-11-04T16:59:10.257Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.43,
+        "after": 0.52
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 86.5,
+        "median": 110,
+        "deviation": 0.27167630057803466
+      }
+    },
+    {
+      "file": "docs/results/perf/gha-cross-vm/raw/firefox-1/pass-3.json",
+      "generatedAt": "2026-11-04T16:59:16.049Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.2,
+        "after": 0.28
+      },
+      "problems": [],
+      "cpuModel": null,
+      "startup": {
+        "scenario": "PB-PERF-001",
+        "baselineMedian": 86.5,
+        "median": 67,
+        "deviation": -0.2254335260115607
+      }
+    }
+  ],
+  "metrics": [
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "startupMs",
+      "unit": "ms",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 86.5,
+        "tail": 96.1,
+        "cv": 0.1410711125703493,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 25.95,
+        "tail": 28.83
+      },
+      "passes": 9,
+      "medians": [
+        105,
+        94.5,
+        68,
+        96.5,
+        105.5,
+        69.5,
+        96,
+        110,
+        67
+      ],
+      "tails": [
+        139.7,
+        106.2,
+        79.4,
+        107.3,
+        140.2,
+        75.4,
+        111.5,
+        117.69999999999999,
+        71.3
+      ],
+      "worst": {
+        "median": 23.5,
+        "tail": 44.099999999999994
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 18.5,
+            "tail": 43.599999999999994
+          },
+          "allowed": {
+            "median": 25.95,
+            "tail": 28.83
+          }
+        },
+        {
+          "worse": {
+            "median": 8,
+            "tail": 10.100000000000009
+          },
+          "allowed": {
+            "median": 25.95,
+            "tail": 28.83
+          }
+        },
+        {
+          "worse": {
+            "median": -18.5,
+            "tail": -16.69999999999999
+          },
+          "allowed": {
+            "median": 25.95,
+            "tail": 28.83
+          }
+        },
+        {
+          "worse": {
+            "median": 10,
+            "tail": 11.200000000000003
+          },
+          "allowed": {
+            "median": 25.95,
+            "tail": 28.83
+          }
+        },
+        {
+          "worse": {
+            "median": 19,
+            "tail": 44.099999999999994
+          },
+          "allowed": {
+            "median": 25.95,
+            "tail": 28.83
+          }
+        },
+        {
+          "worse": {
+            "median": -17,
+            "tail": -20.69999999999999
+          },
+          "allowed": {
+            "median": 25.95,
+            "tail": 28.83
+          }
+        },
+        {
+          "worse": {
+            "median": 9.5,
+            "tail": 15.400000000000006
+          },
+          "allowed": {
+            "median": 25.95,
+            "tail": 28.83
+          }
+        },
+        {
+          "worse": {
+            "median": 23.5,
+            "tail": 21.599999999999994
+          },
+          "allowed": {
+            "median": 25.95,
+            "tail": 28.83
+          }
+        },
+        {
+          "worse": {
+            "median": -19.5,
+            "tail": -24.799999999999997
+          },
+          "allowed": {
+            "median": 25.95,
+            "tail": 28.83
+          }
+        }
+      ],
+      "firstBatchAlarms": 2,
+      "reproduced": 2,
+      "betweenBatch": {
+        "sd": 17.308074544687067,
+        "relativeSd": 0.20009334733742273
+      }
+    },
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "manifestMs",
+      "unit": "ms",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 26,
+        "tail": 28,
+        "cv": 0.052502694230126344,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 9,
+      "medians": [
+        35,
+        32.5,
+        23,
+        33,
+        34,
+        22.5,
+        32.5,
+        34,
+        23
+      ],
+      "tails": [
+        37.1,
+        40.9,
+        25.1,
+        44.9,
+        37.3,
+        24.299999999999997,
+        38.1,
+        41,
+        24.299999999999997
+      ],
+      "worst": {
+        "median": 9,
+        "tail": 16.9
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 9,
+            "tail": 9.100000000000001
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 6.5,
+            "tail": 12.899999999999999
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -3,
+            "tail": -2.8999999999999986
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 7,
+            "tail": 16.9
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 8,
+            "tail": 9.299999999999997
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -3.5,
+            "tail": -3.700000000000003
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 6.5,
+            "tail": 10.100000000000001
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 8,
+            "tail": 13
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -3,
+            "tail": -3.700000000000003
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 5.393540375094802,
+        "relativeSd": 0.20744386058056932
+      }
+    },
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "loadedMs",
+      "unit": "ms",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 36.5,
+        "tail": 39,
+        "cv": 0.07116981402097233,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 9,
+      "medians": [
+        48,
+        43.5,
+        31,
+        45.5,
+        48.5,
+        31.5,
+        45,
+        46,
+        31
+      ],
+      "tails": [
+        54,
+        52.699999999999996,
+        33.1,
+        57,
+        53.1,
+        32.2,
+        49.2,
+        57.8,
+        33.2
+      ],
+      "worst": {
+        "median": 12,
+        "tail": 18.799999999999997
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 11.5,
+            "tail": 15
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 7,
+            "tail": 13.699999999999996
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -5.5,
+            "tail": -5.899999999999999
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 9,
+            "tail": 18
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 12,
+            "tail": 14.100000000000001
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -5,
+            "tail": -6.799999999999997
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 8.5,
+            "tail": 10.200000000000003
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 9.5,
+            "tail": 18.799999999999997
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": -5.5,
+            "tail": -5.799999999999997
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 7.606649138162685,
+        "relativeSd": 0.20840134625103246
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "fps",
+      "unit": "fps",
+      "gated": true,
+      "tailStatistic": "p10",
+      "baseline": {
+        "median": 30,
+        "tail": 29.999996026490592,
+        "cv": 6.839705145538053e-8,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 1.5,
+        "tail": 2.9999996026490594
+      },
+      "passes": 9,
+      "medians": [
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        29.999996026490592,
+        30
+      ],
+      "tails": [
+        29.999996026490592,
+        29.999996026490592,
+        30,
+        29.99999960264906,
+        29.999996026490592,
+        29.99999960264906,
+        29.999996026490592,
+        29.999996026490592,
+        29.99999960264906
+      ],
+      "worst": {
+        "median": 0.00000397350940772867,
+        "tail": 0
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 2.9999996026490594
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 2.9999996026490594
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": -0.00000397350940772867
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 2.9999996026490594
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": -0.0000035761584662452606
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 2.9999996026490594
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 2.9999996026490594
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": -0.0000035761584662452606
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 2.9999996026490594
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 2.9999996026490594
+          }
+        },
+        {
+          "worse": {
+            "median": 0.00000397350940772867,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 2.9999996026490594
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": -0.0000035761584662452606
+          },
+          "allowed": {
+            "median": 1.5,
+            "tail": 2.9999996026490594
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0.0000013245031359095567,
+        "relativeSd": 4.4150104530318555e-8
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "droppedRatio",
+      "unit": "ratio",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 0.01,
+        "tail": 0.03
+      },
+      "passes": 9,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.03
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "decodedFrames",
+      "unit": "count",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 150,
+        "tail": 151,
+        "cv": 0.004490675700003679,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 9,
+      "medians": [
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        151,
+        150
+      ],
+      "tails": [
+        151,
+        151,
+        150.1,
+        151,
+        151,
+        151,
+        151,
+        151,
+        151
+      ],
+      "worst": {
+        "median": 1,
+        "tail": 0
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": -0.9000000000000057
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 1,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0.33333333333333337,
+        "relativeSd": 0.0022222222222222227
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "droppedFrames",
+      "unit": "count",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 9,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferCount",
+      "unit": "count",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 0,
+        "tail": 1
+      },
+      "passes": 9,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0,
+            "tail": 1
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferMs",
+      "unit": "ms",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 250,
+        "tail": 1000
+      },
+      "passes": 9,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 250,
+            "tail": 1000
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferRatio",
+      "unit": "ratio",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 0.01,
+        "tail": 0.05
+      },
+      "passes": 9,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": 0.01,
+            "tail": 0.05
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-003",
+      "metric": "switches",
+      "unit": "count",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 2,
+        "tail": 2,
+        "cv": 0,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 9,
+      "medians": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "tails": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "perPass": [
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        },
+        {
+          "worse": {
+            "median": 0,
+            "tail": 0
+          },
+          "allowed": {
+            "median": null,
+            "tail": null
+          }
+        }
+      ],
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": 0
+      }
+    }
+  ]
+}

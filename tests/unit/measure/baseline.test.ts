@@ -1,5 +1,5 @@
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
@@ -14,9 +14,11 @@ import {
 } from '../../../src/lab/measure/baseline.ts';
 import type { Baseline } from '../../../src/lab/measure/baseline.ts';
 import { summarize } from '../../../src/lab/measure/stats.ts';
+import type { PerfProfile } from '../../../src/lab/measure/types.ts';
 import {
   FRAME_RATE,
   HASH,
+  HOST,
   REBUFFERING,
   STARTUP,
   baselineOf,
@@ -206,6 +208,30 @@ describe('PB-PERF baseline: the file', () => {
     expect(parseBaseline(serializeBaseline(direct), 'x.json').machine?.quiet).toBeNull();
   });
 
+  it('keeps the CPU model of the machine, and stays valid without it (the baselines recorded before the field existed)', () => {
+    const recorded = baselineOf([{ spec: STARTUP, batch: startupBatch(STARTUPS) }], {
+      host: { ...HOST, cpuModel: 'AMD EPYC 9V74 80-Core Processor' },
+    });
+    expect(recorded.host.cpuModel).toBe('AMD EPYC 9V74 80-Core Processor');
+    expect(serializeBaseline(recorded)).toContain('"cpuModel": "AMD EPYC 9V74 80-Core Processor"');
+    expect(parseBaseline(serializeBaseline(recorded), 'x.json')).toStrictEqual(recorded);
+
+    const old = parseBaseline(serializeBaseline(startupBaseline()), 'x.json');
+    expect(old.host).not.toHaveProperty('cpuModel');
+    expect(serializeBaseline(startupBaseline())).not.toContain('cpuModel');
+  });
+
+  it.each([
+    ['an empty string', ''],
+    ['a number', 12],
+    ['null (a model that was not recorded is an absent field)', null],
+  ])('refuses a CPU model that is %s', (_name, cpuModel) => {
+    const text = damaged((file) => {
+      (file.host as Record<string, unknown>).cpuModel = cpuModel;
+    });
+    expect(() => parseBaseline(text, 'x.json')).toThrow(/\$\.host\.cpuModel: expected a non-empty string/);
+  });
+
   it.each([
     [
       'an unknown way of starting',
@@ -367,4 +393,28 @@ describe('PB-PERF baseline: finding the baseline of this environment', () => {
       /not valid JSON/,
     );
   });
+});
+
+describe('PB-PERF baseline: the committed files', () => {
+  const DIR = fileURLToPath(new URL('../../../perf/baselines/', import.meta.url));
+  const committed = readdirSync(DIR, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .flatMap((env) =>
+      readdirSync(join(DIR, env.name))
+        .filter((name) => name.endsWith('.json'))
+        .map((name) => ({ envId: env.name, profile: name.replace(/\.json$/, '') as PerfProfile })),
+    );
+
+  it('finds some', () => {
+    expect(committed.length).toBeGreaterThan(0);
+  });
+
+  // The files recorded before `host.cpuModel` existed have no such field and must stay valid: they are evidence, not something to re-record.
+  it.each(committed.map((file) => [`${file.envId}/${file.profile}`, file] as const))(
+    'loads %s, with a CPU model that is absent or a name',
+    (_name, { envId, profile }) => {
+      const baseline = loadBaseline({ dir: DIR, envId, profile });
+      expect(baseline.host.cpuModel === undefined || baseline.host.cpuModel.length > 0).toBe(true);
+    },
+  );
 });

@@ -1,0 +1,14 @@
+flake gate: PASS  [demo-deliberate-flake, 2026-11-04, 1 run in this build, 25 runs judged]
+
+Suite flake rate per engine job (merge-tier tests, the last 30 builds, quarantined tests left out)
+| engine job | builds | executions | flaky | rate | budget | verdict | left out (quarantined) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| chromium | 25 | 0 | 0 | 0.0% | 2.0% | ok | 25 |
+
+Tests of this build (the last 30 executions each, judged from 20; 0 with no flaky outcome are not listed)
+| test | engine | executions | flaky | failed | rate | verdict | quarantine |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| PB-VOD-001 | chromium | 25 | 6 | 0 | 24.0% | over-trigger | until 2026-11-10 (@hanniavalera) |
+
+Notes
+- PB-VOD-001 on chromium is above the trigger (6 flaky of 25 executions (24.0%)) and quarantined until 2026-11-10 (owner @hanniavalera): it still runs, non-blocking, and is not in the suite rate.
