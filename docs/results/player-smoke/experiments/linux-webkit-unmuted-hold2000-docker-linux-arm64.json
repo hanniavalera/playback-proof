@@ -1,0 +1,791 @@
+{
+  "schemaVersion": 1,
+  "tool": "player-smoke",
+  "envId": "docker-linux-arm64",
+  "generatedAt": "2026-11-04T03:38:28.406Z",
+  "invokedVia": "docker:pw",
+  "args": [
+    "--browsers",
+    "webkit",
+    "--sessions",
+    "vod-dash",
+    "--repeat",
+    "5",
+    "--muted",
+    "0",
+    "--hold-ms",
+    "2000",
+    "--timeout",
+    "6000",
+    "--no-capabilities",
+    "--out",
+    "docs/results/player-smoke/experiments/linux-webkit-unmuted-hold2000-docker-linux-arm64.json"
+  ],
+  "dockerCpus": 4,
+  "host": {
+    "os": {
+      "platform": "linux",
+      "arch": "arm64",
+      "release": "6.5.11-linuxkit",
+      "name": "Ubuntu 24.04.5 LTS"
+    },
+    "cpus": 12,
+    "memoryGiB": 7.7,
+    "node": "v24.22.1",
+    "playwright": "1.64.1",
+    "git": {
+      "commit": "10c3fe1",
+      "dirty": false
+    }
+  },
+  "service": {
+    "origin": "http://127.0.0.1:<port>",
+    "health": {
+      "status": "ok",
+      "version": "0.1.0",
+      "ffmpeg": "9.0.2",
+      "streams": {
+        "vod-cmaf": "ready",
+        "vod-cmaf-short": "ready",
+        "vod-webm": "ready",
+        "live-cmaf": "ready",
+        "vod-cmaf-clearkey": "ready"
+      },
+      "player": "built",
+      "uptimeSec": 0.123
+    }
+  },
+  "options": {
+    "browsers": [
+      "webkit"
+    ],
+    "repeat": 5,
+    "muted": false,
+    "sessions": [
+      "vod-dash"
+    ],
+    "config": "A",
+    "mediaSeconds": 3,
+    "timeoutMs": 6000,
+    "holdMs": 2000,
+    "useCapabilities": false
+  },
+  "capabilities": "defaults (vod-cmaf, live-cmaf)",
+  "engines": {
+    "webkit": {
+      "browserVersion": "27.2",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+      "facts": {
+        "downlinkMbps": null,
+        "requestVideoFrameCallback": true,
+        "getVideoPlaybackQuality": true,
+        "mediaSource": "MediaSource",
+        "hlsCanPlayType": ""
+      }
+    }
+  },
+  "summary": [
+    {
+      "engine": "webkit",
+      "session": "vod-dash",
+      "runs": 5,
+      "passes": 0,
+      "failures": 5,
+      "skips": 0
+    }
+  ],
+  "failures": [
+    {
+      "engine": "webkit",
+      "session": "vod-dash",
+      "signature": "[playback] NotAllowedError via play",
+      "count": 5
+    }
+  ],
+  "results": [
+    {
+      "repeat": 1,
+      "engine": "webkit",
+      "session": "vod-dash",
+      "status": "fail",
+      "stream": "vod-cmaf",
+      "durationMs": 8412,
+      "startupMs": 169,
+      "mediaTime": null,
+      "rebuffers": 0,
+      "decoded": 0,
+      "dropped": 0,
+      "presented": 1,
+      "rungHeight": 720,
+      "startRungHeight": 360,
+      "switches": 1,
+      "latencyMs": null,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/b34c2a82d472/vod-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": false,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "ready",
+        "startupMs": 169,
+        "startup": {
+          "manifestMs": 14,
+          "loadedMs": 24
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 0,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 1
+        },
+        "bitrate": {
+          "switches": 1,
+          "current": {
+            "id": 2,
+            "bandwidth": 1845302,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 104,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 122,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ]
+        },
+        "live": {
+          "isLive": false,
+          "latencyMs": null,
+          "latencyMaxMs": null,
+          "presentationDelayMs": null,
+          "edgeSeeks": 0
+        },
+        "errors": [
+          {
+            "t": 125,
+            "code": 0,
+            "category": 0,
+            "severity": 1,
+            "message": "NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.",
+            "codeName": "NotAllowedError",
+            "source": "play"
+          }
+        ],
+        "playback": {
+          "currentTime": 0,
+          "duration": 60,
+          "paused": true,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 10.005333,
+          "readyState": 4
+        }
+      },
+      "errors": [
+        {
+          "t": 125,
+          "code": 0,
+          "category": 0,
+          "severity": 1,
+          "message": "NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.",
+          "codeName": "NotAllowedError",
+          "source": "play"
+        }
+      ],
+      "checks": [],
+      "consoleErrors": [],
+      "stage": "playback",
+      "error": "page.evaluate: Error: qa.waitForMediaTime(3) timed out after 6000 ms: the media clock is at 0.000 s.\n11 events so far, the last 11:\n  #0 t=84.0 media=0.000 load-requested {\"uri\":\"/s/b34c2a82d472/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=88.0 media=0.000 buffering-start\n  #2 t=98.0 media=0.000 manifest-loaded\n  #3 t=104.0 media=0.000 buffering-start\n  #4 t=104.0 media=0.000 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}\n  #5 t=108.0 media=0.000 loaded\n  #6 t=122.0 media=0.000 variant-changed {\"from\":1,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"abr\"}\n  #7 t=125.0 media=0.000 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly be…\n  #8 t=125.0 media=0.000 paused\n  #9 t=200.0 media=0.000 buffering-end",
+      "excerpt": [
+        "#0 +0 ms media 0.00 load-requested {\"uri\":\"/s/b34c2a82d472/vod-cmaf/dash/manifest.mpd\"}",
+        "#1 +4 ms media 0.00 buffering-start",
+        "#2 +14 ms media 0.00 manifest-loaded",
+        "#3 +20 ms media 0.00 buffering-start",
+        "#4 +20 ms media 0.00 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}",
+        "#5 +24 ms media 0.00 loaded",
+        "#6 +38 ms media 0.00 variant-changed {\"from\":1,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"abr\"}",
+        "#7 +41 ms media 0.00 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the use",
+        "#8 +41 ms media 0.00 paused",
+        "#9 +116 ms media 0.00 buffering-end",
+        "#10 +169 ms media 0.00 firstframe {\"source\":\"requestVideoFrameCallback\"}"
+      ]
+    },
+    {
+      "repeat": 2,
+      "engine": "webkit",
+      "session": "vod-dash",
+      "status": "fail",
+      "stream": "vod-cmaf",
+      "durationMs": 8287,
+      "startupMs": 167,
+      "mediaTime": null,
+      "rebuffers": 0,
+      "decoded": 0,
+      "dropped": 0,
+      "presented": 1,
+      "rungHeight": 720,
+      "startRungHeight": 360,
+      "switches": 1,
+      "latencyMs": null,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/b1a919875f51/vod-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": false,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "ready",
+        "startupMs": 167,
+        "startup": {
+          "manifestMs": 11,
+          "loadedMs": 20
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 0,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 1
+        },
+        "bitrate": {
+          "switches": 1,
+          "current": {
+            "id": 2,
+            "bandwidth": 1845302,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 94,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 1130,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ]
+        },
+        "live": {
+          "isLive": false,
+          "latencyMs": null,
+          "latencyMaxMs": null,
+          "presentationDelayMs": null,
+          "edgeSeeks": 0
+        },
+        "errors": [
+          {
+            "t": 109,
+            "code": 0,
+            "category": 0,
+            "severity": 1,
+            "message": "NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.",
+            "codeName": "NotAllowedError",
+            "source": "play"
+          }
+        ],
+        "playback": {
+          "currentTime": 0,
+          "duration": 60,
+          "paused": true,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 10.005333,
+          "readyState": 4
+        }
+      },
+      "errors": [
+        {
+          "t": 109,
+          "code": 0,
+          "category": 0,
+          "severity": 1,
+          "message": "NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.",
+          "codeName": "NotAllowedError",
+          "source": "play"
+        }
+      ],
+      "checks": [],
+      "consoleErrors": [],
+      "stage": "playback",
+      "error": "page.evaluate: Error: qa.waitForMediaTime(3) timed out after 6000 ms: the media clock is at 0.000 s.\n11 events so far, the last 11:\n  #0 t=77.0 media=0.000 load-requested {\"uri\":\"/s/b1a919875f51/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=80.0 media=0.000 buffering-start\n  #2 t=88.0 media=0.000 manifest-loaded\n  #3 t=93.0 media=0.000 buffering-start\n  #4 t=94.0 media=0.000 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}\n  #5 t=97.0 media=0.000 loaded\n  #6 t=109.0 media=0.000 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly be…\n  #7 t=109.0 media=0.000 paused\n  #8 t=181.0 media=0.000 buffering-end\n  #9 t=244.0 media=0.000 firstframe {\"source\":\"requestVideoFrameCallback\"}",
+      "excerpt": [
+        "#0 +0 ms media 0.00 load-requested {\"uri\":\"/s/b1a919875f51/vod-cmaf/dash/manifest.mpd\"}",
+        "#1 +3 ms media 0.00 buffering-start",
+        "#2 +11 ms media 0.00 manifest-loaded",
+        "#3 +16 ms media 0.00 buffering-start",
+        "#4 +17 ms media 0.00 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}",
+        "#5 +20 ms media 0.00 loaded",
+        "#6 +32 ms media 0.00 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the use",
+        "#7 +32 ms media 0.00 paused",
+        "#8 +104 ms media 0.00 buffering-end",
+        "#9 +167 ms media 0.00 firstframe {\"source\":\"requestVideoFrameCallback\"}",
+        "#10 +1053 ms media 0.00 variant-changed {\"from\":1,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"abr\"}"
+      ]
+    },
+    {
+      "repeat": 3,
+      "engine": "webkit",
+      "session": "vod-dash",
+      "status": "fail",
+      "stream": "vod-cmaf",
+      "durationMs": 8262,
+      "startupMs": 164,
+      "mediaTime": null,
+      "rebuffers": 0,
+      "decoded": 0,
+      "dropped": 0,
+      "presented": 1,
+      "rungHeight": 720,
+      "startRungHeight": 360,
+      "switches": 1,
+      "latencyMs": null,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/abe6fcf5a891/vod-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": false,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "ready",
+        "startupMs": 164,
+        "startup": {
+          "manifestMs": 12,
+          "loadedMs": 21
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 0,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 1
+        },
+        "bitrate": {
+          "switches": 1,
+          "current": {
+            "id": 2,
+            "bandwidth": 1845302,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 88,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 110,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ]
+        },
+        "live": {
+          "isLive": false,
+          "latencyMs": null,
+          "latencyMaxMs": null,
+          "presentationDelayMs": null,
+          "edgeSeeks": 0
+        },
+        "errors": [
+          {
+            "t": 113,
+            "code": 0,
+            "category": 0,
+            "severity": 1,
+            "message": "NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.",
+            "codeName": "NotAllowedError",
+            "source": "play"
+          }
+        ],
+        "playback": {
+          "currentTime": 0,
+          "duration": 60,
+          "paused": true,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 10.005333,
+          "readyState": 4
+        }
+      },
+      "errors": [
+        {
+          "t": 113,
+          "code": 0,
+          "category": 0,
+          "severity": 1,
+          "message": "NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.",
+          "codeName": "NotAllowedError",
+          "source": "play"
+        }
+      ],
+      "checks": [],
+      "consoleErrors": [],
+      "stage": "playback",
+      "error": "page.evaluate: Error: qa.waitForMediaTime(3) timed out after 6000 ms: the media clock is at 0.000 s.\n11 events so far, the last 11:\n  #0 t=70.0 media=0.000 load-requested {\"uri\":\"/s/abe6fcf5a891/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=73.0 media=0.000 buffering-start\n  #2 t=82.0 media=0.000 manifest-loaded\n  #3 t=87.0 media=0.000 buffering-start\n  #4 t=88.0 media=0.000 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}\n  #5 t=91.0 media=0.000 loaded\n  #6 t=110.0 media=0.000 variant-changed {\"from\":1,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"abr\"}\n  #7 t=113.0 media=0.000 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly be…\n  #8 t=114.0 media=0.000 paused\n  #9 t=184.0 media=0.000 buffering-end",
+      "excerpt": [
+        "#0 +0 ms media 0.00 load-requested {\"uri\":\"/s/abe6fcf5a891/vod-cmaf/dash/manifest.mpd\"}",
+        "#1 +3 ms media 0.00 buffering-start",
+        "#2 +12 ms media 0.00 manifest-loaded",
+        "#3 +17 ms media 0.00 buffering-start",
+        "#4 +18 ms media 0.00 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}",
+        "#5 +21 ms media 0.00 loaded",
+        "#6 +40 ms media 0.00 variant-changed {\"from\":1,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"abr\"}",
+        "#7 +43 ms media 0.00 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the use",
+        "#8 +44 ms media 0.00 paused",
+        "#9 +114 ms media 0.00 buffering-end",
+        "#10 +164 ms media 0.00 firstframe {\"source\":\"requestVideoFrameCallback\"}"
+      ]
+    },
+    {
+      "repeat": 4,
+      "engine": "webkit",
+      "session": "vod-dash",
+      "status": "fail",
+      "stream": "vod-cmaf",
+      "durationMs": 8247,
+      "startupMs": 134,
+      "mediaTime": null,
+      "rebuffers": 0,
+      "decoded": 0,
+      "dropped": 0,
+      "presented": 1,
+      "rungHeight": 360,
+      "startRungHeight": 360,
+      "switches": 0,
+      "latencyMs": null,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/d3b74ecd62e5/vod-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": false,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "ready",
+        "startupMs": 134,
+        "startup": {
+          "manifestMs": 10,
+          "loadedMs": 18
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 0,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 1
+        },
+        "bitrate": {
+          "switches": 0,
+          "current": {
+            "id": 1,
+            "bandwidth": 746778,
+            "width": 640,
+            "height": 360,
+            "videoCodec": "vp09.00.21.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 81,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            }
+          ]
+        },
+        "live": {
+          "isLive": false,
+          "latencyMs": null,
+          "latencyMaxMs": null,
+          "presentationDelayMs": null,
+          "edgeSeeks": 0
+        },
+        "errors": [
+          {
+            "t": 96,
+            "code": 0,
+            "category": 0,
+            "severity": 1,
+            "message": "NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.",
+            "codeName": "NotAllowedError",
+            "source": "play"
+          }
+        ],
+        "playback": {
+          "currentTime": 0,
+          "duration": 60,
+          "paused": true,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 10.005333,
+          "readyState": 4
+        }
+      },
+      "errors": [
+        {
+          "t": 96,
+          "code": 0,
+          "category": 0,
+          "severity": 1,
+          "message": "NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.",
+          "codeName": "NotAllowedError",
+          "source": "play"
+        }
+      ],
+      "checks": [],
+      "consoleErrors": [],
+      "stage": "playback",
+      "error": "page.evaluate: Error: qa.waitForMediaTime(3) timed out after 6000 ms: the media clock is at 0.000 s.\n10 events so far, the last 10:\n  #0 t=66.0 media=0.000 load-requested {\"uri\":\"/s/d3b74ecd62e5/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=69.0 media=0.000 buffering-start\n  #2 t=76.0 media=0.000 manifest-loaded\n  #3 t=81.0 media=0.000 buffering-start\n  #4 t=81.0 media=0.000 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}\n  #5 t=84.0 media=0.000 loaded\n  #6 t=96.0 media=0.000 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly be…\n  #7 t=96.0 media=0.000 paused\n  #8 t=159.0 media=0.000 buffering-end\n  #9 t=200.0 media=0.000 firstframe {\"source\":\"requestVideoFrameCallback\"}",
+      "excerpt": [
+        "#0 +0 ms media 0.00 load-requested {\"uri\":\"/s/d3b74ecd62e5/vod-cmaf/dash/manifest.mpd\"}",
+        "#1 +3 ms media 0.00 buffering-start",
+        "#2 +10 ms media 0.00 manifest-loaded",
+        "#3 +15 ms media 0.00 buffering-start",
+        "#4 +15 ms media 0.00 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}",
+        "#5 +18 ms media 0.00 loaded",
+        "#6 +30 ms media 0.00 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the use",
+        "#7 +30 ms media 0.00 paused",
+        "#8 +93 ms media 0.00 buffering-end",
+        "#9 +134 ms media 0.00 firstframe {\"source\":\"requestVideoFrameCallback\"}"
+      ]
+    },
+    {
+      "repeat": 5,
+      "engine": "webkit",
+      "session": "vod-dash",
+      "status": "fail",
+      "stream": "vod-cmaf",
+      "durationMs": 8259,
+      "startupMs": 125,
+      "mediaTime": null,
+      "rebuffers": 0,
+      "decoded": 0,
+      "dropped": 0,
+      "presented": 1,
+      "rungHeight": 360,
+      "startRungHeight": 360,
+      "switches": 0,
+      "latencyMs": null,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/2c8839da457d/vod-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": false,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "ready",
+        "startupMs": 125,
+        "startup": {
+          "manifestMs": 10,
+          "loadedMs": 18
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 0,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 1
+        },
+        "bitrate": {
+          "switches": 0,
+          "current": {
+            "id": 1,
+            "bandwidth": 746778,
+            "width": 640,
+            "height": 360,
+            "videoCodec": "vp09.00.21.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 77,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            }
+          ]
+        },
+        "live": {
+          "isLive": false,
+          "latencyMs": null,
+          "latencyMaxMs": null,
+          "presentationDelayMs": null,
+          "edgeSeeks": 0
+        },
+        "errors": [
+          {
+            "t": 92,
+            "code": 0,
+            "category": 0,
+            "severity": 1,
+            "message": "NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.",
+            "codeName": "NotAllowedError",
+            "source": "play"
+          }
+        ],
+        "playback": {
+          "currentTime": 0,
+          "duration": 60,
+          "paused": true,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 10.005333,
+          "readyState": 4
+        }
+      },
+      "errors": [
+        {
+          "t": 92,
+          "code": 0,
+          "category": 0,
+          "severity": 1,
+          "message": "NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.",
+          "codeName": "NotAllowedError",
+          "source": "play"
+        }
+      ],
+      "checks": [],
+      "consoleErrors": [],
+      "stage": "playback",
+      "error": "page.evaluate: Error: qa.waitForMediaTime(3) timed out after 6000 ms: the media clock is at 0.000 s.\n10 events so far, the last 10:\n  #0 t=62.0 media=0.000 load-requested {\"uri\":\"/s/2c8839da457d/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=65.0 media=0.000 buffering-start\n  #2 t=72.0 media=0.000 manifest-loaded\n  #3 t=76.0 media=0.000 buffering-start\n  #4 t=77.0 media=0.000 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}\n  #5 t=80.0 media=0.000 loaded\n  #6 t=92.0 media=0.000 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly be…\n  #7 t=92.0 media=0.000 paused\n  #8 t=154.0 media=0.000 buffering-end\n  #9 t=187.0 media=0.000 firstframe {\"source\":\"requestVideoFrameCallback\"}",
+      "excerpt": [
+        "#0 +0 ms media 0.00 load-requested {\"uri\":\"/s/2c8839da457d/vod-cmaf/dash/manifest.mpd\"}",
+        "#1 +3 ms media 0.00 buffering-start",
+        "#2 +10 ms media 0.00 manifest-loaded",
+        "#3 +14 ms media 0.00 buffering-start",
+        "#4 +15 ms media 0.00 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}",
+        "#5 +18 ms media 0.00 loaded",
+        "#6 +30 ms media 0.00 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the use",
+        "#7 +30 ms media 0.00 paused",
+        "#8 +92 ms media 0.00 buffering-end",
+        "#9 +125 ms media 0.00 firstframe {\"source\":\"requestVideoFrameCallback\"}"
+      ]
+    }
+  ]
+}

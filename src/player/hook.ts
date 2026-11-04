@@ -63,6 +63,12 @@ export interface TrackLike {
   audioCodec?: string | null;
 }
 
+/** The part of Shaka's presentation timeline that the live latency needs. */
+export interface PresentationTimelineLike {
+  getSegmentAvailabilityEnd(): number;
+  getDelay(): number;
+}
+
 /** The parts of shaka.Player the hook uses. */
 export interface PlayerLike {
   addEventListener(type: string, listener: (event: Event) => void): void;
@@ -78,9 +84,7 @@ export interface PlayerLike {
   seekRange(): { start: number; end: number };
   getLoadMode(): number;
   goToLive?(): void;
-  getManifest?(): {
-    presentationTimeline?: { getSegmentAvailabilityEnd(): number; getDelay(): number };
-  } | null;
+  getManifest?(): { presentationTimeline?: PresentationTimelineLike } | null;
 }
 
 export interface PlayerEnvironment {
@@ -112,6 +116,11 @@ function describeThrown(error: unknown): string {
   return error instanceof Error ? `${error.name}: ${error.message}` : String(error);
 }
 
+/** What a thrown value calls itself (`NotAllowedError` for a refused play()), unless it is the generic `Error`: that says nothing. */
+function thrownName(error: unknown): string | undefined {
+  return error instanceof Error && error.name !== '' && error.name !== 'Error' ? error.name : undefined;
+}
+
 export class PlayerHook implements QAHook {
   readonly version = 1 as const;
   readonly ready: Promise<void>;
@@ -140,6 +149,7 @@ export class PlayerHook implements QAHook {
   private hasPlayed = false;
   private lastVariantId: number | null = null;
   private lastObservedTime: number | null = null;
+  private presentationTimeline: PresentationTimelineLike | null | undefined = undefined;
   private viewerSeeks = 0;
   private frameHandle: number | null = null;
   private destroyed = false;
@@ -309,7 +319,15 @@ export class PlayerHook implements QAHook {
   // ------------------------------------------------------------------------------------------------ errors
 
   private recordError(source: ErrorSource, error: unknown, severity = 1): void {
-    this.timeline.record('error', { code: 0, category: 0, severity, message: describeThrown(error), source });
+    const codeName = thrownName(error);
+    this.timeline.record('error', {
+      code: 0,
+      category: 0,
+      severity,
+      message: describeThrown(error),
+      source,
+      ...(codeName ? { codeName } : {}),
+    });
   }
 
   /** The page's own failures: `window.onerror` and unhandled rejections are wired here by main.ts. */
@@ -350,7 +368,12 @@ export class PlayerHook implements QAHook {
   private liveEdge(): { availabilityEnd: number; delayMs: number } | null {
     const player = this.env?.player;
     if (!player || !player.isLive()) return null;
-    const timeline = player.getManifest?.()?.presentationTimeline;
+    // Looked up once per load: Shaka logs a warning every time getManifest() is called ("not covered by semantic versioning"),
+    // and this runs at every timeupdate. The timeline object is live (it computes the edge when asked), so it can be kept.
+    if (this.presentationTimeline === undefined) {
+      this.presentationTimeline = player.getManifest?.()?.presentationTimeline ?? null;
+    }
+    const timeline = this.presentationTimeline;
     if (!timeline) return null;
     const availabilityEnd = timeline.getSegmentAvailabilityEnd();
     return Number.isFinite(availabilityEnd) ? { availabilityEnd, delayMs: timeline.getDelay() * 1000 } : null;
@@ -400,6 +423,7 @@ export class PlayerHook implements QAHook {
     this.hasPlayed = false;
     this.lastVariantId = null;
     this.lastObservedTime = null;
+    this.presentationTimeline = undefined;
     this.latency.reset();
     this.presented.reset();
   }

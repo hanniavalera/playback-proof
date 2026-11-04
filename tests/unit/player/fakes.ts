@@ -223,9 +223,13 @@ export class FakePlayer extends EventTarget implements PlayerLike {
     this.video.currentTime = this.seekEnd;
   }
 
+  /** Shaka logs a warning on every call; the hook is expected to ask once per load. */
+  manifestCalls = 0;
+
   getManifest(): {
     presentationTimeline: { getSegmentAvailabilityEnd(): number; getDelay(): number };
   } | null {
+    this.manifestCalls += 1;
     return this.live
       ? {
           presentationTimeline: {

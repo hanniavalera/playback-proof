@@ -54,7 +54,7 @@ export interface QAError {
   message: string;
   /** A short, serialisable digest of Shaka's error data (URIs and status codes), for failure triage. */
   data?: unknown[];
-  /** The name of `code` in Shaka's enum, e.g. 'BAD_HTTP_STATUS'. */
+  /** The name of `code` in Shaka's enum, e.g. 'BAD_HTTP_STATUS'. For an error of the page itself (code 0) the name the thrown error has, e.g. 'NotAllowedError' for a play() that autoplay policy refused; absent for a plain `Error`. */
   codeName?: string;
   /** Where the error was caught: 'shaka' (error event), 'load' (player.load() rejected), 'play' (play() rejected), 'window.onerror', 'unhandledrejection', 'params'. */
   source?: string;

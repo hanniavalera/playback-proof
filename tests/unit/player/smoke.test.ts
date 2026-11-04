@@ -2,10 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { SMOKE_SESSIONS, SmokeUsageError, parseSmokeArgs } from '../../../src/lab/smoke/args.ts';
 import {
   failedChecks,
+  failureSignature,
   judgeBasic,
+  mediaTargetSec,
   noteOf,
   renderTable,
   summarize,
+  summarizeFailures,
   summarizeMetrics,
 } from '../../../src/lab/smoke/judge.ts';
 import type { BasicObservation, SessionResult } from '../../../src/lab/smoke/judge.ts';
@@ -18,7 +21,7 @@ describe('the command line', () => {
     expect(parseSmokeArgs([], 'linux').browsers).toEqual(['chromium', 'firefox', 'webkit']);
   });
 
-  it('has the defaults the brief names: one repeat, muted, all six sessions, configuration A, 3 media seconds', () => {
+  it('has the defaults the brief names: one repeat, muted, all seven sessions, configuration A, 3 media seconds', () => {
     expect(parseSmokeArgs([], 'linux')).toMatchObject({
       repeat: 1,
       muted: true,
@@ -26,6 +29,7 @@ describe('the command line', () => {
       config: 'A',
       mediaSeconds: 3,
       timeoutMs: 20_000,
+      holdMs: 0,
       useCapabilities: true,
       help: false,
     });
@@ -47,6 +51,8 @@ describe('the command line', () => {
         '2.5',
         '--timeout',
         '8000',
+        '--hold-ms',
+        '1500',
         '--origin',
         'http://127.0.0.1:4640',
         '--out',
@@ -64,6 +70,7 @@ describe('the command line', () => {
       config: 'B',
       mediaSeconds: 2.5,
       timeoutMs: 8000,
+      holdMs: 1500,
       out: 'docs/results/x.json',
       useCapabilities: false,
       help: false,
@@ -91,6 +98,9 @@ describe('the command line', () => {
     [['--media-seconds', 'abc'], /--media-seconds must be a number > 0/],
     [['--timeout=-1'], /--timeout must be a positive integer/],
     [['--timeout', '-1'], /ambiguous/],
+    [['--hold-ms', '-5'], /ambiguous/],
+    [['--hold-ms=-5'], /--hold-ms must be an integer >= 0/],
+    [['--hold-ms', '1.5'], /--hold-ms must be an integer >= 0/],
     [['--nonsense'], /nonsense/],
     [['positional'], /positional/i],
   ])('refuses %j', (argv, message) => {
@@ -222,6 +232,17 @@ describe('judgeBasic', () => {
     expect(failedChecks(judgeBasic({ ...live, reachedMediaTime: 27.2 }))).toEqual([]);
   });
 
+  it('asks for exactly what the tool waits for: a first frame at 0.02 s needs 3 s, not 3.02 s (found by the first real run)', () => {
+    expect(mediaTargetSec(0.02, 3)).toBe(3);
+    expect(mediaTargetSec(null, 3)).toBe(3);
+    expect(mediaTargetSec(24.9, 3)).toBe(27);
+    const justEnough = { ...healthy, startMediaTime: 0.02, reachedMediaTime: 3.0 };
+    expect(failedChecks(judgeBasic(justEnough))).toEqual([]);
+    expect(
+      failedChecks(judgeBasic({ ...justEnough, reachedMediaTime: 2.99 })).map((check) => check.name),
+    ).toEqual(['media time advanced 3 s']);
+  });
+
   it('wants a live latency and a presentation delay on a live session', () => {
     const blind = { ...healthy, kind: 'live' as const, metrics: metricsOf(healthyEvents, false) };
     expect(failedChecks(judgeBasic(blind)).map((check) => check.name)).toEqual(['live latency measured']);
@@ -239,6 +260,7 @@ function result(change: Partial<SessionResult> = {}): SessionResult {
     ...summarizeMetrics(metricsOf(healthyEvents)),
     mediaTime: 3.2,
     info: INFO,
+    metrics: null,
     errors: [],
     checks: [],
     consoleErrors: [],
@@ -255,6 +277,7 @@ describe('the table and the summary', () => {
       dropped: 0,
       presented: 95,
       rungHeight: 360,
+      startRungHeight: null,
       switches: 0,
       latencyMs: null,
     });
@@ -265,9 +288,29 @@ describe('the table and the summary', () => {
       dropped: null,
       presented: null,
       rungHeight: null,
+      startRungHeight: null,
       switches: null,
       latencyMs: null,
     });
+  });
+
+  it('reads the first rung of the load from its `start` change, and shows `first>current` when the player moved', () => {
+    const change = (t: number, from: number | null, to: number, height: number, reason: string): QAEvent => ({
+      index: 0,
+      t,
+      name: 'variant-changed',
+      mediaTime: 0,
+      detail: { from, to, height, bandwidth: to * 1000, reason },
+    });
+    const events: QAEvent[] = [
+      ...healthyEvents,
+      change(310, null, 1, 360, 'start'),
+      change(900, 1, 2, 720, 'abr'),
+    ].map((event, index) => ({ ...event, index }));
+    const summary = summarizeMetrics(metricsOf(events));
+    expect(summary).toMatchObject({ startRungHeight: 360, switches: 1 });
+    expect(renderTable([result({ ...summary, rungHeight: 720 })])).toMatch(/\s360>720p\s/);
+    expect(renderTable([result({ ...summary, rungHeight: 360 })])).toMatch(/\s360p\s/);
   });
 
   it('prints one row per run with the verdict, the numbers, and why a run failed or was skipped', () => {
@@ -295,7 +338,7 @@ describe('the table and the summary', () => {
     ]);
     const lines = table.split('\n');
     expect(lines[0]).toMatch(
-      /^run\s+engine\s+session\s+stream\s+result\s+startup\s+media\s+rebuf\s+dropped\/decoded\s+presented\s+rung\s+latency\s+note$/,
+      /^run\s+engine\s+session\s+stream\s+result\s+startup\s+media clock\s+rebuf\s+dropped\/decoded\s+presented\s+rung\s+latency\s+note$/,
     );
     expect(lines[1]).toMatch(
       /^1\s+chromium\s+vod-dash\s+vod-cmaf\s+PASS\s+300 ms\s+3\.20 s\s+0\s+0\/96\s+95\s+360p\s+-$/,
@@ -325,5 +368,70 @@ describe('the table and the summary', () => {
       { engine: 'chromium', session: 'vod-dash', runs: 3, passes: 2, failures: 1, skips: 0 },
       { engine: 'webkit', session: 'vod-dash', runs: 0, passes: 0, failures: 0, skips: 1 },
     ]);
+  });
+
+  describe('failure signatures', () => {
+    const mediaError = {
+      t: 5,
+      code: 3016,
+      codeName: 'VIDEO_ERROR',
+      category: 3,
+      severity: 2,
+      message: 'MEDIA.VIDEO_ERROR',
+      data: [4, 'Failed to push buffer'],
+      source: 'shaka',
+    };
+
+    it('names a failure by its stage and the error events the page recorded, with Shaka data such as the MediaError', () => {
+      const failed = result({
+        status: 'fail',
+        stage: 'firstframe',
+        error: 'timed out',
+        errors: [mediaError],
+      });
+      expect(failureSignature(failed)).toBe('[firstframe] VIDEO_ERROR(4, Failed to push buffer) via shaka');
+    });
+
+    it('falls back to the first line of the failure when the page recorded no error, and ignores the detail lines', () => {
+      const failed = result({
+        status: 'fail',
+        stage: 'playback',
+        error:
+          'qa.waitForMediaTime(3) timed out after 20000 ms: the media clock is at 0.000 s.\n12 events so far',
+      });
+      expect(failureSignature(failed)).toBe(
+        '[playback] qa.waitForMediaTime(3) timed out after 20000 ms: the media clock is at 0.000 s.',
+      );
+    });
+
+    it('sorts and de-duplicates several error events, so the same failure has one name whatever order it happened in', () => {
+      const a = { ...mediaError, code: 1001, codeName: 'BAD_HTTP_STATUS', data: [] };
+      const b = result({ status: 'fail', stage: 'checks', errors: [mediaError, a, mediaError] });
+      const c = result({ status: 'fail', stage: 'checks', errors: [a, mediaError] });
+      expect(failureSignature(b)).toBe(failureSignature(c));
+      expect(failureSignature(b)).toBe(
+        '[checks] BAD_HTTP_STATUS via shaka + VIDEO_ERROR(4, Failed to push buffer) via shaka',
+      );
+    });
+
+    it('groups the failed runs, most frequent first, and leaves passes and skips out', () => {
+      const same = { status: 'fail' as const, stage: 'firstframe' as const, errors: [mediaError] };
+      const groups = summarizeFailures([
+        result(),
+        result({ ...same, repeat: 2 }),
+        result({ status: 'fail', stage: 'playback', error: 'stalled', repeat: 3 }),
+        result({ ...same, repeat: 4 }),
+        result({ status: 'skip', stream: null, skipReason: 'gap', repeat: 5 }),
+      ]);
+      expect(groups).toEqual([
+        {
+          engine: 'chromium',
+          session: 'vod-dash',
+          signature: '[firstframe] VIDEO_ERROR(4, Failed to push buffer) via shaka',
+          count: 2,
+        },
+        { engine: 'chromium', session: 'vod-dash', signature: '[playback] stalled', count: 1 },
+      ]);
+    });
   });
 });

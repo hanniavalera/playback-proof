@@ -501,8 +501,24 @@ describe('actions', () => {
     video.playError = new DOMException('play() failed because the user did not interact', 'NotAllowedError');
     await expect(hook.play()).rejects.toThrow(/qa\.play\(\) was rejected: NotAllowedError.*#0/s);
     expect(hook.metrics().errors).toMatchObject([
-      { code: 0, source: 'play', message: expect.stringContaining('NotAllowedError') },
+      {
+        code: 0,
+        codeName: 'NotAllowedError',
+        source: 'play',
+        message: expect.stringContaining('NotAllowedError'),
+      },
     ]);
+  });
+
+  it('names a refused play() by its DOMException name, and leaves a plain Error without a code name', async () => {
+    const { hook, video } = await harness();
+    video.playError = new Error('boom');
+    await expect(hook.play()).rejects.toThrow(/qa\.play\(\) was rejected: Error: boom/);
+    video.playError = new DOMException('not supported', 'NotSupportedError');
+    await expect(hook.play()).rejects.toThrow(/NotSupportedError/);
+    const errors = hook.metrics().errors;
+    expect(errors[0]).not.toHaveProperty('codeName');
+    expect(errors[1]).toMatchObject({ codeName: 'NotSupportedError', source: 'play' });
   });
 
   it('pause resolves on `paused`, and returns at once when already paused', async () => {
@@ -607,6 +623,18 @@ describe('live', () => {
     player.availabilityEnd = 112; // the player catches up: playhead 108
     video.advanceTo(108);
     expect(hook.metrics().live).toMatchObject({ latencyMs: 4000, latencyMaxMs: 10_000 });
+  });
+
+  it("asks Shaka for its manifest once per load, not at every sample: getManifest() logs a warning each time (found in WebKit's console)", async () => {
+    const { hook, video, player } = await liveHarness();
+    for (let t = 100; t < 105; t += 0.25) video.advanceTo(t);
+    hook.metrics();
+    hook.metrics();
+    expect(player.manifestCalls).toBe(1);
+    await hook.load(URI); // a new load is a new presentation
+    video.advanceTo(100);
+    hook.metrics();
+    expect(player.manifestCalls).toBe(2);
   });
 
   it('is null for VOD, with no delay', async () => {
