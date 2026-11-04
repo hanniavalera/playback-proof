@@ -1,6 +1,8 @@
 import type { RequestLogEntry, SessionDetail } from '../../../src/shared/api.ts';
 import type { QAEvent, QAMetrics, QAState } from '../../../src/shared/qa.ts';
 import type { PlaywrightReport } from '../../../triage/collect.ts';
+import { emptyDiagnostics } from '../../../triage/digest.ts';
+import type { DiagnosticsDigest, Failure, FailureError } from '../../../triage/types.ts';
 import { attachDiagnostics } from '../../e2e/support/diagnostics.ts';
 import type { DiagnosticSources } from '../../e2e/support/diagnostics.ts';
 
@@ -322,4 +324,42 @@ export function report(tests: readonly TestFixture[], options: ReportOptions = {
       skipped: count('skipped'),
     },
   } as PlaywrightReport;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// A Failure, for the tests of what is done with one (signatures, rules, clusters)
+
+export interface FailureOverrides extends Partial<Omit<Failure, 'error' | 'diagnostics'>> {
+  message?: string;
+  frames?: FailureError['frames'];
+  diagnostics?: Partial<DiagnosticsDigest>;
+}
+
+export function failure(overrides: FailureOverrides = {}): Failure {
+  const { message, frames, diagnostics, ...rest } = overrides;
+  return {
+    scope: 'test',
+    id: 'PB-VOD-001',
+    title: 'PB-VOD-001 starts and reaches 3 s of media time',
+    file: 'tests/e2e/vod-start.spec.ts',
+    line: 20,
+    project: 'chromium',
+    tags: ['@merge'],
+    tier: 'merge',
+    outcome: 'failed',
+    retries: 1,
+    attempts: 2,
+    failedAttempts: 2,
+    attempt: 0,
+    durationMs: 4000,
+    quarantined: false,
+    experimental: false,
+    annotations: [],
+    envId: 'local-darwin-arm64',
+    source: 'reports/playwright.json',
+    error: { message: message ?? 'Error: something failed', frames: frames ?? [] },
+    diagnostics: { ...emptyDiagnostics(), ...diagnostics },
+    missing: [],
+    ...rest,
+  };
 }
