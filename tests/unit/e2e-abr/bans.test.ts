@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { INVALID_RUN_PREFIX } from '../../../src/shared/criteria.ts';
+import { isInvalidRun } from '../../../flake/run.ts';
 import {
   DECISION_JITTER_S,
   DROPPED_FRAME_PROTECTION,
@@ -435,6 +437,22 @@ describe('forcedClimb: what must still fail', () => {
 describe('invalidRunReason', () => {
   const run = FORCED_CLIMB_RUNS['run 20'] as ForcedClimbRun;
   const climb = climbOf(run);
+
+  it('starts with the shared prefix that the flake tracker recognises an invalid run by, with or without the boundary', () => {
+    if (!climb) throw new Error('run 20 must be a forced climb');
+    for (const boundaryMedia of [24, null]) {
+      const reason = invalidRunReason({
+        climb,
+        frames: run.frames,
+        carriedHeight: 240,
+        linkKbps: 600,
+        boundaryMedia,
+      });
+      expect(reason.startsWith(`${INVALID_RUN_PREFIX} forced climb to `)).toBe(true);
+      // The other side of the contract: what the spec writes, the tracker counts.
+      expect(isInvalidRun({ outcome: 'skipped', skipReason: reason })).toBe(true);
+    }
+  });
 
   it('starts with the numbers, inside the 90 characters that the flake report keeps of a cell', () => {
     if (!climb) throw new Error('run 20 must be a forced climb');

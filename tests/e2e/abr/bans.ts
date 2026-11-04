@@ -1,3 +1,4 @@
+import { INVALID_RUN_PREFIX } from '../../../src/shared/criteria.ts';
 import { SHAKA_SWITCH_INTERVAL_S, droppedFramesNote, upshiftBoundSeconds } from './conditions.ts';
 import type { VariantChange } from './variants.ts';
 
@@ -222,14 +223,15 @@ export interface InvalidRunFacts {
 }
 
 /**
- * The reason of an invalid run, for the `skip` and `invalid-run` annotations. The numbers come first, because the flake report cuts a
+ * The reason of an invalid run, for the `skip` and `invalid-run` annotations. It starts with `INVALID_RUN_PREFIX`, which is how the flake
+ * tracker recognises the skip and budgets it (docs/FLAKE.md, "Invalid runs"). The numbers come first, because the flake report cuts a
  * cell at 90 characters; the sentence after them says what it means. When the request log gives it, it also says how long after the
  * playhead entered the first segment of the rung the climb came: the number that tests the hypothesis of ADR-106 on every invalid run.
  */
 export function invalidRunReason(facts: InvalidRunFacts): string {
   const { climb, frames, carriedHeight, linkKbps, boundaryMedia } = facts;
   const { change, gapSeconds } = climb;
-  const head = `invalid run: forced climb to ${change.height}p ${gapSeconds.toFixed(1)} s after the step down, ${frames.dropped} of ${frames.decoded} frames dropped`;
+  const head = `${INVALID_RUN_PREFIX} forced climb to ${change.height}p ${gapSeconds.toFixed(1)} s after the step down, ${frames.dropped} of ${frames.decoded} frames dropped`;
   const entered =
     boundaryMedia === null
       ? ''
