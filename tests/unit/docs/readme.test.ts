@@ -9,6 +9,9 @@ import { readCollections } from '../../../tools/results/flake.ts';
 import { fixed as digits, seconds } from '../../../tools/results/format.ts';
 import { parseLegs, parsePerfLegs } from '../../../tools/results/suites.ts';
 import { DEFAULT_LIMITS } from '../../../flake/stats.ts';
+import { parseCliArgs } from '../../../flake/cli.ts';
+import { REPORT_USAGE } from '../../../flake/report.ts';
+import { FLAKE_LIMITS } from '../../../src/shared/criteria.ts';
 import { configFor, flattenPatch } from '../../../src/player/configs.ts';
 import { parseResultFile } from '../../../src/lab/probe/report.ts';
 import type { Loose } from '../support/results-files.ts';
@@ -727,6 +730,128 @@ describe('PB-LAB-006 README: the prose against the files it stands on', () => {
         'A demonstration, not a product test',
       );
       expect(readme).toContain('its environment is `demo-deliberate-flake`');
+    });
+  });
+
+  // The history on the branch `ci-data` cannot be read offline, so what the README says about it is pinned as text: the stamp, the
+  // command that produced the numbers, and the numbers. What can be checked here is that the numbers agree with one another, with the
+  // limits in the code and with the claims made from them, and that the command is one that the report accepts and that only reads.
+  // A new reading is a new stamp and new numbers, and a deliberate change of this test.
+  describe('the history of real builds on ci-data: the stamp, the command and the numbers, as text pins (Flake tracking, Findings, Limitations)', () => {
+    const linux = { chromium: 345, 'chromium-cpu4x': 69, firefox: 345, webkit: 345 };
+    const abr002 = { scheduled: 23, executions: 18, invalid: 5, flaky: 6, failed: 1 };
+    const percentOf = (part: number, whole: number): string => ((100 * part) / whole).toFixed(1);
+
+    it('carries the stamp, and a command that the report accepts and that only reads', () => {
+      for (const quoted of [
+        'the history of 23 real builds of `main` as of 23:26 UTC on 4 November 2026',
+        'As of 23:26 UTC on 4 November 2026 the branch held 23 builds of `main`: 22 pushes and one run of the nightly workflow, dispatched by hand on `main`',
+        'In the history of real builds on `ci-data` (as of 23:26 UTC on 4 November 2026)',
+        'were all recorded on 4 November 2026 (as of 23:26 UTC)',
+      ]) {
+        expect(readme, quoted).toContain(quoted);
+      }
+      const argv = ['--store', 'git', '--env', 'gha-macos-arm64', '--git-identity', 'Name <email>'];
+      expect(readme).toContain(
+        'npm run flake:report -- --store git --env gha-macos-arm64 --git-identity "Name <email>"',
+      );
+      expect(readme).toContain('and the same with `--env gha-linux-x64`');
+      expect(pkg.scripts['flake:report']).toBe('tsx flake/report.ts');
+      const args = parseCliArgs(argv, {});
+      expect([args.store, args.env, args.gitIdentity]).toStrictEqual([
+        'git',
+        'gha-macos-arm64',
+        'Name <email>',
+      ]);
+      expect(parseCliArgs(['--store', 'git', '--env', 'gha-linux-x64'], {}).env).toBe('gha-linux-x64');
+      expect([args.record, args.push]).toStrictEqual([false, false]);
+      expect(REPORT_USAGE).toContain('--store file|git');
+      // "a command that only reads the branch": the report loads the history and never appends to it
+      expect(read('flake/report.ts')).toContain('store.load(envId)');
+      expect(read('flake/report.ts')).not.toContain('.append(');
+    });
+
+    it('has numbers that agree with one another and with the limits in the code', () => {
+      expect(22 + 1).toBe(23);
+      expect(4 * 23).toBe(92);
+      expect(Object.values(linux).reduce((sum, n) => sum + n, 0)).toBe(1104);
+      expect(1170 - 1104, 'the release-tier outcomes of the one nightly run').toBe(66);
+      for (const n of Object.values(linux)) expect(n % 23, 'the same tests in every build of a job').toBe(0);
+      // macOS WebKit ran the same 15 merge tests per build as the Linux WebKit leg, except where an attempt was an invalid run
+      expect(linux.webkit - abr002.invalid).toBe(340);
+      expect([percentOf(6, 340), percentOf(6, 18), percentOf(5, 23), percentOf(5, 297)]).toStrictEqual([
+        '1.8',
+        '33.3',
+        '21.7',
+        '1.7',
+      ]);
+      expect(abr002.executions + abr002.invalid).toBe(abr002.scheduled);
+      // the split at the classifier: 9 builds before it, 14 with it, and the two add up to the whole history of the test
+      const before = { builds: 9, clean: 5, flaky: 3, failed: 1 };
+      const after = { builds: 14, clean: 6, invalid: 5, flaky: 3 };
+      expect(before.clean + before.flaky + before.failed).toBe(before.builds);
+      expect(after.clean + after.invalid + after.flaky).toBe(after.builds);
+      expect(before.builds + after.builds).toBe(abr002.scheduled);
+      expect(before.clean + after.clean + before.flaky + after.flaky + before.failed).toBe(abr002.executions);
+      expect([before.flaky + after.flaky, before.failed, after.invalid]).toStrictEqual([
+        abr002.flaky,
+        abr002.failed,
+        abr002.invalid,
+      ]);
+      // the limits the claims are made against, and the claims
+      expect(FLAKE_LIMITS).toMatchObject({
+        windowRuns: 30,
+        minRunsToJudge: 20,
+        quarantineTriggerRate: 0.05,
+        suiteBudgetRate: 0.02,
+        invalidRunBudgetRate: 0.4,
+        mergeQuarantineMaxAgeDays: 7,
+      });
+      expect(6 / 340).toBeLessThan(FLAKE_LIMITS.suiteBudgetRate);
+      expect(abr002.executions).toBeLessThan(FLAKE_LIMITS.minRunsToJudge);
+      expect(abr002.invalid / abr002.scheduled).toBeLessThan(FLAKE_LIMITS.invalidRunBudgetRate);
+      // judged from 20 executions: 6 flaky is over the trigger, and 1 flaky in 20 is exactly the trigger, not above it
+      expect(abr002.flaky / FLAKE_LIMITS.minRunsToJudge).toBeGreaterThan(FLAKE_LIMITS.quarantineTriggerRate);
+      expect(1 / 20 > FLAKE_LIMITS.quarantineTriggerRate).toBe(false);
+      expect(2 / 20 > FLAKE_LIMITS.quarantineTriggerRate).toBe(true);
+      // the test is a merge-tier one, which is why its quarantine is at most 7 days
+      expect(catalog.find((row) => row.id === 'PB-ABR-002')?.tier).toBe('merge');
+    });
+
+    it('says what the real history shows, with those numbers', () => {
+      for (const quoted of [
+        '**Linux: no flaky execution in 1,104.** Four jobs of 23 builds each (92 runs).',
+        '0 flaky of 345 executions in `chromium`, 0 of 69 in `chromium-cpu4x`, 0 of 345 in `firefox` and 0 of 345 in `webkit` (experimental), against a budget of 2.0 %: the verdict is `ok` in all four',
+        'Of the 1,170 test outcomes recorded on Linux (the 1,104 executions of the merge tier and the 66 outcomes of the release tier in the nightly run), the only one that is not a pass is PB-EME-001 skipped in WebKit',
+        '**macOS WebKit: 6 flaky and 1 failed execution in 340, all of one test.**',
+        'The suite flake rate is 1.8 % against the budget of 2.0 %: `ok`, and close.',
+        '18 executions in its window, 6 flaky and 1 failed both attempts (a flake rate of 33.3 %), and 5 of its 23 scheduled executions ended as invalid runs (21.7 % against the budget of 40 %: `ok`)',
+        '(run 41916177234, job `flake (nightly)`, with 20 builds in the history) passed: 297 executions, 5 flaky, 1.7 %',
+        '**The classifier labels the cause and the test still flakes: 3 of 14 builds.**',
+        '(commit `ac3c539`, [ADR-106](docs/decisions/e2e-abr.md)) the history holds 9 builds: PB-ABR-002 passed clean in 5, was flaky in 3 and failed both attempts in 1. With it, 14 builds: it passed clean in 6, ended as an invalid run in 5 and was flaky in 3.',
+        'the retry passed in two of them and was skipped in the third',
+        'none in 121 executions',
+        'A test is judged from 20 executions in its window, and an invalid run is not an execution: PB-ABR-002 has 18, so its rate of 33.3 % has the verdict `not-enough-data`',
+        'All of this is a count of one day',
+        '**PB-ABR-002 still flakes on macOS WebKit after its classifier.**',
+        '6 flaky and 1 failed in 18 executions, and 5 more scheduled executions ended as invalid runs',
+        'Of the 14 builds that have the classifier of [ADR-106](docs/decisions/e2e-abr.md), 3 still ended in a flake',
+        'the test has no verdict of its own below 20 executions (it has 18)',
+        'the required `flake` check turns red when that suite rate goes above 2.0 %, or when the test reaches 20 executions with more than 1 flaky among them (it has 6; the trigger is 5.0 %), unless the test is quarantined',
+        'fix the test, quarantine it on that leg with an owner and an expiry within 7 days (it keeps running, non-blocking), or declare a documented gap there',
+        '**The flake history of real builds is one day old, and macOS WebKit is close to its budget.**',
+        'Linux shows no flaky execution in 1,104, which one day cannot turn into a rate of zero',
+        'macOS WebKit sits at 1.8 % against its budget of 2.0 % because of one test, PB-ABR-002, which still flakes after its classifier (3 of 14 builds)',
+        'in real builds of `main` the test still flakes (3 of the 14 builds that have the classifier)',
+      ]) {
+        expect(readme, quoted).toContain(quoted);
+      }
+      expect(readme).toContain(
+        'in the dedicated collections (jobs that ran this test, on its own or next to PB-ABR-001, and not the whole merge tier), none of the 121 executions',
+      );
+      expect(readme).toContain(
+        'in the dedicated collections, 29 of 150 attempts of PB-ABR-002 on the macOS runner were skipped that way after the fix, and none of the 121',
+      );
     });
   });
 
