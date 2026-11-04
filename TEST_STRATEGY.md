@@ -326,7 +326,7 @@ Expected seconds per test are design estimates and Phase 3 replaces them with me
 
 ## 7. Performance and flake policy
 
-The mechanisms are built in Phase 5; this is the policy they implement.
+The mechanisms are built in Phase 5 (how they work and how to use them: [docs/FLAKE.md](docs/FLAKE.md)); this is the policy they implement.
 
 ### 7.1 Performance
 

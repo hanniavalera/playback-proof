@@ -309,6 +309,14 @@ test(
 - A spec never decides by browser name: a gap is a skip with a reason from the evidence (7.3).
 - A **negative observation** (a paused player does not advance the media clock; no event happens in a window) is the one place where nothing positive marks the end of the wait: use `await qa.observeFrames(n)` (the page's own frames, 7.1), never a timer and never a frame loop of your own. Wait for the positive event first (`await qa.pause()` resolves on `paused`), read the state, observe, read it again, and give the observation its positive control in the same spec (resume, observe the same number of frames, see the clock move), or it cannot fail.
 
+### 7.5 Flake tracking: what a spec owes it, and the contracts it creates
+
+Decisions: [decisions/flake.md](decisions/flake.md) (ADR-130 to ADR-139); how to use it: [FLAKE.md](FLAKE.md). A spec needs nothing of its own: the reporter (`flake/reporter.ts`, listed in `playwright.config.ts`) reads the catalog id from the start of the title, the tier from the tags, the reason of a skip from the `skip` annotation (so a documented gap must pass its reason to `testInfo.skip(true, reason)`; a skip without one is listed by the report as a bug) and the `experimental-engine` annotation of the shared fixture. Three shapes are contracts for the tools that read them:
+
+- **The run file**, `reports/flake/run.json` (`PB_FLAKE_RUN_FILE`), one `FlakeRun` (`flake/run.ts`, `schemaVersion` 1) per Playwright invocation: per test the id, engine, tier, outcome (`passed`, `flaky`, `failed`, `timedOut`, `skipped`, `interrupted`), `quarantined`, `retries` and every attempt with its status, duration and error signature. `parseRun` refuses a version it does not know and keeps the fields it does not know.
+- **The history**: `flake/history/<envId>.jsonl` or the `ci-data` branch's `history/<envId>.jsonl`, one run per line with the keys sorted, the last 200 runs of an environment.
+- **The error signature**, `errorSignature()` in `src/lab/signature.ts`: the first line of a failure with its numbers, ids, timestamps, urls and paths normalised. Failure triage (Phase 8) clusters with this function and not with a copy of it.
+
 ## 8. Environments, ports, variables
 
 - `PB_PORT` (default 4600): service port. Parallel work uses disjoint ranges: media 4620-4629, server 4630-4639, player 4640-4649, e2e agents 4650-4699, perf and A/B 4700-4729, live 4730-4749, triage 4750-4759. `PB_PORT=0` picks a free port (the line the CLI prints says which).
@@ -316,6 +324,7 @@ test(
 - `PB_ENV_ID`: explicit environment id; otherwise `detectEnvId()` (`src/shared/env.ts`): `local-darwin-arm64`, `docker-linux-arm64`, `gha-linux-x64`, `gha-macos-arm64`, `jenkins-linux-arm64`...
   Baselines are keyed by it and never compared across environments.
 - `PB_ORIGIN`: service origin for the client (default `http://127.0.0.1:${PB_PORT}`).
+- `PB_FLAKE_RUN_FILE`, `PB_RUN_ID`, `PB_FLAKE_QUARANTINE`; `PB_FLAKE_STORE`, `PB_FLAKE_HISTORY_DIR`, `PB_FLAKE_GIT_REMOTE`, `PB_FLAKE_GIT_BRANCH`, `PB_FLAKE_GIT_IDENTITY`: the flake reporter, the gate and the report (the table in [FLAKE.md](FLAKE.md)); all optional.
 - `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`: optional, triage summaries only. Everything works without them.
 
 ## 9. Commands (names are fixed; implementations arrive with their phase)

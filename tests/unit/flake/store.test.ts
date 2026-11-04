@@ -138,6 +138,29 @@ describe('PB-LAB-004 git store: the orphan branch ci-data, against a real bare r
     expect(git(world.bare, 'rev-parse', 'ci-data')).toBe(tip);
   });
 
+  it('wins the race to create the branch: both writers found none, the first pushes a root, the second is refused and builds on it', async () => {
+    const world = makeWorld();
+    const first = storeOf(world.writer('a'));
+    let raced = false;
+    const second = storeOf(world.writer('b'), {
+      beforePush: async ({ attempt }) => {
+        if (attempt === 1 && !raced) {
+          raced = true;
+          await first.append(ENV, [newRun('first')], { push: true });
+        }
+      },
+    });
+    const result = await second.append(ENV, [newRun('second')], { push: true });
+    expect(result).toMatchObject({ added: 1, pushed: true, attempts: 2 });
+    // One root, then the second writer's commit on top of it: the two roots never existed side by side.
+    expect(git(world.bare, 'rev-list', '--max-parents=0', 'ci-data').split('\n')).toHaveLength(1);
+    expect(git(world.bare, 'rev-list', '--count', 'ci-data')).toBe('2');
+    expect(parseHistory(fileAt(world.bare, 'ci-data')).map((r) => r.invocationId)).toEqual([
+      'inv-second',
+      'inv-first',
+    ]);
+  });
+
   it('wins a race it lost: the push is refused, the append is made again on the new tip, and both runs are in the history', async () => {
     const world = makeWorld();
     await storeOf(world.writer('seed')).append(ENV, [newRun('0')], { push: true });

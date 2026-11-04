@@ -1,0 +1,127 @@
+# Flake tracking
+
+A flaky test is one that fails and then passes on a retry with nobody having changed anything. It is the most expensive kind of test: it costs the time of a failing test and teaches the team to ignore red. This lab **records** every retried pass, **counts** it against the test and against the suite, **fails the merge** when the count passes the policy's limits, and **bounds** the damage with a quarantine that has an owner and an expiry. The policy (a window of 30, 20 runs before a verdict, 5 % per test, 2 % per engine job, quarantine for at most 14 days, 7 for a merge-tier test) is decided in [TEST_STRATEGY.md](../TEST_STRATEGY.md) section 7.2 and lives in [`src/shared/criteria.ts`](../src/shared/criteria.ts); this page is the mechanism, and [the decisions](decisions/flake.md) (ADR-130 to ADR-139) are the arguments for it.
+
+**The definition** is in [METRICS.md](METRICS.md): flake rate = runs in which the test failed and then passed on a retry / runs in which it executed. A test that fails every attempt is a **failure**, not a flake: it already failed the browser job, and the flake gate does not judge it.
+
+> **No flake rate of this lab has been measured yet.** The mechanism is built and tested on fixtures and on one real Playwright run of a scratch project. The numbers in the examples below come from fixture data built by the test helpers, and are labelled so. Real data comes from `tools/flake-collect.ts` (Phase 9), and until then the policy numbers are initial policy.
+
+## How the parts fit
+
+| Part | What it does | Command or file |
+| --- | --- | --- |
+| Reporter | Records every attempt of every test of a Playwright invocation: outcome, engine, tier, retries, error signature, quarantine flag. | [`flake/reporter.ts`](../flake/reporter.ts), listed in `playwright.config.ts`; writes `reports/flake/run.json` |
+| Quarantine-aware merge run | The `@merge` tests except the quarantined ones, and then the quarantined ones apart, non-blocking. | `tsx tools/gate-merge.ts --project=chromium` (what the `gate:merge` script runs once `package.json` points at it, ADR-138) |
+| Gate | Judges this build's runs against the history and the quarantine list; exit 1 with the decision each failure drives. | `npm run flake:gate` ([`flake/gate.ts`](../flake/gate.ts)) |
+| History | The runs of an environment, JSON lines, the last 200. A file locally, the orphan branch `ci-data` in CI. | `flake/history/<env>.jsonl`; `ci-data:history/<env>.jsonl` |
+| Report | Per test and per engine job: runs, flaky, failed, rate, verdict, last failure; the quarantine; the skips. | `npm run flake:report` (stdout, `$GITHUB_STEP_SUMMARY`, `reports/flake/report.md` and `.json`) |
+| Collector | Repeats an invocation N times and records each repetition: how the real data of the suite is gathered. | `tsx tools/flake-collect.ts --project chromium --runs 30 --grep @merge` |
+| Quarantine list | Who is quarantined, why, until when. | [`flake/quarantine.json`](../flake/quarantine.json) (starts empty) |
+
+The error signature that the reporter gives each failed attempt (the first line of the message with its numbers, ids, timestamps, urls and paths normalised, so that the same cause reads the same) is [`src/lab/signature.ts`](../src/lab/signature.ts): failure triage reuses it.
+
+## What the gate fails on
+
+`npm run flake:gate` reads the runs just recorded (every `run*.json` under `reports/flake`, at any depth, so that a job that downloaded the files of several engine jobs works), adds them in memory to the history of their environment, and judges what this build ran.
+
+| Exit 1 when | What to do (the gate prints it, with the numbers) |
+| --- | --- |
+| A test is above the quarantine trigger over its window and is not quarantined. | Fix it or quarantine it **today**, with an owner, a reason, the evidence and an expiry: 14 days at most, **7 for a merge-tier test**. Do not rerun the job; read the trace of the first failed attempt, not the green retry. |
+| An engine job's suite flake rate is above its budget. | Look at the environment first (flakiness spread over tests points there), then fix or quarantine the tests that contribute most: a quarantined test leaves the suite rate. |
+| A quarantine entry has expired. | Fix the test and remove the entry, or retire the test (remove its catalog row in a pull request that says why). |
+| The quarantine of a **merge-tier** test has expired. | The hole in the merge gate outlived its week: fix the test or replace it with a deterministic one of the same risk, and remove the entry. No renewal. |
+| `flake/quarantine.json` is not valid or is missing. | Fix it. An entry with a problem quarantines nothing. |
+
+**Exit 2** means the gate could not judge (no run file, a history it cannot read, run files of several environments, a catalog it cannot parse, a bad argument): an environment problem, not a flaky test. It is **not a verdict on the pull request's own failures**: those already failed the browser job.
+
+A test is judged once it has the minimum number of executions in its window, and an engine job once its window holds that many builds; before that the table shows the rate and says there is no verdict.
+
+## Quarantine a test: a worked example
+
+The gate is red. This is its output on a fixture history of 30 builds of an engine job in which PB-VOD-007 flakes twice (fixture data from the test helpers, run with `npx tsx flake/gate.ts`; not a measurement of the lab), trimmed:
+
+```text
+flake gate: FAIL (1 failure)  [cli-check-env, 2026-11-03, 1 run in this build, 30 runs judged]
+...
+| PB-VOD-007 | webkit | 30 | 2 | 0 | 6.7% | over-trigger | no |
+
+1. [over-trigger] PB-VOD-007 on webkit is above the quarantine trigger: 2 flaky of 30 executions (6.7%), the trigger is 5.0%, ...
+   Decision: Fix PB-VOD-007 on webkit today, or quarantine it today. Who: the owner of the VOD playback (VOD) area ...
+   an expiry no later than 2026-11-10 (a merge-tier test: at most 7 days). The gate stays red until one of the two has happened.
+```
+
+If the test cannot be fixed today, add an entry to [`flake/quarantine.json`](../flake/quarantine.json) in the pull request that is blocked:
+
+```json
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "id": "PB-VOD-007",
+      "project": "webkit",
+      "reason": "failed and passed on the same commit in runs 18 and 19; the first attempt times out waiting for the seeked event",
+      "owner": "@hanniavalera",
+      "since": "2026-11-03",
+      "expires": "2026-11-10",
+      "evidence": "https://github.com/hanniavalera/playback-proof/issues/7"
+    }
+  ]
+}
+```
+
+- `id` is a row of the catalog. `project` is optional: without it every engine the test runs in is quarantined. `since` is today (UTC) and may not be in the future. `expires` is within 7 days of `since` for a merge-tier test, 14 for a release-tier one, and the entry is in force through the end of that day. **A key the tool does not know is an error** (a misspelt `project` would otherwise quarantine every engine).
+- The quarantined test **still runs**, in the second, non-blocking invocation of `gate:merge`; its results are recorded as quarantined. It leaves the suite rate, which turns a gate that was red on the suite budget green, and it stays in its own window.
+- The gate notes when the test has had a full clean window (30 executions with nothing flaky or failed): that is when its owner removes the entry and the test returns to the gate. Nothing deletes a test: retiring one is removing its row from the catalog, with a reason, and its id is never reused.
+- On the expiry day plus one the gate fails. There is no renewal for a merge-tier test; the tool cannot tell a renewal from a new quarantine, so the age limit and the review of the pull request hold that line.
+
+## Where the history lives, and why a branch
+
+In CI the history is the orphan branch **`ci-data`**, which holds `history/<envId>.jsonl` and no code. `flake:gate --store git --record --push` on a build of `main` fetches the branch, adds the runs, and pushes a commit made as the CI identity it is given (`--git-identity "Name <email>"`); if another job pushed first, the push is refused, so it fetches again, applies the same append on the new tip and pushes again, and it never forces. A pull request runs `flake:gate --store git` (it reads the history and judges, and writes nothing). Locally, and for the collector, the history is `flake/history/<envId>.jsonl`, git-ignored, and a Jenkins agent can point `PB_FLAKE_HISTORY_DIR` at a volume.
+
+| Where | Why not |
+| --- | --- |
+| A workflow artifact | Immutable and per run; reading the earlier runs means listing and downloading them one by one with a token, and nothing can be appended. |
+| The Actions cache | Immutable per key and evicted when unused: a history that can disappear is not a history. |
+| A database or an object store | Infrastructure to run, credentials to keep, an outage in the gate, and a reviewer who clones the repository cannot read the data. |
+| A file committed to `main` | A commit per build in the code history, a protected `main` refuses the push, and it races with merges. |
+| **An orphan branch** | Plain text (`git show origin/ci-data:history/gha-linux-x64.jsonl`), survives the job, takes concurrent writers, needs nothing new. Its price: a commit per recorded build. |
+
+The CI workflows call the same commands ([TEST_STRATEGY.md](../TEST_STRATEGY.md) section 6.1, stage `gate:flake`). The jobs that run the browser tests upload `reports/` (the run files are in it); the flake stage downloads them into `reports/flake/<job>/` and runs the gate. A build of `main` needs permission to push (`contents: write`); pull request builds do not, and a fork's could not.
+
+## What is excluded from the rates
+
+- **Executions without a retry.** With `retries: 0` (the local default of this repository) a flaky test shows as a failure, so those executions cannot show a flake: they are in no rate, they are counted apart and the report says how many. The collector always passes `--retries 1`.
+- **Skipped tests**, and tests a stopped run never finished. A skip carries its reason (the documented gap that caused it); the report lists them, and flags a skip without one.
+- **Quarantined executions, in the suite rate** (they are reported next to it). In a test's own window they stay, so that "one full clean window" means something.
+- **Other environments.** A history is per environment (`detectEnvId()`); numbers are never compared across them.
+- **Pull requests that are not recorded.** The gate judges a pull request's run on top of the history, but, as the commands are meant to be called, only a build of `main` records (`--record --push`).
+
+## What the rate cannot tell
+
+- A rate is a count over a window, not a probability. 30 executions cannot tell a test that flakes 1 % of the time from one that never does, and a test at 5 % is caught in 45 % of windows (the arithmetic is in `criteria.ts`). The suite budget catches what the per-test trigger cannot see: flakiness spread thin.
+- It sees only what one retry hides: a lower bound. A test that fails twice by bad luck is a failure.
+- It does not say that the test is at fault. A flaky outcome of a player test may be an intermittent defect of the player, and the history mixes commits: the report gives the commit and the signature of the last failure for that reason.
+- It is initial policy applied to a history that does not exist yet. It becomes evidence when the collector has gathered some and the numbers have been revised.
+
+## Collecting the real data (Phase 9)
+
+```sh
+npm run serve                                   # once, on PB_PORT: the repetitions reuse the service
+npx tsx tools/flake-collect.ts --project chromium --runs 30 --grep @merge
+npm run flake:report
+```
+
+Each repetition is one Playwright invocation with one retry and the flake reporter on its command line; its run file (`reports/flake/collect/run-<n>.json`) is appended to `flake/history/<envId>.jsonl` before the next one starts, so a crash keeps what was gathered. Take the numbers from `flake:report` and quote the machine, the date, the commit and the command with them (METRICS.md: a number carries its environment).
+
+## Files and variables
+
+| Name | What it is |
+| --- | --- |
+| `reports/flake/run.json` | The record of one Playwright invocation (the reporter's output). `run-quarantined.json` is the second invocation of `gate:merge`. |
+| `reports/flake/gate.json`, `report.json`, `report.md` | The gate's decision, and the report, as files. |
+| `flake/history/<envId>.jsonl` | The file store. |
+| `flake/quarantine.json` | The quarantine list. |
+| `PB_FLAKE_RUN_FILE`, `PB_RUN_ID` | Where the reporter writes; the build a run belongs to (a wrapper sets them to keep invocations apart). |
+| `PB_FLAKE_QUARANTINE` | The quarantine list the reporter reads (default `flake/quarantine.json` next to the configuration). |
+| `PB_FLAKE_STORE`, `PB_FLAKE_HISTORY_DIR`, `PB_FLAKE_GIT_REMOTE`, `PB_FLAKE_GIT_BRANCH`, `PB_FLAKE_GIT_IDENTITY` | The same as the command-line options of the gate and the report (`--help` lists them). |
+| `PB_ENV_ID` | The environment id, when `detectEnvId()` is not what you want. |
