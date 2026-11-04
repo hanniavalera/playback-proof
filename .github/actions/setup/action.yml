@@ -24,6 +24,15 @@ inputs:
 runs:
   using: composite
   steps:
+    # Apt on the hosted runners has stalled for the whole 15 minutes of a job's timeout (an ffmpeg install, a browser's libraries): it is
+    # told first, before anything uses it, to give up on a connection that stalls for 30 s and retry it, and to wait for the dpkg lock.
+    # Nothing here kills a process: a wall-clock kill of a wrapper left an apt-get running as root, holding the lock (docs/decisions/ci.md).
+    - name: Make apt give up on a stalled mirror
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        printf '%s\n' 'Acquire::Retries "5";' 'Acquire::http::Timeout "30";' 'Acquire::https::Timeout "30";' 'DPkg::Lock::Timeout "300";' \
+          | sudo tee /etc/apt/apt.conf.d/80-ci-resilience > /dev/null
     # The version comes from .nvmrc, the same file a developer's version manager reads.
     - name: Set up Node
       uses: actions/setup-node@v7
@@ -33,7 +42,13 @@ runs:
     - name: Install ffmpeg
       if: inputs.ffmpeg == 'true'
       shell: bash
-      run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      run: |
+        for attempt in 1 2 3; do
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg && exit 0
+          echo "::warning::the install of ffmpeg failed (attempt $attempt of 3)"
+          sleep 10
+        done
+        exit 1
     - name: Install the dependencies
       shell: bash
       run: npm ci --no-audit --no-fund
@@ -66,16 +81,9 @@ runs:
       shell: bash
       env:
         BROWSER: ${{ inputs.browser }}
-      # Two things went wrong on the hosted runners. A package download from the mirror stalled for the whole 15 minutes of the job
-      # timeout. And the first answer to that, a watchdog that killed the install after five minutes, was worse: the apt-get it had
-      # started (as root, through sudo) was still downloading from a slow mirror, outlived the kill, and held the dpkg lock, so the next
-      # two attempts failed at once. Nothing here kills a process now. Apt is told to give up on a connection that stalls for 30 s and
-      # to retry it, and to wait for the dpkg lock; the install itself gets three attempts for a mirror that answered with an error.
+      # The system packages of a browser go through apt, which was told at the top of this action to give up on a stalled connection and
+      # to wait for the lock; the install itself gets three plain attempts, for a mirror that answered with an error.
       run: |
-        if [ "$RUNNER_OS" = "Linux" ]; then
-          printf '%s\n' 'Acquire::Retries "5";' 'Acquire::http::Timeout "30";' 'Acquire::https::Timeout "30";' 'DPkg::Lock::Timeout "300";' \
-            | sudo tee /etc/apt/apt.conf.d/80-ci-resilience > /dev/null
-        fi
         for attempt in 1 2 3; do
           if [ "$RUNNER_OS" = "Linux" ]; then
             npx playwright install --with-deps "$BROWSER" && exit 0
