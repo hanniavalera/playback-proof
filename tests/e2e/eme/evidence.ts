@@ -179,6 +179,11 @@ export async function watchEme(page: Page): Promise<EmeWatch> {
   await page.exposeBinding(BINDING, (_source, note: EmeNote) => {
     notes.push(note);
   });
-  await page.addInitScript(installEmeWatch, { binding: BINDING, headBytes: HEAD_BYTES });
+  // The function is sent as source text. A runner that compiles with esbuild's `keepNames` (tsx does, Playwright's own loader does not)
+  // wraps named arrow functions in a `__name(...)` helper that does not exist in the page: the prelude defines it as the identity.
+  const options = JSON.stringify({ binding: BINDING, headBytes: HEAD_BYTES });
+  await page.addInitScript({
+    content: `globalThis.__name ??= (target) => target;\n(${installEmeWatch.toString()})(${options});`,
+  });
   return { evidence: () => summarize(notes) };
 }
