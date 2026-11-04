@@ -1,5 +1,5 @@
 import { connect } from 'node:net';
-import type { SessionDetail, SessionInfo, SessionRequest } from '../../../src/shared/api.ts';
+import type { RequestLogEntry, SessionDetail, SessionInfo, SessionRequest } from '../../../src/shared/api.ts';
 import { startServer } from '../../../src/server/index.ts';
 import type { RunningServer } from '../../../src/server/index.ts';
 import type { MediaStore } from '../../../src/server/media/types.ts';
@@ -42,7 +42,10 @@ export async function startHarness(options: HarnessOptions = {}): Promise<Harnes
 export interface Reply {
   status: number;
   headers: Headers;
+  /** The body as UTF-8 text. */
   text: string;
+  /** The body as it came: media segments are binary. */
+  bytes: Buffer;
   json<T = unknown>(): T;
 }
 
@@ -70,8 +73,9 @@ export async function call(
     headers['content-type'] ??= 'application/json';
   }
   const res = await fetch(origin + path, { method, headers, ...(body === undefined ? {} : { body }) });
-  const text = await res.text();
-  return { status: res.status, headers: res.headers, text, json: <T>() => JSON.parse(text) as T };
+  const bytes = Buffer.from(await res.arrayBuffer());
+  const text = bytes.toString('utf8');
+  return { status: res.status, headers: res.headers, text, bytes, json: <T>() => JSON.parse(text) as T };
 }
 
 export async function createSession(
@@ -87,6 +91,32 @@ export async function detailOf(h: Pick<Harness, 'origin'>, id: string): Promise<
   const reply = await call(h.origin, 'GET', `/api/sessions/${id}`);
   if (reply.status !== 200) throw new Error(`reading a session failed: ${reply.status} ${reply.text}`);
   return reply.json<SessionDetail>();
+}
+
+export async function logOf(h: Pick<Harness, 'origin'>, id: string, since = 0): Promise<RequestLogEntry[]> {
+  const reply = await call(h.origin, 'GET', `/api/sessions/${id}/log?since=${since}`);
+  if (reply.status !== 200) throw new Error(`reading a log failed: ${reply.status} ${reply.text}`);
+  return reply.json<RequestLogEntry[]>();
+}
+
+/**
+ * Polls the request log of a session until `predicate` holds for its entries and returns them. The log is the server's own account
+ * of what is in flight, which is the one thing a client cannot observe without waiting, so a test polls it instead of sleeping.
+ */
+export async function waitForLog(
+  h: Pick<Harness, 'origin'>,
+  id: string,
+  predicate: (entries: RequestLogEntry[]) => boolean,
+  timeoutMs = 5000,
+): Promise<RequestLogEntry[]> {
+  const deadline = performance.now() + timeoutMs;
+  for (;;) {
+    const entries = await logOf(h, id);
+    if (predicate(entries)) return entries;
+    if (performance.now() > deadline)
+      throw new Error(`the request log did not reach the expected state: ${JSON.stringify(entries)}`);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
 }
 
 export interface RawExchange {

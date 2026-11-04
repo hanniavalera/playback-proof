@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import type { HealthInfo } from '../shared/api.ts';
 import { STREAM_IDS } from '../shared/streams.ts';
 import type { StreamId } from '../shared/streams.ts';
+import { parseServicePath } from '../shared/urls.ts';
 import { forgetBuckets } from './buckets.ts';
 import { systemClock } from './clock.ts';
 import type { Clock } from './clock.ts';
@@ -19,6 +20,8 @@ import {
   splitTarget,
 } from './http.ts';
 import type { MediaStore } from './media/types.ts';
+import { serveMedia } from './pipeline.ts';
+import type { RequestSummary } from './pipeline.ts';
 import { SessionLimitError, SessionStore, parseSessionRequest } from './sessions.ts';
 import type { Session } from './sessions.ts';
 import { resolveStaticFile, serveStatic } from './static.ts';
@@ -214,7 +217,7 @@ export function createApp(options: AppOptions): App {
     sendNoContent(res);
   }
 
-  async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  async function route(req: IncomingMessage, res: ServerResponse): Promise<RequestSummary | void> {
     // Before any routing, and for every path: serveStatic would answer an OPTIONS with 405.
     if (req.method === 'OPTIONS') return sendPreflight(res);
     const target = splitTarget(req.url);
@@ -224,6 +227,13 @@ export function createApp(options: AppOptions): App {
     if (pathname === '/player' || pathname.startsWith('/player/')) {
       await serveStatic(req, res, playerDir, '/player/');
       return;
+    }
+    if (pathname.startsWith('/s/')) {
+      const parsed = parseServicePath(pathname);
+      if (!parsed) return sendError(req, res, 404, 'not found');
+      const session = sessionOr404(req, res, parsed.sessionId);
+      if (!session) return;
+      return serveMedia({ media, clock, report }, session, parsed, pathname, req, res);
     }
 
     const readOnly = ['GET', 'HEAD'];
@@ -265,17 +275,24 @@ export function createApp(options: AppOptions): App {
       const started = performance.now();
       // A response whose client has gone must never become an uncaught 'error' event.
       res.on('error', ignore);
+      let summary: RequestSummary | undefined;
       try {
-        await route(req, res);
+        const result = await route(req, res);
+        if (result) summary = result;
       } catch (err) {
         report(`${req.method} ${shorten(req.url ?? '', 200)}`, err);
         if (!res.headersSent && !res.destroyed) sendError(req, res, 500, 'internal error');
         else res.destroy();
       } finally {
         if (sink) {
-          const status = res.headersSent ? res.statusCode : 0;
+          const status = summary ? summary.status : res.headersSent ? res.statusCode : 0;
           const ms = (performance.now() - started).toFixed(1);
-          sink(`${new Date().toISOString()} ${req.method} ${shorten(req.url ?? '', 200)} ${status} ${ms}ms`);
+          const extra = summary
+            ? ` ${summary.bytes}B${summary.faults.length > 0 ? ` faults=${summary.faults.join(',')}` : ''}${summary.aborted ? ' aborted' : ''}`
+            : '';
+          sink(
+            `${new Date().toISOString()} ${req.method} ${shorten(req.url ?? '', 200)} ${status} ${ms}ms${extra}`,
+          );
         }
       }
     },
