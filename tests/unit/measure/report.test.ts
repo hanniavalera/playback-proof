@@ -11,7 +11,9 @@ import {
   summarizeBatch,
   textTable,
 } from '../../../src/lab/measure/report.ts';
-import type { BaselineMachine } from '../../../src/lab/measure/baseline.ts';
+import type { BaselineMachine, PerfHost } from '../../../src/lab/measure/baseline.ts';
+import { CPU_MODEL_DIFFERS_NOTE } from '../../../src/lab/measure/machine.ts';
+import type { GateReport } from '../../../src/lab/measure/report.ts';
 import type { PerfLimits } from '../../../src/lab/measure/rules.ts';
 import type { BatchMeasurement, ScenarioSpec } from '../../../src/lab/measure/types.ts';
 import { PERF_LIMITS } from '../../../src/shared/criteria.ts';
@@ -48,6 +50,10 @@ const report = (
     setupProblems?: { scenario: string; message: string }[];
     baseline?: boolean;
     machine?: BaselineMachine;
+    /** This machine's host facts, when they are not the fixture's (which names no CPU model). */
+    host?: PerfHost;
+    /** The baseline compared with, when it is not the fixture's (which was recorded without a CPU model). */
+    against?: typeof BASELINE;
   } = {},
 ) =>
   buildGateReport({
@@ -58,8 +64,8 @@ const report = (
     baseline:
       extra.baseline === false
         ? null
-        : { file: 'perf/baselines/local-darwin-arm64/chromium.json', baseline: BASELINE },
-    host: HOST,
+        : { file: 'perf/baselines/local-darwin-arm64/chromium.json', baseline: extra.against ?? BASELINE },
+    host: extra.host ?? HOST,
     ...(extra.machine ? { machine: extra.machine } : {}),
     browser: { name: 'chromium', version: '156.0.0.0', userAgent: 'UA', cpuThrottleRate: null },
     ffmpeg: '9.0',
@@ -301,5 +307,129 @@ describe('PB-PERF report: the Markdown summary and the JSON report', () => {
       exitCode: 1,
       verdict: 'regression',
     });
+  });
+});
+
+describe('PB-PERF report: which machine the baseline came from and which one this is', () => {
+  const XEON = 'Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz';
+  const EPYC = 'AMD EPYC 9V74 80-Core Processor';
+  const on = (cpuModel: string): PerfHost => ({ ...HOST, cpuModel });
+  const recordedOn = (cpuModel: string): typeof BASELINE =>
+    baselineOf(
+      [
+        { spec: STARTUP, batch: startupBatch(QUIET) },
+        { spec: REBUFFERING, batch: rebufferBatch(constant(0)) },
+      ],
+      { host: on(cpuModel) },
+    );
+  const passing = () =>
+    gated({
+      'PB-PERF-001': { first: startupBatch(QUIET) },
+      'PB-PERF-003': { first: rebufferBatch(constant(0)) },
+    });
+  const regressing = () =>
+    gated({
+      'PB-PERF-001': { first: startupBatch(constant(300)), remeasure: startupBatch(constant(300)) },
+      'PB-PERF-003': { first: rebufferBatch(constant(0)) },
+    });
+  const LINE = `baseline machine: ${XEON}; this machine: ${EPYC}`;
+
+  it('prints one line with both models in the terminal, the Markdown and the JSON, and a note when they differ', async () => {
+    const result = await passing();
+    const built = report(result, { against: recordedOn(XEON), host: on(EPYC) });
+
+    const text = renderGateText(built, result.scenarios).split('\n\n')[0]!.split('\n');
+    expect(text).toStrictEqual([
+      'performance gate: chromium in local-darwin-arm64, baseline of 2026-11-04 (commit abc1234, 10 runs per scenario)',
+      LINE,
+      `note: ${CPU_MODEL_DIFFERS_NOTE}`,
+    ]);
+
+    const markdown = renderGateMarkdown(built).split('\n');
+    expect(markdown).toContain(LINE);
+    expect(markdown).toContain(`> Note: ${CPU_MODEL_DIFFERS_NOTE}`);
+
+    const parsed = JSON.parse(serializeReport(built)) as GateReport;
+    expect(parsed.cpuModels).toStrictEqual({
+      baseline: XEON,
+      current: EPYC,
+      differs: true,
+      line: LINE,
+      note: CPU_MODEL_DIFFERS_NOTE,
+    });
+    expect(parsed.current.host.cpuModel).toBe(EPYC);
+  });
+
+  it('prints the line without a note when the two are the same model', async () => {
+    const result = await passing();
+    const built = report(result, { against: recordedOn(EPYC), host: on(EPYC) });
+    const line = `baseline machine: ${EPYC}; this machine: ${EPYC}`;
+    const text = renderGateText(built, result.scenarios);
+    expect(text).toContain(line);
+    expect(text).not.toContain('the CPU model differs');
+    expect(renderGateMarkdown(built)).toContain(line);
+    expect(renderGateMarkdown(built)).not.toContain('the CPU model differs');
+    expect(built.cpuModels).toMatchObject({ differs: false, note: null });
+  });
+
+  it('says "not recorded" for a baseline recorded before the model was, and makes no claim of a difference', async () => {
+    const result = await passing();
+    const built = report(result, { host: on(EPYC) });
+    const line = `baseline machine: not recorded; this machine: ${EPYC}`;
+    expect(renderGateText(built, result.scenarios)).toContain(line);
+    expect(renderGateMarkdown(built)).toContain(line);
+    expect(built.cpuModels).toStrictEqual({
+      baseline: null,
+      current: EPYC,
+      differs: false,
+      line,
+      note: null,
+    });
+    expect(renderGateText(built, result.scenarios)).not.toContain('note:');
+  });
+
+  it('says "unknown" for a machine that does not name its CPU, and says there is no baseline when there is none', async () => {
+    const result = await passing();
+    const unnamed = report(result, { against: recordedOn(XEON) });
+    expect(unnamed.cpuModels).toMatchObject({ current: null, differs: false });
+    expect(renderGateText(unnamed, result.scenarios)).toContain(
+      `baseline machine: ${XEON}; this machine: unknown`,
+    );
+
+    const none = report(result, { baseline: false, host: on(EPYC) });
+    expect(renderGateText(none, result.scenarios)).toContain(
+      `baseline machine: no baseline; this machine: ${EPYC}`,
+    );
+    expect(renderGateMarkdown(none)).toContain(`baseline machine: no baseline; this machine: ${EPYC}`);
+  });
+
+  it('changes no verdict, no exit code and no number: a different CPU model is something to read, not a reason', async () => {
+    // Everything but the machine facts is identical, for a build that passes and for one that regresses.
+    const strip = (built: GateReport): unknown => ({
+      ...built,
+      cpuModels: null,
+      current: { ...built.current, host: HOST },
+    });
+    for (const [result, exitCode] of [
+      [await passing(), 0],
+      [await regressing(), 1],
+    ] as const) {
+      const alike = report(result, { against: recordedOn(EPYC), host: on(EPYC) });
+      const differing = report(result, { against: recordedOn(XEON), host: on(EPYC) });
+      expect(differing.cpuModels?.differs).toBe(true);
+      expect(alike.cpuModels?.differs).toBe(false);
+      expect(differing.exitCode).toBe(exitCode);
+      expect(alike.exitCode).toBe(exitCode);
+      expect(strip(differing)).toStrictEqual(strip(alike));
+      expect(differing.warnings).toStrictEqual(alike.warnings);
+    }
+  });
+
+  it('renders a report written before the model was recorded, without a line', async () => {
+    const result = await passing();
+    const old = report(result, { host: on(EPYC) });
+    delete old.cpuModels;
+    expect(renderGateText(old, result.scenarios)).not.toContain('baseline machine');
+    expect(renderGateMarkdown(old)).not.toContain('baseline machine');
   });
 });
