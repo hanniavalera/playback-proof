@@ -1,6 +1,7 @@
 // RESULTS_FLAKE: the flake rate of every engine job, and the tests that flaked, from the committed `flake:report --json` files
 // (docs/results/flake/**/report-*.json: one per history that was collected). The shape is flake/report.ts's FlakeReport: `suites` holds one
-// record per engine job (builds, executions, flaky, failed, rate, budget, verdict) and `tests` one per test and engine.
+// record per engine job (builds, executions, flaky, failed, rate, budget, verdict), `tests` one per test and engine, and `skips` what was
+// skipped (a documented gap or an invalid run) with the share of runs in which it was.
 import { ResultsError, data, emptyState } from './files.ts';
 import type { FileSet, Node, Rendered } from './files.ts';
 import { code, link, mdTable, percent, plural, shorten } from './format.ts';
@@ -17,6 +18,8 @@ interface Report {
   limits: string;
   suites: Node[];
   tests: Node[];
+  /** null: a report of an older shape, with no `skips` at all. */
+  skips: Node[] | null;
 }
 
 function readReport(files: FileSet, path: string): Report {
@@ -32,6 +35,7 @@ function readReport(files: FileSet, path: string): Report {
     limits: `window of ${limits.at('windowRuns').int()}, judged from ${limits.at('minRunsToJudge').int()}, test trigger ${percent(limits.at('quarantineTriggerRate').num())}, suite budget ${percent(limits.at('suiteBudgetRate').num())}`,
     suites: root.at('suites').list(),
     tests: root.at('tests').list(),
+    skips: root.opt('skips')?.list() ?? null,
   };
 }
 
@@ -112,5 +116,31 @@ export function renderFlake(files: FileSet): Rendered {
           notable,
         ),
   ];
+  if (reports.some((report) => report.skips !== null)) {
+    const skipped = reports.flatMap((report) =>
+      (report.skips ?? []).map((skip) => {
+        const times = skip.opt('times');
+        const of = skip.opt('of');
+        return [
+          code(report.envId),
+          code(skip.at('id').str()),
+          code(skip.at('project').str()),
+          times && of ? `${times.int()} of ${of.int()} runs` : '-',
+          shorten(skip.opt('reason')?.str() ?? 'NO REASON RECORDED', 110),
+          skip.at('date').str().slice(0, 10),
+        ];
+      }),
+    );
+    lines.push(
+      '',
+      skipped.length === 0
+        ? 'No test was skipped in the committed histories.'
+        : [
+            'A skipped test counts in no rate: a documented gap, or an invalid run that carries its numbers. The report lists each with the share of runs in which it was skipped.',
+            '',
+            mdTable(['Environment', 'Test', 'Engine', 'Skipped in', 'Reason (start)', 'Last seen'], skipped),
+          ].join('\n'),
+    );
+  }
   return data(lines.join('\n'));
 }

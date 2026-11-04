@@ -644,6 +644,63 @@ describe('PB-LAB-006 results tables: the flake block on an invented report', () 
     expect(outcome.markdown).toContain('No test flaked or failed in the committed histories.');
   });
 
+  it('lists what was skipped with the share of runs, an invalid run among it', () => {
+    const skips = [
+      {
+        id: 'PB-ABR-002',
+        project: 'webkit',
+        reason: 'invalid run: forced climb to 360p 5.9 s after the step down',
+        date: '2026-11-04T10:00:00.000Z',
+        times: 6,
+        of: 40,
+      },
+      {
+        id: 'PB-EME-001',
+        project: 'webkit',
+        reason: null,
+        date: '2026-11-03T10:00:00.000Z',
+        times: 40,
+        of: 40,
+      },
+    ];
+    const outcome = renderFlake(put('collect-3/report-webkit.json', report({ skips })));
+    expect(outcome.markdown).toContain(
+      '| `gha-linux-x64` | `PB-ABR-002` | `webkit` | 6 of 40 runs | invalid run: forced climb to 360p 5.9 s after the step down | 2026-11-04 |',
+    );
+    expect(outcome.markdown).toContain(
+      '| `PB-EME-001` | `webkit` | 40 of 40 runs | NO REASON RECORDED | 2026-11-03 |',
+    );
+    expectWellFormedTables(outcome.markdown);
+  });
+
+  it('says that nothing was skipped, says nothing of a report that has no skips, and reads the counts strictly', () => {
+    expect(renderFlake(put('a/report-x.json', report({ skips: [] }))).markdown).toContain(
+      'No test was skipped in the committed histories.',
+    );
+
+    const older = JSON.parse(JSON.stringify(report())) as Record<string, unknown>;
+    delete older.skips;
+    const unlisted = renderFlake(
+      new FileSet({ 'docs/results/flake/a/report-x.json': JSON.stringify(older) }),
+    );
+    expect(unlisted.markdown).not.toContain('skipped');
+
+    older.skips = [
+      { id: 'PB-ENV-001', project: 'webkit', reason: 'documented gap in x: y', date: '2026-11-04' },
+    ];
+    const noShare = renderFlake(new FileSet({ 'docs/results/flake/a/report-x.json': JSON.stringify(older) }));
+    expect(noShare.markdown).toContain(
+      '| `PB-ENV-001` | `webkit` | - | documented gap in x: y | 2026-11-04 |',
+    );
+
+    older.skips = [
+      { id: 'PB-ENV-001', project: 'webkit', reason: 'x', date: '2026-11-04', times: '6', of: 40 },
+    ];
+    expect(() =>
+      renderFlake(new FileSet({ 'docs/results/flake/a/report-x.json': JSON.stringify(older) })),
+    ).toThrow('$.skips[0].times: expected an integer but found the string "6"');
+  });
+
   it('has an empty state, and says what is wrong with a report that is not one', () => {
     expect(renderFlake(new FileSet())).toStrictEqual(emptyState('flake reports', 'docs/results/flake'));
     const bad = new FileSet({ 'docs/results/flake/x/report-a.json': '{"envId":"a"}' });
