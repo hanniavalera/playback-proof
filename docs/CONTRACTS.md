@@ -46,14 +46,24 @@ Authoritative data (durations, hashes) comes from `GET /api/streams`. Targets fo
 | `vod-cmaf-short`    | VOD  | fMP4 (CMAF)     | DASH, HLS  | same ladder                            | `a-aac`     | 12 s / 6 x 2 s    |
 | `vod-webm`          | VOD  | WebM            | DASH       | same ladder                            | `a-opus` 64 kbps | 30 s / 15 x 2 s   |
 | `live-cmaf`         | LIVE | fMP4 (CMAF)     | DASH, HLS  | same ladder                            | `a-aac`     | 24 s source looped forever |
-| `vod-cmaf-clearkey` | VOD  | fMP4 (CENC)     | DASH       | `v360` only                            | `a-aac`     | 12 s / 6 x 2 s (stretch goal) |
+| `vod-cmaf-clearkey` | VOD  | fMP4 (CENC `cenc`) | DASH    | `v360` only                            | `a-aac`     | 12 s / 6 x 2 s    |
 
-- Rung sizes: `v240` 426x240, `v360` 640x360, `v720` 1280x720. Test patterns come from ffmpeg `testsrc2` and `sine`: no copyrighted media.
-- Every rung is GOP-aligned to the 2 s segment duration (keyframe at every segment start), constant-ish bitrate so that throttling arithmetic is predictable.
+- Rung sizes: `v240` 426x240, `v360` 640x360, `v720` 1280x720. Test patterns come from ffmpeg `testsrc2` (moving shapes, a timestamp and a frame counter) and `aevalsrc` (a two-beep tone whose pitch climbs one semitone per segment, silent at the start and end): no copyrighted media.
+- Every rung is GOP-aligned to the 2 s segment duration (keyframe at every segment start), constant-ish bitrate so that throttling arithmetic is predictable. The bitrates in the table are encoder targets; manifests declare the **measured peak** of any one segment (the audio, a sparse tone, peaks far below its 64 kbps target).
 - Segment numbers are 1-based. VOD segment `k` covers `[(k-1)*d, k*d)`.
-- Generation is a pure function of the spec in `src/server/media/specs.ts`; output is content-addressed under `.cache/streams/<specHash>/`
+- Generation is a pure function of the spec in `src/server/media/specs.ts`; output is content-addressed under `.cache/streams/<specHash>/<streamId>/`
   and generation is idempotent. `StreamInfo.contentHash` identifies the content.
+- `vod-cmaf-clearkey` is encrypted with CENC AES-CTR (`cenc`, whole samples) under a **public, throw-away** key pair that protects nothing; `StreamInfo.drm` carries it (`keyId` and `key`, 32 hex digits each) so that a test can hand it to the player (`clearKeys`). Its DASH manifest has, in both AdaptationSets, `ContentProtection` for `urn:mpeg:dash:mp4protection:2011` (`value="cenc"`, `cenc:default_KID` in UUID form) and for the ClearKey system id `urn:uuid:e2719d58-a985-b3c9-781a-b030af78d30e`; the key is never in the manifest. The init segments carry `encv`/`enca` entries with `sinf` (`tenc` = the key id, 8-byte per-sample IVs) and every fragment has `senc`/`saiz`/`saio`. The plaintext of the stream is exactly what an unencrypted stream of the same spec holds (ADR-049). It is DASH only: the HLS builders refuse an encrypted stream.
 - The player page picks the stream flavour a browser can really decode: see [CODEC_MATRIX.md](CODEC_MATRIX.md) and the capability fixture in `tests/e2e/support`.
+
+### Media files and the stream index (what the media pipeline guarantees; ADR-040..049 in [decisions/media.md](decisions/media.md))
+
+- **Files.** `<rep>/init.mp4|webm` and `<rep>/<n>.m4s|webm` (n 1-based), plus `stream.json` (a `StreamIndex` from `src/server/media/types.ts`, the sha256 of every file, the spec hash, the ffmpeg version, the generation time). A stream directory is created by renaming a complete temporary directory, so it is never half written.
+- **fMP4 segments** are `styp` + one `moof` (`mfhd`, one `traf` with `tfhd`, `tfdt` version 1, `trun` with per-sample duration/size/flags; for the encrypted stream also `senc`, `saio`, `saiz`) + one `mdat`. No `sidx`. The init segment has no edit list: the media timeline is the presentation timeline. **WebM segments** are exactly one Cluster; the init segment is EBML header + Segment + Info + Tracks. A media segment is decodable only together with its init segment.
+- **Real timing.** `SourceSegment.start` is the first sample's decode time and `duration` the sum of the sample durations, both parsed from the file. Video segments are exactly 2 s. AAC segments hold 94, 94, 94, 93 frames (48 kHz, 1024 samples per frame: 93.75 frames per 2 s), cut by cumulative rounding: a segment starts at the first frame whose start time is >= `(k-1) * 2 s` (ADR-042). Opus in WebM is exactly 100 frames per segment.
+- **Lengths.** `StreamInfo.durationSec` is the video duration. Audio holds whole frames only and never runs past the video: a VOD audio track ends up to one frame (21.3 ms) before it. For `live-cmaf` the loop is a whole number of AAC frames (1125 frames = 24 s), so `loopTicks / timescale` is the same for audio and video **to the tick**; `checkStreamIndex` (`src/server/media/invariants.ts`) enforces all of this, at generation, at load and in `npm run verify:streams`.
+- **Codecs and bandwidth come from the files.** `RepInfo.codecs` is parsed from `vpcC` (and checked against the key frame header and the level the picture size needs), `esds` or the WebM track; `bandwidth` is the peak of `bytes x 8 / real duration` over the segments, rounded up. `RepInfo.channels` and `sampleRate` (audio, optional) were added for `AudioChannelConfiguration` and HLS `CHANNELS`.
+- **Commands.** `npm run generate:streams -- [--streams a,b] [--force] [--verify] [--threads n]` is idempotent (a complete cache is a no-op, a damaged one is regenerated); `npm run verify:streams` checks the generated streams against ffprobe/ffmpeg (a real demuxer and decoder), not against this repository's own parser.
 
 ### URL layout (see `src/shared/urls.ts`, the only place that builds these)
 
@@ -85,8 +95,10 @@ Built by the media pipeline (`MediaStore.dashVod | dashLive | hlsMaster | hlsMed
 - DASH VOD: static MPD, `minBufferTime`, `mediaPresentationDuration`.
 - DASH live: dynamic MPD, `availabilityStartTime`, `timeShiftBufferDepth`, `minimumUpdatePeriod="PT2S"`, `suggestedPresentationDelay`,
   `publishTime`, `<UTCTiming schemeIdUri="urn:mpeg:dash:utc:http-iso:2014" value="/api/time">` (the client clock is not trusted).
+- DASH `profiles` is `urn:mpeg:dash:profile:isoff-live:2011` for the fMP4 streams; the WebM stream says `urn:mpeg:dash:profile:full:2011`, because the ISO BMFF live profile promises ISO BMFF segments.
 - HLS: fMP4 (`#EXT-X-MAP`), `#EXT-X-VERSION:7`, `#EXT-X-INDEPENDENT-SEGMENTS`, audio as a media group. Live: sliding window with
-  `#EXT-X-MEDIA-SEQUENCE` (= the first listed segment number), `#EXT-X-TARGETDURATION`, `#EXT-X-PROGRAM-DATE-TIME`, no `#EXT-X-ENDLIST`.
+  `#EXT-X-MEDIA-SEQUENCE` (= the first listed segment number), `#EXT-X-TARGETDURATION`, `#EXT-X-PROGRAM-DATE-TIME` (on every segment), no `#EXT-X-ENDLIST`.
+  `#EXT-X-TARGETDURATION` is `ceil(max EXTINF)` over the whole source loop, not the window (it must not change while a playlist slides): 2 for video, 3 for AAC (94 frames = 2.0053 s).
 - HLS media playlists are requested as `/hls/<rep>.m3u8`. In the request log and for fault matching they are `kind: 'manifest'` with `rep` set.
 
 ### Live simulation
@@ -203,7 +215,7 @@ Exact semantics (the service implements them as written and its tests pin them):
 
 ## 9. Commands (names are fixed; implementations arrive with their phase)
 
-`npm run typecheck | lint | format:check | docs:check | build:player | generate:streams | serve | codec-matrix | docker:pw | test:unit | test:e2e | test:merge | test:release | perf | perf:gate | perf:baseline | flake:report | flake:gate | ab | readiness | soak | triage`
+`npm run typecheck | lint | format:check | docs:check | build:player | generate:streams | verify:streams | serve | bench:server | player:smoke | codec-matrix | docker:pw | test:unit | test:e2e | test:merge | test:release | perf | perf:gate | perf:baseline | flake:report | flake:gate | ab | readiness | soak | triage`
 (`docker:pw -- <command>` runs a command inside the Playwright Linux image that matches the pinned `@playwright/test`, with the repository mounted: this is how Firefox runs on a macOS host and how the Linux CI environment is reproduced locally. `codec-matrix` probes the installed browsers and writes `docs/results/codec-matrix/<envId>.json`; `codec-matrix -- --render` regenerates [CODEC_MATRIX.md](CODEC_MATRIX.md) from every committed file and `-- --check` fails when it is stale. Options of both: `npm run codec-matrix -- --help`, `bash tools/docker/pw.sh --help`.)
 and the CI gate stages `gate:static | gate:unit | gate:merge | gate:perf | gate:flake | gate:triage`, which both GitHub Actions and the Jenkinsfile call.
 
