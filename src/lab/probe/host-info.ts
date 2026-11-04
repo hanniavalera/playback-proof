@@ -67,15 +67,9 @@ export function readGit(root: string, env: NodeJS.ProcessEnv = process.env): Git
   }
   const git = (args: string[]): string | null => run('git', ['-c', 'safe.directory=*', ...args], root);
   const commit = git(['rev-parse', '--short', 'HEAD']);
-  // The results and the generated document are outputs of a run, not code under test: they must not make the tree "dirty".
-  const status = git([
-    'status',
-    '--porcelain',
-    '--',
-    '.',
-    ':(exclude)docs/results',
-    ':(exclude)docs/CODEC_MATRIX.md',
-  ]);
+  // Documentation and the generated results are not code under test: editing a document while a run is going, or writing the
+  // result itself, must not make the run "dirty". Keep in step with tools/docker/pw.sh.
+  const status = git(['status', '--porcelain', '--', '.', ':(exclude)docs', ':(exclude)*.md']);
   return { commit, dirty: status === null ? null : status.length > 0 };
 }
 

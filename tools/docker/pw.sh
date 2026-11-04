@@ -113,10 +113,10 @@ for var in PB_ENV_ID PB_PORT PB_ORIGIN PB_WORKERS CI ${extra_env[@]+"${extra_env
   args+=(-e "$var") # without a value docker copies it from the host, and only when it is set there
 done
 # A worktree's git directory lives outside the mounted checkout, so the container cannot ask git itself: the host answers.
-# Same exclusions as src/lab/probe/host-info.ts: generated results do not make the tree "dirty".
+# Same exclusions as src/lab/probe/host-info.ts: documentation and generated results are not code under test.
 if git_commit="$(git -C "$root" rev-parse --short HEAD 2>/dev/null)" && [ -n "$git_commit" ]; then
   git_dirty=0
-  if [ -n "$(git -C "$root" status --porcelain -- . ':(exclude)docs/results' ':(exclude)docs/CODEC_MATRIX.md' 2>/dev/null)" ]; then
+  if [ -n "$(git -C "$root" status --porcelain -- . ':(exclude)docs' ':(exclude)*.md' 2>/dev/null)" ]; then
     git_dirty=1
   fi
   args+=(-e "PB_GIT_COMMIT=$git_commit" -e "PB_GIT_DIRTY=$git_dirty")

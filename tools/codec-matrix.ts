@@ -19,7 +19,7 @@ import { RESULT_SCHEMA_VERSION, readResultFiles, serializeResultFile } from '../
 import type { ResultFile } from '../src/lab/probe/report.ts';
 import { renderMatrix, renderSummary } from '../src/lab/probe/render.ts';
 import type { EngineResult } from '../src/lab/probe/results.ts';
-import { runEngine } from '../src/lab/probe/run.ts';
+import { DEFAULT_MIN_FRAMES, DEFAULT_THRESHOLD_SEC, runEngine } from '../src/lab/probe/run.ts';
 import type { ProbePlan } from '../src/lab/probe/run.ts';
 import { detectEnvId } from '../src/shared/env.ts';
 
@@ -35,6 +35,8 @@ async function probe(options: CliOptions, argv: readonly string[]): Promise<void
   const media = await ensureProbeMedia({ log: (message) => console.error(message) });
   const envId = detectEnvId();
   const out = resolve(options.out ?? join(RESULTS_DIR, `${envId}.json`));
+  // The checkout the run started on: read before the browsers run, which can take many minutes.
+  const host = collectHostInfo(ROOT);
 
   const sensitivityCase = findCase(SENSITIVITY_CASE);
   const plan: ProbePlan = {
@@ -53,6 +55,8 @@ async function probe(options: CliOptions, argv: readonly string[]): Promise<void
       attempts: options.attempts,
       freshProcess: options.freshProcess,
       timeoutMs: options.timeoutMs,
+      thresholdSec: DEFAULT_THRESHOLD_SEC,
+      minFrames: DEFAULT_MIN_FRAMES,
       onProgress: ({ id, attempt, attempts, result }) => {
         const detail = result.ok ? '' : ` [${result.stage}] ${result.error}`;
         console.error(`   ${id} ${attempt}/${attempts}: ${result.ok ? 'ok' : 'FAIL'}${detail}`);
@@ -69,14 +73,14 @@ async function probe(options: CliOptions, argv: readonly string[]): Promise<void
     invokedVia: viaDocker ? 'docker:pw' : 'direct',
     args: [...argv],
     ...(viaDocker && dockerCpus > 0 ? { dockerCpus } : {}),
-    host: collectHostInfo(ROOT),
+    host,
     media: { ffmpeg: media.ffmpegVersion, specHash: media.specHash, files: media.files },
     options: {
       attempts: options.attempts,
       freshProcess: options.freshProcess,
       timeoutMs: options.timeoutMs,
-      thresholdSec: 1,
-      minFrames: 5,
+      thresholdSec: DEFAULT_THRESHOLD_SEC,
+      minFrames: DEFAULT_MIN_FRAMES,
     },
     engines,
   };
