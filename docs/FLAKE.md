@@ -121,7 +121,7 @@ Each repetition is one Playwright invocation with one retry and the flake report
 | `reports/flake/gate.json`, `report.json`, `report.md` | The gate's decision, and the report, as files. |
 | `flake/history/<envId>.jsonl` | The file store. |
 | `flake/quarantine.json` | The quarantine list. |
-| `PB_FLAKE_RUN_FILE`, `PB_RUN_ID` | Where the reporter writes; the build a run belongs to (a wrapper sets them to keep invocations apart). |
+| `PB_FLAKE_RUN_FILE`, `PB_RUN_ID` | Where the reporter writes; the build a run belongs to (a wrapper sets them to keep invocations apart). Parallel stages that share one workspace (a Jenkins `parallel` block on one agent) must give each engine its own `PB_FLAKE_RUN_FILE`, for example `reports/flake/<project>/run.json`, or they overwrite one another. |
 | `PB_FLAKE_QUARANTINE` | The quarantine list the reporter reads (default `flake/quarantine.json` next to the configuration). |
 | `PB_FLAKE_STORE`, `PB_FLAKE_HISTORY_DIR`, `PB_FLAKE_GIT_REMOTE`, `PB_FLAKE_GIT_BRANCH`, `PB_FLAKE_GIT_IDENTITY` | The same as the command-line options of the gate and the report (`--help` lists them). |
 | `PB_ENV_ID` | The environment id, when `detectEnvId()` is not what you want. |
