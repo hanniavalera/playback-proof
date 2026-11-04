@@ -2,9 +2,9 @@
 // say that anything passed (a pass is the verdict of a CI run, linked from the README). The tests are the real `test(...)` calls of
 // the Playwright specs (read with the TypeScript compiler API, as `npm run specs:check` does), joined with the catalog of
 // TEST_STRATEGY.md, and the legs are parsed out of the workflow files, not written here.
-import { CATALOG_AREAS, CatalogError, expandEngines, parseCatalog } from '../catalog.ts';
-import type { CatalogRow, Engine } from '../catalog.ts';
-import { SPEC_DIRECTORIES, analyseSpecs } from '../check-specs.ts';
+import { CATALOG_AREAS, CatalogError, parseCatalog } from '../catalog.ts';
+import type { CatalogRow } from '../catalog.ts';
+import { CPU_TAG, SPEC_DIRECTORIES, analyseSpecs } from '../check-specs.ts';
 import type { SpecFile } from '../check-specs.ts';
 import { ResultsError, data } from './files.ts';
 import type { FileSet, Rendered } from './files.ts';
@@ -144,12 +144,13 @@ export function renderSuites(files: FileSet): Rendered {
     ],
   );
 
+  // What the leg's `--grep` selects, as Playwright lists it: the tier tags of the spec, and for the throttled project only the `@cpu`
+  // ones (its `grep` in playwright.config.ts). A test an engine cannot run is selected too and skipped with its reason at run time.
   const testsFor = (project: string, tiers: readonly string[]): number =>
-    rows.filter(
-      (row) =>
-        withSpec.has(row.id) &&
-        tiers.includes(row.tier) &&
-        expandEngines(row.engines).includes(project as Engine),
+    report.tests.filter(
+      (test) =>
+        tiers.some((tier) => test.tags.includes(tier)) &&
+        (project !== 'chromium-cpu4x' || test.tags.includes(CPU_TAG)),
     ).length;
   const merge = parseLegs(files.text(MERGE_WORKFLOW), MERGE_WORKFLOW, MERGE_JOB);
   const nightly = parseLegs(files.text(NIGHTLY_WORKFLOW), NIGHTLY_WORKFLOW, NIGHTLY_JOB);
@@ -170,8 +171,8 @@ export function renderSuites(files: FileSet): Rendered {
         `${code(leg.leg)}${leg.experimental ? ' (experimental)' : ''}`,
         code(leg.project),
         code(leg.runner),
-        inMerge ? String(testsFor(inMerge.project, ['merge'])) : 'not run',
-        inNightly ? String(testsFor(inNightly.project, ['merge', 'release'])) : 'not run',
+        inMerge ? String(testsFor(inMerge.project, ['@merge'])) : 'not run',
+        inNightly ? String(testsFor(inNightly.project, ['@merge', '@release'])) : 'not run',
       ];
     }),
   );
@@ -187,7 +188,7 @@ export function renderSuites(files: FileSet): Rendered {
     '',
     legTable,
     '',
-    `Counts per leg are the tests the catalog assigns to the leg's engine, by tier; a leg's runner and project are read from ${pathLink(MERGE_WORKFLOW)} and ${pathLink(NIGHTLY_WORKFLOW)}.`,
+    `A leg runs the tests its \`--grep\` selects: the \`@merge\` tag in the merge gate, \`@merge\` or \`@release\` in the nightly, and in the throttled project only the \`@cpu\` ones; a test an engine cannot run is skipped with its reason, not left out. A leg's runner and project are read from ${pathLink(MERGE_WORKFLOW)} and ${pathLink(NIGHTLY_WORKFLOW)}.`,
   ];
   return data(lines.join('\n'));
 }

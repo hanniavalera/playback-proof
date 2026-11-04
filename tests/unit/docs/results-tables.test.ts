@@ -368,7 +368,7 @@ describe('PB-LAB-006 results tables: the suites block on invented files', () => 
     ).toThrow('ci.yml: leg 3 of job "merge-gate" has no "project"');
   });
 
-  it('counts the tests per area and tier, and per leg from the catalog and the workflow, not from constants', () => {
+  it('counts the tests per area and tier from the catalog, and per leg from the workflow and the tags of the specs', () => {
     const outcome = renderSuites(files);
     expect(outcome.kind).toBe('data');
     const lines = outcome.markdown.split('\n');
@@ -380,12 +380,13 @@ describe('PB-LAB-006 results tables: the suites block on invented files', () => 
     expect(row('| `LAB`').slice(2, 7)).toStrictEqual(['`unit`', '1', '1', '0', '-']);
     expect(row('| `chromium` |').slice(2, 6)).toStrictEqual(['`chromium`', '`ubuntu-24.04`', '2', '4']);
     expect(row('| `cpu`').slice(4, 6)).toStrictEqual(['1', 'not run']);
+    // PB-VOD-003 is a release test of Chromium and Firefox in the catalog, yet WebKit's grep selects it: it is listed and skipped there.
     expect(row('| `webkit-linux`').slice(1, 6)).toStrictEqual([
       '`webkit-linux` (experimental)',
       '`webkit`',
       '`ubuntu-24.04`',
       '2',
-      '3',
+      '4',
     ]);
   });
 
