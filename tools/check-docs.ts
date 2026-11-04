@@ -4,12 +4,14 @@
 //  2. TEST_STRATEGY.md is internally true (checkStrategyDocument): the test catalog parses strictly, every tier follows the
 //     tiering rule, the risk ranking agrees with the catalog, the merge tier fits its time budget, every generated block
 //     (the policy tables rendered from src/shared) is up to date, and every test id cited anywhere in the documentation exists;
-//  3. more checks are added by the phases that own the documents (the test catalog against the specs, the README result
-//     tables against the committed result artifacts). Each check is a function below returning a list of problems.
+//  3. README.md holds the result tables of the lab as generated blocks (tools/results-tables.ts) and `docs:check` fails when one differs
+//     from what the committed result files render to, so that a number in the README cannot drift from the data it quotes;
+//  4. more checks are added by the phases that own the documents (the test catalog against the specs). Each check is a function below
+//     returning a list of problems.
 //
 //   npm run docs:check                 check everything
-//   npm run docs:check -- --write      rewrite the generated blocks of TEST_STRATEGY.md first (then check)
-//   npm run docs:check -- --print      print the generated blocks without writing anything
+//   npm run docs:check -- --write      rewrite the generated blocks of TEST_STRATEGY.md and README.md first (then check)
+//   npm run docs:check -- --print      print the generated blocks without writing anything (`--print NAME...` only the named ones)
 import { readdirSync, readFileSync, statSync, existsSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import {
@@ -33,11 +35,18 @@ import {
   renderPerfPolicy,
   renderRiskTiers,
 } from './policy-tables.ts';
+import {
+  checkResultBlocks,
+  loadResultFiles,
+  printResultBlocks,
+  writeResultBlocks,
+} from './results-tables.ts';
 
 export { blockBody, blockMarkers, checkBlockFresh, locateBlock, replaceBlock } from './doc-blocks.ts';
 
 const ROOT = resolve(new URL('..', import.meta.url).pathname);
 export const STRATEGY_FILE = 'TEST_STRATEGY.md';
+export const README_FILE = 'README.md';
 const SKIP_DIRS = new Set([
   'node_modules',
   '.git',
@@ -158,6 +167,36 @@ export function checkStrategyDocument(markdown: string): { problems: string[]; r
   return { problems, rows };
 }
 
+/**
+ * The result tables of README.md against the committed result files: one problem per block that is missing, malformed, out of date or
+ * cannot be rendered. With `write`, the blocks that can be rendered are rewritten first. `notes` are said and never fail the check.
+ */
+export function checkReadmeFile(
+  root: string,
+  write: boolean,
+): { problems: string[]; notes: string[]; rewrote: boolean } {
+  const path = join(root, README_FILE);
+  if (!existsSync(path))
+    return { problems: [`${README_FILE}: the file is missing`], notes: [], rewrote: false };
+  const results = loadResultFiles(root);
+  let readme = readFileSync(path, 'utf8');
+  let rewrote = false;
+  if (write) {
+    const written = writeResultBlocks(readme, results);
+    if (written.text !== readme) {
+      writeFileSync(path, written.text);
+      readme = written.text;
+      rewrote = true;
+    }
+  }
+  const checked = checkResultBlocks(readme, results);
+  return {
+    problems: checked.problems.map((p) => `${README_FILE}: ${p}`),
+    notes: checked.notes.map((n) => `${README_FILE}: ${n}`),
+    rewrote,
+  };
+}
+
 function main(): void {
   const args = new Set(process.argv.slice(2));
   const files = walk(ROOT);
@@ -165,6 +204,8 @@ function main(): void {
   const notes: string[] = [];
   let rows: CatalogRow[] = [];
 
+  // `--print` shows every generated block; `--print NAME...` only the named ones.
+  const wanted = process.argv.slice(2).filter((a) => !a.startsWith('--'));
   const strategyPath = join(ROOT, STRATEGY_FILE);
   if (!existsSync(strategyPath)) {
     problems.push(`${STRATEGY_FILE}: the file is missing`);
@@ -173,11 +214,10 @@ function main(): void {
     const parsed = parseCatalogOrProblems(markdown);
     const blocks = strategyBlocks(parsed.rows.length > 0 ? parsed.rows : undefined);
     if (args.has('--print')) {
-      // `--print` shows every generated block; `--print NAME...` only the named ones.
-      const wanted = process.argv.slice(2).filter((a) => !a.startsWith('--'));
       for (const block of blocks.filter((b) => wanted.length === 0 || wanted.includes(b.name))) {
         console.log(`${block.render()}\n`);
       }
+      for (const text of printResultBlocks(loadResultFiles(ROOT), wanted)) console.log(`${text}\n`);
       return;
     }
     if (args.has('--write') && writeGeneratedBlocksToFile(strategyPath, blocks)) {
@@ -188,6 +228,10 @@ function main(): void {
     rows = checked.rows;
     problems.push(...checked.problems.map((p) => `${STRATEGY_FILE}: ${p}`));
   }
+
+  const readme = checkReadmeFile(ROOT, args.has('--write'));
+  problems.push(...readme.problems);
+  if (readme.rewrote) notes.push(`rewrote the generated blocks of ${README_FILE}`);
 
   // A test id mentioned in any other document must exist too: ids are a contract.
   if (rows.length > 0) {
@@ -203,6 +247,7 @@ function main(): void {
     console.error(`\ndocs:check FAILED (${problems.length} problem${problems.length === 1 ? '' : 's'})`);
     process.exit(1);
   }
+  for (const note of readme.notes) console.log(`docs:check note: ${note}`);
   const detail = rows.length > 0 ? `, ${rows.length} catalog rows, generated blocks up to date` : '';
   console.log(
     `docs:check ok (${files.length} markdown files${detail})${notes.length > 0 ? `; ${notes.join('; ')}` : ''}`,
