@@ -301,7 +301,10 @@ export interface TriageReport {
   clusters: Cluster[];
   skipped: SkippedTest[];
   problems: string[];
+  /** The model drafts, one per asked cluster, in the order of the clusters. Empty unless `--summarize` was asked and a key was set. */
   summaries: SummaryRecord[];
-  /** One line saying why there are no summaries, or null when there are. */
+  /** One line saying why there are no summaries, or why some are missing; null when nothing needs saying. */
   summaryNote: string | null;
+  /** Where the drafts came from, when they were asked for: the model, the endpoint (not the live service when it is not api.anthropic.com), the counts. */
+  summaryRun: { model: string; endpoint: string; requests: number; cacheHits: number } | null;
 }

@@ -551,6 +551,8 @@ export function readReport(
 export interface CollectOptions {
   /** Extra directories to look in for attachments that were kept as files. */
   roots?: readonly string[];
+  /** What the directory is called in the problems that are reported (the path as the person gave it, not the absolute one). */
+  label?: string;
 }
 
 /** The key of one execution of one test: the same report read twice (an artifact uploaded twice) counts once. */
@@ -565,15 +567,16 @@ function executionKey(failure: Failure, startTime: string | null): string {
  */
 export function collect(from: string, options: CollectOptions = {}): Collection {
   const absolute = resolve(from);
+  const label = options.label ?? from;
   const base = existsSync(absolute) && statSync(absolute).isFile() ? dirname(absolute) : absolute;
   const result: Collection = { failures: [], skipped: [], sources: [], problems: [] };
   if (!existsSync(absolute)) {
-    result.problems.push(`${from}: does not exist`);
+    result.problems.push(`${label}: does not exist`);
     return result;
   }
   const files = findReports(absolute);
   if (files.length === 0) {
-    result.problems.push(`${from}: no Playwright JSON report (playwright*.json) was found`);
+    result.problems.push(`${label}: no Playwright JSON report (playwright*.json) was found`);
     return result;
   }
   const envIds = readEnvIds(base);

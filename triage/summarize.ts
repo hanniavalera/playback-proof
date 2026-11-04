@@ -449,7 +449,7 @@ export async function summarize(
 
   async function one(cluster: Cluster, index: number): Promise<SummaryRecord> {
     if (index >= settings.maxClusters)
-      return skip(cluster, `not summarized: the run is capped at ${settings.maxClusters} clusters`);
+      return skip(cluster, `not summarized: the run is capped at ${plural(settings.maxClusters, 'cluster')}`);
     if (cacheDir !== null && options.refresh !== true) {
       const cached = readCache(cacheDir, cluster, model);
       if (cached) {
