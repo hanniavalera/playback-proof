@@ -11,7 +11,7 @@ import type { Protocol, StreamId } from '../../shared/streams.ts';
  * Bump when the generator's own logic changes what lands in the cache without changing any ffmpeg argument: the segmenter, the box
  * writers, init normalization, or the shape of stream.json. The bump changes every spec hash, so stale caches are regenerated.
  */
-export const GENERATOR_VERSION = 1;
+export const GENERATOR_VERSION = 2;
 
 export const SEGMENT_DURATION_SEC = 2;
 export const FRAME_RATE = 30;

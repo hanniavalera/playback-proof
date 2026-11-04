@@ -199,10 +199,10 @@ describe('specHash (the cache key)', () => {
   // purpose, update the value here (every machine then regenerates that stream once); if not, you just caught a silent change.
   it('is stable: golden hashes for the catalog', () => {
     expect(Object.fromEntries(CATALOG.map((s) => [s.id, specHash(s)]))).toEqual({
-      'vod-cmaf': '59da288111154ba61dbaeff8413f4e4cc4e219e6027cb1e51c1fb6d0a33849ad',
-      'vod-cmaf-short': '8be82b6d2779813c092c8950a00f82e04dc55c9cbf705be5fa986d5ac0a46710',
-      'vod-webm': 'ec18cc8d5ac9602878578c5941be989bffd86034fe6c47784f9149f9af19d0ca',
-      'live-cmaf': '4390d4693a06367bc5853493d5ea14e6ee83bc4c11d8833db87048379fb1cf3c',
+      'vod-cmaf': '5bb53cf6de1c43a33457de1a2d145425ded5f11f7658362f5bc78733a71ac7e2',
+      'vod-cmaf-short': '58250e347ebddf1d4fbe3b1bc5466a92f4027142a497bde25a21b2b5f8eb5dbb',
+      'vod-webm': '0645ada768c1ef85bf369a9029f74e58678ddb2e2e50f0182920b457f40ec53d',
+      'live-cmaf': 'def75afe5e30eb246459702655f2c1625f984b6e41b762ebf19325d537144875',
     });
   });
 

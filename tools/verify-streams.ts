@@ -31,6 +31,7 @@ import {
   streamDir,
 } from '../src/server/media/cache.ts';
 import { CommandError, ffmpegBinary, ffmpegVersion, ffprobeBinary, run } from '../src/server/media/ffmpeg.ts';
+import { parseWebmInit } from '../src/server/media/ebml.ts';
 import { createMediaStore } from '../src/server/media/index.ts';
 import { checkStreamIndex } from '../src/server/media/invariants.ts';
 import { liveTiming } from '../src/server/media/live.ts';
@@ -238,6 +239,14 @@ const endTicksOf = (packets: ProbePacket[], st: ProbeStream | undefined): number
 const ffprobeCodecName = (codecs: string): string =>
   codecs.startsWith('vp09') ? 'vp9' : codecs.startsWith('mp4a') ? 'aac' : codecs === 'opus' ? 'opus' : codecs;
 
+/** Ticks a demuxer subtracts from block timestamps: the Opus CodecDelay of a WebM init segment, 0 for everything else. */
+function demuxerOffset(init: Buffer): number {
+  if (init.subarray(0, 4).readUInt32BE(0) !== 0x1a45dfa3) return 0; // not EBML: an ISO BMFF init (no edit list, no offset)
+  const webm = parseWebmInit(init);
+  const track = webm.tracks[0];
+  return track?.codecDelayNs ? Math.round(track.codecDelayNs / webm.timecodeScaleNs) : 0;
+}
+
 // ------------------------------------------------------------------------------------------------------------------------------
 // Checks 1 to 3: the files
 // ------------------------------------------------------------------------------------------------------------------------------
@@ -301,6 +310,9 @@ async function verifyRepFiles(
     `${covered}/${packets.length}`,
   );
   const expectedCounts = countsFor(spec, index, r.rep.track);
+  // ffprobe reports Opus-in-WebM packets at (block timecode - CodecDelay): the demuxer applies the codec delay the Tracks element
+  // declares (6.5 ms, 7 ticks of the millisecond timeline). The cluster timecodes themselves stay on the 2000 ms grid.
+  const offset = demuxerOffset(init);
   const mismatches: string[] = [];
   r.segments.forEach((s, i) => {
     const group = bySegment[i] ?? [];
@@ -309,8 +321,10 @@ async function verifyRepFiles(
       mismatches.push(`segment ${s.number}: ffprobe found no packet`);
       return;
     }
-    if (first.pts !== s.start)
-      mismatches.push(`segment ${s.number}: first pts ${first.pts} != parser start ${s.start}`);
+    if (first.pts + offset !== s.start)
+      mismatches.push(
+        `segment ${s.number}: first pts ${first.pts}${offset ? ` (+${offset} codec delay)` : ''} != parser start ${s.start}`,
+      );
     // The packet count per segment must be what the cutting rule prescribes (94, 94, 94, 93, ... frames for AAC; 60 for video).
     if (group.length !== expectedCounts[i])
       mismatches.push(
@@ -609,6 +623,7 @@ async function verifyDashRep(
     bodies.map((b) => b.length),
   );
   const frameTicks = video ? r.timescale / spec.frameRate : 0;
+  const offset = demuxerOffset(init.body); // Opus CodecDelay in WebM, see verifyRepFiles
   const wrong: string[] = [];
   r.segments.forEach((s, i) => {
     const first = groups[i]?.[0];
@@ -616,7 +631,8 @@ async function verifyDashRep(
       wrong.push(`#${s.number}: no packet`);
       return;
     }
-    if (first.pts !== s.start) wrong.push(`#${s.number}: MPD start ${s.start}, media ${first.pts}`);
+    if (first.pts + offset !== s.start)
+      wrong.push(`#${s.number}: MPD start ${s.start}, media ${first.pts}${offset ? ` (+${offset})` : ''}`);
     const next = groups[i + 1]?.[0];
     if (next && mp4 && next.pts - first.pts !== s.duration)
       wrong.push(`#${s.number}: MPD duration ${s.duration}, media ${next.pts - first.pts}`);

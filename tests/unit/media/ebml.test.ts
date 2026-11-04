@@ -11,6 +11,7 @@ import {
   readElements,
   stringElement,
   uintElement,
+  withDefaultDuration,
 } from '../../../src/server/media/ebml.ts';
 
 /** EBML header as ffmpeg writes it for WebM: DocType "webm". */
@@ -157,5 +158,51 @@ describe('WebM init and media segments', () => {
     expect(key).toMatchObject({ timecode: 15, keyframe: true, durationTicks: 7 });
     const delta = parseWebmMediaSegment(block([uintElement(ID.ReferenceBlock, 1)])).blocks[0];
     expect(delta?.keyframe).toBe(false);
+  });
+});
+
+describe('withDefaultDuration (ffmpeg 6.1 writes no DefaultDuration, ffmpeg 9 does)', () => {
+  const entry = (...extra: Buffer[]): Buffer =>
+    element(
+      ID.Tracks,
+      element(
+        ID.TrackEntry,
+        uintElement(ID.TrackNumber, 1),
+        uintElement(ID.TrackType, 1),
+        stringElement(ID.CodecID, 'V_VP9'),
+        ...extra,
+        element(ID.Video, uintElement(ID.PixelWidth, 640), uintElement(ID.PixelHeight, 360)),
+      ),
+    );
+  const durationOf = (t: Buffer): number | undefined =>
+    parseWebmInit(
+      buildWebmInit({ ebmlHeader: ebmlHeader(), tracksElement: t, timecodeScaleNs: 1_000_000, app: 'x' }),
+    ).tracks[0]?.defaultDurationNs;
+
+  it('inserts the element when the muxer left it out, keeping every other child', () => {
+    const out = withDefaultDuration(entry(), 1, 33_333_333);
+    expect(durationOf(out)).toBe(33_333_333);
+    const [t] = parseWebmInit(
+      buildWebmInit({ ebmlHeader: ebmlHeader(), tracksElement: out, timecodeScaleNs: 1_000_000, app: 'x' }),
+    ).tracks;
+    expect(t).toMatchObject({ number: 1, type: 'video', codecId: 'V_VP9', width: 640, height: 360 });
+  });
+
+  it('replaces a value the muxer wrote, so the init is the same whichever ffmpeg made the packets', () => {
+    const withOwn = entry(uintElement(ID.DefaultDuration, 33_000_000));
+    expect(durationOf(withDefaultDuration(withOwn, 1, 33_333_333))).toBe(33_333_333);
+    // the muxer that wrote exactly the same value and the one that wrote none give identical bytes
+    expect(
+      withDefaultDuration(entry(uintElement(ID.DefaultDuration, 33_333_333)), 1, 33_333_333).equals(
+        withDefaultDuration(entry(), 1, 33_333_333),
+      ),
+    ).toBe(true);
+  });
+
+  it('refuses a track that is not there and something that is not a Tracks element', () => {
+    expect(() => withDefaultDuration(entry(), 2, 1)).toThrow(/no TrackEntry with number 2/);
+    expect(() => withDefaultDuration(element(ID.Void, Buffer.alloc(3)), 1, 1)).toThrow(
+      /exactly one Tracks element/,
+    );
   });
 });

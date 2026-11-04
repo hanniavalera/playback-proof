@@ -21,7 +21,7 @@ import {
   type FileEntry,
   type StreamFile,
 } from './cache.ts';
-import { buildWebmInit } from './ebml.ts';
+import { buildWebmInit, withDefaultDuration } from './ebml.ts';
 import { ffmpegBinary, ffmpegVersion, run } from './ffmpeg.ts';
 import { inspectRep, type InspectedRep } from './inspect.ts';
 import { checkStreamIndex } from './invariants.ts';
@@ -145,9 +145,13 @@ export function packageRep(spec: StreamSpec, repId: string, intermediate: Buffer
   }
   // WebM
   const src = readWebmPackets(intermediate);
+  // Exact frame durations in nanoseconds: 1/30 s (33,333,333, as ffmpeg 9 writes it) and 20 ms. See withDefaultDuration.
+  const defaultDurationNs = isAudio
+    ? OPUS_WEBM_GRID.frameSamples * 1_000_000
+    : Math.floor(1e9 / spec.frameRate);
   const init = buildWebmInit({
     ebmlHeader: src.init.ebmlHeader,
-    tracksElement: src.init.tracksElement,
+    tracksElement: withDefaultDuration(src.init.tracksElement, src.track.number, defaultDurationNs),
     timecodeScaleNs: src.init.timecodeScaleNs,
     app: 'playback-proof',
   });

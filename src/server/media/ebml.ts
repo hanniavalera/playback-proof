@@ -411,6 +411,44 @@ export interface WebmInitSource {
 }
 
 /**
+ * The Tracks element with `DefaultDuration` (nanoseconds per frame) set on one track. ffmpeg 9 writes it and ffmpeg 6.1 does not, and
+ * segment durations are derived from it (blocks carry no duration), so the lab writes it itself from what it knows exactly (1/30 s,
+ * 20 ms): the init segment is then the same whichever ffmpeg produced the packets. Every other byte of the element is kept.
+ */
+export function withDefaultDuration(
+  tracksElement: Buffer,
+  trackNumber: number,
+  defaultDurationNs: number,
+): Buffer {
+  const [tracks, ...rest] = readElements(tracksElement);
+  if (!tracks || rest.length > 0 || tracks.id !== ID.Tracks)
+    throw new EbmlError('expected exactly one Tracks element');
+  const raw = (el: EbmlElement): Buffer => tracksElement.subarray(el.start, el.dataEnd);
+  let found = false;
+  const entries = children(tracksElement, tracks).map((entry) => {
+    if (entry.id !== ID.TrackEntry) return raw(entry);
+    const kids = children(tracksElement, entry);
+    const number = kids.find((k) => k.id === ID.TrackNumber);
+    if (!number || readUint(tracksElement, number) !== trackNumber) return raw(entry);
+    found = true;
+    const parts: Buffer[] = [];
+    let written = false;
+    for (const k of kids) {
+      if (k.id === ID.DefaultDuration) continue;
+      parts.push(raw(k));
+      if (k.id === ID.TrackType) {
+        parts.push(uintElement(ID.DefaultDuration, defaultDurationNs));
+        written = true;
+      }
+    }
+    if (!written) parts.push(uintElement(ID.DefaultDuration, defaultDurationNs));
+    return element(ID.TrackEntry, ...parts);
+  });
+  if (!found) throw new EbmlError(`Tracks has no TrackEntry with number ${trackNumber}`);
+  return element(ID.Tracks, ...entries);
+}
+
+/**
  * EBML header + Segment (unknown size, so that Clusters can follow in separate files) + Info + Tracks. Info carries no Duration: a
  * fragment stream's duration belongs to the manifest. SeekHead, Cues and Tags are not written: nothing here seeks by byte position.
  */

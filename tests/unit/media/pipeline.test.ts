@@ -18,7 +18,7 @@ import { generateStreams, type GenerateResult } from '../../../src/server/media/
 import { createMediaStore } from '../../../src/server/media/index.ts';
 import { parseInit, parseMediaSegment, readBoxes, readTfdts } from '../../../src/server/media/isobmff.ts';
 import { checkStreamIndex } from '../../../src/server/media/invariants.ts';
-import { parseWebmMediaSegment } from '../../../src/server/media/ebml.ts';
+import { parseWebmInit, parseWebmMediaSegment } from '../../../src/server/media/ebml.ts';
 import { audioSegmentFrameCounts, AAC_GRID } from '../../../src/server/media/segmenter.ts';
 import { specHash, type StreamSpec } from '../../../src/server/media/specs.ts';
 import type { MediaStore, RepIndex, StreamIndex } from '../../../src/server/media/types.ts';
@@ -164,6 +164,16 @@ describe('generation', () => {
     });
     expect(a.rep.codecs).toBe('opus');
     expect(v.rep.codecs).toBe(`vp09.00.${vp9LevelFor(160, 90, 30)}.08`);
+    // the lab writes the frame durations itself, so the init segments do not depend on which ffmpeg made the packets
+    expect(parseWebmInit(bytes(webm, 'v240/init.webm')).tracks[0]).toMatchObject({
+      defaultDurationNs: 33_333_333,
+      width: 160,
+      height: 90,
+    });
+    expect(parseWebmInit(bytes(webm, 'a-opus/init.webm')).tracks[0]).toMatchObject({
+      defaultDurationNs: 20_000_000,
+      codecDelayNs: 6_500_000,
+    });
     expect(v.timescale).toBe(1000);
     v.segments.forEach((s, i) => {
       const c = parseWebmMediaSegment(bytes(webm, segmentFileName(v.rep, s.number)));
