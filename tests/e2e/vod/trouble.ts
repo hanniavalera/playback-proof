@@ -14,8 +14,9 @@ import { RECOVERY_LOOKOUT_MS } from './tolerances.ts';
  * jumped in (or that no frame came in) is most often a stall of the player's own, and the first CI run on a macOS runner showed it. The
  * release run's window "jumped from 3.633 s to 4.733 s", and the run's own record says why: one rebuffer of 2838 ms that began at media
  * time 0 (the clock had fallen back to the start), a seek to 4.748 s that nobody asked for, segments 3 to 8 of both tracks requested again
- * (the buffer was gone) and counters that had restarted (23 decoded, 1 presented): WebKit's media pipeline was torn down and rebuilt. A
- * clock that jumps because a late frame callback was delivered late would show none of that. Empty when the metrics cannot be read.
+ * (the buffer was gone) and counters that had restarted (23 decoded, 1 presented): the MediaSource was torn down and rebuilt under the
+ * player (ADR-094). A clock that jumps because a frame callback was delivered late would show none of that. Empty when the metrics
+ * cannot be read.
  */
 export async function describePlayerTrouble(qa: PlayerHandle): Promise<string> {
   try {
