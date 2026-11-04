@@ -51,7 +51,7 @@ describe('a healthy soak', () => {
   });
 
   it('is not made a NO-GO by scatter in the latency reads: 300 seeds, one verdict', () => {
-    // 100 ms of noise on a flat 6.2 s, 5 minutes with a 60 s warm-up: the standard error of the fitted change is about 40 ms.
+    // 100 ms of noise on a flat 6.2 s, 5 minutes with a 60 s warm-up: the standard error of the fitted change is about 50 ms.
     const verdicts = new Set<string>();
     for (let seed = 1; seed <= 300; seed++) {
       const noise = normal(mulberry32(seed), 100);
