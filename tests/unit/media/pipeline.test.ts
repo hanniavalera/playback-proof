@@ -266,8 +266,8 @@ describe('what a real decoder says', () => {
 describe('the media store on real files', () => {
   let store: MediaStore;
   beforeAll(() => {
-    // after the top-level beforeAll has generated the streams
-    store = createMediaStore({ cacheDir, specs });
+    // after the top-level beforeAll has generated the streams; 'vod-cmaf' has a spec here that was never generated
+    store = createMediaStore({ cacheDir, specs: [...specs, { ...tinyVodSpec(), id: 'vod-cmaf' }] });
   });
 
   it('reports the ready streams in STREAM_IDS order and the ffmpeg that made them', () => {
@@ -291,6 +291,15 @@ describe('the media store on real files', () => {
     expect(() => store.index('vod-cmaf')).toThrow(/not ready.*npm run generate:streams/);
     expect(() => store.init('vod-cmaf', 'v240')).toThrow(/not ready/);
     expect(() => store.dashVod('vod-cmaf')).toThrow(/not ready/);
+    // a stream without any spec cannot be fixed by generating: the error must not send the reader to the generator
+    let message = '';
+    try {
+      store.index('vod-cmaf-clearkey');
+    } catch (e) {
+      message = (e as Error).message;
+    }
+    expect(message).toMatch(/not ready: .*ClearKey stretch goal is not implemented/);
+    expect(message).not.toContain('generate:streams');
     expect(() => store.liveSegment('vod-cmaf-short', 'v240', 1)).toThrow(/not live/);
     expect(() => store.liveSegmentTiming('vod-webm', 'v240', 1)).toThrow(/not live/);
   });

@@ -68,11 +68,18 @@ export function createMediaStore(options: MediaStoreOptions = {}): MediaStore {
   const cache = new FileCache(options.maxCacheBytes ?? 256 * 1024 * 1024);
   const ready = new Map<StreamId, Ready>();
   const notReady = new Map<StreamId, string>();
+  const noSpec = new Set<StreamId>();
 
   for (const id of STREAM_IDS) {
     const spec = specs.find((s) => s.id === id);
     if (!spec) {
-      notReady.set(id, 'not in the catalog (the ClearKey stretch goal is not implemented)');
+      notReady.set(
+        id,
+        id === 'vod-cmaf-clearkey'
+          ? 'it has no spec: the ClearKey stretch goal is not implemented (docs/decisions/media.md, ADR-049)'
+          : 'it has no spec in this catalog',
+      );
+      noSpec.add(id);
       continue;
     }
     const dir = streamDir(cacheDir, spec);
@@ -91,7 +98,8 @@ export function createMediaStore(options: MediaStoreOptions = {}): MediaStore {
     const r = ready.get(id);
     if (!r) {
       const why = notReady.get(id) ?? 'unknown stream id';
-      throw new Error(`stream '${id}' is not ready: ${why}. Run \`npm run generate:streams\` (idempotent).`);
+      const hint = noSpec.has(id) ? '' : ' Run `npm run generate:streams` (idempotent).';
+      throw new Error(`stream '${id}' is not ready: ${why}.${hint}`);
     }
     return r;
   };
