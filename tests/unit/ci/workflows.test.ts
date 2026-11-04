@@ -98,7 +98,7 @@ describe('the policies of every workflow', () => {
 describe('the stages', () => {
   const scripts = (JSON.parse(read('package.json')) as { scripts: Record<string, string> }).scripts;
 
-  it('are npm scripts that exist, and the gate stages are the ones the Jenkinsfile calls', () => {
+  it('are npm scripts that exist, and ci.yml calls the gate stages listed here (parity.test.ts compares them with the Jenkinsfile)', () => {
     const called = allFiles.flatMap((file) =>
       [...code(read(file)).matchAll(/npm run ([\w:.-]+)/g)].map((m) => ({ file, script: m[1] ?? '' })),
     );
