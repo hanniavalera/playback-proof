@@ -158,6 +158,9 @@ describe('latency drift', () => {
     const drift = evaluateLatencyDrift(soak({ latency: hockey }));
     expect(drift.verdict).toBe('GO');
     expect(drift.detail?.estimators).toMatchObject({ disagree: true, verdictsDiffer: true });
+    const ols = (drift.detail?.leastSquares as { fittedChangeMs: number }).fittedChangeMs;
+    expect(ols).toBeGreaterThan(5000);
+    expect(ols).toBeLessThan(6500);
     expect(drift.note).toContain('flat and then climbs');
   });
 

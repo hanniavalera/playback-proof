@@ -22,7 +22,11 @@ interface MetricsResult {
   metrics: Array<{ name: string; value: number }>;
 }
 
-/** Turns the Performance domain on: `getMetrics` answers nothing before it. */
+/**
+ * Turns the Performance domain on: `getMetrics` answers nothing before it (docs/decisions/readiness.md, ADR-157: from the reading of
+ * Chromium's source, which the probe's error below would show to be wrong). `HeapProfiler` needs no `enable` for `collectGarbage`: the
+ * protocol (js_protocol.pdl) gives it no parameters and no dependency, and Playwright's own `requestGC()` sends it alone.
+ */
 export async function enableHeapProbe(cdp: CdpLike): Promise<void> {
   await cdp.send('Performance.enable');
 }

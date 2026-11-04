@@ -1,6 +1,7 @@
 // What the two commands of the live-event readiness (live/readiness.ts, live/soak.ts) share: the checkout, the service that runs as a child
 // process, the environment of the machine, and the choice of the stream an engine plays. Everything with a decision in it is in
-// src/lab/readiness and unit-tested; this file is the plumbing that needs a real machine.
+// src/lab/readiness (commands.ts is what the commands do, run by a unit test over fakes); this file is the plumbing that needs a real
+// machine, and `realDeps()` is what hands it to them.
 
 import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -11,11 +12,11 @@ import type { LaunchedBrowser } from '../src/lab/measure/browser.ts';
 import { startService } from '../src/lab/measure/service.ts';
 import type { RunningService } from '../src/lab/measure/service.ts';
 import { collectHostInfo } from '../src/lab/probe/host-info.ts';
-import type { HostInfo } from '../src/lab/probe/host-info.ts';
+import type { CommandDeps, EnginePlan, LabService } from '../src/lab/readiness/commands.ts';
 import type { BrowserInfo, StreamRecord } from '../src/lab/readiness/report.ts';
 import type { Engine } from '../src/lab/readiness/soak-evaluators.ts';
 import { detectEnvId } from '../src/shared/env.ts';
-import type { Protocol, StreamId } from '../src/shared/streams.ts';
+import type { Protocol } from '../src/shared/streams.ts';
 import { PLAYER_DIST, buildPlayer } from '../tools/build-player.ts';
 
 export const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -48,12 +49,6 @@ export async function startLabService(
   };
 }
 
-export interface EnginePlan {
-  engine: Engine;
-  stream: StreamId;
-  protocol: Protocol;
-}
-
 /** Whether the engine can play the live stream here, by the committed evidence of this environment: a plan, or the documented reason it cannot. */
 export function planEngine(
   engine: Engine,
@@ -67,19 +62,14 @@ export function planEngine(
   return { engine, stream: choice.stream, protocol };
 }
 
-export interface Machine {
-  envId: string;
-  host: HostInfo;
-}
-
-export function machine(): Machine {
+export function machine(): ReturnType<CommandDeps['machine']> {
   return { envId: detectEnvId(), host: collectHostInfo(ROOT) };
 }
 
 /** What was launched, and the stream it played, for the header of a result file. */
 export async function describeRun(
   browser: LaunchedBrowser,
-  service: RunningService,
+  service: LabService,
   plan: EnginePlan,
 ): Promise<{ browser: BrowserInfo; stream: StreamRecord }> {
   const streams = await service.client.streams().catch(() => []);
@@ -94,6 +84,20 @@ export async function describeRun(
       protocol: plan.protocol,
       contentHash: streams.find((stream) => stream.id === plan.stream)?.contentHash ?? null,
     },
+  };
+}
+
+/** The real machine behind the commands: the service as a child process, the browsers Playwright launches, this checkout's results. */
+export function realDeps(): CommandDeps {
+  return {
+    out: (text) => console.log(text),
+    err: log,
+    startService: startLabService,
+    launch: (engine: Engine) => launchProfile(engine),
+    plan: planEngine,
+    machine,
+    describe: describeRun,
+    resultsRoot: DEFAULT_RESULTS_ROOT,
   };
 }
 

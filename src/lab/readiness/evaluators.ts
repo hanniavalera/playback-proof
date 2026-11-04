@@ -420,7 +420,7 @@ export function evaluateStallRecovery(
   const relative = evaluation({
     id: 'stall.restore-relative',
     check: 'PB-RDY-003',
-    label: `Latency back at its own level after the stall, worst of ${judged.length}`,
+    label: `Latency at its own level, worst of ${judged.length}`,
     value: relativeWorst,
     unit: 'ms',
     limitKey: 'latencyRestoreMaxMs',
