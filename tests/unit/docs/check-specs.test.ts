@@ -176,6 +176,27 @@ describe('PB-LAB-006 spec traceability: reading specs from the syntax tree', () 
     expect(tests).toStrictEqual([]);
     expect(problems[0]).toMatch(/^tests\/e2e\/a\.spec\.ts: cannot be parsed/);
   });
+
+  it.each([
+    ["import { test } from '@playwright/test';"],
+    ["import { expect, test } from '@playwright/test';"],
+    ["import { test as base } from '@playwright/test';"],
+  ])('refuses the plain Playwright test (%s): it has no gap skips, diagnostics or throttle', (statement) => {
+    const { problems } = parseSpecSource('tests/e2e/a.spec.ts', `${statement}\n`);
+    expect(problems).toStrictEqual([
+      expect.stringMatching(
+        /^tests\/e2e\/a\.spec\.ts:1: import `test` from tests\/e2e\/support\/fixtures\.ts/,
+      ),
+    ]);
+  });
+
+  it('accepts expect from Playwright, and test from the shared fixtures', () => {
+    const { problems } = parseSpecSource(
+      'tests/e2e/a.spec.ts',
+      "import { expect } from '@playwright/test';\nimport { test } from './support/fixtures.ts';\nimport type { Page } from '@playwright/test';\n",
+    );
+    expect(problems).toStrictEqual([]);
+  });
 });
 
 describe('PB-LAB-006 spec traceability: specs against the catalog', () => {

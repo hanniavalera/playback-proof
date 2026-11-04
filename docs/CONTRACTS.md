@@ -219,10 +219,93 @@ Exact semantics (the service implements them as written and its tests pin them):
 - Policy numbers (readiness limits, gate budgets, flake policy, tiering thresholds) live in `src/shared/criteria.ts`, the named fault profiles in `src/shared/profiles.ts` (`profile(name)`, `originStall(atNumber, ms)`, `staleManifest(ms)`); `TEST_STRATEGY.md` renders its tables from them and `npm run docs:check` fails when they are stale. Code that enforces a limit imports the plain numbers (`LIVE_LIMITS`, `GATE_LIMITS`, `FLAKE_LIMITS`, `RISK_LIMITS`).
 - The id starts the Playwright title: `test('PB-VOD-001 starts and reaches 3 s of media time', { tag: '@merge' }, ...)`.
 - Tags: `@merge` (gates every pull request), `@release` (gates a release / nightly), plus `@cpu` (also runs in the CPU-throttled profile), `@live`, `@hls`, `@dash`, `@eme`, `@soak`.
-- **No fixed sleeps.** Specs wait on player events (`qa.waitFor`, `qa.waitForMediaTime`, cursor-based) or on the server request log. ESLint forbids
-  `waitForTimeout` and `setTimeout` in specs.
+- **No fixed sleeps.** Specs wait on player events (`qa.waitFor`, `qa.waitForMediaTime`, cursor-based) or on the server request log (`waitForRequest`).
+  ESLint forbids `waitForTimeout`, `setTimeout` and `Atomics.wait` in everything under `tests/e2e` and `tests/live`. The one polling primitive of the lab is
+  `ServiceClient.waitForLog` in `src/lab/service-client.ts` (25 ms by default): lab code, never a spec.
 - A spec that cannot run in an environment because of a documented gap (for example WebKit on Linux) is skipped by the shared fixture
-  with the reason from [CODEC_MATRIX.md](CODEC_MATRIX.md) (the text `explainNoStream` in `src/lab/probe/capabilities.ts` builds); a silent skip is a bug.
+  with the reason from [CODEC_MATRIX.md](CODEC_MATRIX.md) (the text `explainNoStream` in `src/lab/probe/capabilities.ts` builds); a silent skip is a bug. The rules are in 7.3.
+- `npm run specs:check` compares the specs with the catalog (`tools/check-specs.ts`, [ADR-075](decisions/e2e.md)): every spec id is in the catalog, once, with the tags of its row; `--complete` also requires a spec for every row of lane `e2e` (stretch rows excepted). Rules a spec must follow so that it can be read: the title is a plain string that starts with the id, the `tag` option is a literal, one id is one `test()` call, `test` is imported from `tests/e2e/support/fixtures.ts` and not from `@playwright/test`, and there is no `test.only`.
+
+### 7.1 The support library (`tests/e2e/support`; decisions: [decisions/e2e.md](decisions/e2e.md), ADR-070 to ADR-079)
+
+A spec starts with `import { expect, test } from './support/fixtures.ts'`. The plain Playwright `test` has none of what follows.
+
+| Fixture | Scope | What it gives |
+| --- | --- | --- |
+| `service` | worker | A `ServiceClient` on the project's `baseURL`: `createSession`, `detail`, `addFaults`, `setFaults`, `removeFault`, `log`, `streams`, `waitForLog`. |
+| `environment` | worker | The `Environment` of `gaps.ts`: environment id, engine, platform, and what the committed codec matrix says about this engine here (`capabilities`; null when nothing is documented), with the `basis` of that. |
+| `newSession(request)` | test | Creates a session from a `SessionRequest` (the `label` defaults to the test title; `protocol` defaults to `dash`, pass it for HLS) and **deletes it after the test, also when the test failed**. Returns a `TestSession`: every field of `SessionInfo` plus `service`. Skips the test (documented gap) when the stream is made of a flavour this engine does not play. |
+| `streamFor(kind, protocol)` | test | The `StreamId` to play for `'vod'` or `'live'` over `'dash'` or `'hls'` in this engine: the first of `vod-cmaf`, `vod-webm` (DASH only) or `live-cmaf` whose flavour decoded in every attempt of the probe. Skips the test with the documented reason when none does. Without committed evidence for the environment: `vod-cmaf` or `live-cmaf`. A spec that needs one particular stream (`vod-cmaf-short`, `vod-webm`, `vod-cmaf-clearkey`) names it in `newSession`. |
+| `player(session?, page?)` | test | A `PlayerHandle` on the test's `page` (or on `page`) for the session. Nothing is navigated until `open()`. |
+| `documentedGap` | auto | Skips every test of an engine that plays nothing here (Linux WebKit; Firefox on the macOS host), before the body and before any browser is launched. |
+| `cpuThrottle` | auto | When the project's `metadata.cpuThrottleRate` is set (`chromium-cpu4x`), sends `Emulation.setCPUThrottlingRate` for the test's `page` before it navigates. Chromium only: any other engine with a rate is an error. |
+| `diagnostics` | auto | When the test fails or times out, attaches the documents of 7.2. |
+
+**`PlayerHandle`** (`player.ts`), a typed wrapper over `window.__qa`; every wait has an explicit timeout (`DEFAULT_WAIT_MS` = 15 s, below the 45 s of a test), and a failed wait rejects with the hook's message (the recent timeline) and the library's frames removed from its stack:
+
+| Member | |
+| --- | --- |
+| `open(params?)` | Navigates to `playerUrl({ manifest: <the session's>, ...params })` (`PlayerPageParams`: `autoplay`, `muted`, `config`, `start`, `abr`, `hud`) and resolves when the player is booted (`qa.ready`). Rejects on a parameter the page could not use (`paramProblems`), a boot failure or an unsupported browser. Does not wait for the load. Returns the handle. |
+| `cursor()`, `events(since?)` | The index the next event will get; the timeline from an index on. |
+| `metrics()`, `info()` | `QAMetrics` ([METRICS.md](METRICS.md)) and `QAInfo`. |
+| `waitFor(name, { since?, timeoutMs?, detail? })` | The first event `name` at or after `since` (default 0: the whole history) whose `detail` has every key of the filter strictly equal (`{ reason: 'abr', height: 720 }`). |
+| `waitForMediaTime(seconds, { timeoutMs? })` | Resolves with the media time reached once `currentTime >= seconds`. |
+| `load(uri?)`, `play()`, `pause()`, `seek(s)`, `seekToLiveEdge()`, `unload()` | The actions of the hook; each resolves on its own proof (`seek` on the `seeked` that follows its `seeking`). |
+| `selectVariantByHeight(h \| null)`, `setAbr(on)`, `configure(partial)` | Pin a rung (ABR off) or release it; Shaka configuration (a rejected key throws). |
+| `measureFrames(mediaSeconds, { stallTimeoutMs? })` | Frames presented and dropped while the media clock advances. |
+| `consoleEntries()`, `page`, `session` | What the browser console said; the page for what the hook does not cover; the session the handle plays. |
+
+**On the server's side** (`waiting.ts`, `session.ts`): `waitForRequest(session, predicate, { since?, timeoutMs? })` and `waitForRequests(session, predicate, { count, since?, timeoutMs? })` wait on the request log (a request that has started counts; add `!entry.pending` for its answer); `requestLogCursor(session)` is the `since` for "from now on"; `requestsFor(log, { kind, rep, number, status, method, pending })`, `segmentNumbersFetched(log, rep, { status? })` (in arrival order, repeats kept), `rungsFetched(log, { track? })` (video rungs in the order of their first segment) and `describeEntry(entry)` read a `RequestLogEntry[]`; `streamInfoOf(session)` is the catalog entry of the session's stream (durations, segment count, DRM test key: never hard-code them).
+
+**Assertions** (`assertions.ts`; each names the metric and the value): `expectHealthyPlayback(metrics)` (no critical error, state not `error`, startup defined, frames decoded), `expectNoErrors(metrics)` (no error of any severity), `expectNoRebuffer(metrics)`, `expectAtMostRebuffers(metrics, n)`, and `playFor(player, mediaSeconds, { timeoutMs? })`, which lets the player play that much media from where it is (resuming a paused element) and waits on the media clock.
+
+### 7.2 Failure diagnostics: the attachments (a contract)
+
+When a test ends with a status other than the expected one (failed, timed out, interrupted) the `diagnostics` fixture attaches these to its result as `application/json` (indented), under these names. Failure triage (Phase 8) reads exactly them. The first player and the first session of a test have the plain names; a second one has `-2` before `.json` (`qa-events-2.json`, `request-log-2.json`), a third `-3`.
+
+| Attachment | Content | Read from |
+| --- | --- | --- |
+| `qa-events.json` | `QAEvent[]`: the whole timeline of the player page | `qa.events()` |
+| `qa-metrics.json` | `QAMetrics` at the moment of the failure | `qa.metrics()` |
+| `qa-info.json` | `QAInfo`: configuration letter, the exact overrides, `loadMode`, page parameters as applied, user agent | `qa.info()` |
+| `page-console.json` | `ConsoleEntry[]` (`{ type: 'error' \| 'warning' \| 'pageerror', text, location? }`): what the browser console said, the last 200 | the page's `console` and `pageerror` events |
+| `session-detail.json` | `SessionDetail`: the session, its fault rules (with their ids) and counters | `GET /api/sessions/:id` |
+| `request-log.json` | `RequestLogEntry[]`: every request the server saw for the session | `GET /api/sessions/:id/log` |
+| `diagnostics-problems.json` | `{ [attachment name]: reason }`: what could not be read (a closed page, a deleted session, a read that did not answer within 5 s). Present only then. | |
+
+A test with no player attaches no `qa-*` documents; one with no session attaches no server documents. Playwright's own attachments (`screenshot`, `error-context`, `trace`, kept on failure) come with them. The annotations of a result carry the other facts: `skip` (the reason of a documented gap), `environment` and `evidence-drift` (PB-ENV-001), `cleanup` (a session that could not be deleted).
+
+### 7.3 Documented gaps: when a spec is skipped
+
+- The evidence is the **committed** result of the probe for the environment the suite runs in: `docs/results/codec-matrix/<detectEnvId()>.json` (rendered in [CODEC_MATRIX.md](CODEC_MATRIX.md)), read with `capabilitiesFromEngine` and `pickStream`. A flavour counts as playing only when it decoded in every attempt.
+- An **engine gap** (nothing plays: Linux WebKit in `docker-linux-arm64`, Firefox on the macOS host, where the browser does not start) skips every test of the engine in `documentedGap`. A **stream gap** (one flavour does not play) skips the test that needs that stream, in `newSession` and `streamFor`. The reason starts with `documented gap in <environment id>:`, names the flavours with their `passes/attempts`, the failing stage and the error, and points at CODEC_MATRIX.md; it is the `skip` annotation of the result.
+- **No committed result for the environment (a new CI runner), or none for the engine: nothing is documented, so nothing is skipped.** The specs run, and PB-ENV-001 fails loudly (the engine, its version, what the player said, what the matrix claimed or that it has nothing, and the command that documents the gap) if the engine cannot play. A browser that does not start where the matrix does not record it fails with the browser's own error.
+- The one override: `RUN_SPECS_IN_LINUX_WEBKIT` in `tests/e2e/support/gaps.ts` (default `false`). `true` runs the specs in Linux WebKit whatever the matrix says; it exists for the open question of that engine. Re-probing and committing the result changes every other gap.
+
+### 7.4 Writing a spec
+
+```ts
+import { profile } from '../../src/shared/profiles.ts';
+import { expectHealthyPlayback } from './support/assertions.ts';
+import { expect, test } from './support/fixtures.ts';
+
+test(
+  'PB-VOD-001 DASH VOD starts: first frame presented, 3 s of media time reached, no error',
+  { tag: ['@merge', '@cpu', '@dash'] },
+  async ({ newSession, streamFor, player }) => {
+    const session = await newSession({ stream: streamFor('vod', 'dash'), protocol: 'dash', faults: profile('clean') });
+    const qa = await player(session).open();
+    await qa.waitFor('firstframe');
+    await qa.waitForMediaTime(3);
+    expectHealthyPlayback(await qa.metrics());
+  },
+);
+```
+
+- Take a cursor before an action and wait for events after it: `const since = await qa.cursor(); await qa.seek(30); await qa.waitFor('seeked', { since })`. The default `since` of 0 searches the whole history, so an old event can answer a later wait. With `autoplay: false` the first frame may already be presented at load (Firefox paints the first frame of a paused video, Chromium does not): wait for `firstframe` from the start, not from a cursor taken after `loaded`.
+- A wait that is not given a timeout gets 15 s, a test has 45 s (`test.setTimeout(ms)` raises it, and the waits of a longer scenario need their own `timeoutMs`). Never `page.evaluate`, a timer or `eval` in a spec.
+- A fault rule is data: `profile('bandwidth-drop')`, `originStall(session.live!.edgeNumber + 3, 10_000)`, `session.service.addFaults(session.id, rules)`, `removeFault`. Select by segment number where the scenario allows; read what was applied in `request-log.json` (`faults` ids).
+- A spec never decides by browser name: a gap is a skip with a reason from the evidence (7.3).
 
 ## 8. Environments, ports, variables
 
@@ -235,7 +318,7 @@ Exact semantics (the service implements them as written and its tests pin them):
 
 ## 9. Commands (names are fixed; implementations arrive with their phase)
 
-`npm run typecheck | lint | format:check | docs:check | build:player | generate:streams | verify:streams | serve | smoke:service | bench:server | player:smoke | codec-matrix | docker:pw | test:unit | test:e2e | test:merge | test:release | perf | perf:gate | perf:baseline | flake:report | flake:gate | ab | readiness | soak | triage`
+`npm run typecheck | lint | format:check | docs:check | specs:check | build:player | generate:streams | verify:streams | serve | smoke:service | bench:server | player:smoke | codec-matrix | docker:pw | test:unit | test:e2e | test:merge | test:release | perf | perf:gate | perf:baseline | flake:report | flake:gate | ab | readiness | soak | triage`
 (`docker:pw -- <command>` runs a command inside the Playwright Linux image that matches the pinned `@playwright/test`, with the repository mounted: this is how Firefox runs on a macOS host and how the Linux CI environment is reproduced locally. `codec-matrix` probes the installed browsers and writes `docs/results/codec-matrix/<envId>.json`; `codec-matrix -- --render` regenerates [CODEC_MATRIX.md](CODEC_MATRIX.md) from every committed file and `-- --check` fails when it is stale. Options of both: `npm run codec-matrix -- --help`, `bash tools/docker/pw.sh --help`.)
 and the CI gate stages `gate:static | gate:unit | gate:merge | gate:perf | gate:flake | gate:triage`, which both GitHub Actions and the Jenkinsfile call.
 

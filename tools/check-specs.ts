@@ -124,6 +124,21 @@ export function parseSpecSource(path: string, source: string): ParsedSpec {
 
   const file = ts.createSourceFile(path, source, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TS);
 
+  // The plain Playwright `test` has none of the shared fixtures: no gap skips, no diagnostics, no CPU throttle, no sessions.
+  for (const statement of file.statements) {
+    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) continue;
+    if (statement.moduleSpecifier.text !== '@playwright/test') continue;
+    const bindings = statement.importClause?.namedBindings;
+    const importsTest =
+      bindings !== undefined &&
+      ts.isNamedImports(bindings) &&
+      bindings.elements.some((element) => (element.propertyName ?? element.name).text === 'test');
+    if (importsTest) {
+      problems.push(
+        `${path}:${lineOf(file, statement)}: import \`test\` from tests/e2e/support/fixtures.ts, not from @playwright/test: the plain test has no documented-gap skips, no failure diagnostics and no CPU throttle`,
+      );
+    }
+  }
   const visit = (node: ts.Node, inherited: readonly string[]): void => {
     if (ts.isCallExpression(node)) {
       const callee = classify(node.expression);
