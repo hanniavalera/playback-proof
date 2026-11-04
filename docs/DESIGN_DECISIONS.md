@@ -83,3 +83,7 @@ showed:
 ## More decisions
 
 - [Test strategy (ADR-020 to ADR-027)](decisions/strategy.md): risk-based tiering and the merge threshold, the merge gate and its time budget, the flake and quarantine policy, how the readiness criteria were derived, what the lab refuses to claim, the catalog as a checked list of record, named fault profiles, and the experiment policy.
+- [Codecs and the capability probe (ADR-030 to ADR-037)](decisions/codecs.md): why real-decode probing instead of `isTypeSupported`, verdicts measured under a named page profile, why an intermittent flavour counts as unsupported, how a documented gap is skipped with evidence, why the matrix is generated from validated JSON, the Docker runner, reproducible probe media.
+- [The media pipeline (ADR-040 to ADR-049)](decisions/media.md): VP9 in CMAF, real-timing `SegmentTimeline`, the audio cutting rule and the equal-loop-length invariant, `tfdt` rewriting for a gapless live loop, no `sidx`, determinism and its limits, the content-addressed cache with atomic writes, the ClearKey stream.
+- [Response delivery (ADR-050 to ADR-054)](decisions/server-delivery.md): the shared token bucket and why it lives in the service, fairness between concurrent responses, smooth pacing, back-pressure and disconnects, what the throttle does not model.
+- [Static serving (ADR-055 to ADR-057)](decisions/server-static.md): resolve, `realpath` and a prefix check instead of string sanitising, decoding exactly once, what the module is not.
