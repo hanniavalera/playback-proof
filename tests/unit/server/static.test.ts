@@ -446,6 +446,10 @@ const vectors: Vector[] = [
   ['encoded dots with a path parameter', `${MOUNT}%2e%2e;/secret.txt`, 404],
   ['many encoded levels', `${MOUNT}%2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd`, 404],
   ['encoded absolute path', `${MOUNT}%2fetc%2fpasswd`, 404],
+  // Look-alikes and names a different platform would trim: literal names here, so nothing to serve.
+  ['fullwidth dots', `${MOUNT}%ef%bc%8e%ef%bc%8e/secret.txt`, 404],
+  ['division slash', `${MOUNT}..%e2%88%95secret.txt`, 404],
+  ['dot-dot followed by a space', `${MOUNT}..%20/secret.txt`, 404],
   // Double encoding stays literal: it names a file that does not exist.
   ['double-encoded dots', `${MOUNT}%252e%252e/secret.txt`, 404],
   ['double-encoded slash', `${MOUNT}..%252fsecret.txt`, 404],
