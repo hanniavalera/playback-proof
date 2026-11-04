@@ -140,6 +140,24 @@ describe('forcedDownshift: what must still fail', () => {
   it('a throttled link: the rung it carries is not the one the player was on, so leaving 720p is not this claim', () => {
     expect(downshiftOf(run10, { carriedHeight: 360 })).toBeNull();
     expect(downshiftOf(run10, { carriedHeight: 240 })).toBeNull();
+    // even for a downshift to a rung below the one the throttled link carries: the player left a rung the link did not carry
+    const toLowest: Row[] = [
+      [0.27, 0, 360, 'start'],
+      [1.402, 0.635, 720, 'abr'],
+      [10.658, 9.892, 240, 'abr'],
+    ];
+    expect(downshiftOf({ ...run10, rows: toLowest }, { carriedHeight: 360 })).toBeNull();
+    // the same timeline on the link that carries 720p is a downshift from the top rung, to the lowest: found
+    expect(downshiftOf({ ...run10, rows: toLowest })?.change.height).toBe(240);
+  });
+
+  it('the player was not on the rung the link carries when it changed: a downshift from 360p on a link that carries 720p', () => {
+    const rows: Row[] = [
+      [0.2, 0, 360, 'start'],
+      [10.4, 9.9, 240, 'abr'],
+    ];
+    expect(downshiftOf({ ...run10, rows }, { afterIndex: 0 })).toBeNull();
+    expect(downshiftOf({ ...run10, rows }, { afterIndex: 0, carriedHeight: 360 })).not.toBeNull();
   });
 
   it('a change by anything but the player, on either side of the downshift', () => {
@@ -276,8 +294,8 @@ describe('repeatedAudioSegments', () => {
     const log = [
       segmentEntry(1, 'v720', 10, { aborted: true, abortReason: 'client-closed', bytes: 0 }),
       segmentEntry(2, 'v720', 10),
-      segmentEntry(3, 'a-aac', 3, { kind: 'init', number: undefined }),
-      segmentEntry(4, 'a-aac', 3, { kind: 'init', number: undefined }),
+      segmentEntry(3, 'a-aac', 3, { kind: 'init' }),
+      segmentEntry(4, 'a-aac', 3, { kind: 'init' }),
     ];
     expect(repeatedAudioSegments(log)).toEqual([]);
   });
