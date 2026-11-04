@@ -42,7 +42,11 @@ export interface ReportSkip {
   project: string;
   /** null: skipped without a reason, which is a bug (docs/CONTRACTS.md section 7.3). */
   reason: string | null;
+  /** The date of the run in which it was last skipped. */
   date: string;
+  /** In how many of the runs of the history that list this test it was skipped, and how many list it: an invalid run is counted here. */
+  times: number;
+  of: number;
 }
 
 export interface FlakeReport {
@@ -109,16 +113,29 @@ export function buildReport(input: ReportInput): FlakeReport {
   }));
 
   const latestSkip = new Map<string, ReportSkip>();
+  const seen = new Map<string, { times: number; of: number }>();
   for (const run of runs) {
     for (const test of run.tests) {
+      const key = `${test.project}\u0000${test.id}`;
+      const counts = seen.get(key) ?? { times: 0, of: 0 };
+      counts.of += 1;
+      seen.set(key, counts);
       if (test.outcome !== 'skipped') continue;
-      latestSkip.set(`${test.project}\u0000${test.id}`, {
+      counts.times += 1;
+      latestSkip.set(key, {
         id: test.id,
         project: test.project,
         reason: test.skipReason ?? null,
         date: run.date,
+        times: 0,
+        of: 0,
       });
     }
+  }
+  for (const [key, skip] of latestSkip) {
+    const counts = seen.get(key);
+    skip.times = counts?.times ?? 0;
+    skip.of = counts?.of ?? 0;
   }
 
   const notes: string[] = [];
@@ -298,10 +315,20 @@ export function renderMarkdown(report: FlakeReport): string {
   out.push('', '## Skipped', '');
   if (report.skips.length === 0) out.push('No test was skipped in the history.');
   else {
-    out.push(row(['Test', 'Engine', 'Reason (the evidence a documented gap carries)', 'Last seen']));
-    out.push(row(['---', '---', '---', '---']));
+    out.push(
+      row(['Test', 'Engine', 'Reason (the evidence a documented gap carries)', 'Last seen', 'Skipped']),
+    );
+    out.push(row(['---', '---', '---', '---', '---']));
     for (const s of report.skips)
-      out.push(row([s.id, s.project, s.reason ?? 'NO REASON RECORDED', s.date.slice(0, 10)]));
+      out.push(
+        row([
+          s.id,
+          s.project,
+          s.reason ?? 'NO REASON RECORDED',
+          s.date.slice(0, 10),
+          `${s.times} of ${s.of} runs`,
+        ]),
+      );
   }
 
   if (report.notes.length > 0) out.push('', '## Notes', '', ...report.notes.map((n) => `- ${n}`));

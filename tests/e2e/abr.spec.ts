@@ -3,6 +3,7 @@ import { compareHistoryWithLog, rungRuns } from './abr/agreement.ts';
 import { banEvidence, banNote, upshiftBound, upshiftWaitMs } from './abr/bans.ts';
 import { SHAKA_SWITCH_INTERVAL_S, settleWindowSeconds, throttleOf } from './abr/conditions.ts';
 import { orExplain, withExplanation } from './abr/explain.ts';
+import { skipIfForcedClimb } from './abr/invalid-run.ts';
 import { bestRungCarriedBy, ladderOf, rungOf } from './abr/ladder.ts';
 import { describeSegments, fromFirstOf, videoSegmentRequests } from './abr/log.ts';
 import { startupBound } from './abr/startup.ts';
@@ -17,7 +18,7 @@ import { expect, test } from './support/fixtures.ts';
 import { streamInfoOf } from './support/session.ts';
 import { requestLogCursor, requestsFor, waitForRequest } from './support/waiting.ts';
 
-// The seven ABR specs (PB-ABR-001 to PB-ABR-007). Their decisions are ADR-095 to ADR-097 (docs/decisions/e2e-abr.md): a condition is
+// The seven ABR specs (PB-ABR-001 to PB-ABR-007). Their decisions are ADR-095 to ADR-097 and ADR-106 (docs/decisions/e2e-abr.md): a condition is
 // a finite link derived from the ladder (a recovery replaces the throttle, it does not remove it), every claim about a rung is made
 // twice, in the player's events and in the origin's log, and no spec asserts the rung an engine starts on (Shaka's defaults start on
 // a different one in each).
@@ -172,15 +173,32 @@ test(
 
     const metrics = await qa.metrics();
     const changes = variantChanges(await qa.events());
+    const log = await session.service.log(session.id);
+    testInfo.annotations.push({
+      type: 'measured',
+      description: `rungs: ${describeVariantChanges(changes)}; rebuffers ${metrics.rebuffer.count}; dropped frames ${metrics.frames.dropped} of ${metrics.frames.decoded}`,
+    });
+    // An attempt in which the player climbed to a rung the link cannot carry, sooner than the adaptation can decide and on a load that
+    // dropped frames, has not seen the adaptation decide anything (Shaka's dropped-frame protection fits it, and ADR-106 has the
+    // evidence): on the GitHub macOS runner it was about one attempt in ten, always about 1.9 s after the playhead entered the first
+    // segment of the rung the player stepped down to. It ends here, skipped, with its numbers, and is counted as an invalid run; a climb
+    // that does not have that shape (no frame dropped, or a full switch interval after the step down) is not found, and fails below as
+    // it always did. The rebuffers that follow a forced climb are its consequence, so the one decision covers both checks.
+    await skipIfForcedClimb(testInfo, {
+      changes,
+      afterIndex: down.index,
+      carriedHeight: settle.height,
+      carriedRep: settle.rep,
+      frames: metrics.frames,
+      log,
+      segmentDurationSec: stream.segmentDurationSec,
+      linkKbps: throttle.kbps,
+    });
     const afterDown = await qa.events(down.index + 1);
     expect(
       describeVariantChanges(variantChanges(afterDown)),
       `rung changes in the ${window} s after the step down to ${settle.height}p (qa.events()): none. ${banNote(metrics.frames, changes)}`,
     ).toBe('none');
-    testInfo.annotations.push({
-      type: 'measured',
-      description: `rungs: ${describeVariantChanges(changes)}; rebuffers ${metrics.rebuffer.count}`,
-    });
     expect(metrics.bitrate.current?.height, 'active rung (metrics.bitrate.current) at the end').toBe(
       settle.height,
     );
@@ -192,7 +210,6 @@ test(
 
     // The origin's account: from the first segment of the settled rung on, nothing else is requested, and the last segments it
     // delivered are of that rung.
-    const log = await session.service.log(session.id);
     const video = videoSegmentRequests(log);
     expect(
       video.some((entry) => entry.rep === settle.rep),
@@ -534,9 +551,25 @@ test(
 
     const metrics = await qa.metrics();
     const changes = variantChanges(await qa.events());
+    const log = await session.service.log(session.id);
     testInfo.annotations.push({
       type: 'measured',
       description: `rungs: ${describeVariantChanges(changes)}; dropped frames ${metrics.frames.dropped} of ${metrics.frames.decoded}`,
+    });
+    // The same decision as in PB-ABR-002 (ADR-106): a climb sooner than the adaptation can decide, on a load that dropped frames (the
+    // shape of a ban by Shaka's dropped-frame protection), to a rung the link cannot carry (this link carries the lowest rung only), is
+    // not a decision of the adaptation, and the attempt that shows one has not evaluated "settles on the lowest rung, at most one
+    // rebuffer". The first frame was checked above and is not touched by it. The one failure of this test seen in Firefox (1 of 18
+    // runs) was this shape: a climb 2.2 s after the step down.
+    await skipIfForcedClimb(testInfo, {
+      changes,
+      afterIndex: low.index,
+      carriedHeight: ladder.lowest.height,
+      carriedRep: ladder.lowest.rep,
+      frames: metrics.frames,
+      log,
+      segmentDurationSec: stream.segmentDurationSec,
+      linkKbps: link,
     });
     // The rung comes first: a rebuffer on this link is what follows from leaving the one rung it carries, so it is the rung that is the
     // cause to report (and the dropped frames, the one non-network reason Shaka has to leave it).
@@ -558,7 +591,6 @@ test(
     expectHealthyPlayback(metrics);
 
     // The origin's account: from the first segment of the lowest rung on nothing else is asked for, and it is what was delivered last.
-    const log = await session.service.log(session.id);
     const video = videoSegmentRequests(log);
     expect(
       fromFirstOf(video, ladder.lowest.rep)

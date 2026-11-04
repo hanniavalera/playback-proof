@@ -91,7 +91,7 @@ Both CI systems call the same script ([TEST_STRATEGY.md](../TEST_STRATEGY.md) se
 ## What is excluded from the rates
 
 - **Executions without a retry.** With `retries: 0` (the local default of this repository) a flaky test shows as a failure, so those executions cannot show a flake: they are in no rate, they are counted apart and the report says how many. The collector always passes `--retries 1`.
-- **Skipped tests**, and tests a stopped run never finished. A skip carries its reason (the documented gap that caused it); the report lists them, and flags a skip without one.
+- **Skipped tests**, and tests a stopped run never finished. A skip carries its reason (the documented gap that caused it, or, for an invalid run, the numbers that say why the attempt could not evaluate its claim: docs/CONTRACTS.md section 7.3); the report lists them with the number of runs in which each was skipped (a high share of invalid runs is as much a finding as a flake), the collector prints them, and the report flags a skip without a reason.
 - **Quarantined executions, in the suite rate** (they are reported next to it). In a test's own window they stay, so that "one full clean window" means something.
 - **Other environments.** A history is per environment (`detectEnvId()`); numbers are never compared across them.
 - **Pull requests that are not recorded.** The gate judges a pull request's run on top of the history, but, as the commands are meant to be called, only a build of `main` records (`--record --push`).

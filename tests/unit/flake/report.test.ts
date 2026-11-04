@@ -118,12 +118,44 @@ describe('PB-LAB-004 flake report: what it builds', () => {
         project: 'webkit',
         reason: 'documented gap in local-darwin-arm64: nothing plays',
         date: expect.any(String),
+        times: 1,
+        of: 1,
       },
-      { id: 'PB-VOD-005', project: 'webkit', reason: null, date: expect.any(String) },
+      { id: 'PB-VOD-005', project: 'webkit', reason: null, date: expect.any(String), times: 1, of: 1 },
     ]);
     expect(report.notes).toContain(
       '1 skipped tests carry no reason: a skip without evidence is a bug (docs/CONTRACTS.md section 7.3).',
     );
+  });
+
+  it('counts the invalid runs of a test: how many of its runs were skipped, and the reason of the last, in the markdown', () => {
+    const invalid = (n: number) =>
+      record({
+        id: 'PB-ABR-002',
+        project: 'webkit',
+        outcome: 'skipped',
+        skipReason: `invalid run: forced climb to 360p 5.${n} s after the step down, 10 of 974 frames dropped. The 8 s switch interval allows no decision of the adaptation that soon after the step down`,
+      });
+    const runs = [
+      ...Array.from({ length: 12 }, () => run([record({ id: 'PB-ABR-002', project: 'webkit' })])),
+      run([invalid(9)]),
+      run([record({ id: 'PB-ABR-002', project: 'webkit', outcome: 'flaky' })]),
+      run([invalid(8)]),
+      run([invalid(7)]),
+    ];
+    const report = buildReport(input({ runs }));
+    expect(report.skips).toEqual([
+      expect.objectContaining({ id: 'PB-ABR-002', project: 'webkit', times: 3, of: 16 }),
+    ]);
+    expect(report.skips[0]?.reason).toMatch(/^invalid run: forced climb to 360p 5\.7 s after the step down/);
+    const text = renderMarkdown(report);
+    expect(text).toContain(
+      '| Test | Engine | Reason (the evidence a documented gap carries) | Last seen | Skipped |',
+    );
+    const line = text
+      .split('\n')
+      .find((l) => l.startsWith('| PB-ABR-002 | webkit | invalid run: forced climb to 360p 5.7 s'));
+    expect(line).toMatch(/\| 3 of 16 runs \|$/);
   });
 
   it('says what it left out: executions without a retry, a young history, an empty one', () => {

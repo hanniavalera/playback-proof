@@ -94,6 +94,8 @@ export interface Repetition {
   /** `PB-VOD-007 (webkit)` for every test that was flaky, and for every one that failed. */
   flaky: string[];
   failed: string[];
+  /** `PB-ABR-002 (webkit): invalid run: ...` for every test that was skipped, with the start of its reason: an invalid run is counted here. */
+  skipped: string[];
   added: boolean;
 }
 
@@ -103,6 +105,8 @@ export interface CollectResult {
   /** Flaky and failed outcomes over all repetitions, for the summary line. */
   flakyOutcomes: number;
   failedOutcomes: number;
+  /** Skipped outcomes: documented gaps and invalid runs. They are not executions: no rate counts them, so they are counted here. */
+  skippedOutcomes: number;
   executions: number;
   interrupted: boolean;
 }
@@ -133,6 +137,7 @@ export async function collect(options: CollectOptions, deps: CollectDeps): Promi
     historyDir: options.historyDir ?? 'flake/history',
     flakyOutcomes: 0,
     failedOutcomes: 0,
+    skippedOutcomes: 0,
     executions: 0,
     interrupted: false,
   };
@@ -162,22 +167,32 @@ export async function collect(options: CollectOptions, deps: CollectDeps): Promi
     const failed = run.tests
       .filter((t) => t.outcome === 'failed' || t.outcome === 'timedOut')
       .map((t) => `${t.id} (${t.project})`);
+    const skipped = run.tests
+      .filter((t) => t.outcome === 'skipped')
+      .map((t) => `${t.id} (${t.project})${t.skipReason ? `: ${shortened(t.skipReason)}` : ''}`);
     const executed = run.tests.filter((t) =>
       ['passed', 'flaky', 'failed', 'timedOut'].includes(t.outcome),
     ).length;
-    result.repetitions.push({ index, exitCode, run, flaky, failed, added: added > 0 });
+    result.repetitions.push({ index, exitCode, run, flaky, failed, skipped, added: added > 0 });
     result.flakyOutcomes += flaky.length;
     result.failedOutcomes += failed.length;
+    result.skippedOutcomes += skipped.length;
     result.executions += executed;
     log(
-      `${invocation.label}: exit ${exitCode}, ${executed} tests executed, ${flaky.length} flaky${flaky.length ? ` [${flaky.join(', ')}]` : ''}, ${failed.length} failed${failed.length ? ` [${failed.join(', ')}]` : ''}`,
+      `${invocation.label}: exit ${exitCode}, ${executed} tests executed, ${flaky.length} flaky${flaky.length ? ` [${flaky.join(', ')}]` : ''}, ${failed.length} failed${failed.length ? ` [${failed.join(', ')}]` : ''}${skipped.length ? `, ${skipped.length} skipped [${skipped.join('; ')}]` : ''}`,
     );
   }
 
   log(
-    `collected ${result.repetitions.length} of ${options.runs} runs into ${result.historyDir}: ${result.executions} executions, ${result.flakyOutcomes} flaky, ${result.failedOutcomes} failed. Next: npm run flake:report`,
+    `collected ${result.repetitions.length} of ${options.runs} runs into ${result.historyDir}: ${result.executions} executions, ${result.flakyOutcomes} flaky, ${result.failedOutcomes} failed${result.skippedOutcomes > 0 ? `, ${result.skippedOutcomes} skipped` : ''}. Next: npm run flake:report`,
   );
   return result;
+}
+
+/** The start of a skip reason: the invalid runs of ADR-106 put their numbers first, and a log line is not the place for the rest. */
+function shortened(reason: string, max = 110): string {
+  const flat = reason.replace(/\s+/g, ' ').trim();
+  return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat;
 }
 
 const USAGE = `Usage: tsx tools/flake-collect.ts --runs <n> [--project <name>]... [--grep <pattern>] [--retries <n>] [--history-dir <dir>]

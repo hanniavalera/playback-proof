@@ -32,8 +32,15 @@ interface Step {
   exit: number | null;
   /** The outcomes of the two tests of the fake suite in this repetition; no run file is written when absent. */
   outcomes?: [Outcome, Outcome];
+  /** The reason the skipped tests of this repetition carry. */
+  skipReason?: string;
   /** Writes something that is not a run file. */
   garbage?: boolean;
+}
+
+/** A skipped test of the fake suite carries the reason of its step. */
+function reasonFor(step: Step, outcome: Outcome): { skipReason?: string } {
+  return outcome === 'skipped' && step.skipReason !== undefined ? { skipReason: step.skipReason } : {};
 }
 
 /** A stand-in for Playwright that does what the real reporter does: write the file the environment names. */
@@ -53,8 +60,8 @@ function fakePlaywright(steps: Step[]) {
           file,
           run(
             [
-              record({ id: 'PB-VOD-001', outcome: step.outcomes[0] }),
-              record({ id: 'PB-VOD-002', outcome: step.outcomes[1] }),
+              record({ id: 'PB-VOD-001', outcome: step.outcomes[0], ...reasonFor(step, step.outcomes[0]) }),
+              record({ id: 'PB-VOD-002', outcome: step.outcomes[1], ...reasonFor(step, step.outcomes[1]) }),
             ],
             { envId: 'fake-env', runId: invocation.env.PB_RUN_ID as string },
           ),
@@ -157,6 +164,31 @@ describe('PB-LAB-004 flake-collect: the repetitions', () => {
     const history = await new FileStore({ dir: join(dir, 'history') }).load('fake-env');
     expect(history.map((r) => r.runId)).toEqual(['collect-test-1', 'collect-test-2', 'collect-test-3']);
     expect(readdirSync(join(dir, 'history'))).toEqual(['fake-env.jsonl']);
+  });
+
+  it('counts the skipped tests next to the executions, with the start of their reason, so that an invalid run is not lost', async () => {
+    const dir = scratch();
+    const reason =
+      'invalid run: forced climb to 360p 5.9 s after the step down, 10 of 974 frames dropped. The 8 s switch interval allows no decision of the adaptation that soon after the step down, and the load dropped frames';
+    const fake = fakePlaywright([
+      { exit: 0, outcomes: ['passed', 'passed'] },
+      { exit: 0, outcomes: ['passed', 'skipped'], skipReason: reason },
+      { exit: 0, outcomes: ['skipped', 'skipped'], skipReason: reason },
+    ]);
+    const lines: string[] = [];
+    const result = await collect(options(dir, { runs: 3 }), { run: fake.run, log: (l) => lines.push(l) });
+
+    expect(result).toMatchObject({ executions: 3, flakyOutcomes: 0, failedOutcomes: 0, skippedOutcomes: 3 });
+    expect(lines[0]).toBe('repetition 1 of 3: exit 0, 2 tests executed, 0 flaky, 0 failed');
+    expect(lines[1]).toBe(
+      `repetition 2 of 3: exit 0, 1 tests executed, 0 flaky, 0 failed, 1 skipped [PB-VOD-002 (chromium): ${reason.slice(0, 109)}…]`,
+    );
+    expect(lines[2]).toMatch(
+      /, 2 skipped \[PB-VOD-001 \(chromium\): invalid run: forced climb to 360p 5\.9 s .*…; PB-VOD-002 /,
+    );
+    expect(lines.at(-1)).toBe(
+      `collected 3 of 3 runs into ${join(dir, 'history')}: 3 executions, 0 flaky, 0 failed, 3 skipped. Next: npm run flake:report`,
+    );
   });
 
   it('keeps going after a failing run (a failure is data), and stops when Playwright was killed, keeping what it has', async () => {
