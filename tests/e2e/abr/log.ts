@@ -38,8 +38,26 @@ export function originFailures(log: readonly RequestLogEntry[]): RequestLogEntry
 }
 
 /**
+ * The media segments of the audio stream that the origin was asked for more than once, as `a-aac #10`. Shaka asks again for a segment
+ * only when something cancelled it: a failed request, a seek, or a forced switch. `Player.disableStream` (which the dropped-frame
+ * protection calls) switches with `force`, and `StreamingEngine.switchInternal_` then switches the audio stream again too, although it
+ * does not change, and cancels the request in flight; the adaptation's own switch does not touch the audio stream. So in a load with no
+ * failed request, no error and no seek, a repeated audio segment is the mark of a forced switch (ADR-106, amendment 3).
+ */
+export function repeatedAudioSegments(log: readonly RequestLogEntry[]): string[] {
+  const asked = new Map<string, number>();
+  for (const entry of requestsFor(log, { kind: 'segment' })) {
+    if (entry.rep === undefined || entry.number === undefined || isVideoRep(entry.rep)) continue;
+    const key = `${entry.rep} #${entry.number}`;
+    asked.set(key, (asked.get(key) ?? 0) + 1);
+  }
+  return [...asked].filter(([, times]) => times > 1).map(([key]) => key);
+}
+
+/**
  * The media time at which the first segment of `rep` that was asked for starts, or null when none was: segment `n` of a stream of
- * segments of `segmentDurationSec` covers [(n - 1) d, n d), so the playhead enters the rung the player stepped down to at that time.
+ * segments of `segmentDurationSec` covers [(n - 1) d, n d), so the playhead enters the rung (the one the player stepped down to, or
+ * the one it climbed to) at that time.
  */
 export function firstSegmentStart(
   log: readonly RequestLogEntry[],
