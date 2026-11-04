@@ -1,4 +1,14 @@
 {
   "schemaVersion": 1,
-  "entries": []
+  "entries": [
+    {
+      "id": "PB-ABR-002",
+      "project": "webkit",
+      "reason": "flaky in 6 of 18 executions on the macOS WebKit leg in the history of real builds (ci-data), and a 7th in the pull request that crossed the gate's limit: the first attempt fails 'at most one rebuffer' when the player leaves 720p late on the 3-vCPU runner (18.05 s: 2 rebuffers, 762 ms) and the retry passes; its invalid-run classifier labels another cause and does not stop this one. Above the 5 % trigger from 20 executions, so the gate asks for a fix or a quarantine; there is no fix yet.",
+      "owner": "@hanniavalera",
+      "since": "2026-11-04",
+      "expires": "2026-11-11",
+      "evidence": "https://github.com/hanniavalera/playback-proof/actions/runs/41934174353/job/126938450472"
+    }
+  ]
 }
