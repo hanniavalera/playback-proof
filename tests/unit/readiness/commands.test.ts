@@ -277,6 +277,14 @@ describe('npm run soak', () => {
     expect(r.stopped).toEqual({ service: 1, released: 1 });
     expect(r.fp.env.contexts.every((context) => context.closed)).toBe(true);
     expect(r.fp.service.deleted).toHaveLength(1);
+    // The banner says what is injected, in words that read the same when nothing is.
+    expect(r.err.join('\n')).toContain('an outage at minute 2.5, no stale manifest');
+  });
+
+  it('says in the banner that nothing is injected when it is not', async () => {
+    const r = rig();
+    await runSoakCommand(['--minutes', 'ci', '--no-stall', '--no-write'], r.deps);
+    expect(r.err.join('\n')).toContain('no outage, no stale manifest');
   });
 
   it('records how busy the machine was around a soak, in the file and on the summary', async () => {

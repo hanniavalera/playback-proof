@@ -276,8 +276,14 @@ export async function runSoakCommand(argv: string[], deps: CommandDeps): Promise
       servicePid: service.pid,
       ...(deps.clock ? { clock: deps.clock } : {}),
     });
+    const injected = [
+      options.stallAtMinutes === null ? 'no outage' : `an outage at minute ${options.stallAtMinutes}`,
+      options.staleAtMinutes === null
+        ? 'no stale manifest'
+        : `a stale manifest at minute ${options.staleAtMinutes}`,
+    ].join(', ');
     deps.err(
-      `soak: ${options.minutes} min on ${options.engine} (${envId}), ${plan.stream} over ${plan.protocol}, configuration ${options.candidate?.id ?? 'A'}; outage at ${options.stallAtMinutes ?? 'none'} min, stale manifest at ${options.staleAtMinutes ?? 'none'} min`,
+      `soak: ${options.minutes} min on ${options.engine} (${envId}), ${plan.stream} over ${plan.protocol}, configuration ${options.candidate?.id ?? 'A'}; ${injected}`,
     );
     const loadBefore = deps.load();
     const run = await runSoak(driver, {
