@@ -80,8 +80,21 @@ export const RESTART_TOLERANCE_SEC = 0.5;
  */
 export const FRAME_AGREEMENT_TOLERANCE = 10;
 
-/** The effective frame rate of a window may be this share off the frame rate of the stream (27 to 33 fps for 30): every window measured in the four engines was exactly 30. */
-export const FPS_TOLERANCE_SHARE = 0.1;
+/**
+ * The most frames per media second a window may present, as a share of the stream's frame rate: a page cannot show more frames than
+ * the stream has, and every window measured in an unloaded engine was exactly 30 fps (60 frames in 2 s), so 10 % is for the frame
+ * callbacks at the two ends of the window.
+ */
+export const FPS_MAX_SHARE = 1.1;
+
+/**
+ * The fewest, as a share of the stream's rate: the instrument is alive. This is NOT a quality bound, and it is not tight on purpose:
+ * Linux WebKit with the container busy presented 46 frames in 2 s (23 fps, 77 %) with 46 decoded, so the counters were right and the
+ * machine slow, and a bound at 27 fps failed a correct instrument. Whether 30 fps is held is what the performance baselines measure
+ * on a quiet machine (PB-PERF-002); half the stream's rate is where the picture is no longer playing at all, and a counter that
+ * undercounts by half is also caught by the agreement of the two counters.
+ */
+export const FPS_MIN_SHARE = 0.5;
 
 /** The media time `measureFrames` looks at: long enough to hold sixty frames, short enough for a test of a few seconds. */
 export const FRAME_WINDOW_SEC = 2;

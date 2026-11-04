@@ -7,7 +7,8 @@ import { originStartupSpanMs, sinceLoadRequested, videoFrameRate } from './vod/i
 import { allSegments, distinctAscending, segmentNumbers } from './vod/segments.ts';
 import {
   CLOCK_RESOLUTION_MS,
-  FPS_TOLERANCE_SHARE,
+  FPS_MAX_SHARE,
+  FPS_MIN_SHARE,
   FRAME_AGREEMENT_TOLERANCE,
   FRAME_WINDOW_SEC,
 } from './vod/tolerances.ts';
@@ -74,12 +75,12 @@ test(
     ).not.toBeNull();
     expect(
       measured.fps,
-      `effective frame rate (qa.measureFrames): ${measured.presented} presented frames in ${measured.mediaSeconds} s of media time; the stream is ${frameRate} fps`,
-    ).toBeGreaterThanOrEqual(frameRate * (1 - FPS_TOLERANCE_SHARE));
+      `effective frame rate (qa.measureFrames): ${measured.presented} presented and ${measured.decoded} decoded frames in ${measured.mediaSeconds} s of media time; the stream is ${frameRate} fps`,
+    ).toBeGreaterThanOrEqual(frameRate * FPS_MIN_SHARE);
     expect(
       measured.fps,
-      'effective frame rate (qa.measureFrames) above the stream frame rate',
-    ).toBeLessThanOrEqual(frameRate * (1 + FPS_TOLERANCE_SHARE));
+      `effective frame rate (qa.measureFrames) above the stream's ${frameRate} fps: a page cannot present more frames than the stream has`,
+    ).toBeLessThanOrEqual(frameRate * FPS_MAX_SHARE);
     expect(
       Math.abs((measured.presented as number) - measured.decoded),
       `distance in frames between presented (${measured.presented}) and decoded (${measured.decoded}) frames in the window`,
