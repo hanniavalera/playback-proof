@@ -25,6 +25,13 @@ export const END_MARGIN_MS = 15_000;
 /** How long the player plays at the far position in PB-VOD-008 before the way back: enough for it to append there and move its playhead on. */
 export const EVICTION_PLAY_SEC = 3;
 
+/**
+ * From which media time on nothing is buffered for a player a few seconds into the title: the buffer reaches the playhead plus its
+ * 10 s goal and the segment in flight (`[0, 14]` at 3 s of play in Chromium and WebKit, measured), so with the playhead below 4 s the
+ * buffer ends before 16 s, and a seek to a position at or beyond it needs the origin.
+ */
+export const UNBUFFERED_FROM_SEC = 16;
+
 // ---- Where the clock is, in seconds
 
 /**

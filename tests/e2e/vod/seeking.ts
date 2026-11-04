@@ -7,7 +7,11 @@ import type { TestSession } from '../support/session.ts';
 import { requestsFor } from '../support/waiting.ts';
 import { checked, failure } from './fail.ts';
 import { distinctAscending, middleOfSegment, repsOfTrack, segmentNumbers } from './segments.ts';
-import { CLOCK_OVERSHOOT_TOLERANCE_SEC, SEEK_LANDING_TOLERANCE_SEC } from './tolerances.ts';
+import {
+  CLOCK_OVERSHOOT_TOLERANCE_SEC,
+  SEEK_LANDING_TOLERANCE_SEC,
+  UNBUFFERED_FROM_SEC,
+} from './tolerances.ts';
 
 export interface RecordedSeek {
   /** The cursor taken before the seek: `qa.events(since)` is the timeline of the seek and what followed. */
@@ -99,12 +103,15 @@ export function farTarget(info: StreamInfo): number {
 }
 
 /**
- * The targets of five rapid seeks: positions spread over the second half of the title, forward and backward from one another, each in
- * the middle of a segment and all outside what a player two seconds in has buffered (about the first 14 s), so each needs the origin.
- * The last one differs from every other, so a player that lands on any of the others is caught (49, 21, 39, 31 and 27 s of 60).
+ * The targets of five rapid seeks: segments spread over the part of the title that a player a few seconds in has not buffered (its
+ * playhead plus about twelve seconds, so from the 16th second on) and that is not the last segment, forward and backward from one
+ * another, each aimed at the middle of its segment, so each needs the origin. The last one differs from every other, so a player that
+ * lands on any of the others is caught (57, 17, 47, 27 and 37 s of 60; 27, 17, 25, 19 and 23 s of 30).
  */
 export function rapidTargets(info: StreamInfo): number[] {
-  return [0.8, 0.35, 0.65, 0.5, 0.45].map((share) =>
-    middleOfSegment(info, Math.floor(info.segmentCount * share) + 1),
+  const first = Math.ceil(UNBUFFERED_FROM_SEC / info.segmentDurationSec) + 1;
+  const candidates = Array.from({ length: info.segmentCount - 1 - first + 1 }, (_, index) => first + index);
+  return [1, 0, 0.75, 0.25, 0.5].map((share) =>
+    middleOfSegment(info, candidates[Math.round(share * (candidates.length - 1))] as number),
   );
 }
