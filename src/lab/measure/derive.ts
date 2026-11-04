@@ -110,6 +110,9 @@ export interface PairVariation {
   n: number;
   /** The raw baseline runs that produced a value. */
   values: number[];
+  /** The value of the discarded warm-up run, and how many times the median of the measured runs it was; null when the warm-up produced none or the median is zero. */
+  warmup: number | null;
+  warmupRatio: number | null;
   median: number;
   tailValue: number;
   min: number;
@@ -176,6 +179,7 @@ export function measureVariation(
           median: z * Math.SQRT2 * se.median,
           tail: z * Math.SQRT2 * se.tail,
         };
+        const warmup = scenario.warmup?.values[metricSpec.id] ?? null;
         pairs.push({
           envId: baseline.envId,
           profile: baseline.profile,
@@ -187,6 +191,8 @@ export function measureVariation(
           tail,
           n: values.length,
           values,
+          warmup,
+          warmupRatio: warmup === null || med === 0 ? null : warmup / med,
           median: med,
           tailValue,
           min: minimum(values),
@@ -446,12 +452,12 @@ export function renderDerivationMarkdown(derivation: Derivation): string {
     '',
     '### Relative metrics: variation of the baseline runs',
     '',
-    '| environment | profile | metric | n | median | tail | min..max | CV | robust CV | SE median (param / boot) | noise median | noise tail | gated |',
-    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+    '| environment | profile | metric | n | median | tail | min..max | CV | robust CV | warm-up (x median) | SE median (param / boot) | noise median | noise tail | gated |',
+    '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
   ];
   for (const pair of derivation.pairs.filter((p) => p.ruleKind === 'relative')) {
     lines.push(
-      `| ${pair.envId} | ${pair.profile} | ${pair.scenario} ${pair.metric} | ${pair.n} | ${fmt(pair.median)} ${pair.unit} | ${pair.tail} ${fmt(pair.tailValue)} | ${fmt(pair.min)}..${fmt(pair.max)} | ${pct(pair.cv)} | ${pct(pair.robustCv)} | ${fmt(pair.seParametric.median)} / ${fmt(pair.seBootstrap.median)} | ${fmt(pair.noise.median)} ${pair.unit} (${pct(pair.noiseShare.median)}) | ${fmt(pair.noise.tail)} ${pair.unit} (${pct(pair.noiseShare.tail)}) | ${pair.gated ? 'yes' : 'no: tracked'} |`,
+      `| ${pair.envId} | ${pair.profile} | ${pair.scenario} ${pair.metric} | ${pair.n} | ${fmt(pair.median)} ${pair.unit} | ${pair.tail} ${fmt(pair.tailValue)} | ${fmt(pair.min)}..${fmt(pair.max)} | ${pct(pair.cv)} | ${pct(pair.robustCv)} | ${pair.warmup === null ? '-' : `${fmt(pair.warmup)} (${fmt(pair.warmupRatio, 2)}x)`} | ${fmt(pair.seParametric.median)} / ${fmt(pair.seBootstrap.median)} | ${fmt(pair.noise.median)} ${pair.unit} (${pct(pair.noiseShare.median)}) | ${fmt(pair.noise.tail)} ${pair.unit} (${pct(pair.noiseShare.tail)}) | ${pair.gated ? 'yes' : 'no: tracked'} |`,
     );
   }
   lines.push(
