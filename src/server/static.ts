@@ -259,6 +259,22 @@ async function sendFile(res: ServerResponse, file: string, head: boolean): Promi
   }
 }
 
+/**
+ * What is left to do when something unforeseen failed: answer 404, or drop the connection if it is too late (or the answer
+ * cannot be written either). It is reported as 404 whatever was sent: the set of statuses is fixed by this module's API.
+ */
+function giveUp(res: ServerResponse, head: boolean): StaticResult {
+  if (!res.headersSent) {
+    try {
+      return reply(res, 404, head);
+    } catch {
+      // The answer cannot be written either: the connection is dropped below.
+    }
+  }
+  res.destroy();
+  return { status: 404 };
+}
+
 /** Writes the whole response for GET and HEAD under the mount. Never throws: what cannot be served is answered or dropped. */
 export async function serveStatic(
   req: IncomingMessage,
@@ -281,16 +297,6 @@ export async function serveStatic(
         return reply(res, 404, head);
     }
   } catch {
-    // Nothing unforeseen is allowed to take the lab's server down: refuse, or drop the connection if it is too late to.
-    if (res.headersSent) {
-      res.destroy();
-      return { status: 404 };
-    }
-    try {
-      return reply(res, 404, head);
-    } catch {
-      res.destroy();
-      return { status: 404 };
-    }
+    return giveUp(res, head);
   }
 }
