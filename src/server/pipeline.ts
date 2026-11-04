@@ -307,11 +307,16 @@ export async function serveMedia(
       entry.bytes = outcome.bytesSent;
       entry.ttfbMs = round(beforeDeliverMs + outcome.ttfbMs);
       entry.totalMs = round(beforeDeliverMs + outcome.totalMs);
-      if (outcome.aborted) entry.aborted = true;
+      if (outcome.aborted) {
+        entry.aborted = true;
+        // deliver() sets `aborted` exactly when it has a reason; the fallback is for the type, not for a case that exists.
+        entry.abortReason = outcome.reason ?? 'error';
+      }
       if (outcome.error) ctx.report(`${method} ${pathname}`, `delivery: ${outcome.error}`);
     } else {
       entry.totalMs = round(performance.now() - arrived);
       entry.aborted = true;
+      entry.abortReason = 'error';
     }
     entry.faults = [...plan.fired];
     session.recordCompletion(entry);

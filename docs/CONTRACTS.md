@@ -147,6 +147,14 @@ Base URL `http://127.0.0.1:${PB_PORT}` (default 4600). Types: `src/shared/api.ts
   An entry is listed **from the request's arrival** with `pending: true` and the values so far (status 0 until the response head is sent), and is
   completed in place. `seq` is assigned at arrival, so the list is always in `seq` order and a cursor (`?since=<last seq seen>`) cannot skip a request that
   completes late; it also lets a test wait on the server ("a request for segment 7 has started") without sleeping.
+- `aborted: true` means the response did not reach the client whole, and `abortReason` (set whenever `aborted` is) says **who ended it**:
+  `client-closed` (the client hung up before it had received every byte: a player that cancels an in-flight request when it seeks or switches rung does
+  this, and it is normal behaviour, not an origin failure), `fault-abort` (an `abort` fault cut the connection: the origin did) or `error` (the service
+  could not write the response: a bug of the service, never expected). An aborted entry keeps the `status` of the head it sent (200; 0 when none was sent)
+  and the `bytes` written, so `status` alone cannot tell it from a delivered response. A client that hangs up **after** it has received every byte is not
+  an abort: `aborted` and `abortReason` are absent. A check that "the origin did not fail" must therefore count the status of 400 or more and the aborts
+  that are not `client-closed`; `SessionDetail.counters.errors` counts every abort, a client's included. The e2e helper `requestsFor` has the two
+  readings (section 7.1).
 - A media request is decided in this order ([ADR-082](decisions/server.md)): the session must exist (404); the request is listed; the stream and the protocol of
   the path must be the session's stream and one it offers, and the URL must be the one URL of the resource (404 otherwise: an extension that is not the
   representation's, a segment number with a leading zero, an unknown representation, a method other than `GET` and `HEAD` is a 405); the fault plan is

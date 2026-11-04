@@ -122,7 +122,14 @@ describe('the request log while requests are in flight', () => {
     client.cut();
     await client.done;
     const [entry] = await waitForLog(h, s.id, (entries) => entries[0]?.pending === false);
-    expect(entry).toMatchObject({ pending: false, aborted: true, status: 0, bytes: 0, faults: ['f1'] });
+    expect(entry).toMatchObject({
+      pending: false,
+      aborted: true,
+      abortReason: 'client-closed',
+      status: 0,
+      bytes: 0,
+      faults: ['f1'],
+    });
     await until(() => activeDeliveries() === 0);
     expect((await call(h.origin, 'GET', '/health')).status).toBe(200);
   });
@@ -148,8 +155,8 @@ describe('a client that hangs up while a throttled body is being written', () =>
     first.cut();
     await first.done;
     const [entry] = await waitForLog(h, s.id, (entries) => entries[0]?.pending === false);
-    expect(entry?.aborted).toBe(true);
-    expect(entry?.status).toBe(200);
+    // 'client-closed': the player (the client) ended it, not the origin. A test that asks "did the origin fail?" must not count it.
+    expect(entry).toMatchObject({ aborted: true, abortReason: 'client-closed', status: 200 });
     expect(entry?.bytes).toBeGreaterThan(0);
     expect(entry?.bytes).toBeLessThan(120_000);
     await until(() => activeDeliveries() === 0);
@@ -161,9 +168,35 @@ describe('a client that hangs up while a throttled body is being written', () =>
     expect(goodput(next.chunks).steadyKbps).toBeGreaterThan(800 * 0.9);
     expect(goodput(next.chunks).steadyKbps).toBeLessThan(800 * 1.1);
     const log: RequestLogEntry[] = await logOf(h, s.id);
-    expect(log.map((e) => [e.aborted === true, e.pending])).toEqual([
-      [true, false],
-      [false, false],
+    expect(log.map((e) => [e.aborted === true, e.abortReason, e.pending])).toEqual([
+      [true, 'client-closed', false],
+      [false, undefined, false],
     ]);
+  });
+});
+
+describe('a client that hangs up after it has received every byte', () => {
+  let h: Harness;
+  beforeEach(async () => {
+    h = await startHarness();
+  });
+  afterEach(async () => {
+    await h.close();
+  });
+
+  it('is not an abort: the entry has neither `aborted` nor an `abortReason`, and the delivery is released at once', async () => {
+    // A `Connection: close` client leaves the moment Content-Length is satisfied; the stall after the last byte holds the response
+    // open for 5 s, so the hang-up happens while the service still believes it is writing.
+    const s = await createSession(h, {
+      stream: FAKE_VOD,
+      faults: [{ type: 'stall', afterBytes: 600, ms: 5000, match: { kind: 'segment' } }],
+    });
+    const got = await download(h.port, segmentPath(s.id, s.stream, FAKE_VIDEO, 1, 'm4s'));
+    expect(got).toMatchObject({ bytes: 600, complete: true });
+    const [entry] = await waitForLog(h, s.id, (entries) => entries[0]?.pending === false);
+    expect(entry).toMatchObject({ status: 200, bytes: 600, pending: false, faults: ['f1'] });
+    expect(entry?.aborted).toBeUndefined();
+    expect(entry?.abortReason).toBeUndefined();
+    expect(entry?.totalMs).toBeLessThan(2000);
   });
 });
