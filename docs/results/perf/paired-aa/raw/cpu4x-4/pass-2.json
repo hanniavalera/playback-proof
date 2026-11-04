@@ -1,0 +1,1002 @@
+{
+  "schemaVersion": 1,
+  "kind": "perf-gate-report",
+  "envId": "gha-linux-x64",
+  "profile": "chromium-cpu4x",
+  "generatedAt": "2026-11-04T18:00:18.814Z",
+  "verdict": "pass",
+  "exitCode": 0,
+  "baseline": {
+    "file": "/tmp/pb-paired-57Cr5m/baselines/gha-linux-x64/chromium-cpu4x.json",
+    "generatedAt": "2026-11-04T18:00:18.444Z",
+    "commit": "b971ed3",
+    "browserVersion": "156.0.8078.4",
+    "runsPerScenario": 10
+  },
+  "current": {
+    "host": {
+      "os": {
+        "platform": "linux",
+        "arch": "x64",
+        "release": "7.0.0-1017-azure",
+        "name": "Ubuntu 24.04.5 LTS"
+      },
+      "cpus": 4,
+      "memoryGiB": 15.6,
+      "node": "v22.23.4",
+      "playwright": "1.64.1",
+      "git": {
+        "commit": "b971ed3",
+        "dirty": false
+      },
+      "cpuModel": "AMD EPYC 9V74 80-Core Processor"
+    },
+    "machine": {
+      "invokedVia": "direct",
+      "dockerCpus": null,
+      "quiet": null,
+      "loadBeforeProfile": 1.77,
+      "loadAfterProfile": 1.67
+    },
+    "browser": {
+      "name": "chromium",
+      "version": "156.0.8078.4",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+      "cpuThrottleRate": 4
+    },
+    "ffmpeg": "6.1.1-3ubuntu5"
+  },
+  "cpuModels": {
+    "baseline": "AMD EPYC 9V74 80-Core Processor",
+    "current": "AMD EPYC 9V74 80-Core Processor",
+    "differs": false,
+    "line": "baseline machine: AMD EPYC 9V74 80-Core Processor; this machine: AMD EPYC 9V74 80-Core Processor",
+    "note": null
+  },
+  "paired": {
+    "controlRef": "HEAD",
+    "controlCommit": "b971ed3f223fe0883ec4762aa1476932cdbc3532",
+    "headCommit": "b971ed3f223fe0883ec4762aa1476932cdbc3532",
+    "checkout": "created",
+    "controlDir": null,
+    "aa": true,
+    "nodeModules": "linked",
+    "wallMs": {
+      "controlPrepare": 346,
+      "controlMeasure": 85924,
+      "head": 85195
+    },
+    "cpuModels": {
+      "control": "AMD EPYC 9V74 80-Core Processor",
+      "head": "AMD EPYC 9V74 80-Core Processor",
+      "same": true,
+      "warning": null
+    },
+    "line": "paired: the baseline was measured on this machine minutes ago from b971ed3f223f; the committed baselines of this environment were not used (A/A by construction: the control is this very commit)"
+  },
+  "policy": {
+    "limits": {
+      "runs": 10,
+      "warmupRuns": 1,
+      "maxBaselineCv": 0.15,
+      "startupMedianRel": 0.3,
+      "startupTailRel": 0.3,
+      "startupFloorMs": 5,
+      "lowEndStartupMedianRel": 0.3,
+      "lowEndStartupTailRel": 0.3,
+      "lowEndStartupFloorMs": 20,
+      "fpsMedianRel": 0.05,
+      "fpsTailRel": 0.1,
+      "fpsFloor": 1,
+      "frameDroppedMedianBudget": 0.01,
+      "frameDroppedTailBudget": 0.03,
+      "lowEndDroppedMedianBudget": 0.02,
+      "lowEndDroppedTailBudget": 0.05,
+      "rebufferCountMedianBudget": 0,
+      "rebufferCountTailBudget": 1,
+      "rebufferMsMedianBudget": 250,
+      "rebufferMsTailBudget": 1000,
+      "rebufferRatioMedianBudget": 0.01,
+      "rebufferRatioTailBudget": 0.05
+    },
+    "rules": {
+      "startup": {
+        "kind": "relative",
+        "worse": "higher",
+        "medianShare": 0.3,
+        "tailShare": 0.3,
+        "floor": 5
+      },
+      "lowEndStartup": {
+        "kind": "relative",
+        "worse": "higher",
+        "medianShare": 0.3,
+        "tailShare": 0.3,
+        "floor": 20
+      },
+      "fps": {
+        "kind": "relative",
+        "worse": "lower",
+        "medianShare": 0.05,
+        "tailShare": 0.1,
+        "floor": 1
+      },
+      "frameDropped": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 0.01,
+        "tailBudget": 0.03
+      },
+      "lowEndDropped": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 0.02,
+        "tailBudget": 0.05
+      },
+      "rebufferCount": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 0,
+        "tailBudget": 1
+      },
+      "rebufferMs": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 250,
+        "tailBudget": 1000
+      },
+      "rebufferRatio": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 0.01,
+        "tailBudget": 0.05
+      }
+    }
+  },
+  "warnings": [],
+  "problems": [],
+  "scenarios": [
+    {
+      "id": "PB-PERF-004",
+      "name": "low-end",
+      "title": "Low-end device (4x CPU throttle, vod-cmaf, clean): startup, and dropped frames at 720p",
+      "status": "pass",
+      "remeasured": false,
+      "stream": "vod-cmaf",
+      "metrics": [
+        {
+          "metric": "startupMs",
+          "verdict": "pass",
+          "first": {
+            "metric": "startupMs",
+            "label": "Startup time",
+            "unit": "ms",
+            "rule": {
+              "kind": "relative",
+              "worse": "higher",
+              "medianShare": 0.3,
+              "tailShare": 0.3,
+              "floor": 20
+            },
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.04738773178811259,
+            "median": {
+              "statistic": "median",
+              "baseline": 201.20000000001164,
+              "current": 207.5,
+              "change": 6.2999999999883585,
+              "changeShare": 0.03131212723652085,
+              "worseBy": 6.2999999999883585,
+              "allowed": 60.36000000000349,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 219.0399999999907,
+              "current": 210.67000000003026,
+              "change": -8.369999999960442,
+              "changeShare": -0.03821219868499268,
+              "worseBy": -8.369999999960442,
+              "allowed": 65.7119999999972,
+              "exceeded": false
+            },
+            "verdict": "pass",
+            "reason": "within the limits (median +30 %, p90 +30 %, and more than 20 ms)"
+          },
+          "remeasure": null
+        },
+        {
+          "metric": "manifestMs",
+          "verdict": "tracked",
+          "first": {
+            "metric": "manifestMs",
+            "label": "Manifest time",
+            "unit": "ms",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.04770034697469376,
+            "median": {
+              "statistic": "median",
+              "baseline": 85.55000000001746,
+              "current": 83.55000000001746,
+              "change": -2,
+              "changeShare": -0.023378141437750927,
+              "worseBy": -2,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 91.17999999998138,
+              "current": 87.56000000002095,
+              "change": -3.6199999999604273,
+              "changeShare": -0.039701688966452806,
+              "worseBy": -3.6199999999604273,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          },
+          "remeasure": null
+        },
+        {
+          "metric": "loadedMs",
+          "verdict": "tracked",
+          "first": {
+            "metric": "loadedMs",
+            "label": "Load time",
+            "unit": "ms",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.02726608198428596,
+            "median": {
+              "statistic": "median",
+              "baseline": 121.20000000001164,
+              "current": 119.60000000000582,
+              "change": -1.6000000000058208,
+              "changeShare": -0.01320132013205996,
+              "worseBy": -1.6000000000058208,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 126.34000000001397,
+              "current": 125.43999999999069,
+              "change": -0.9000000000232831,
+              "changeShare": -0.007123634636878135,
+              "worseBy": -0.9000000000232831,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          },
+          "remeasure": null
+        },
+        {
+          "metric": "droppedRatio",
+          "verdict": "pass",
+          "first": {
+            "metric": "droppedRatio",
+            "label": "Dropped-frame ratio",
+            "unit": "ratio",
+            "rule": {
+              "kind": "budget",
+              "worse": "higher",
+              "medianBudget": 0.02,
+              "tailBudget": 0.05
+            },
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": 0.02,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": 0.05,
+              "exceeded": false
+            },
+            "verdict": "pass",
+            "reason": "within the limits (median +0.02, p90 +0.05)"
+          },
+          "remeasure": null
+        },
+        {
+          "metric": "fps",
+          "verdict": "tracked",
+          "first": {
+            "metric": "fps",
+            "label": "Effective frame rate",
+            "unit": "fps",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0,
+            "median": {
+              "statistic": "median",
+              "baseline": 30,
+              "current": 30,
+              "change": 0,
+              "changeShare": 0,
+              "worseBy": 0,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 30,
+              "current": 30,
+              "change": 0,
+              "changeShare": 0,
+              "worseBy": 0,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          },
+          "remeasure": null
+        },
+        {
+          "metric": "decodedFrames",
+          "verdict": "tracked",
+          "first": {
+            "metric": "decodedFrames",
+            "label": "Frames decoded in the window",
+            "unit": "count",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.0021095915011129954,
+            "median": {
+              "statistic": "median",
+              "baseline": 150,
+              "current": 150,
+              "change": 0,
+              "changeShare": 0,
+              "worseBy": 0,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 150,
+              "current": 150,
+              "change": 0,
+              "changeShare": 0,
+              "worseBy": 0,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          },
+          "remeasure": null
+        },
+        {
+          "metric": "droppedFrames",
+          "verdict": "tracked",
+          "first": {
+            "metric": "droppedFrames",
+            "label": "Frames dropped in the window",
+            "unit": "count",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          },
+          "remeasure": null
+        }
+      ],
+      "problems": [],
+      "first": {
+        "startedAt": "2026-11-04T18:00:18.818Z",
+        "finishedAt": "2026-11-04T18:01:44.007Z",
+        "loadAverage": {
+          "before": 1.77,
+          "after": 1.67
+        },
+        "startRungHeight": 720,
+        "warmup": {
+          "values": {
+            "startupMs": 238.39999999996508,
+            "manifestMs": 86.69999999995343,
+            "loadedMs": 127.69999999995343,
+            "droppedRatio": 0,
+            "fps": 30,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 542.8000000000466,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7798
+        },
+        "runs": [
+          {
+            "values": {
+              "startupMs": 207,
+              "manifestMs": 84.70000000001164,
+              "loadedMs": 121.5,
+              "droppedRatio": 0,
+              "fps": 30,
+              "decodedFrames": 150,
+              "droppedFrames": 0
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 488.3999999999651,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 7690
+          },
+          {
+            "values": {
+              "startupMs": 193.29999999998836,
+              "manifestMs": 80.79999999998836,
+              "loadedMs": 114.59999999997672,
+              "droppedRatio": 0,
+              "fps": 30,
+              "decodedFrames": 150,
+              "droppedFrames": 0
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 461.9000000000233,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 7657
+          },
+          {
+            "values": {
+              "startupMs": 210.40000000002328,
+              "manifestMs": 81.5,
+              "loadedMs": 117.40000000002328,
+              "droppedRatio": 0,
+              "fps": 30,
+              "decodedFrames": 150,
+              "droppedFrames": 0
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 478.29999999998836,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 7695
+          },
+          {
+            "values": {
+              "startupMs": 211.29999999998836,
+              "manifestMs": 87.40000000002328,
+              "loadedMs": 124.29999999998836,
+              "droppedRatio": 0,
+              "fps": 30,
+              "decodedFrames": 150,
+              "droppedFrames": 0
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 501.6000000000349,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 7709
+          },
+          {
+            "values": {
+              "startupMs": 191.39999999996508,
+              "manifestMs": 85.20000000001164,
+              "loadedMs": 121.59999999997672,
+              "droppedRatio": 0,
+              "fps": 30,
+              "decodedFrames": 150,
+              "droppedFrames": 0
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 482.29999999998836,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 7678
+          },
+          {
+            "values": {
+              "startupMs": 208,
+              "manifestMs": 86.20000000001164,
+              "loadedMs": 125.29999999998836,
+              "droppedRatio": 0,
+              "fps": 30,
+              "decodedFrames": 150,
+              "droppedFrames": 0
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 498.9000000000233,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 7692
+          },
+          {
+            "values": {
+              "startupMs": 187.20000000001164,
+              "manifestMs": 79.30000000004657,
+              "loadedMs": 115.40000000002328,
+              "droppedRatio": 0,
+              "fps": 30,
+              "decodedFrames": 150,
+              "droppedFrames": 0
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 467.29999999998836,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 7678
+          },
+          {
+            "values": {
+              "startupMs": 210.10000000003492,
+              "manifestMs": 82.40000000002328,
+              "loadedMs": 116.70000000001164,
+              "droppedRatio": 0,
+              "fps": 30,
+              "decodedFrames": 150,
+              "droppedFrames": 0
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 480.5999999999767,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 7694
+          },
+          {
+            "values": {
+              "startupMs": 203.5,
+              "manifestMs": 78.59999999997672,
+              "loadedMs": 117.70000000001164,
+              "droppedRatio": 0,
+              "fps": 30,
+              "decodedFrames": 150,
+              "droppedFrames": 0
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 471.70000000001164,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 7678
+          },
+          {
+            "values": {
+              "startupMs": 210.60000000003492,
+              "manifestMs": 89,
+              "loadedMs": 126.70000000001164,
+              "droppedRatio": 0,
+              "fps": 30,
+              "decodedFrames": 150,
+              "droppedFrames": 0
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 483.9000000000233,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 7693
+          }
+        ],
+        "summaries": {
+          "startupMs": {
+            "n": 10,
+            "median": 207.5,
+            "p10": 190.97999999996972,
+            "p90": 210.67000000003026,
+            "min": 187.20000000001164,
+            "max": 211.29999999998836,
+            "mad": 3.4500000000116415,
+            "cv": 0.044924311508011176
+          },
+          "manifestMs": {
+            "n": 10,
+            "median": 83.55000000001746,
+            "p10": 79.23000000003958,
+            "p90": 87.56000000002095,
+            "min": 78.59999999997672,
+            "max": 89,
+            "mad": 2.7000000000116415,
+            "cv": 0.042096818793818616
+          },
+          "loadedMs": {
+            "n": 10,
+            "median": 119.60000000000582,
+            "p10": 115.32000000001862,
+            "p90": 125.43999999999069,
+            "min": 114.59999999997672,
+            "max": 126.70000000001164,
+            "mad": 3.5499999999883585,
+            "cv": 0.03611727677180643
+          },
+          "droppedRatio": {
+            "n": 10,
+            "median": 0,
+            "p10": 0,
+            "p90": 0,
+            "min": 0,
+            "max": 0,
+            "mad": 0,
+            "cv": null
+          },
+          "fps": {
+            "n": 10,
+            "median": 30,
+            "p10": 30,
+            "p90": 30,
+            "min": 30,
+            "max": 30,
+            "mad": 0,
+            "cv": 0
+          },
+          "decodedFrames": {
+            "n": 10,
+            "median": 150,
+            "p10": 150,
+            "p90": 150,
+            "min": 150,
+            "max": 150,
+            "mad": 0,
+            "cv": 0
+          },
+          "droppedFrames": {
+            "n": 10,
+            "median": 0,
+            "p10": 0,
+            "p90": 0,
+            "min": 0,
+            "max": 0,
+            "mad": 0,
+            "cv": null
+          }
+        },
+        "comparisons": [
+          {
+            "metric": "startupMs",
+            "label": "Startup time",
+            "unit": "ms",
+            "rule": {
+              "kind": "relative",
+              "worse": "higher",
+              "medianShare": 0.3,
+              "tailShare": 0.3,
+              "floor": 20
+            },
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.04738773178811259,
+            "median": {
+              "statistic": "median",
+              "baseline": 201.20000000001164,
+              "current": 207.5,
+              "change": 6.2999999999883585,
+              "changeShare": 0.03131212723652085,
+              "worseBy": 6.2999999999883585,
+              "allowed": 60.36000000000349,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 219.0399999999907,
+              "current": 210.67000000003026,
+              "change": -8.369999999960442,
+              "changeShare": -0.03821219868499268,
+              "worseBy": -8.369999999960442,
+              "allowed": 65.7119999999972,
+              "exceeded": false
+            },
+            "verdict": "pass",
+            "reason": "within the limits (median +30 %, p90 +30 %, and more than 20 ms)"
+          },
+          {
+            "metric": "manifestMs",
+            "label": "Manifest time",
+            "unit": "ms",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.04770034697469376,
+            "median": {
+              "statistic": "median",
+              "baseline": 85.55000000001746,
+              "current": 83.55000000001746,
+              "change": -2,
+              "changeShare": -0.023378141437750927,
+              "worseBy": -2,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 91.17999999998138,
+              "current": 87.56000000002095,
+              "change": -3.6199999999604273,
+              "changeShare": -0.039701688966452806,
+              "worseBy": -3.6199999999604273,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          },
+          {
+            "metric": "loadedMs",
+            "label": "Load time",
+            "unit": "ms",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.02726608198428596,
+            "median": {
+              "statistic": "median",
+              "baseline": 121.20000000001164,
+              "current": 119.60000000000582,
+              "change": -1.6000000000058208,
+              "changeShare": -0.01320132013205996,
+              "worseBy": -1.6000000000058208,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 126.34000000001397,
+              "current": 125.43999999999069,
+              "change": -0.9000000000232831,
+              "changeShare": -0.007123634636878135,
+              "worseBy": -0.9000000000232831,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          },
+          {
+            "metric": "droppedRatio",
+            "label": "Dropped-frame ratio",
+            "unit": "ratio",
+            "rule": {
+              "kind": "budget",
+              "worse": "higher",
+              "medianBudget": 0.02,
+              "tailBudget": 0.05
+            },
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": 0.02,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": 0.05,
+              "exceeded": false
+            },
+            "verdict": "pass",
+            "reason": "within the limits (median +0.02, p90 +0.05)"
+          },
+          {
+            "metric": "fps",
+            "label": "Effective frame rate",
+            "unit": "fps",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0,
+            "median": {
+              "statistic": "median",
+              "baseline": 30,
+              "current": 30,
+              "change": 0,
+              "changeShare": 0,
+              "worseBy": 0,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 30,
+              "current": 30,
+              "change": 0,
+              "changeShare": 0,
+              "worseBy": 0,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          },
+          {
+            "metric": "decodedFrames",
+            "label": "Frames decoded in the window",
+            "unit": "count",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.0021095915011129954,
+            "median": {
+              "statistic": "median",
+              "baseline": 150,
+              "current": 150,
+              "change": 0,
+              "changeShare": 0,
+              "worseBy": 0,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 150,
+              "current": 150,
+              "change": 0,
+              "changeShare": 0,
+              "worseBy": 0,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          },
+          {
+            "metric": "droppedFrames",
+            "label": "Frames dropped in the window",
+            "unit": "count",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 0,
+              "change": 0,
+              "changeShare": null,
+              "worseBy": 0,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          }
+        ],
+        "problems": []
+      },
+      "remeasure": null
+    }
+  ]
+}

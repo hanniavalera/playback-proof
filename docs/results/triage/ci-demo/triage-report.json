@@ -1,0 +1,971 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-04T18:57:06.552Z",
+  "from": "<path>/artifacts",
+  "sources": [
+    {
+      "path": "reports-chromium/reports/playwright.json",
+      "tests": 15,
+      "passed": 0,
+      "failed": 15,
+      "flaky": 0,
+      "skipped": 0,
+      "notRun": 0,
+      "interrupted": 0,
+      "runErrors": 0,
+      "startTime": "2026-11-04T18:29:52.594Z",
+      "durationMs": 263088
+    },
+    {
+      "path": "reports-chromium-cpu4x/reports/playwright.json",
+      "tests": 3,
+      "passed": 0,
+      "failed": 3,
+      "flaky": 0,
+      "skipped": 0,
+      "notRun": 0,
+      "interrupted": 0,
+      "runErrors": 0,
+      "startTime": "2026-11-04T18:29:47.352Z",
+      "durationMs": 68654
+    },
+    {
+      "path": "reports-firefox/reports/playwright.json",
+      "tests": 15,
+      "passed": 0,
+      "failed": 15,
+      "flaky": 0,
+      "skipped": 0,
+      "notRun": 0,
+      "interrupted": 0,
+      "runErrors": 0,
+      "startTime": "2026-11-04T18:30:30.891Z",
+      "durationMs": 274422
+    },
+    {
+      "path": "reports-webkit-linux/reports/playwright.json",
+      "tests": 15,
+      "passed": 0,
+      "failed": 15,
+      "flaky": 0,
+      "skipped": 0,
+      "notRun": 0,
+      "interrupted": 0,
+      "runErrors": 0,
+      "startTime": "2026-11-04T18:30:14.264Z",
+      "durationMs": 261360
+    },
+    {
+      "path": "reports-webkit-macos/reports/playwright.json",
+      "tests": 15,
+      "passed": 0,
+      "failed": 15,
+      "flaky": 0,
+      "skipped": 0,
+      "notRun": 0,
+      "interrupted": 0,
+      "runErrors": 0,
+      "startTime": "2026-11-04T18:29:42.350Z",
+      "durationMs": 535353
+    }
+  ],
+  "totals": {
+    "failures": 63,
+    "flaky": 0,
+    "clusters": 3,
+    "rootCauses": 1,
+    "skipped": 0,
+    "notRun": 0,
+    "interrupted": 0
+  },
+  "clusters": [
+    {
+      "rank": 1,
+      "key": "fc2f02c1e869",
+      "signature": "Error: the player page did not boot (<url>): Timeout <n>ms exceeded. [thrown]",
+      "parts": {
+        "message": "Error: the player page did not boot (<url>): Timeout <n>ms exceeded.",
+        "assertion": "thrown",
+        "location": null,
+        "shaka": null
+      },
+      "size": 59,
+      "tests": [
+        "PB-ABR-002",
+        "PB-LIVE-001",
+        "PB-LIVE-002",
+        "PB-LIVE-003",
+        "PB-LIVE-004",
+        "PB-REC-001",
+        "PB-REC-002",
+        "PB-REC-008",
+        "PB-VOD-001",
+        "PB-VOD-002",
+        "PB-VOD-006",
+        "PB-VOD-007",
+        "PB-VOD-009",
+        "PB-VOD-012"
+      ],
+      "projects": [
+        "chromium",
+        "chromium-cpu4x",
+        "firefox",
+        "webkit"
+      ],
+      "outcomes": {
+        "failed": 59,
+        "timedOut": 0,
+        "flaky": 0
+      },
+      "category": "page-boot-failure",
+      "rule": {
+        "rule": "page-did-not-boot",
+        "category": "page-boot-failure",
+        "evidence": [
+          "the page did not boot: “Error: the player page did not boot (http://<host>/player/?<query>): Timeout 15000ms exceeded.”",
+          "the console names a Content Security Policy violation",
+          "console: “Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src…”",
+          "console: “Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-sr…”"
+        ],
+        "cause": "the player page did not boot: a Content Security Policy blocked its scripts"
+      },
+      "ruleRationale": "The page loaded and the player hook never became ready: the page build, its scripts or its headers are what is wrong.",
+      "failureClass": "Functional regression",
+      "firstCheck": "The console lines quoted in the message (a blocked script is a Content Security Policy or a missing `dist/player`): `curl -I <origin>/player/`, then `npm run build:player`.",
+      "agreement": {
+        "sameRule": 59,
+        "of": 59,
+        "otherRules": []
+      },
+      "representative": {
+        "scope": "test",
+        "id": "PB-ABR-002",
+        "title": "PB-ABR-002 downshifts when bandwidth drops mid-playback (bandwidth-drop): at most one rebuffer, settles on a rung the network can carry",
+        "file": "tests/e2e/abr.spec.ts",
+        "line": 134,
+        "project": "chromium",
+        "tags": [
+          "@dash",
+          "@merge"
+        ],
+        "tier": "merge",
+        "outcome": "failed",
+        "retries": 1,
+        "attempts": 2,
+        "failedAttempts": 2,
+        "attempt": 0,
+        "durationMs": 15504,
+        "quarantined": false,
+        "experimental": false,
+        "annotations": [],
+        "envId": "gha-linux-x64",
+        "source": "reports-chromium/reports/playwright.json",
+        "error": {
+          "message": "Error: the player page did not boot (http://<host>/player/?<query>): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+          "frames": [
+            {
+              "file": "tests/e2e/abr.spec.ts",
+              "fn": null,
+              "line": 150
+            }
+          ]
+        },
+        "diagnostics": {
+          "attached": [
+            "diagnostics-problems.json",
+            "page-console.json",
+            "request-log.json",
+            "session-detail.json"
+          ],
+          "players": 1,
+          "sessions": 1,
+          "shakaErrors": [],
+          "primaryError": null,
+          "metrics": {
+            "state": null,
+            "startupMs": null,
+            "rebuffers": null,
+            "frames": null,
+            "liveLatencyMs": null,
+            "bitrateSwitches": null,
+            "currentTime": null
+          },
+          "events": {
+            "total": 0,
+            "names": {},
+            "around": []
+          },
+          "requestLog": {
+            "entries": 0,
+            "segments": 0,
+            "manifests": 0,
+            "inits": 0,
+            "other": 0,
+            "originFailures": 0,
+            "originFailuresWithoutFault": 0,
+            "clientAborted": 0,
+            "pending": 0,
+            "byStatus": {},
+            "failed": []
+          },
+          "faults": [
+            {
+              "id": "f1",
+              "type": "throttle",
+              "description": "throttle 600 kbps after 8000 ms",
+              "fired": 0
+            }
+          ],
+          "console": {
+            "errors": 2,
+            "warnings": 0,
+            "pageErrors": 0,
+            "samples": [
+              "Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src…",
+              "Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-sr…"
+            ]
+          },
+          "problems": {
+            "qa-events.json": "TypeError: Cannot read properties of undefined (reading 'events')",
+            "qa-metrics.json": "TypeError: Cannot read properties of undefined (reading 'metrics')",
+            "qa-info.json": "TypeError: Cannot read properties of undefined (reading 'info')"
+          },
+          "userAgent": null,
+          "config": null,
+          "loadMode": null
+        },
+        "missing": [
+          "qa-events.json: not attached",
+          "qa-metrics.json: not attached",
+          "qa-info.json: not attached"
+        ]
+      },
+      "members": [
+        {
+          "id": "PB-ABR-002",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "reports-chromium/reports/playwright.json"
+        },
+        {
+          "id": "PB-ABR-002",
+          "project": "firefox",
+          "outcome": "failed",
+          "source": "reports-firefox/reports/playwright.json"
+        },
+        {
+          "id": "PB-ABR-002",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-linux/reports/playwright.json"
+        },
+        {
+          "id": "PB-ABR-002",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-macos/reports/playwright.json"
+        },
+        {
+          "id": "PB-LIVE-001",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "reports-chromium/reports/playwright.json"
+        },
+        {
+          "id": "PB-LIVE-001",
+          "project": "chromium-cpu4x",
+          "outcome": "failed",
+          "source": "reports-chromium-cpu4x/reports/playwright.json"
+        },
+        {
+          "id": "PB-LIVE-001",
+          "project": "firefox",
+          "outcome": "failed",
+          "source": "reports-firefox/reports/playwright.json"
+        },
+        {
+          "id": "PB-LIVE-001",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-linux/reports/playwright.json"
+        },
+        {
+          "id": "PB-LIVE-001",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-macos/reports/playwright.json"
+        },
+        {
+          "id": "PB-LIVE-002",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "reports-chromium/reports/playwright.json"
+        },
+        {
+          "id": "PB-LIVE-002",
+          "project": "firefox",
+          "outcome": "failed",
+          "source": "reports-firefox/reports/playwright.json"
+        },
+        {
+          "id": "PB-LIVE-002",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-linux/reports/playwright.json"
+        },
+        {
+          "id": "PB-LIVE-002",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-macos/reports/playwright.json"
+        },
+        {
+          "id": "PB-LIVE-003",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "reports-chromium/reports/playwright.json"
+        },
+        {
+          "id": "PB-LIVE-003",
+          "project": "firefox",
+          "outcome": "failed",
+          "source": "reports-firefox/reports/playwright.json"
+        },
+        {
+          "id": "PB-LIVE-003",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-linux/reports/playwright.json"
+        },
+        {
+          "id": "PB-LIVE-003",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-macos/reports/playwright.json"
+        },
+        {
+          "id": "PB-LIVE-004",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "reports-chromium/reports/playwright.json"
+        },
+        {
+          "id": "PB-LIVE-004",
+          "project": "firefox",
+          "outcome": "failed",
+          "source": "reports-firefox/reports/playwright.json"
+        },
+        {
+          "id": "PB-LIVE-004",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-linux/reports/playwright.json"
+        },
+        {
+          "id": "PB-LIVE-004",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-macos/reports/playwright.json"
+        },
+        {
+          "id": "PB-REC-001",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "reports-chromium/reports/playwright.json"
+        },
+        {
+          "id": "PB-REC-001",
+          "project": "firefox",
+          "outcome": "failed",
+          "source": "reports-firefox/reports/playwright.json"
+        },
+        {
+          "id": "PB-REC-001",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-linux/reports/playwright.json"
+        },
+        {
+          "id": "PB-REC-001",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-macos/reports/playwright.json"
+        },
+        {
+          "id": "PB-REC-002",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "reports-chromium/reports/playwright.json"
+        },
+        {
+          "id": "PB-REC-002",
+          "project": "firefox",
+          "outcome": "failed",
+          "source": "reports-firefox/reports/playwright.json"
+        },
+        {
+          "id": "PB-REC-002",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-linux/reports/playwright.json"
+        },
+        {
+          "id": "PB-REC-002",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-macos/reports/playwright.json"
+        },
+        {
+          "id": "PB-REC-008",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "reports-chromium/reports/playwright.json"
+        },
+        {
+          "id": "PB-REC-008",
+          "project": "firefox",
+          "outcome": "failed",
+          "source": "reports-firefox/reports/playwright.json"
+        },
+        {
+          "id": "PB-REC-008",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-linux/reports/playwright.json"
+        },
+        {
+          "id": "PB-REC-008",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-macos/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-001",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "reports-chromium/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-001",
+          "project": "chromium-cpu4x",
+          "outcome": "failed",
+          "source": "reports-chromium-cpu4x/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-001",
+          "project": "firefox",
+          "outcome": "failed",
+          "source": "reports-firefox/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-001",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-linux/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-001",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-macos/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-002",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "reports-chromium/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-002",
+          "project": "firefox",
+          "outcome": "failed",
+          "source": "reports-firefox/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-002",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-linux/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-002",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-macos/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-006",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "reports-chromium/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-006",
+          "project": "firefox",
+          "outcome": "failed",
+          "source": "reports-firefox/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-006",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-linux/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-006",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-macos/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-007",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "reports-chromium/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-007",
+          "project": "chromium-cpu4x",
+          "outcome": "failed",
+          "source": "reports-chromium-cpu4x/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-007",
+          "project": "firefox",
+          "outcome": "failed",
+          "source": "reports-firefox/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-007",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-linux/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-007",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-macos/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-009",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "reports-chromium/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-009",
+          "project": "firefox",
+          "outcome": "failed",
+          "source": "reports-firefox/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-009",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-linux/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-009",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-macos/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-012",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "reports-chromium/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-012",
+          "project": "firefox",
+          "outcome": "failed",
+          "source": "reports-firefox/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-012",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-linux/reports/playwright.json"
+        },
+        {
+          "id": "PB-VOD-012",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-macos/reports/playwright.json"
+        }
+      ],
+      "rootCause": "687c7a715605"
+    },
+    {
+      "rank": 2,
+      "key": "8cae2e3bcaa6",
+      "signature": "Error: <engine> <n> in <env> could not play vod-cmaf over dash through the player, and no documented gap covers it. [thrown]",
+      "parts": {
+        "message": "Error: <engine> <n> in <env> could not play vod-cmaf over dash through the player, and no documented gap covers it.",
+        "assertion": "thrown",
+        "location": null,
+        "shaka": null
+      },
+      "size": 3,
+      "tests": [
+        "PB-ENV-001"
+      ],
+      "projects": [
+        "chromium",
+        "firefox",
+        "webkit"
+      ],
+      "outcomes": {
+        "failed": 3,
+        "timedOut": 0,
+        "flaky": 0
+      },
+      "category": "page-boot-failure",
+      "rule": {
+        "rule": "page-did-not-boot",
+        "category": "page-boot-failure",
+        "evidence": [
+          "the page did not boot: “Error: chromium 156.0.8078.4 in gha-linux-x64 could not play vod-cmaf over dash through the player, and no documented gap covers it.”",
+          "the console names a Content Security Policy violation",
+          "console: “Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src…”",
+          "console: “Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-sr…”"
+        ],
+        "cause": "the player page did not boot: a Content Security Policy blocked its scripts"
+      },
+      "ruleRationale": "The page loaded and the player hook never became ready: the page build, its scripts or its headers are what is wrong.",
+      "failureClass": "Functional regression",
+      "firstCheck": "The console lines quoted in the message (a blocked script is a Content Security Policy or a missing `dist/player`): `curl -I <origin>/player/`, then `npm run build:player`.",
+      "agreement": {
+        "sameRule": 3,
+        "of": 3,
+        "otherRules": []
+      },
+      "representative": {
+        "scope": "test",
+        "id": "PB-ENV-001",
+        "title": "PB-ENV-001 the engine plays the selected flavour through the player, or the engine and OS pair is a documented gap",
+        "file": "tests/e2e/env.spec.ts",
+        "line": 20,
+        "project": "chromium",
+        "tags": [
+          "@merge"
+        ],
+        "tier": "merge",
+        "outcome": "failed",
+        "retries": 1,
+        "attempts": 2,
+        "failedAttempts": 2,
+        "attempt": 0,
+        "durationMs": 15499,
+        "quarantined": false,
+        "experimental": false,
+        "annotations": [
+          {
+            "type": "environment",
+            "description": "gha-linux-x64: chromium 156.0.8078.4; evidence: docs/results/codec-matrix/gha-linux-x64.json"
+          }
+        ],
+        "envId": "gha-linux-x64",
+        "source": "reports-chromium/reports/playwright.json",
+        "error": {
+          "message": "Error: chromium 156.0.8078.4 in gha-linux-x64 could not play vod-cmaf over dash through the player, and no documented gap covers it.\nWhat the player said: the player page did not boot (http://<host>/player/?<query>): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\nCommitted evidence (docs/results/codec-matrix/gha-linux-x64.json) claims it plays: cmaf-vp9-aac ok 5/5.\nSo the engine or the runner image changed since the matrix was probed: this is an environment failure, not a playback regression. Re-run `npm run codec-matrix` here and read docs/CODEC_MATRIX.md; do not retry the specs.",
+          "frames": [
+            {
+              "file": "tests/e2e/env.spec.ts",
+              "fn": null,
+              "line": 47
+            }
+          ]
+        },
+        "diagnostics": {
+          "attached": [
+            "diagnostics-problems.json",
+            "page-console.json",
+            "request-log.json",
+            "session-detail.json"
+          ],
+          "players": 1,
+          "sessions": 1,
+          "shakaErrors": [],
+          "primaryError": null,
+          "metrics": {
+            "state": null,
+            "startupMs": null,
+            "rebuffers": null,
+            "frames": null,
+            "liveLatencyMs": null,
+            "bitrateSwitches": null,
+            "currentTime": null
+          },
+          "events": {
+            "total": 0,
+            "names": {},
+            "around": []
+          },
+          "requestLog": {
+            "entries": 0,
+            "segments": 0,
+            "manifests": 0,
+            "inits": 0,
+            "other": 0,
+            "originFailures": 0,
+            "originFailuresWithoutFault": 0,
+            "clientAborted": 0,
+            "pending": 0,
+            "byStatus": {},
+            "failed": []
+          },
+          "faults": [],
+          "console": {
+            "errors": 2,
+            "warnings": 0,
+            "pageErrors": 0,
+            "samples": [
+              "Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src…",
+              "Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-sr…"
+            ]
+          },
+          "problems": {
+            "qa-events.json": "TypeError: Cannot read properties of undefined (reading 'events')",
+            "qa-metrics.json": "TypeError: Cannot read properties of undefined (reading 'metrics')",
+            "qa-info.json": "TypeError: Cannot read properties of undefined (reading 'info')"
+          },
+          "userAgent": null,
+          "config": null,
+          "loadMode": null
+        },
+        "missing": [
+          "qa-events.json: not attached",
+          "qa-metrics.json: not attached",
+          "qa-info.json: not attached"
+        ]
+      },
+      "members": [
+        {
+          "id": "PB-ENV-001",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "reports-chromium/reports/playwright.json"
+        },
+        {
+          "id": "PB-ENV-001",
+          "project": "firefox",
+          "outcome": "failed",
+          "source": "reports-firefox/reports/playwright.json"
+        },
+        {
+          "id": "PB-ENV-001",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-linux/reports/playwright.json"
+        }
+      ],
+      "rootCause": "687c7a715605"
+    },
+    {
+      "rank": 3,
+      "key": "6be738a93d66",
+      "signature": "Error: <engine> <n> in gha-macos-arm64 could not play vod-cmaf over dash through the player, and no documented gap covers it. [thrown]",
+      "parts": {
+        "message": "Error: <engine> <n> in gha-macos-arm64 could not play vod-cmaf over dash through the player, and no documented gap covers it.",
+        "assertion": "thrown",
+        "location": null,
+        "shaka": null
+      },
+      "size": 1,
+      "tests": [
+        "PB-ENV-001"
+      ],
+      "projects": [
+        "webkit"
+      ],
+      "outcomes": {
+        "failed": 1,
+        "timedOut": 0,
+        "flaky": 0
+      },
+      "category": "page-boot-failure",
+      "rule": {
+        "rule": "page-did-not-boot",
+        "category": "page-boot-failure",
+        "evidence": [
+          "the page did not boot: “Error: webkit 27.2 in gha-macos-arm64 could not play vod-cmaf over dash through the player, and no documented gap covers it.”",
+          "the console names a Content Security Policy violation",
+          "console: “Refused to load http://<host>/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.”",
+          "console: “Refused to load http://<host>/player/player.js because it does not appear in the script-src directive of the Content Security Policy.”",
+          "console: “Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.”"
+        ],
+        "cause": "the player page did not boot: a Content Security Policy blocked its scripts"
+      },
+      "ruleRationale": "The page loaded and the player hook never became ready: the page build, its scripts or its headers are what is wrong.",
+      "failureClass": "Functional regression",
+      "firstCheck": "The console lines quoted in the message (a blocked script is a Content Security Policy or a missing `dist/player`): `curl -I <origin>/player/`, then `npm run build:player`.",
+      "agreement": {
+        "sameRule": 1,
+        "of": 1,
+        "otherRules": []
+      },
+      "representative": {
+        "scope": "test",
+        "id": "PB-ENV-001",
+        "title": "PB-ENV-001 the engine plays the selected flavour through the player, or the engine and OS pair is a documented gap",
+        "file": "tests/e2e/env.spec.ts",
+        "line": 20,
+        "project": "webkit",
+        "tags": [
+          "@merge"
+        ],
+        "tier": "merge",
+        "outcome": "failed",
+        "retries": 1,
+        "attempts": 2,
+        "failedAttempts": 2,
+        "attempt": 0,
+        "durationMs": 16373,
+        "quarantined": false,
+        "experimental": false,
+        "annotations": [
+          {
+            "type": "environment",
+            "description": "gha-macos-arm64: webkit 27.2; evidence: docs/results/codec-matrix/gha-macos-arm64.json"
+          }
+        ],
+        "envId": "gha-linux-x64",
+        "source": "reports-webkit-macos/reports/playwright.json",
+        "error": {
+          "message": "Error: webkit 27.2 in gha-macos-arm64 could not play vod-cmaf over dash through the player, and no documented gap covers it.\nWhat the player said: the player page did not boot (http://<host>/player/?<query>): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Refused to load http://<host>/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.\n  error: Refused to load http://<host>/player/player.js because it does not appear in the script-src directive of the Content Security Policy.\nCommitted evidence (docs/results/codec-matrix/gha-macos-arm64.json) claims it plays: cmaf-vp9-aac ok 5/5.\nSo the engine or the runner image changed since the matrix was probed: this is an environment failure, not a playback regression. Re-run `npm run codec-matrix` here and read docs/CODEC_MATRIX.md; do not retry the specs.",
+          "frames": [
+            {
+              "file": "tests/e2e/env.spec.ts",
+              "fn": null,
+              "line": 47
+            }
+          ]
+        },
+        "diagnostics": {
+          "attached": [
+            "diagnostics-problems.json",
+            "page-console.json",
+            "request-log.json",
+            "session-detail.json"
+          ],
+          "players": 1,
+          "sessions": 1,
+          "shakaErrors": [],
+          "primaryError": null,
+          "metrics": {
+            "state": null,
+            "startupMs": null,
+            "rebuffers": null,
+            "frames": null,
+            "liveLatencyMs": null,
+            "bitrateSwitches": null,
+            "currentTime": null
+          },
+          "events": {
+            "total": 0,
+            "names": {},
+            "around": []
+          },
+          "requestLog": {
+            "entries": 0,
+            "segments": 0,
+            "manifests": 0,
+            "inits": 0,
+            "other": 0,
+            "originFailures": 0,
+            "originFailuresWithoutFault": 0,
+            "clientAborted": 0,
+            "pending": 0,
+            "byStatus": {},
+            "failed": []
+          },
+          "faults": [],
+          "console": {
+            "errors": 3,
+            "warnings": 0,
+            "pageErrors": 0,
+            "samples": [
+              "Refused to load http://<host>/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.",
+              "Refused to load http://<host>/player/player.js because it does not appear in the script-src directive of the Content Security Policy.",
+              "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy."
+            ]
+          },
+          "problems": {
+            "qa-events.json": "TypeError: undefined is not an object (evaluating 'window.__qa.events')",
+            "qa-metrics.json": "TypeError: undefined is not an object (evaluating 'window.__qa.metrics')",
+            "qa-info.json": "TypeError: undefined is not an object (evaluating 'window.__qa.info')"
+          },
+          "userAgent": null,
+          "config": null,
+          "loadMode": null
+        },
+        "missing": [
+          "qa-events.json: not attached",
+          "qa-metrics.json: not attached",
+          "qa-info.json: not attached"
+        ]
+      },
+      "members": [
+        {
+          "id": "PB-ENV-001",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "reports-webkit-macos/reports/playwright.json"
+        }
+      ],
+      "rootCause": "687c7a715605"
+    }
+  ],
+  "rootCauses": [
+    {
+      "rank": 1,
+      "key": "687c7a715605",
+      "category": "page-boot-failure",
+      "rule": "page-did-not-boot",
+      "cause": "the player page did not boot: a Content Security Policy blocked its scripts",
+      "size": 63,
+      "clusters": [
+        "fc2f02c1e869",
+        "8cae2e3bcaa6",
+        "6be738a93d66"
+      ],
+      "clusterRanks": [
+        1,
+        2,
+        3
+      ],
+      "tests": [
+        "PB-ABR-002",
+        "PB-ENV-001",
+        "PB-LIVE-001",
+        "PB-LIVE-002",
+        "PB-LIVE-003",
+        "PB-LIVE-004",
+        "PB-REC-001",
+        "PB-REC-002",
+        "PB-REC-008",
+        "PB-VOD-001",
+        "PB-VOD-002",
+        "PB-VOD-006",
+        "PB-VOD-007",
+        "PB-VOD-009",
+        "PB-VOD-012"
+      ],
+      "projects": [
+        "chromium",
+        "chromium-cpu4x",
+        "firefox",
+        "webkit"
+      ],
+      "failureClass": "Functional regression"
+    }
+  ],
+  "skipped": [],
+  "problems": [],
+  "summaries": [],
+  "summaryNote": null,
+  "summaryRun": null
+}

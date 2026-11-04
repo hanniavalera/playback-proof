@@ -1,0 +1,17 @@
+measure: perf-aa, engine firefox, runner ubuntu-24.04
+label: aa-firefox-2
+started: 2026-11-04T16:48:49Z
+commit: 6ab5e9843220e43c6682bdff12375da6421e9058 (perf/gha-baselines)
+environment id: gha-linux-x64
+runner: Linux X64, github-hosted, image ubuntu24 20261026.354.1
+cpus: 4
+cpu: INTEL(R) XEON(R) PLATINUM 8573C
+memory: 15982 MiB
+os: Ubuntu 24.04.5 LTS
+uptime:  16:48:50 up 0 min,  0 user,  load average: 0.46, 0.12, 0.04
+node: v22.23.4, npm: 10.9.9
+playwright: Version 1.64.1
+ffmpeg: not installed (the streams come from the streams job)
+
+finished: 2026-11-04T17:03:51Z
+uptime:  17:03:51 up 15 min,  0 user,  load average: 0.78, 0.69, 0.43
