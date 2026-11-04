@@ -1,28 +1,32 @@
 import { describe, expect, it } from 'vitest';
 import type { RequestLogEntry } from '../../../src/shared/api.ts';
+import type { QAEvent, QAEventName } from '../../../src/shared/qa.ts';
 import type { StreamInfo } from '../../../src/shared/streams.ts';
 import type { PlayerHandle } from '../../../tests/e2e/support/player.ts';
 import type { TestSession } from '../../../tests/e2e/support/session.ts';
 import {
   END_TOLERANCE_SEC,
-  SEEK_LANDING_TOLERANCE_SEC,
+  FRAME_AGREEMENT_TOLERANCE,
   UNBUFFERED_FROM_SEC,
 } from '../../../tests/e2e/vod/tolerances.ts';
 import { expectEndedAtTheEnd } from '../../../tests/e2e/vod/ending.ts';
 import { failure } from '../../../tests/e2e/vod/fail.ts';
 import {
+  framesUnaccountedFor,
   originStartupSpanMs,
   sinceLoadRequested,
   videoFrameRate,
 } from '../../../tests/e2e/vod/instrument.ts';
 import {
   expectClockContinued,
+  expectClockPace,
   expectLanded,
   farTarget,
   fetchedAgain,
   rapidTargets,
   refetched,
   seekAndRecord,
+  stopwatch,
 } from '../../../tests/e2e/vod/seeking.ts';
 import {
   allSegments,
@@ -32,6 +36,7 @@ import {
   segmentCovering,
   segmentNumbers,
 } from '../../../tests/e2e/vod/segments.ts';
+import { describePlayerTrouble, playAfterEnded, waitForFirstFrame } from '../../../tests/e2e/vod/trouble.ts';
 
 // The arithmetic and the readings of the log that the VOD specs' oracles stand on: a mistake here would make a spec pass for the wrong
 // reason, which no browser run would show.
@@ -229,21 +234,201 @@ describe('the startup the origin says the player cannot have beaten', () => {
   });
 });
 
+const at = (name: QAEventName, t: number, mediaTime: number, index = 0): QAEvent => ({
+  index,
+  t,
+  name,
+  mediaTime,
+});
+
+// The positions a spec reads from a player are read when the page, or the call into it, gets to them, and a starved page gets to them
+// seconds late (ADR-092). Every number below is either a reading of the first CI run on a 3-CPU macOS runner (run 41784609878, merge
+// gate; 41784609875, release) or a synthetic case of the same shape.
+describe('where the clock may be when it is read: the wall clock it had to run in, not a distance', () => {
+  const info = stream(30);
+
+  describe('a landing after a seek', () => {
+    it('accepts a landing read on time: the clock at the target, within a frame, a few hundred milliseconds after the call', () => {
+      expect(() =>
+        expectLanded(
+          { seeking: at('seeking', 1000, 41), seeked: at('seeked', 1250, 41.0003), wallMs: 310 },
+          41,
+          info,
+        ),
+      ).not.toThrow();
+      // the largest landing past the target measured in the four engines (Linux WebKit, 0.049 s) with the wall clock it had
+      expect(() =>
+        expectLanded(
+          { seeking: at('seeking', 1000, 41), seeked: at('seeked', 1300, 41.049), wallMs: 350 },
+          41,
+          info,
+        ),
+      ).not.toThrow();
+    });
+
+    it('accepts a seeked that the page recorded late, while the clock ran at rate 1 (the page was blocked after the seek finished)', () => {
+      // seeking on time at page time 1000 ms; the page blocked for 3 s; seeked recorded at 4200 ms reads 44 s; seek() took 3.4 s
+      expect(() =>
+        expectLanded(
+          { seeking: at('seeking', 1000, 41), seeked: at('seeked', 4200, 44), wallMs: 3400 },
+          41,
+          info,
+        ),
+      ).not.toThrow();
+      // the page was blocked before it recorded the seeking too: both events of one burst, both reading the clock late
+      expect(() =>
+        expectLanded(
+          { seeking: at('seeking', 4190, 43.99), seeked: at('seeked', 4200, 44), wallMs: 3400 },
+          41,
+          info,
+        ),
+      ).not.toThrow();
+    });
+
+    it("accepts the landings of the first macOS CI run that the player's stall detector had nudged by 0.1 s for every second the seek waited", () => {
+      // PB-VOD-007: seeking 41 s at page time 3715 ms, four nudges (41.1, 41.2, 41.3, 41.4), seeked at 41.4 s at 15218 ms
+      expect(() =>
+        expectLanded(
+          { seeking: at('seeking', 3715, 41), seeked: at('seeked', 15218, 41.4), wallMs: 11700 },
+          41,
+          info,
+        ),
+      ).not.toThrow();
+      // PB-VOD-009: the last of the five seeks, 37 s at 4413 ms (nudged at 5503, 6512, 7516), seeked at 37.3 s at 8667 ms
+      expect(() =>
+        expectLanded(
+          { seeking: at('seeking', 4413, 37), seeked: at('seeked', 8667, 37.3), wallMs: 4400 },
+          37,
+          info,
+        ),
+      ).not.toThrow();
+    });
+
+    it('refuses a landing at the start of its segment, a second early, however late it was read', () => {
+      expect(() =>
+        expectLanded(
+          { seeking: at('seeking', 1000, 41), seeked: at('seeked', 1250, 40), wallMs: 310 },
+          41,
+          info,
+        ),
+      ).toThrow(
+        /media time of the seeked event after a seek to 41 s: it is before the 41 s the clock started from/,
+      );
+      expect(() =>
+        expectLanded(
+          { seeking: at('seeking', 1000, 41), seeked: at('seeked', 4200, 40), wallMs: 3400 },
+          41,
+          info,
+        ),
+      ).toThrow(/it is before the 41 s the clock started from/);
+    });
+
+    it("refuses a seek that skipped ahead to the next segment, by the wall clock of the call and by the page's own two readings", () => {
+      // 42 s a second past the target, 310 ms after the call: the wall clock of the test says the clock could not have run that far
+      expect(() =>
+        expectLanded(
+          { seeking: at('seeking', 1000, 42), seeked: at('seeked', 1250, 42), wallMs: 310 },
+          41,
+          info,
+        ),
+      ).toThrow(/it is past the 41 s the clock started from by more than the 310 ms of wall clock/);
+      // the slow round trips of a loaded runner widen the wall bracket to 3.4 s, but the page recorded both events 250 ms apart
+      expect(() =>
+        expectLanded(
+          { seeking: at('seeking', 1000, 41), seeked: at('seeked', 1250, 42), wallMs: 3400 },
+          41,
+          info,
+        ),
+      ).toThrow(
+        /the clock cannot have run past it by more than the 250 ms of the page's own clock between the two/,
+      );
+    });
+  });
+
+  describe('the clock after a wait, a resume or a restart', () => {
+    it('accepts what a wait returned late: PB-VOD-006 of the first macOS CI run waited for 8 s and got 11.414 s, 4.6 s after the seek to 7 s', () => {
+      expect(() =>
+        expectClockContinued(
+          { from: 7, to: 11.414253958, wallMs: 4600 },
+          info,
+          'the clock jumped after the seek',
+        ),
+      ).not.toThrow();
+      expect(() =>
+        expectClockContinued({ from: 7, to: 8.03, wallMs: 1350 }, info, 'the clock jumped after the seek'),
+      ).not.toThrow();
+    });
+
+    it('refuses a clock that jumped ahead of the wall clock, and says what the failure means', () => {
+      expect(() =>
+        expectClockContinued({ from: 7, to: 9.5, wallMs: 1400 }, info, 'the clock jumped after the seek'),
+      ).toThrow(
+        /media time reached \(9.5 s\) after 7 s, the clock jumped after the seek: it is past the 7 s/,
+      );
+    });
+
+    it('holds a restart to the beginning and a resume to the position of the pause, whenever the playing event was read', () => {
+      const restart = 'media time of the playing event after play()';
+      expect(() => expectClockPace({ from: 0, to: 0.074, wallMs: 400 }, info, restart)).not.toThrow();
+      expect(() => expectClockPace({ from: 0, to: 2.9, wallMs: 3100 }, info, restart)).not.toThrow();
+      expect(() => expectClockPace({ from: 0, to: 12, wallMs: 1300 }, info, restart)).toThrow(
+        /media time of the playing event after play\(\): it is past the 0 s the clock started from by more than the 1300 ms/,
+      );
+      const resume = 'media time of the playing event after the resume';
+      expect(() => expectClockPace({ from: 3.5, to: 3.55, wallMs: 200 }, info, resume)).not.toThrow();
+      expect(() => expectClockPace({ from: 3.5, to: 2, wallMs: 300 }, info, resume)).toThrow(
+        /it is before the 3.5 s the clock started from/,
+      );
+    });
+
+    it('measures the wall clock of this process with a stopwatch that only goes forward', () => {
+      const elapsed = stopwatch();
+      const first = elapsed();
+      expect(first).toBeGreaterThanOrEqual(0);
+      expect(elapsed()).toBeGreaterThanOrEqual(first);
+    });
+  });
+
+  describe('the frames of the counters', () => {
+    it('counts the dropped frames as accounted for: the readings of the first macOS CI run, 22 and 24 short before, 10 and 3 after', () => {
+      // presented 113 and decoded 135 with 12 dropped; presented 187 (and 12 frames before the first one) and decoded 223 with 21 dropped
+      expect(framesUnaccountedFor({ decoded: 135, presented: 113, dropped: 12, beforeFirstFrame: 0 })).toBe(
+        10,
+      );
+      expect(framesUnaccountedFor({ decoded: 223, presented: 187, dropped: 21, beforeFirstFrame: 12 })).toBe(
+        3,
+      );
+      for (const unaccounted of [10, 3]) expect(unaccounted).toBeLessThanOrEqual(FRAME_AGREEMENT_TOLERANCE);
+      expect(framesUnaccountedFor({ decoded: 135, presented: 113, dropped: 0, beforeFirstFrame: 0 })).toBe(
+        22,
+      );
+    });
+
+    it('reads the clean runs of the four engines as a few frames, and a counter that doubles or restarts as far more than the tolerance', () => {
+      for (const clean of [
+        { decoded: 156, presented: 152, dropped: 0, beforeFirstFrame: 0 }, // Chromium and WebKit
+        { decoded: 153, presented: 155, dropped: 0, beforeFirstFrame: 0 }, // Firefox, the presented counter ahead
+        { decoded: 153, presented: 150, dropped: 0, beforeFirstFrame: 4 }, // Linux WebKit, a slow first paint
+      ]) {
+        expect(framesUnaccountedFor(clean)).toBeLessThanOrEqual(5);
+      }
+      expect(
+        framesUnaccountedFor({ decoded: 156, presented: 304, dropped: 0, beforeFirstFrame: 0 }),
+      ).toBeGreaterThan(FRAME_AGREEMENT_TOLERANCE);
+      expect(
+        framesUnaccountedFor({ decoded: 156, presented: 60, dropped: 0, beforeFirstFrame: 0 }),
+      ).toBeGreaterThan(FRAME_AGREEMENT_TOLERANCE);
+    });
+  });
+});
+
 describe('the assertions of the helpers', () => {
-  it('accept a landing, an end and a clock inside their tolerances and refuse the ones outside, saying the distance', () => {
-    expect(() => expectLanded({ mediaTime: 41 + SEEK_LANDING_TOLERANCE_SEC }, 41)).not.toThrow();
-    expect(() => expectLanded({ mediaTime: 40 }, 41)).toThrow(
-      /distance in seconds between the media time of the seeked event \(40 s\) and the target \(41 s\)/,
-    );
+  it('accept an end inside its tolerance and refuse the one outside, saying the distance', () => {
     const info = stream(6);
     expect(() =>
       expectEndedAtTheEnd({ mediaTime: info.durationSec - END_TOLERANCE_SEC }, info),
     ).not.toThrow();
     expect(() => expectEndedAtTheEnd({ mediaTime: 10 }, info)).toThrow(/ended.*\(10 s\).*\(12 s\)/);
-    expect(() => expectClockContinued(42.01, 42, 'the clock jumped')).not.toThrow();
-    expect(() => expectClockContinued(60, 42, 'the clock jumped after the seek')).toThrow(
-      /media time reached \(60 s\) beyond the 42 s.*the clock jumped after the seek/,
-    );
   });
 
   it('fail at the line of the caller: the frames of the helper folders are not in the stack', () => {
@@ -255,7 +440,9 @@ describe('the assertions of the helpers', () => {
       }
       return '';
     };
-    for (const stack of [stackOf(() => expectLanded({ mediaTime: 0 }, 41)), failure('x').stack ?? '']) {
+    const info = stream(30);
+    const early = { seeking: at('seeking', 1000, 41), seeked: at('seeked', 1250, 0), wallMs: 310 };
+    for (const stack of [stackOf(() => expectLanded(early, 41, info)), failure('x').stack ?? '']) {
       expect(stack).toContain('helpers.test.ts');
       expect(stack).not.toMatch(/tests[\\/]e2e[\\/]vod[\\/]/);
     }
@@ -283,5 +470,124 @@ describe('the assertions of the helpers', () => {
     await expect(seekAndRecord(qa, 59, { session: quiet, logCursor: 40 })).rejects.toThrow(
       /was not asked for anything since the seek/,
     );
+  });
+
+  it('give the wall clock of a seek that finished, and the stopwatch to read it again after the wait that follows', async () => {
+    const qa = {
+      cursor: () => Promise.resolve(3),
+      seek: () => Promise.resolve(),
+      events: () => Promise.resolve([at('seeking', 10, 41, 3), at('seeked', 260, 41, 4)]),
+    } as unknown as PlayerHandle;
+    const seek = await seekAndRecord(qa, 41);
+    expect(seek.seeking.index).toBe(3);
+    expect(seek.seeked.mediaTime).toBe(41);
+    expect(seek.wallMs).toBeGreaterThanOrEqual(0);
+    expect(seek.elapsed()).toBeGreaterThanOrEqual(seek.wallMs);
+  });
+});
+
+describe('what a failed precondition or action says about itself', () => {
+  const metricsOf = (overrides: Record<string, unknown>) => () =>
+    Promise.resolve({
+      state: 'playing',
+      errors: [],
+      rebuffer: { count: 0, events: [] },
+      playback: { currentTime: 4.8, duration: 60, paused: false, ended: false, readyState: 4 },
+      frames: { decoded: 23, dropped: 0, presented: 1 },
+      ...overrides,
+    });
+  const timedOut = () =>
+    Promise.reject(new Error("qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0)."));
+
+  it('names the critical error that ended the load, with when it came, when the wait for the first frame gave up (PB-VOD-006 of the release run: 4032 after 103 ms)', async () => {
+    const qa = {
+      waitFor: timedOut,
+      events: () => Promise.resolve([at('load-requested', 5038, 0, 0), at('error', 5141, 0, 4)]),
+      metrics: metricsOf({
+        errors: [
+          {
+            t: 5141,
+            code: 4032,
+            codeName: 'CONTENT_UNSUPPORTED_BY_BROWSER',
+            category: 4,
+            severity: 2,
+            source: 'load',
+            message: 'MANIFEST.CONTENT_UNSUPPORTED_BY_BROWSER: Shaka Error 4032',
+          },
+        ],
+      }),
+    } as unknown as PlayerHandle;
+    const waited = waitForFirstFrame(qa);
+    await expect(waited).rejects.toThrow(
+      /gave up on the load before the wait did[^]*error 4032 CONTENT_UNSUPPORTED_BY_BROWSER \(source load, critical\) 103 ms after the load was requested[^]*timed out after 15000 ms/,
+    );
+    const slow = {
+      waitFor: timedOut,
+      events: () => Promise.resolve([]),
+      metrics: metricsOf({}),
+    } as unknown as PlayerHandle;
+    await expect(waitForFirstFrame(slow)).rejects.toThrow(
+      /^qa.waitFor\('firstframe'\) timed out after 15000 ms/,
+    );
+    const started = {
+      waitFor: () => Promise.resolve(at('firstframe', 300, 0, 8)),
+    } as unknown as PlayerHandle;
+    await expect(waitForFirstFrame(started)).resolves.toMatchObject({ name: 'firstframe' });
+  });
+
+  it('says what the element looked like, whether the player restarted by itself and what the origin was asked for when play() after the end is rejected (PB-VOD-011 of the release run)', async () => {
+    const session = { id: 's1', service: { log: () => Promise.resolve([]) } } as unknown as TestSession;
+    const from = { since: 12, logCursor: 0 };
+    const aborted = () =>
+      Promise.reject(new Error('qa.play() was rejected: AbortError: The operation was aborted..'));
+    const neverRestarted = () =>
+      Promise.reject(new Error("qa.waitFor('playing') timed out after 10000 ms (looking from index 12)."));
+    const emptied = {
+      play: aborted,
+      waitFor: neverRestarted,
+      metrics: metricsOf({
+        playback: { currentTime: 0, duration: 0, paused: false, ended: false, readyState: 0 },
+      }),
+    } as unknown as PlayerHandle;
+    const failed = playAfterEnded(emptied, session, from);
+    await expect(failed).rejects.toThrow(/qa.play\(\) was rejected: AbortError/);
+    await expect(failed).rejects.toThrow(
+      /The element afterwards: readyState 0, duration 0 s, media time 0 s, paused false, ended false\. It has no media any more/,
+    );
+    await expect(failed).rejects.toThrow(
+      /did not restart by itself either: no playing event within 10000 ms of the rejection/,
+    );
+    await expect(failed).rejects.toThrow(/The origin was not asked for anything since play\(\) was called/);
+    const recovering = {
+      play: aborted,
+      waitFor: () => Promise.resolve(at('playing', 9000, 0.05, 20)),
+      metrics: metricsOf({
+        playback: { currentTime: 0.3, duration: 12, paused: false, ended: false, readyState: 1 },
+      }),
+    } as unknown as PlayerHandle;
+    const reset = playAfterEnded(recovering, session, from);
+    await expect(reset).rejects.toThrow(
+      /readyState 1, duration 12 s, media time 0.3 s, paused false, ended false\.\n/,
+    );
+    await expect(reset).rejects.toThrow(
+      /restarted by itself: a playing event at media time 0.05 s since play\(\) was called/,
+    );
+    const restarted = { play: () => Promise.resolve() } as unknown as PlayerHandle;
+    await expect(playAfterEnded(restarted, session, from)).resolves.toBeUndefined();
+  });
+
+  it('adds the stalls and the errors of the player to a measurement that could not be made (PB-VOD-012 of the release run: one stall of 2838 ms at media time 0)', async () => {
+    const qa = {
+      metrics: metricsOf({
+        state: 'playing',
+        rebuffer: { count: 1, events: [{ startMs: 6897, durationMs: 2838, mediaTime: 0, ongoing: false }] },
+      }),
+    } as unknown as PlayerHandle;
+    const said = await describePlayerTrouble(qa);
+    expect(said).toContain('1 rebuffers (2838 ms at media time 0.000 s)');
+    expect(said).toContain('0 errors');
+    expect(said).toContain('23 decoded and 1 presented frames');
+    const gone = { metrics: () => Promise.reject(new Error('page closed')) } as unknown as PlayerHandle;
+    await expect(describePlayerTrouble(gone)).resolves.toBe('');
   });
 });

@@ -3,6 +3,7 @@ import { expectNoErrors, expectNoRebuffer } from './support/assertions.ts';
 import { expect, test } from './support/fixtures.ts';
 import { streamInfoOf } from './support/session.ts';
 import { requestLogCursor } from './support/waiting.ts';
+import { failure } from './vod/fail.ts';
 import { middleOfSegment, segmentCovering, segmentNumbers } from './vod/segments.ts';
 import {
   describeOriginSince,
@@ -14,8 +15,10 @@ import {
   rapidTargets,
   refetched,
   seekAndRecord,
+  stopwatch,
 } from './vod/seeking.ts';
 import { CONTINUE_SEC, EVICTION_PLAY_SEC } from './vod/tolerances.ts';
+import { waitForFirstFrame } from './vod/trouble.ts';
 
 test(
   'PB-VOD-006 seek forward inside the buffered range: seeked fires and playback continues from the target with no rebuffer',
@@ -28,7 +31,7 @@ test(
     });
     const info = await streamInfoOf(session);
     const qa = await player(session).open();
-    await qa.waitFor('firstframe');
+    await waitForFirstFrame(qa);
     await qa.waitForMediaTime(2);
 
     // Two seconds in, the player holds about ten seconds ahead of the playhead (its buffering goal): the middle of the fourth segment is inside.
@@ -42,10 +45,11 @@ test(
     const logCursor = await requestLogCursor(session);
     const seek = await seekAndRecord(qa, target, { session, logCursor });
     const reached = await qa.waitForMediaTime(target + CONTINUE_SEC);
+    const wallMs = seek.elapsed();
 
     // What the viewer got: the seek finished where it was asked to, playback went on from there and did not jump.
-    expectLanded(seek.seeked, target);
-    expectClockContinued(reached, target + CONTINUE_SEC, 'the clock jumped after the seek');
+    expectLanded(seek, target, info);
+    expectClockContinued({ from: target, to: reached, wallMs }, info, 'the clock jumped after the seek');
     expectNoRebuffer(await qa.metrics());
 
     // What the origin saw: a seek inside the buffer is served by the buffer, so nothing the player already had is asked for again.
@@ -68,7 +72,7 @@ test(
     });
     const info = await streamInfoOf(session);
     const qa = await player(session).open();
-    await qa.waitFor('firstframe');
+    await waitForFirstFrame(qa);
     await qa.waitForMediaTime(2);
 
     const target = farTarget(info);
@@ -76,9 +80,10 @@ test(
     const logCursor = await requestLogCursor(session);
     const seek = await seekAndRecord(qa, target, { session, logCursor });
     const reached = await qa.waitForMediaTime(target + CONTINUE_SEC);
+    const wallMs = seek.elapsed();
 
-    expectLanded(seek.seeked, target);
-    expectClockContinued(reached, target + CONTINUE_SEC, 'the clock jumped after the seek');
+    expectLanded(seek, target, info);
+    expectClockContinued({ from: target, to: reached, wallMs }, info, 'the clock jumped after the seek');
 
     // The origin's side. The player may start a segment early (Shaka looks the first segment up `inaccurateManifestTolerance` before the
     // target, 2 s, in the engines that do not use cross-boundary logic), so what is required is the covering segment and no refetch.
@@ -105,7 +110,7 @@ test(
     });
     const info = await streamInfoOf(session);
     const qa = await player(session).open();
-    await qa.waitFor('firstframe');
+    await waitForFirstFrame(qa);
     await qa.waitForMediaTime(2);
 
     // The beginning of the title has been played and fetched. A seek to an unbuffered position far ahead empties the buffer (Shaka
@@ -118,9 +123,10 @@ test(
     const logCursor = await requestLogCursor(session);
     const back = await seekAndRecord(qa, early, { session, logCursor });
     const reached = await qa.waitForMediaTime(early + CONTINUE_SEC);
+    const wallMs = back.elapsed();
 
-    expectLanded(back.seeked, early);
-    expectClockContinued(reached, early + CONTINUE_SEC, 'the clock jumped after the seek back');
+    expectLanded(back, early, info);
+    expectClockContinued({ from: early, to: reached, wallMs }, info, 'the clock jumped after the seek back');
 
     // The origin's side, and the proof that the premise held: the segment that covers the target had been fetched at the start and is
     // fetched again, so the buffer did not have it any more.
@@ -144,16 +150,18 @@ test(
     });
     const info = await streamInfoOf(session);
     const qa = await player(session).open();
-    await qa.waitFor('firstframe');
+    await waitForFirstFrame(qa);
     await qa.waitForMediaTime(2);
 
     const targets = rapidTargets(info);
     const last = targets[targets.length - 1] as number;
     const since = await qa.cursor();
     const logCursor = await requestLogCursor(session);
+    const elapsed = stopwatch();
     // Five calls on the handle without awaiting in between: the commands reach the page one after the other within a few milliseconds,
     // long before the first of them can be satisfied (every target is outside the buffer, so each needs a segment from the origin).
     const outcomes = await Promise.allSettled(targets.map((target) => qa.seek(target)));
+    const settledAfterMs = elapsed();
     const unresolved = outcomes.flatMap((outcome, index) =>
       outcome.status === 'rejected'
         ? [`seek ${index + 1} of ${targets.length} (to ${targets[index]} s): ${String(outcome.reason)}`]
@@ -175,10 +183,18 @@ test(
       timeline.filter((event) => event.name === 'seeked' && event.index < (lastSeeking?.index ?? 0)),
       'seeked events before the last seeking: a seek finished before the last one was issued, so the five seeks did not overlap and the run did not exercise the race',
     ).toEqual([]);
-    expect(settled, 'the seeked event that follows the last seeking (qa.events())').toBeDefined();
-    expectLanded({ mediaTime: settled?.mediaTime ?? Number.NaN }, last);
+    if (lastSeeking === undefined || settled === undefined) {
+      throw failure(
+        `the seeked event that follows the last seeking (qa.events()): the timeline since the seeks has ${lastSeeking === undefined ? 'no seeking' : `a seeking (#${lastSeeking.index}) and no seeked after it`}: ${timeline.map((event) => event.name).join(', ')}`,
+      );
+    }
+    expectLanded({ seeking: lastSeeking, seeked: settled, wallMs: settledAfterMs }, last, info);
     const reached = await qa.waitForMediaTime(last + CONTINUE_SEC);
-    expectClockContinued(reached, last + CONTINUE_SEC, 'the clock jumped after the seeks');
+    expectClockContinued(
+      { from: last, to: reached, wallMs: elapsed() },
+      info,
+      'the clock jumped after the seeks',
+    );
     const metrics = await qa.metrics();
     expect(
       metrics.state,
