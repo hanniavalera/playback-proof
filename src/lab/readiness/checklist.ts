@@ -88,6 +88,10 @@ export function renderComparison(report: ReadinessReport): string | null {
   }
   lines.push(
     `  ${pad('Verdict', 64)}${pad(base.verdict, 26)}${others.map((other) => pad(other.verdict, 26)).join('')}`,
+    '',
+    "  Start times differ by the path as well as by the configuration: A's page is given the manifest and loads by itself, a candidate's",
+    '  page is opened idle and told to load (ADR-153). The control for the path is --config-json \'{"streaming":{"liveSync":{"enabled":false}}}\':',
+    "  A's own default value, through the candidate's path.",
   );
   return lines.join('\n');
 }

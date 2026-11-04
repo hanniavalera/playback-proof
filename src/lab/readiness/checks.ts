@@ -384,7 +384,13 @@ async function runStallOnce(
     observedMs: 0,
     ...overrides,
   });
-  const run = await world.newRun({ label: `PB-RDY-003 outage ${index} of ${options.runs}` });
+  // The runs are staggered inside the segment interval, as the joins are: the stall lasts the part of the outage that the buffer does not cover
+  // plus the time the player takes to see the origin back (its next manifest refresh, up to a segment later), and where that refresh falls
+  // depends on where the player started on the origin's publication clock. Three runs at one phase would be one measurement three times.
+  const run = await world.newRun({
+    label: `PB-RDY-003 outage ${index} of ${options.runs}`,
+    live: { startOffsetSec: BASE_OFFSET_SEC + ((index - 1) * LIVE_FACTS.segmentSec) / options.runs },
+  });
   try {
     const player = await bootPlayer(run, options.patch);
     const frame = await firstFrame(run);

@@ -166,6 +166,9 @@ describe('the sheet of a readiness run', () => {
       /PB-RDY-003 Latency restored after the stall, worst of 1\s+NO-GO >= 6\d\.\d\d s\s+GO [23]\.\d\d s/,
     );
     expect(comparison).toMatch(/Verdict\s+NO-GO\s+GO/);
+    // The start times of A and of a candidate are read with the path they were reached by (ADR-153), and the control is named.
+    expect(comparison).toContain('Start times differ by the path as well as by the configuration');
+    expect(comparison).toContain('{"streaming":{"liveSync":{"enabled":false}}}');
     expect(candidate.verdict).toBe('GO');
     // The exit code is the verdict of the build as it ships: a good candidate does not make A pass.
     expect(runVerdict([both])).toBe('NO-GO');

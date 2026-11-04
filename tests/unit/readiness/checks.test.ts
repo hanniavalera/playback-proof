@@ -215,6 +215,18 @@ describe('PB-RDY-003 stall recovery', () => {
     expect(atNumber).toBeLessThanOrEqual(15 + STALL_AFTER_SEGMENTS + 4);
   });
 
+  it('staggers the outage runs inside the segment interval, so that three runs are not one phase measured three times', async () => {
+    const { world, observed } = fakeWorld();
+    await runStallCheck(world, { runs: 3 });
+    const offsets = observed.runs.map((run) => run.request.live?.startOffsetSec ?? 0);
+    expect(offsets[0]).toBe(30);
+    expect(offsets[1]).toBeCloseTo(30 + 2 / 3, 6);
+    expect(offsets[2]).toBeCloseTo(30 + 4 / 3, 6);
+    const single = fakeWorld();
+    await runStallCheck(single.world, { runs: 1 });
+    expect(single.observed.runs[0]?.request.live?.startOffsetSec).toBe(30);
+  });
+
   it('shows GO for the candidate that brings the latency back, only because the check applied it before the outage', async () => {
     const candidate = candidateById('live-sync');
     const { world, observed } = fakeWorld();
