@@ -148,9 +148,9 @@ function readEnvIds(from: string): { byTest: Map<string, string>; only: string |
 // ---------------------------------------------------------------------------------------------------------------------
 // Attachments
 
-const LAB_ATTACHMENT =
+export const LAB_ATTACHMENT =
   /^(qa-events|qa-metrics|qa-info|page-console|session-detail|request-log)(?:-(\d+))?\.json$/;
-const PROBLEMS_ATTACHMENT = 'diagnostics-problems.json';
+export const PROBLEMS_ATTACHMENT = 'diagnostics-problems.json';
 const SET_KEYS = {
   'qa-events': 'events',
   'qa-metrics': 'metrics',
