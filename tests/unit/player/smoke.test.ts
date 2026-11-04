@@ -338,7 +338,7 @@ describe('the table and the summary', () => {
     ]);
     const lines = table.split('\n');
     expect(lines[0]).toMatch(
-      /^run\s+engine\s+session\s+stream\s+result\s+startup\s+media\s+rebuf\s+dropped\/decoded\s+presented\s+rung\s+latency\s+note$/,
+      /^run\s+engine\s+session\s+stream\s+result\s+startup\s+media clock\s+rebuf\s+dropped\/decoded\s+presented\s+rung\s+latency\s+note$/,
     );
     expect(lines[1]).toMatch(
       /^1\s+chromium\s+vod-dash\s+vod-cmaf\s+PASS\s+300 ms\s+3\.20 s\s+0\s+0\/96\s+95\s+360p\s+-$/,

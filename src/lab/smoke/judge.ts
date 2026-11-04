@@ -212,7 +212,7 @@ export function renderTable(results: readonly SessionResult[]): string {
       'stream',
       'result',
       'startup',
-      'media',
+      'media clock',
       'rebuf',
       'dropped/decoded',
       'presented',
