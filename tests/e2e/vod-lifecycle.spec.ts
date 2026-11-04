@@ -142,7 +142,7 @@ test(
 
     const target = middleOfSegment(info, info.segmentCount);
     const logCursor = await requestLogCursor(session);
-    const seek = await seekAndRecord(qa, target);
+    const seek = await seekAndRecord(qa, target, { session, logCursor });
     const ended = await waitForEnded(qa, session, info, {
       since: seek.since,
       remainingSec: info.durationSec - target,

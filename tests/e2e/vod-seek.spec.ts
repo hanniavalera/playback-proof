@@ -5,6 +5,7 @@ import { streamInfoOf } from './support/session.ts';
 import { requestLogCursor } from './support/waiting.ts';
 import { middleOfSegment, segmentCovering, segmentNumbers } from './vod/segments.ts';
 import {
+  describeOriginSince,
   expectClockContinued,
   expectLanded,
   farTarget,
@@ -39,7 +40,7 @@ test(
     ).toBeGreaterThan(target - playback.currentTime + 1);
 
     const logCursor = await requestLogCursor(session);
-    const seek = await seekAndRecord(qa, target);
+    const seek = await seekAndRecord(qa, target, { session, logCursor });
     const reached = await qa.waitForMediaTime(target + CONTINUE_SEC);
 
     // What the viewer got: the seek finished where it was asked to, playback went on from there and did not jump.
@@ -73,7 +74,7 @@ test(
     const target = farTarget(info);
     const covering = segmentCovering(info, target);
     const logCursor = await requestLogCursor(session);
-    const seek = await seekAndRecord(qa, target);
+    const seek = await seekAndRecord(qa, target, { session, logCursor });
     const reached = await qa.waitForMediaTime(target + CONTINUE_SEC);
 
     expectLanded(seek.seeked, target);
@@ -115,7 +116,7 @@ test(
     await qa.waitForMediaTime(far + EVICTION_PLAY_SEC);
 
     const logCursor = await requestLogCursor(session);
-    const back = await seekAndRecord(qa, early);
+    const back = await seekAndRecord(qa, early, { session, logCursor });
     const reached = await qa.waitForMediaTime(early + CONTINUE_SEC);
 
     expectLanded(back.seeked, early);
@@ -158,7 +159,10 @@ test(
         ? [`seek ${index + 1} of ${targets.length} (to ${targets[index]} s): ${String(outcome.reason)}`]
         : [],
     );
-    expect(unresolved, 'seeks that never resolved on a seeked of their own').toEqual([]);
+    expect(
+      unresolved,
+      `seeks that never resolved on a seeked of their own${unresolved.length > 0 ? await describeOriginSince({ session, logCursor }) : ''}`,
+    ).toEqual([]);
 
     // The race was run: no seek finished before the last one was issued. Then the last one wins: the seeked that follows the last seeking
     // is where the clock is, and playback goes on from there.

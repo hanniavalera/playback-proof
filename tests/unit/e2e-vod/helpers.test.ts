@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { RequestLogEntry } from '../../../src/shared/api.ts';
 import type { StreamInfo } from '../../../src/shared/streams.ts';
+import type { PlayerHandle } from '../../../tests/e2e/support/player.ts';
+import type { TestSession } from '../../../tests/e2e/support/session.ts';
 import {
   END_TOLERANCE_SEC,
   SEEK_LANDING_TOLERANCE_SEC,
@@ -20,6 +22,7 @@ import {
   fetchedAgain,
   rapidTargets,
   refetched,
+  seekAndRecord,
 } from '../../../tests/e2e/vod/seeking.ts';
 import {
   allSegments,
@@ -256,5 +259,29 @@ describe('the assertions of the helpers', () => {
       expect(stack).toContain('helpers.test.ts');
       expect(stack).not.toMatch(/tests[\\/]e2e[\\/]vod[\\/]/);
     }
+  });
+
+  it('say, when a seek never finishes, what the origin was asked for and answered since the seek', async () => {
+    const log = [
+      request('v720', 29, { seq: 40, status: 200 }),
+      request('v720', 30, { seq: 41, status: 404, faults: ['f1'] }),
+    ];
+    const session = { id: 's1', service: { log: () => Promise.resolve(log) } } as unknown as TestSession;
+    const qa = {
+      cursor: () => Promise.resolve(7),
+      seek: () => Promise.reject(new Error("qa.waitFor('seeked') timed out after 20000 ms")),
+    } as unknown as PlayerHandle;
+    const failed = seekAndRecord(qa, 59, { session, logCursor: 40 });
+    await expect(failed).rejects.toThrow(/timed out after 20000 ms/);
+    await expect(failed).rejects.toThrow(
+      /asked for 1 requests since the seek, the last 1:\n {2}#41 GET segment v720 #30 -> 404 in 2 ms \[faults f1\]/,
+    );
+    const quiet = {
+      id: 's1',
+      service: { log: () => Promise.resolve([request('v720', 29, { seq: 40 })]) },
+    } as unknown as TestSession;
+    await expect(seekAndRecord(qa, 59, { session: quiet, logCursor: 40 })).rejects.toThrow(
+      /was not asked for anything since the seek/,
+    );
   });
 });

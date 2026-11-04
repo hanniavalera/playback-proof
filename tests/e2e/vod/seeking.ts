@@ -4,7 +4,7 @@ import type { QAEvent } from '../../../src/shared/qa.ts';
 import type { StreamInfo, Track } from '../../../src/shared/streams.ts';
 import type { PlayerHandle } from '../support/player.ts';
 import type { TestSession } from '../support/session.ts';
-import { requestsFor } from '../support/waiting.ts';
+import { describeEntry, requestsFor } from '../support/waiting.ts';
 import { checked, failure } from './fail.ts';
 import { distinctAscending, middleOfSegment, repsOfTrack, segmentNumbers } from './segments.ts';
 import {
@@ -12,6 +12,9 @@ import {
   SEEK_LANDING_TOLERANCE_SEC,
   UNBUFFERED_FROM_SEC,
 } from './tolerances.ts';
+
+/** How many of the origin's last requests a failure message of a seek lists. */
+const ORIGIN_LINES_IN_MESSAGES = 8;
 
 export interface RecordedSeek {
   /** The cursor taken before the seek: `qa.events(since)` is the timeline of the seek and what followed. */
@@ -23,10 +26,20 @@ export interface RecordedSeek {
 /**
  * Seeks and returns the `seeking` and the `seeked` events the timeline recorded for it (their media times say where the clock was
  * when the seek began and where it was when it finished). `seek()` resolves on the `seeked` that follows its own `seeking`, so both exist.
+ * When the seek does not finish, `origin` (the session and the log cursor taken before the seek) lets the message say what the origin
+ * was asked for and what it answered since: a seek that waits for a segment the origin refused is the most common reason.
  */
-export async function seekAndRecord(qa: PlayerHandle, target: number): Promise<RecordedSeek> {
+export async function seekAndRecord(
+  qa: PlayerHandle,
+  target: number,
+  origin?: { session: TestSession; logCursor: number },
+): Promise<RecordedSeek> {
   const since = await qa.cursor();
-  await qa.seek(target);
+  try {
+    await qa.seek(target);
+  } catch (error) {
+    throw failure(`${(error as Error).message}${origin ? await describeOriginSince(origin) : ''}`);
+  }
   const events = await qa.events(since);
   const seeking = events.find((event) => event.name === 'seeking');
   const seeked = seeking && events.find((event) => event.name === 'seeked' && event.index > seeking.index);
@@ -36,6 +49,21 @@ export async function seekAndRecord(qa: PlayerHandle, target: number): Promise<R
     );
   }
   return { since, seeking, seeked };
+}
+
+/** The last requests of the origin's log since a cursor, as lines of a failure message (empty when the log cannot be read). */
+export async function describeOriginSince(origin: {
+  session: TestSession;
+  logCursor: number;
+}): Promise<string> {
+  try {
+    const { after } = await logAround(origin.session, origin.logCursor);
+    if (after.length === 0) return '\nThe origin was not asked for anything since the seek.';
+    const last = after.slice(-ORIGIN_LINES_IN_MESSAGES).map((entry) => `  ${describeEntry(entry)}`);
+    return `\nThe origin was asked for ${after.length} requests since the seek, the last ${last.length}:\n${last.join('\n')}`;
+  } catch {
+    return '';
+  }
 }
 
 /** The seek finished where it was asked to: the media time of its `seeked` event is within `SEEK_LANDING_TOLERANCE_SEC` of the target. */

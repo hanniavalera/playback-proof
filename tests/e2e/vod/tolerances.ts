@@ -73,10 +73,11 @@ export const RESTART_TOLERANCE_SEC = 0.5;
 /**
  * How many frames the decoded and the presented counters of an uninterrupted first play may differ by, once the frames the clock ran
  * through before the first presented frame are added back (the presented counter starts at the first frame callback). The decoder runs
- * ahead of the presentation by the frames its output queue holds: 3 to 7 in Chromium and WebKit at about 3 s of play, the presented
- * counter ahead by up to 3 in Firefox (ADR-065), and within one frame in nine of nine Linux WebKit runs after the correction (raw 0 to 14
- * with the container busy). Ten frames are a third of a second of 30 fps video and 1.4 times the largest of those; a counter that
- * doubles, repeats or restarts differs by a second of video or more.
+ * ahead of the presentation by the frames its output queue holds. Over the runs of the final series (readings of PB-VOD-012, at about
+ * 5 s of play): decoded minus presented was 3 to 7 in Chromium (ten runs; 7 in the one run that dropped 7 frames), 4 to 5 in WebKit
+ * (six), minus 2 to minus 1 in Firefox (six: the presented counter ahead) and, in Linux WebKit with the container busy, 0 to 12 raw
+ * but minus 1 to 1 after the correction (26 runs). Ten frames are a third of a second of 30 fps video and 1.4 times the largest
+ * difference that remains; a counter that doubles, repeats or restarts differs by a second of video or more.
  */
 export const FRAME_AGREEMENT_TOLERANCE = 10;
 
