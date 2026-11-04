@@ -51,7 +51,7 @@ export function startupPrereg(): Json {
     ],
     decisionRule: {
       id: 'pb-ab-v1',
-      text: 'Ship B only if it is better on a primary metric beyond the threshold and not worse on any; do not ship B if it is worse beyond the threshold with an interval that excludes zero; otherwise keep A.',
+      text: 'Four verdicts and no more: B better (ship B) only if the whole interval of a primary metric lies beyond the threshold in its favour and no primary metric is harmed; A better (do not ship B) if a primary metric is worse beyond the threshold with an interval that excludes zero; equivalent within the margin (keep A) only if the whole interval of every primary metric lies inside the threshold on both sides; inconclusive (keep A, collect more sessions) otherwise.',
     },
     exclusionRule: {
       text: 'A session that errors or times out is a failed session: it is reported and never silently dropped; its metrics are left out of the comparison.',
