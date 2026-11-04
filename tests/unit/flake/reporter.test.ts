@@ -1,18 +1,10 @@
-import { spawnSync } from 'node:child_process';
-import {
-  copyFileSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { errorSignature } from '../../../src/lab/signature.ts';
+import { serializeHistory } from '../../../flake/history.ts';
 import {
   buildRun,
   ciRunId,
@@ -31,7 +23,10 @@ import type { AttemptObservation, TestObservation } from '../../../flake/reporte
 import { addDays, utcDay } from '../../../flake/quarantine.ts';
 import { parseRun } from '../../../flake/run.ts';
 import type { AttemptStatus, FlakeRun, Outcome, TestRecord } from '../../../flake/run.ts';
-import { planGate } from '../../../tools/gate-merge.ts';
+import { FileStore } from '../../../flake/store.ts';
+import { collect, defaultOptions } from '../../../tools/flake-collect.ts';
+import type { CollectOptions, CollectResult } from '../../../tools/flake-collect.ts';
+import { planGate, playwrightRunner } from '../../../tools/gate-merge.ts';
 import { makeScratch } from '../support/scratch.ts';
 
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
@@ -375,7 +370,6 @@ describe('PB-LAB-004 reporter: where a run comes from', () => {
 // (no browser: none of these tests asks for a page). The same run proves two more things: the reporter agrees with Playwright's own
 // `test.outcome()`, and the `--grep-invert` that `gate:merge` builds excludes exactly the quarantined test of its engine.
 
-const REPORTER = join(ROOT, 'flake/reporter.ts');
 const SPEC = `
 import { expect, test } from '@playwright/test';
 
@@ -444,30 +438,28 @@ function entry(id: string, project?: string) {
   };
 }
 
-describe('PB-LAB-004 reporter: one run through the real Playwright runner', () => {
+describe('PB-LAB-004 reporter: one run through the real Playwright runner, by way of flake-collect', () => {
   let scratch = '';
   let run: FlakeRun;
-  let exitStatus: number | null = null;
+  let collected: CollectResult;
   let planned: ReturnType<typeof planGate>;
-  let stdout = '';
+  let output = '';
   let outcomes: Array<{ project: string; title: string; outcome: string }> = [];
 
-  beforeAll(() => {
+  beforeAll(async () => {
     scratch = makeScratch('flake-reporter-');
     mkdirSync(join(scratch, 'e2e'), { recursive: true });
     writeFileSync(join(scratch, 'e2e/fixture.spec.ts'), SPEC);
     writeFileSync(join(scratch, 'outcomes-reporter.mjs'), OUTCOMES_REPORTER);
-    // Two engines, one worker, one retry. The reporter is the real one, loaded from the repository.
+    // Two engines, one worker. The configuration lists no reporter and sets no retry: both come from the command line of the collector.
     writeFileSync(
       join(scratch, 'playwright.config.ts'),
       `import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testDir: '.',
   testMatch: ['e2e/**/*.spec.ts'],
-  retries: 1,
   workers: 1,
   timeout: 20000,
-  reporter: [['${REPORTER}', { quarantineFile: 'quarantine.json' }], ['./outcomes-reporter.mjs']],
   projects: [{ name: 'alpha' }, { name: 'beta' }],
 });
 `,
@@ -482,39 +474,46 @@ export default defineConfig({
       }),
     );
     planned = planGate([{ id: 'PB-FIX-007', project: 'alpha' }], [], 'fixture-run');
+    const invert = planned.blocking.args[planned.blocking.args.indexOf('--grep-invert') + 1] as string;
 
-    const cli = createRequire(import.meta.url).resolve('@playwright/test/cli');
-    const env: NodeJS.ProcessEnv = { ...process.env, ...planned.blocking.env, PB_ENV_ID: 'fixture-env' };
+    const env: NodeJS.ProcessEnv = {
+      ...process.env,
+      PB_ENV_ID: 'fixture-env',
+      PB_FLAKE_QUARANTINE: join(scratch, 'quarantine.json'),
+    };
     for (const name of [
       'CI',
       'GITHUB_ACTIONS',
       'GITHUB_SHA',
       'PB_FLAKE_RUN_FILE',
-      'PB_FLAKE_QUARANTINE',
+      'PB_RUN_ID',
       'GIT_COMMIT',
       'BUILD_TAG',
       'JENKINS_URL',
     ]) {
       delete env[name];
     }
-    const result = spawnSync(process.execPath, [cli, ...planned.blocking.args], {
-      cwd: scratch,
-      env,
-      encoding: 'utf8',
-      timeout: 90_000,
+    const options: CollectOptions = {
+      ...defaultOptions(scratch),
+      runs: 1,
+      grep: '@merge',
+      retries: 1,
+      reporters: ['dot', join(scratch, 'outcomes-reporter.mjs')],
+      historyDir: join(scratch, 'history'),
+      playwrightArgs: ['--grep-invert', invert],
+      runIdPrefix: 'fixture-run',
+    };
+    collected = await collect(options, {
+      run: playwrightRunner({ cwd: scratch, env, onOutput: (chunk) => (output += chunk) }),
+      log: () => {},
     });
-    exitStatus = result.status;
-    stdout = `${result.stdout}\n${result.stderr}`;
-    const file = join(scratch, 'reports/flake/run.json');
-    if (existsSync(file)) {
-      run = parseRun(JSON.parse(readFileSync(file, 'utf8')), file);
-      // Kept (in the git-ignored cache) so that the real shape can be looked at after the run.
-      const kept = join(ROOT, '.cache/flake-reporter-fixture');
-      mkdirSync(kept, { recursive: true });
-      copyFileSync(file, join(kept, 'run.json'));
-    }
-    if (existsSync(join(scratch, 'outcomes.json')))
-      outcomes = JSON.parse(readFileSync(join(scratch, 'outcomes.json'), 'utf8'));
+    const file = join(scratch, 'reports/flake/collect/run-1.json');
+    run = parseRun(JSON.parse(readFileSync(file, 'utf8')), file);
+    // Kept (in the git-ignored cache) so that the real shape can be looked at after the run.
+    const kept = join(ROOT, '.cache/flake-reporter-fixture');
+    mkdirSync(kept, { recursive: true });
+    copyFileSync(file, join(kept, 'run.json'));
+    outcomes = JSON.parse(readFileSync(join(scratch, 'outcomes.json'), 'utf8'));
   }, 120_000);
 
   afterAll(() => {
@@ -524,14 +523,14 @@ export default defineConfig({
   const record = (project: string, id: string): TestRecord | undefined =>
     run.tests.find((t) => t.project === project && t.id === id);
 
-  it('ran, with failures in it, and wrote the run file whole', () => {
-    expect(run, stdout).toBeDefined();
-    expect(exitStatus).toBe(1);
+  it('ran, with failures in it, wrote the run file whole, and recorded the run in the history', async () => {
+    expect(collected.repetitions, output).toHaveLength(1);
+    expect(collected.repetitions[0]?.exitCode).toBe(1);
     const version = (createRequire(import.meta.url)('@playwright/test/package.json') as { version: string })
       .version;
     expect(run).toMatchObject({
       schemaVersion: 1,
-      runId: 'fixture-run',
+      runId: 'fixture-run-1',
       envId: 'fixture-env',
       playwrightVersion: version,
       status: 'failed',
@@ -541,7 +540,17 @@ export default defineConfig({
     expect(new Date(run.date).toISOString()).toBe(run.date);
     expect(run.durationMs).toBeGreaterThan(0);
     expect(run).not.toHaveProperty('shard');
-    expect(readdirSync(join(scratch, 'reports/flake'))).toEqual(['run.json']);
+    expect(readdirSync(join(scratch, 'reports/flake/collect')).filter((n) => n.endsWith('.tmp'))).toEqual([]);
+
+    // The collector put the run in the history it was given, as one line.
+    expect(await new FileStore({ dir: join(scratch, 'history') }).load('fixture-env')).toEqual([run]);
+    expect(readFileSync(join(scratch, 'history/fixture-env.jsonl'), 'utf8')).toBe(serializeHistory([run]));
+    expect(collected).toMatchObject({
+      executions: 15,
+      flakyOutcomes: 2,
+      failedOutcomes: 4,
+      interrupted: false,
+    });
   });
 
   it('records a pass, a flake, a failure, a skip with its reason and a timeout, in each engine', () => {

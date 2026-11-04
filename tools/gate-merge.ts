@@ -199,16 +199,28 @@ export async function runGateMerge(
   return { exitCode: first, plan, quarantinedExitCode, warnings };
 }
 
-/** Spawns Playwright's own CLI with this process's streams: the output is exactly what `playwright test` prints. */
-export function playwrightRunner(cwd: string = process.cwd()): Runner {
+export interface PlaywrightRunnerOptions {
+  cwd?: string;
+  /** What the process starts from (the invocation's own variables are added to it). Default: this process's. */
+  env?: NodeJS.ProcessEnv;
+  /** Capture the output instead of passing it through. */
+  onOutput?: (chunk: string) => void;
+}
+
+/** Spawns Playwright's own CLI; by default with this process's streams, so that the output is exactly what `playwright test` prints. */
+export function playwrightRunner(options: PlaywrightRunnerOptions = {}): Runner {
   const cli = createRequire(import.meta.url).resolve('@playwright/test/cli');
   return (invocation) =>
     new Promise((resolveRun, reject) => {
       const child = spawn(process.execPath, [cli, ...invocation.args], {
-        cwd,
-        stdio: 'inherit',
-        env: { ...process.env, ...invocation.env },
+        cwd: options.cwd ?? process.cwd(),
+        stdio: options.onOutput ? ['ignore', 'pipe', 'pipe'] : 'inherit',
+        env: { ...(options.env ?? process.env), ...invocation.env },
       });
+      if (options.onOutput) {
+        child.stdout?.setEncoding('utf8').on('data', options.onOutput);
+        child.stderr?.setEncoding('utf8').on('data', options.onOutput);
+      }
       child.once('error', reject);
       child.once('close', (code) => resolveRun(code));
     });
