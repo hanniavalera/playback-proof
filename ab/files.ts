@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import type { CalibrationResult } from './aa.ts';
+import { VERDICTS } from './decision.ts';
 import { ResultFileError, parseRawResult } from './results.ts';
 import type { RawResult } from './results.ts';
 import type { ReportJson } from './report.ts';
@@ -83,7 +84,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const NUMBERS = ['poolSessions', 'sessionsPerArm', 'splits', 'alpha', 'falsePositives', 'rate'] as const;
-const OUTCOMES = ['ship-b', 'do-not-ship-b', 'no-difference', 'inconclusive'] as const;
+const OUTCOMES = VERDICTS;
 
 /** Reads and checks what a report and the Markdown of a calibration rely on: a damaged calibration is refused with what is wrong. */
 export function parseCalibration(text: string, file = 'the calibration file'): CalibrationEntry {

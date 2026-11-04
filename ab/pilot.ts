@@ -163,9 +163,9 @@ export function renderPilot(analysis: PilotAnalysis): string {
           ? 'n/a'
           : 'more than 1000'
         : String(metric.sessionsForThreshold),
-      metric.verdicts ? percent(metric.verdicts.none['no-difference']) : 'n/a',
-      metric.verdicts ? percent(metric.verdicts.better['ship-b']) : 'n/a',
-      metric.verdicts ? percent(metric.verdicts.worse['do-not-ship-b']) : 'n/a',
+      metric.verdicts ? percent(metric.verdicts.none.equivalent) : 'n/a',
+      metric.verdicts ? percent(metric.verdicts.better['b-better']) : 'n/a',
+      metric.verdicts ? percent(metric.verdicts.worse['a-better']) : 'n/a',
     ];
   });
   const header = [
@@ -175,9 +175,9 @@ export function renderPilot(analysis: PilotAnalysis): string {
     `Minimum detectable effect (${analysis.sessionsPerArm} per arm, 80 % power)`,
     'Practical threshold',
     'Sessions per arm to detect the threshold',
-    'Says "no difference" when there is none',
-    'Ships B when B is better by the threshold',
-    'Refuses B when B is worse by the threshold',
+    'Says "equivalent within the margin" when the arms are the same',
+    'Calls B better when B is better by the threshold',
+    'Calls A better when B is worse by the threshold',
   ];
   const line = (cells: readonly string[]): string => `| ${cells.join(' | ')} |`;
   return [
@@ -189,7 +189,7 @@ export function renderPilot(analysis: PilotAnalysis): string {
     line(header.map(() => '---')),
     ...rows.map(line),
     '',
-    'The last three columns run the whole decision rule on simulated experiments (a few hundred, so a few points of Monte Carlo error): they say what this design can ever conclude. A threshold below the minimum detectable effect is a difference the design cannot find; a threshold barely above it can rarely be shown to be beyond, because the rule wants the whole interval past the threshold.',
+    'The last three columns run the whole decision rule on simulated experiments (a few hundred, so a few points of Monte Carlo error): they say what this design can ever conclude. A threshold below the minimum detectable effect is a difference the design cannot find; a threshold barely above it can rarely be shown to be beyond, because the rule wants the whole interval past the threshold. The first of the three is the only column that can say there is no meaningful difference, and it needs the whole interval inside the margin.',
     '',
   ].join('\n');
 }

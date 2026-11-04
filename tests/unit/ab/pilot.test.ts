@@ -69,7 +69,8 @@ describe('PB-AB pilot analysis', () => {
     expect(text).toContain('Minimum detectable effect (30 per arm, 80 % power)');
     expect(text).toMatch(/\| Startup time \| 40 \|/);
     expect(text).toContain('100 ms');
-    expect(text).toContain('Refuses B when B is worse by the threshold');
+    expect(text).toContain('Calls A better when B is worse by the threshold');
+    expect(text).toContain('Says "equivalent within the margin" when the arms are the same');
   });
 
   it('refuses what cannot be a pilot: sessions of configuration B, an unknown metric, a condition that was not run, a handful of sessions', () => {

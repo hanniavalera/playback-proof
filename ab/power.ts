@@ -1,6 +1,6 @@
 import { analyzeCondition } from './analyze.ts';
 import type { AnalysisPlan } from './analyze.ts';
-import type { Outcome } from './decision.ts';
+import type { Verdict } from './decision.ts';
 import type { MetricId } from './metrics.ts';
 import { METRICS } from './metrics.ts';
 import { AB_POLICY } from './policy.ts';
@@ -288,13 +288,13 @@ export function sessionsForPower(
   return high;
 }
 
-export type VerdictRates = Record<Outcome, number>;
+export type VerdictRates = Record<Verdict, number>;
 
 /**
  * How often each verdict of the decision rule comes out at a given TRUE shift, running the full pipeline (the test, the bootstrap
- * interval, Holm over a family of one, the rule) on every simulated experiment. At a shift of 0 the share of `no-difference` is the
+ * interval, Holm over a family of one, the rule) on every simulated experiment. At a shift of 0 the share of `equivalent` is the
  * chance the design can say "nothing that matters" about two configurations that are the same; at a shift equal to the threshold the
- * share of `ship-b` shows that the rule, which wants the whole interval beyond the threshold, ships a real improvement of exactly the
+ * share of `b-better` shows that the rule, which wants the whole interval beyond the threshold, calls a real improvement of exactly the
  * smallest size worth having rarely (about one time in forty for a symmetric estimate: the far end of the interval is beyond the true value
  * that often).
  */
@@ -317,16 +317,16 @@ export function verdictRates(
     metrics: [{ ...metric, role: 'primary' }],
     maxFailedShare: AB_POLICY.defaultMaxFailedShare,
   };
-  const counts: VerdictRates = { 'ship-b': 0, 'do-not-ship-b': 0, 'no-difference': 0, inconclusive: 0 };
+  const counts: VerdictRates = { 'a-better': 0, 'b-better': 0, equivalent: 0, inconclusive: 0 };
   for (let run = 0; run < simulations; run++) {
     const { a, b } = simulatedArms(pilot, kind, shift, n, design.seed, run);
     const analysis = analyzeCondition(plan, sessionsOf(metric.id, a, b), { exploratory: false });
-    counts[(analysis.decision as { outcome: Outcome }).outcome] += 1;
+    counts[(analysis.decision as { verdict: Verdict }).verdict] += 1;
   }
   return {
-    'ship-b': counts['ship-b'] / simulations,
-    'do-not-ship-b': counts['do-not-ship-b'] / simulations,
-    'no-difference': counts['no-difference'] / simulations,
+    'a-better': counts['a-better'] / simulations,
+    'b-better': counts['b-better'] / simulations,
+    equivalent: counts.equivalent / simulations,
     inconclusive: counts.inconclusive / simulations,
   };
 }

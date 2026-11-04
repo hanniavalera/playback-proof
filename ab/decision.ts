@@ -3,6 +3,16 @@ import type { MetricId, MetricUnit } from './metrics.ts';
 
 // THE DECISION RULE, applied literally (TEST_STRATEGY.md section 12, rule id `pb-ab-v1`; ADR-146 in docs/decisions/ab.md).
 //
+// FOUR VERDICTS, and only four, never conflated:
+//     A better      B is worse than A by more than the smallest effect worth acting on, and the interval excludes zero.
+//     B better      the whole interval is beyond that effect in B's favour (so it excludes zero), the adjusted p is below alpha, and B
+//                   cannot be worse than the threshold on any other metric that decides.
+//     equivalent    the whole interval lies inside +-margin, on every metric that decides. The margin and the smallest effect worth acting
+//                   on are one number, the practical threshold d of the plan. ONLY this verdict may say there is no meaningful difference.
+//     inconclusive  none of the above: the interval is too wide to decide. Not finding a difference is not evidence that there is none.
+// and what each one DRIVES (the "what a failure drives" column of the catalog): B better -> ship B; A better -> do not ship B;
+// equivalent -> keep A (nothing worth a change); inconclusive -> keep A and collect more sessions (the report says how many).
+//
 // The inputs per primary metric are what the analysis found: the effect of B against A (B - A, in the unit of the metric: a Hodges-Lehmann
 // shift, or a difference of shares), its 95 % interval [low, high], the Holm-adjusted p-value of the primary family, and the practical
 // threshold d that was pre-registered. Put every metric on one scale where POSITIVE MEANS B IS WORSE (for a lower-is-better metric that is
@@ -14,28 +24,38 @@ import type { MetricId, MetricUnit } from './metrics.ts';
 //     harmless    worst < d                                          the worse end of the interval is inside the threshold
 //     equivalent  best > -d  AND  worst < d                          the whole interval is inside the threshold, on both sides
 // and the rule:
-//     1. If any primary metric is harmful                                          -> DO NOT SHIP B   (harm wins over any benefit elsewhere)
-//     2. Else, if at least one is better and every one is harmless                  -> SHIP B          (and no failure guard is tripped)
-//     3. Else, if every one is equivalent                                          -> NO DIFFERENCE   (nothing that matters, and the data can say so)
-//     4. Anything else                                                             -> INCONCLUSIVE    (keep A; the report says how many sessions a decision would need)
+//     1. If any primary metric is harmful                                          -> A BETTER        (harm wins over any benefit elsewhere)
+//     2. Else, if at least one is better and every one is harmless                  -> B BETTER        (and no failure guard is tripped)
+//     3. Else, if every one is equivalent                                          -> EQUIVALENT      (nothing that matters, and the data can say so)
+//     4. Anything else                                                             -> INCONCLUSIVE    (the report says how many sessions a decision would need)
 // All comparisons are strict, so a bound exactly on a threshold is not enough: "beyond" means beyond. The burden of proof is deliberately
-// asymmetric: shipping B needs the interval entirely beyond the threshold AND significance AND no possible harm; refusing B needs only a
+// asymmetric: B better needs the interval entirely beyond the threshold AND significance AND no possible harm; A better needs only a
 // point estimate beyond the threshold and an interval that excludes zero.
 //
 // FAILED SESSIONS. A session that failed is not in the comparison (it has no metrics), so a comparison of the survivors can only be trusted
 // if few failed and the arms failed alike. The failure guard trips when either arm's failed share exceeds the pre-registered maximum, or
-// when Fisher's test finds the arms' failure counts different (p < alpha). A tripped guard forbids rules 2 and 3 (a verdict of safety on
-// survivors only) and leaves rule 1 alone: a harm found among the survivors is still a harm.
+// when Fisher's test finds the arms' failure counts different (p < alpha). A tripped guard forbids rules 2 and 3 (a verdict that B is
+// better or that the arms are equivalent, resting on survivors only) and leaves rule 1 alone: a harm found among the survivors is still a harm.
 
-export type Outcome = 'ship-b' | 'do-not-ship-b' | 'no-difference' | 'inconclusive';
+export const VERDICTS = ['a-better', 'b-better', 'equivalent', 'inconclusive'] as const;
+export type Verdict = (typeof VERDICTS)[number];
+export type Action = 'ship-b' | 'do-not-ship-b' | 'keep-a';
 export type Direction = 'lower-is-better' | 'higher-is-better';
+
+/** What each verdict drives (TEST_STRATEGY.md section 12 and the "what a failure drives" cells of the catalog). */
+export const ACTIONS: Record<Verdict, Action> = {
+  'b-better': 'ship-b',
+  'a-better': 'do-not-ship-b',
+  equivalent: 'keep-a',
+  inconclusive: 'keep-a',
+};
 
 export interface MetricEvidence {
   id: MetricId;
   label: string;
   unit: MetricUnit;
   direction: Direction;
-  /** The pre-registered practical threshold, in the unit of the metric, > 0. */
+  /** The pre-registered practical threshold, in the unit of the metric, > 0: the smallest effect worth acting on, and the equivalence margin. */
   threshold: number;
   /** B minus A: the Hodges-Lehmann shift, or the difference of the shares. */
   effect: number;
@@ -103,8 +123,10 @@ export interface MoreSessions {
 }
 
 export interface Decision {
-  outcome: Outcome;
-  /** `Ship B`, `Do not ship B`, `No difference that matters`, `Inconclusive`: what the report prints as the verdict. */
+  verdict: Verdict;
+  /** What the verdict drives: ship B, do not ship B, or keep A. */
+  action: Action;
+  /** `B better (ship B)`, `A better (do not ship B)`, `Equivalent within the margin ...`, `Inconclusive ...`: what the report prints as the verdict. */
   headline: string;
   /** One sentence: why. */
   reason: string;
@@ -112,15 +134,15 @@ export interface Decision {
   failureGuardTripped: boolean;
   /** The rule applied step by step, one line per step. */
   steps: string[];
-  /** Present when the outcome is inconclusive. */
+  /** Present when the verdict is inconclusive. */
   moreSessions: MoreSessions | null;
 }
 
-const HEADLINES: Record<Outcome, string> = {
-  'ship-b': 'Ship B',
-  'do-not-ship-b': 'Do not ship B',
-  'no-difference': 'No difference that matters (keep A)',
-  inconclusive: 'Inconclusive: cannot tell (keep A)',
+const HEADLINES: Record<Verdict, string> = {
+  'b-better': 'B better (ship B)',
+  'a-better': 'A better (do not ship B)',
+  equivalent: 'Equivalent within the margin: no meaningful difference (keep A)',
+  inconclusive: 'Inconclusive: cannot tell (keep A, collect more sessions)',
 };
 
 const percent = (share: number): string => `${Math.round(share * 1000) / 10} %`;
@@ -148,7 +170,7 @@ export function readMetric(metric: MetricEvidence, alpha: number): MetricReading
   else if (better)
     status =
       "better: the whole interval is beyond the threshold in B's favour and the adjusted p is below alpha";
-  else if (equivalent) status = 'equivalent: the whole interval is inside the threshold';
+  else if (equivalent) status = 'equivalent: the whole interval is inside the margin';
   else if (harmless)
     status =
       "harmless, but neither shown better (the interval is not beyond the threshold in B's favour, or the adjusted p is not below alpha) nor equivalent";
@@ -172,7 +194,7 @@ export function readMetric(metric: MetricEvidence, alpha: number): MetricReading
   };
 }
 
-/** Whether the failed sessions are too many, or too unevenly spread over the arms, for a verdict of safety on the survivors. */
+/** Whether the failed sessions are too many, or too unevenly spread over the arms, for a verdict on the survivors. */
 export function failureGuard(
   failures: FailureEvidence,
   alpha: number,
@@ -239,51 +261,52 @@ export function decide(input: DecisionInput): Decision {
   const steps = [
     `1. Harm (worse than the threshold with an interval that excludes zero): ${names(harmful)}.`,
     `2. Benefit (adjusted p < ${alpha} and the whole interval beyond the threshold in B's favour): ${names(better)}; worse end of the interval not inside the threshold: ${names(notHarmless)}.`,
-    `3. Equivalence (the whole interval inside the threshold): ${equivalent.length} of ${readings.length} (${names(equivalent)}).`,
+    `3. Equivalence (the whole interval inside the margin of plus or minus the threshold): ${equivalent.length} of ${readings.length} (${names(equivalent)}).`,
     `4. Failed sessions: ${guard.tripped ? `guard tripped, ${guard.why}` : `${failures.failedA + failures.failedB} of ${failures.attemptedA + failures.attemptedB} failed, guard not tripped`}.`,
   ];
 
-  let outcome: Outcome;
+  let verdict: Verdict;
   let reason: string;
   const first = (list: readonly MetricReading[]): MetricEvidence => evidenceOf(list[0] as MetricReading);
   if (unavailable.length > 0) {
-    outcome = 'inconclusive';
-    reason = `Inconclusive: ${names(unavailable)} has fewer than two analysed sessions in an arm, so the comparison cannot be made.`;
+    verdict = 'inconclusive';
+    reason = `${names(unavailable)} has fewer than two analysed sessions in an arm, so the comparison cannot be made.`;
   } else if (harmful.length > 0) {
-    outcome = 'do-not-ship-b';
+    verdict = 'a-better';
     const m = first(harmful);
     const also = better.length > 0 ? `, although B is better on ${names(better)}` : '';
-    reason = `Do not ship B: ${m.label} is ${formatDifference(m.unit, m.effect)} for B against A (${interval(m)}), worse than the ${formatThreshold(m.unit, m.threshold)} threshold, and the interval excludes zero${also}.`;
+    reason = `${m.label} is ${formatDifference(m.unit, m.effect)} for B against A (${interval(m)}), worse than the ${formatThreshold(m.unit, m.threshold)} smallest effect worth acting on, and the interval excludes zero${also}.`;
   } else if (better.length > 0 && notHarmless.length === 0 && !guard.tripped) {
-    outcome = 'ship-b';
+    verdict = 'b-better';
     const m = first(better);
-    reason = `Ship B: ${m.label} is ${formatDifference(m.unit, m.effect)} for B against A (${interval(m)}), entirely beyond the ${formatThreshold(m.unit, m.threshold)} threshold in B's favour with an adjusted p of ${m.pAdjusted.toPrecision(2)}, and no primary metric can be worse than its threshold.`;
+    reason = `${m.label} is ${formatDifference(m.unit, m.effect)} for B against A (${interval(m)}), entirely beyond the ${formatThreshold(m.unit, m.threshold)} smallest effect worth acting on, in B's favour, with an adjusted p of ${m.pAdjusted.toPrecision(2)}, and no primary metric can be worse than its threshold.`;
   } else if (equivalent.length === readings.length && !guard.tripped) {
-    outcome = 'no-difference';
-    reason = `No difference that matters: every primary interval lies inside its threshold (${equivalent
+    verdict = 'equivalent';
+    reason = `Every primary interval lies inside its margin (${equivalent
       .map(evidenceOf)
       .map((m) => `${m.label} ${range(m)} within ±${formatThreshold(m.unit, m.threshold)}`)
-      .join('; ')}).`;
+      .join('; ')}), so the data show that nothing worth a change is there.`;
   } else {
-    outcome = 'inconclusive';
+    verdict = 'inconclusive';
     if (guard.tripped) {
-      reason = `Inconclusive: ${guard.why}, so no verdict of safety or of equivalence can rest on the sessions that finished.`;
+      const why = guard.why ?? '';
+      reason = `${why.charAt(0).toUpperCase()}${why.slice(1)}, so neither "B better" nor "equivalent" can rest on the sessions that finished.`;
     } else if (better.length > 0) {
       const m = first(notHarmless);
-      reason = `Inconclusive: B is better on ${names(better)}, but the interval of ${m.label} (${range(m)}) does not rule out a harm beyond its ${formatThreshold(m.unit, m.threshold)} threshold.`;
+      reason = `B is better on ${names(better)}, but the interval of ${m.label} (${range(m)}) does not rule out a harm beyond its ${formatThreshold(m.unit, m.threshold)} threshold.`;
     } else {
       const open = readings.filter((r) => !r.equivalent);
       const m = first(open);
       const reading = open[0] as MetricReading;
       reason =
         reading.worst < -reading.threshold && m.pAdjusted >= alpha
-          ? `Inconclusive: the interval of ${m.label} (${range(m)}) is beyond the threshold in B's favour, but the adjusted p of ${m.pAdjusted.toPrecision(2)} is not below ${alpha}.`
-          : `Inconclusive: the interval of ${m.label} (${range(m)}) reaches the threshold of ±${formatThreshold(m.unit, m.threshold)}: it cannot rule out a difference that matters, and does not show one.`;
+          ? `The interval of ${m.label} (${range(m)}) is beyond the threshold in B's favour, but the adjusted p of ${m.pAdjusted.toPrecision(2)} is not below ${alpha}.`
+          : `The interval of ${m.label} (${range(m)}) reaches the margin of ±${formatThreshold(m.unit, m.threshold)}: it cannot rule out a difference that matters, and does not show one. Not finding a difference is not evidence that there is none.`;
     }
   }
 
   let moreSessions: MoreSessions | null = null;
-  if (outcome === 'inconclusive' && unavailable.length === 0) {
+  if (verdict === 'inconclusive' && unavailable.length === 0) {
     const perMetric = metrics.map((metric, i) => sessionsNeeded(metric, readings[i] as MetricReading));
     const unresolved = perMetric.filter((entry) => !entry.resolved);
     const impossible = unresolved.some((entry) => entry.perArm === null);
@@ -298,8 +321,9 @@ export function decide(input: DecisionInput): Decision {
     };
   }
   return {
-    outcome,
-    headline: HEADLINES[outcome],
+    verdict,
+    action: ACTIONS[verdict],
+    headline: HEADLINES[verdict],
     reason,
     readings,
     failureGuardTripped: guard.tripped,

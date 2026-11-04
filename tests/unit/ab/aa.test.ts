@@ -61,10 +61,10 @@ describe('PB-AB A/A calibration on a synthetic pool', () => {
     }
   });
 
-  it('counts the verdict of every split: nothing is lost, and shipping or refusing B is rare between identical sessions', () => {
+  it('counts the verdict of every split: nothing is lost, and calling A or B better is rare between identical sessions', () => {
     const total = Object.values(result.verdicts).reduce((sum, count) => sum + count, 0);
     expect(total).toBe(1000);
-    expect(result.verdicts['ship-b'] + result.verdicts['do-not-ship-b']).toBeLessThanOrEqual(10);
+    expect(result.verdicts['b-better'] + result.verdicts['a-better']).toBeLessThanOrEqual(10);
   });
 
   it('is reproducible from its seed', () => {
@@ -167,26 +167,29 @@ describe('PB-AB real interleaved A/A: what its verdict means', () => {
       interleaved(startupOnly(a), startupOnly(b)),
     );
 
-  it('reads "no difference" when the intervals fit inside the thresholds: the ideal reading of an A/A', () => {
+  it('reads "equivalent within the margin" when the intervals fit inside the thresholds: the ideal reading of an A/A', () => {
     const evaluation = evaluateAa(analyse(normal(1, 30, 40), normal(2, 30, 40), 150));
     expect(evaluation).toMatchObject({
       significant: false,
-      outcome: 'no-difference',
+      verdict: 'equivalent',
       ideal: true,
       acceptable: true,
     });
-    expect(evaluation.reason).toContain('reads "no difference"');
+    expect(evaluation.reason).toContain('The A/A verdict is "equivalent within the margin"');
+    expect(evaluation.reason).toContain('found no meaningful difference between them');
   });
 
   it('is acceptable but not ideal when the design is too weak to say so: nothing significant, but intervals wider than the thresholds', () => {
     const evaluation = evaluateAa(analyse(normal(3, 30, 150), normal(4, 30, 150), 30));
     expect(evaluation).toMatchObject({
       significant: false,
-      outcome: 'inconclusive',
+      verdict: 'inconclusive',
       ideal: false,
       acceptable: true,
     });
-    expect(evaluation.reason).toContain('could not say "no difference"');
+    expect(evaluation.reason).toContain('the verdict is "inconclusive", not "equivalent"');
+    expect(evaluation.reason).toContain('not finding a difference is not evidence that there is none');
+    expect(evaluation.reason).not.toContain('no meaningful difference');
   });
 
   it('is not acceptable when two copies of A are declared different', () => {

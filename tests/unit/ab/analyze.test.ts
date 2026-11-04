@@ -48,11 +48,11 @@ describe('PB-AB analysis of one condition: a clear improvement', () => {
     expect(b50).toBe(startup?.summaryB?.median);
   });
 
-  it('is its own Holm family of one: the adjusted p is the raw p, and the verdict is ship B', () => {
+  it('is its own Holm family of one: the adjusted p is the raw p, and the verdict is B better', () => {
     expect(analysis.family).toStrictEqual(['startupMs']);
     expect(startup?.pAdjusted).toBe(startup?.test?.p);
     expect(startup?.significant).toBe(true);
-    expect(analysis.decision?.outcome).toBe('ship-b');
+    expect(analysis.decision?.verdict).toBe('b-better');
     expect(analysis.decisionNote).toBeNull();
   });
 
@@ -78,7 +78,7 @@ describe('PB-AB analysis of one condition: a clear improvement', () => {
 });
 
 describe('PB-AB analysis: two arms that are the same', () => {
-  it('finds no difference between two draws from one distribution', () => {
+  it('finds neither arm better between two draws from one distribution', () => {
     const a = normal(11, 30, 1000, 80);
     const b = normal(12, 30, 1000, 80);
     const analysis = analyzeCondition(
@@ -87,20 +87,20 @@ describe('PB-AB analysis: two arms that are the same', () => {
     );
     expect(analysis.metrics[0]?.test?.p).toBeGreaterThan(0.05);
     expect(analysis.metrics[0]?.significant).toBe(false);
-    expect(['no-difference', 'inconclusive']).toContain(analysis.decision?.outcome);
-    expect(analysis.decision?.outcome).not.toBe('ship-b');
-    expect(analysis.decision?.outcome).not.toBe('do-not-ship-b');
+    expect(['equivalent', 'inconclusive']).toContain(analysis.decision?.verdict);
+    expect(analysis.decision?.verdict).not.toBe('b-better');
+    expect(analysis.decision?.verdict).not.toBe('a-better');
   });
 
-  it('says there is no difference, with its sentence, when the interval is inside the threshold', () => {
+  it('says equivalent within the margin, with its sentence, when the interval is inside the threshold', () => {
     const a = normal(13, 60, 1000, 40);
     const b = normal(14, 60, 1000, 40);
     const analysis = analyzeCondition(
       plan([startupMetric({ practicalThreshold: 150 })]),
       interleaved(startupOnly(a), startupOnly(b)),
     );
-    expect(analysis.decision?.outcome).toBe('no-difference');
-    expect(analysis.decision?.reason).toContain('every primary interval lies inside its threshold');
+    expect(analysis.decision?.verdict).toBe('equivalent');
+    expect(analysis.decision?.reason).toContain('Every primary interval lies inside its margin');
   });
 });
 
@@ -160,7 +160,7 @@ describe('PB-AB analysis: the family of primary metrics and the secondary ones',
       'startupMs',
       'rebufferShare',
     ]);
-    expect(analysis.decision?.outcome).toBe('ship-b');
+    expect(analysis.decision?.verdict).toBe('b-better');
     expect(analysis.decision?.reason).toContain('Share of sessions with a rebuffer');
   });
 
@@ -228,7 +228,7 @@ describe('PB-AB analysis: warm-up, failed and incomplete sessions', () => {
     expect(analysis.failures.fisherP).toBe(fisherExact({ events: 0, total: 30 }, { events: 1, total: 30 }).p);
   });
 
-  it('trips the failure guard when the arms fail differently, and then neither ships B nor says no difference', () => {
+  it('trips the failure guard when the arms fail differently, and then neither calls B better nor says equivalent', () => {
     const sessions = interleaved(
       startupOnly(normal(33, 30, 1000, 40)),
       startupOnly(normal(34, 30, 700, 40)),
@@ -244,7 +244,7 @@ describe('PB-AB analysis: warm-up, failed and incomplete sessions', () => {
     const analysis = analyzeCondition(plan([startupMetric()]), sessions);
     expect(analysis.failures.failedB).toBe(7);
     expect(analysis.failures.guardTripped).toBe(true);
-    expect(analysis.decision?.outcome).toBe('inconclusive');
+    expect(analysis.decision?.verdict).toBe('inconclusive');
     expect(analysis.decision?.reason).toContain('failed');
   });
 
@@ -263,7 +263,7 @@ describe('PB-AB analysis: warm-up, failed and incomplete sessions', () => {
       cliffs: null,
       pAdjusted: 1,
     });
-    expect(analysis.decision?.outcome).toBe('inconclusive');
+    expect(analysis.decision?.verdict).toBe('inconclusive');
   });
 
   it('counts the sessions that had a recoverable Shaka error, and does not drop them', () => {
@@ -435,7 +435,7 @@ describe('PB-AB analysis of a results file', () => {
     expect(result.prereg.id).toBe('PB-AB-002');
     expect(result.warnings).toStrictEqual([]);
     expect(result.conditions).toHaveLength(1);
-    expect(result.conditions[0]?.analysis.decision?.outcome).toBe('ship-b');
+    expect(result.conditions[0]?.analysis.decision?.verdict).toBe('b-better');
     expect(planOf(result.prereg)).toMatchObject({
       seed: 20261104,
       bootstrapResamples: 5000,

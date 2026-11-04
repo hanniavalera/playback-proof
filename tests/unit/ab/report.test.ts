@@ -35,7 +35,7 @@ function report(raw: RawResult, options = {}) {
   return renderReport(raw, analyzeResult(raw), { rawFile: 'docs/results/ab/PB-AB-002.raw.json', ...options });
 }
 
-describe('PB-AB report: a pre-registered experiment that ships B', () => {
+describe('PB-AB report: a pre-registered experiment in which B is better', () => {
   const { raw } = build(startupPrereg());
   const { markdown, json } = report(raw);
 
@@ -43,15 +43,15 @@ describe('PB-AB report: a pre-registered experiment that ships B', () => {
     expect(markdown.split('\n').slice(0, 6)).toStrictEqual([
       '# PB-AB-002: Startup time of configuration B against configuration A under high latency',
       '',
-      '**Ship B**',
+      '**B better (ship B)**',
       '',
-      '> Pre-registered A/B experiment: the verdict below is the decision rule applied to the pre-registered metrics.',
+      '> Pre-registered A/B experiment: the verdict below is the decision rule applied to the pre-registered metrics. The lab passes it when it is valid (see Validity), whatever the direction of the result: the direction drives the decision.',
       '',
     ]);
   });
 
   it('gives the verdict with its reason, and the decision rule applied step by step', () => {
-    expect(markdown).toContain('**Verdict: Ship B.** Startup time is -');
+    expect(markdown).toContain('**Verdict: B better (ship B).** Startup time is -');
     expect(markdown).toContain('### The decision rule, applied literally');
     expect(markdown).toContain(
       '1. Harm (worse than the threshold with an interval that excludes zero): none.',
@@ -118,8 +118,9 @@ describe('PB-AB report: a pre-registered experiment that ships B', () => {
     expect(section).toContain('**The condition tested.** Only `high-latency`');
     expect(section).toContain('**B is a bundle.**');
     expect(section).toContain(
-      '"No difference that matters" says the whole interval lies inside the pre-registered threshold, not that the true effect is zero',
+      '"Equivalent within the margin" says the whole interval lies inside the pre-registered margin, not that the true effect is zero',
     );
+    expect(section).toContain('not finding a difference is not evidence that there is none');
     expect(section).not.toContain('When a stall starts in Chromium');
   });
 
@@ -142,7 +143,7 @@ describe('PB-AB report: a pre-registered experiment that ships B', () => {
       },
       calibrations: [],
     });
-    expect(json.conditions[0]?.analysis.decision?.outcome).toBe('ship-b');
+    expect(json.conditions[0]?.analysis.decision?.verdict).toBe('b-better');
     expect(json.conditions[0]?.analysis.metrics[0]?.effect?.kind).toBe('hodges-lehmann');
   });
 
@@ -200,8 +201,8 @@ describe('PB-AB report: an inconclusive result says what it would take', () => {
     const b = normal(4, 30, 930, 150);
     const { raw } = build(startupPrereg(), interleaved(startupOnly(a), startupOnly(b)));
     const { markdown, json } = report(raw);
-    expect(json.conditions[0]?.analysis.decision?.outcome).toBe('inconclusive');
-    expect(markdown).toContain('**Verdict: Inconclusive: cannot tell (keep A).**');
+    expect(json.conditions[0]?.analysis.decision?.verdict).toBe('inconclusive');
+    expect(markdown).toContain('**Verdict: Inconclusive: cannot tell (keep A, collect more sessions).**');
     expect(markdown).toMatch(
       /A decision would need about \d+ sessions per arm instead of 30, if the true effect is the one estimated/,
     );
@@ -218,7 +219,7 @@ describe('PB-AB report: the other kinds of run', () => {
       title: 'Exploratory startup comparison under a constrained link',
     });
     const { markdown, json } = report(raw);
-    expect(markdown).toContain('**exploratory, no verdict**');
+    expect(markdown).toContain('**Exploratory, no verdict**');
     expect(markdown).toContain(
       '> EXPLORATORY comparison: pre-registered, but it estimates and decides nothing.',
     );
@@ -241,8 +242,10 @@ describe('PB-AB report: the other kinds of run', () => {
       interleaved(startupOnly([900, 910]), startupOnly([800, 805])),
     );
     const { markdown } = report(raw);
-    expect(markdown).toContain('**pipeline check, no verdict**');
-    expect(markdown).toContain('> PIPELINE CHECK: a few sessions that show the harness runs end to end.');
+    expect(markdown).toContain('**Pipeline check, plumbing only, not evidence: no verdict**');
+    expect(markdown).toContain(
+      '> PIPELINE CHECK, PLUMBING ONLY, NOT EVIDENCE: a few sessions that show the harness runs end to end',
+    );
   });
 
   it('an A/A run is read as the harness checking itself, with its calibration appended', () => {
@@ -266,7 +269,7 @@ describe('PB-AB report: the other kinds of run', () => {
     });
     expect(markdown).toContain('> A/A run (PB-AB-001): both arms ran configuration A.');
     expect(markdown).toContain('**A/A reading.**');
-    expect(markdown).toContain('reads "no difference"');
+    expect(markdown).toContain('The A/A verdict is "equivalent within the margin"');
     expect(markdown).toContain('## A/A calibration (PB-AB-001): the false-positive rate of the harness');
     expect(markdown).toContain('**One A/A run.**');
     expect(json.calibrations[0]).toMatchObject({ condition: 'high-latency', result: { splits: 200 } });
@@ -299,7 +302,7 @@ describe('PB-AB report: failures, provenance and several conditions', () => {
     expect(markdown).toMatch(
       /- session \d+ \(block \d, arm B\): timeout: qa\.waitFor\('firstframe'\) timed out after 30000 ms/,
     );
-    expect(markdown).toContain('**Verdict: Inconclusive: cannot tell (keep A).**');
+    expect(markdown).toContain('**Verdict: Inconclusive: cannot tell (keep A, collect more sessions).**');
   });
 
   it('does not claim the plan was fixed first when the file was not committed unmodified, or git could not say', () => {

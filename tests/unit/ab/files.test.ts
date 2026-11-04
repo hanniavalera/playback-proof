@@ -94,7 +94,7 @@ describe('PB-AB files of a run: the A/A calibrations next to the raw results', (
         ],
       },
     ],
-    verdicts: { 'ship-b': 0, 'do-not-ship-b': 1, 'no-difference': 30, inconclusive: 69 },
+    verdicts: { 'b-better': 0, 'a-better': 1, equivalent: 30, inconclusive: 69 },
     pass: true,
     conservative: false,
     reason: 'The harness declared 4.00 % of the splits of identical sessions significant.',

@@ -46,13 +46,13 @@ function cliffsCell(metric: MetricComparison): string {
 function bannerOf(prereg: Preregistration): string {
   switch (prereg.kind) {
     case 'experiment':
-      return 'Pre-registered A/B experiment: the verdict below is the decision rule applied to the pre-registered metrics.';
+      return 'Pre-registered A/B experiment: the verdict below is the decision rule applied to the pre-registered metrics. The lab passes it when it is valid (see Validity), whatever the direction of the result: the direction drives the decision.';
     case 'aa':
-      return 'A/A run (PB-AB-001): both arms ran configuration A. This is the harness checking itself: the verdict should read "no difference".';
+      return 'A/A run (PB-AB-001): both arms ran configuration A. This is the harness checking itself: the verdict should be "equivalent within the margin" or "inconclusive", and never "A better" or "B better".';
     case 'exploratory':
       return 'EXPLORATORY comparison: pre-registered, but it estimates and decides nothing. No ship decision follows from it.';
     case 'pipeline-check':
-      return 'PIPELINE CHECK: a few sessions that show the harness runs end to end. Its numbers decide nothing and mean nothing.';
+      return 'PIPELINE CHECK, PLUMBING ONLY, NOT EVIDENCE: a few sessions that show the harness runs end to end, on a machine that may be shared with other work. Its numbers decide nothing and mean nothing, and no threshold, size, margin or level is tuned from them.';
   }
 }
 
@@ -81,7 +81,7 @@ function limitations(
     `**Localhost, synthetic content.** Test patterns (a three-rung VP9 ladder of 300, 700 and 1800 kbps with 2 s segments), software decoding, a test data service on the same machine (${raw.environment.envId}, ${raw.environment.host.os.name}, ${raw.environment.host.cpus} CPUs), and a machine that was ${isBusy ? `NOT quiet: the load average reached ${busy.toFixed(1)} on ${raw.environment.host.cpus} CPUs, more than ${BUSY_LOAD_SHARE * 100} % of them` : 'quiet by its load average'}. These are laboratory numbers that compare configurations under identical conditions. They are not members' quality of experience and they do not transfer to another environment.`,
     `**The condition tested.** Only \`${condition.id}\`: ${rules.length === 0 ? 'no faults' : rules.map((rule) => JSON.stringify(rule)).join(', ')}. A configuration can win under one network and lose under another; nothing here speaks for the others.`,
     `**B is a bundle.** Configuration B changes three things at once (a fixed initial estimate that starts on the lowest rung, a 4 s switch interval, a 20 s buffering goal). An effect cannot be credited to one of them: that would take arms of A plus one knob, which were not run.`,
-    '**What the intervals mean.** They describe the sampling noise of these sessions on this machine. "No difference that matters" says the whole interval lies inside the pre-registered threshold, not that the true effect is zero; "inconclusive" says the data cannot rule out a difference that matters and do not show one.',
+    '**What the intervals mean.** They describe the sampling noise of these sessions on this machine. "Equivalent within the margin" says the whole interval lies inside the pre-registered margin, not that the true effect is zero, and it is the only verdict that says there is no meaningful difference; "inconclusive" says the data cannot rule out a difference that matters and do not show one: not finding a difference is not evidence that there is none.',
   ];
   if (
     raw.environment.browser.name === 'chromium' &&
@@ -148,7 +148,7 @@ function conditionSection(
   const { analysis, result } = entry;
   const out: string[] = [];
   const headline = analysis.decision
-    ? `**Verdict: ${analysis.decision.headline}.** ${analysis.decision.reason.replace(/^(Ship B|Do not ship B|No difference that matters|Inconclusive): /, '')}`
+    ? `**Verdict: ${analysis.decision.headline}.** ${analysis.decision.reason}`
     : `**No verdict.** ${analysis.decisionNote ?? ''}`;
   const suffix = prereg.conditions.length > 1 ? `: condition ${result.id}` : '';
   out.push(`## Verdict${suffix}`, '', headline, '');
@@ -356,7 +356,9 @@ export function renderReport(
   const verdictLine = (() => {
     const first = analysis.conditions[0]?.analysis;
     if (first?.decision) return first.decision.headline;
-    return prereg.kind === 'exploratory' ? 'exploratory, no verdict' : 'pipeline check, no verdict';
+    return prereg.kind === 'exploratory'
+      ? 'Exploratory, no verdict'
+      : 'Pipeline check, plumbing only, not evidence: no verdict';
   })();
 
   const md: string[] = [];

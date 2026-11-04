@@ -1,6 +1,6 @@
 import { analyzeCondition, planOf } from './analyze.ts';
 import type { AnalysisPlan, ConditionAnalysis } from './analyze.ts';
-import type { Outcome } from './decision.ts';
+import type { Verdict } from './decision.ts';
 import type { MetricId } from './metrics.ts';
 import { parsePreregistration } from './prereg.ts';
 import type { RawResult } from './results.ts';
@@ -51,8 +51,8 @@ export interface CalibrationResult {
   /** The exact 95 % binomial interval of `rate` (it describes the splits drawn, not the pool: the splits share their sessions). */
   interval: { lower: number; upper: number; level: number };
   perMetric: MetricCalibration[];
-  /** How the decision rule came out over the splits: what a verdict of `ship-b` or `do-not-ship-b` would have been a false alarm. */
-  verdicts: Record<Outcome, number>;
+  /** How the decision rule came out over the splits: a verdict of `b-better` or `a-better` between identical sessions is a false alarm. */
+  verdicts: Record<Verdict, number>;
   /** The rate is not above alpha (the lower end of its interval is at or below alpha). */
   pass: boolean;
   /** The rate is well below alpha: the harness is safe but conservative, and the experiment's power is what pays. */
@@ -91,10 +91,10 @@ export function calibrate(
   const decisionPlan: AnalysisPlan = { ...plan, kind: 'aa' };
   const primary = plan.metrics.filter((metric) => metric.role === 'primary').map((metric) => metric.id);
   const raw = new Map<MetricId, number[]>(primary.map((id) => [id, []]));
-  const verdicts: Record<Outcome, number> = {
-    'ship-b': 0,
-    'do-not-ship-b': 0,
-    'no-difference': 0,
+  const verdicts: Record<Verdict, number> = {
+    'a-better': 0,
+    'b-better': 0,
+    equivalent: 0,
     inconclusive: 0,
   };
   let falsePositives = 0;
@@ -116,7 +116,7 @@ export function calibrate(
     for (const metric of analysis.metrics) {
       if (metric.role === 'primary') raw.get(metric.id)?.push(metric.test?.p ?? 1);
     }
-    verdicts[(analysis.decision as { outcome: Outcome }).outcome] += 1;
+    verdicts[(analysis.decision as { verdict: Verdict }).verdict] += 1;
     options.onProgress?.(split + 1, splits);
   }
 
@@ -173,29 +173,29 @@ export function poolFromResult(
 export interface AaEvaluation {
   /** Any primary metric with an adjusted p-value below alpha. */
   significant: boolean;
-  outcome: Outcome | null;
-  /** The best reading: the data positively show that nothing that matters differs. */
+  verdict: Verdict | null;
+  /** The best reading: the intervals lie inside the margins, so the two copies are equivalent (and only then is "no meaningful difference" said). */
   ideal: boolean;
-  /** Nothing significant and no verdict to ship or refuse B: what a healthy harness gives most of the time. */
+  /** Nothing significant and neither "A better" nor "B better": what a healthy harness gives most of the time. */
   acceptable: boolean;
   reason: string;
 }
 
 export function evaluateAa(analysis: ConditionAnalysis): AaEvaluation {
   const significant = analysis.metrics.some((metric) => metric.role === 'primary' && metric.significant);
-  const outcome = analysis.decision?.outcome ?? null;
-  const ideal = !significant && outcome === 'no-difference';
-  const acceptable = !significant && (outcome === 'no-difference' || outcome === 'inconclusive');
+  const verdict = analysis.decision?.verdict ?? null;
+  const ideal = !significant && verdict === 'equivalent';
+  const acceptable = !significant && (verdict === 'equivalent' || verdict === 'inconclusive');
   let reason: string;
   if (ideal)
     reason =
-      'The A/A verdict reads "no difference": two copies of configuration A are indistinguishable by this harness, within the practical thresholds.';
+      'The A/A verdict is "equivalent within the margin": the intervals of two copies of configuration A lie inside the practical thresholds, so this harness found no meaningful difference between them.';
   else if (acceptable)
     reason =
-      'The A/A comparison found nothing significant and gave no verdict to ship or refuse a configuration, but its intervals are wider than the thresholds, so it could not say "no difference": the design is too weak for the equivalence claim at this number of sessions.';
+      'The A/A comparison found nothing significant and neither "A better" nor "B better", but its intervals are wider than the margins, so the verdict is "inconclusive", not "equivalent": not finding a difference is not evidence that there is none, and at this number of sessions the design cannot call two copies equivalent.';
   else
-    reason = `The A/A comparison declared a difference between two copies of configuration A (${significant ? 'a primary metric is significant after Holm' : `verdict ${outcome ?? 'none'}`}). One run is significant ${AB_POLICY.alpha * 100} % of the time with a perfect harness: repeat it as a new pre-registered A/A and read the calibration; two in a row are a defect of the harness.`;
-  return { significant, outcome, ideal, acceptable, reason };
+    reason = `The A/A comparison declared a difference between two copies of configuration A (${significant ? 'a primary metric is significant after Holm' : `verdict ${verdict ?? 'none'}`}). One run is significant ${AB_POLICY.alpha * 100} % of the time with a perfect harness: repeat it as a new pre-registered A/A and read the calibration; two in a row are a defect of the harness.`;
+  return { significant, verdict, ideal, acceptable, reason };
 }
 
 /** The calibration as a Markdown section for the report of an A/A run, or on its own. */
@@ -212,7 +212,7 @@ export function renderCalibration(result: CalibrationResult): string {
     `| Splits declared significant (any primary metric, Holm-adjusted p < ${result.alpha}) | ${result.falsePositives} of ${result.splits} = ${(result.rate * 100).toFixed(2)} % |`,
     `| Exact binomial interval (${result.interval.level * 100} %) | ${(result.interval.lower * 100).toFixed(2)} % to ${(result.interval.upper * 100).toFixed(2)} % |`,
     `| Required | the lower end of the interval at or below ${result.alpha * 100} % |`,
-    `| Decision rule over the splits | ship B ${result.verdicts['ship-b']}, do not ship B ${result.verdicts['do-not-ship-b']}, no difference ${result.verdicts['no-difference']}, inconclusive ${result.verdicts.inconclusive} |`,
+    `| Verdicts over the splits | B better ${result.verdicts['b-better']}, A better ${result.verdicts['a-better']} (both are false alarms between identical sessions), equivalent within the margin ${result.verdicts.equivalent}, inconclusive ${result.verdicts.inconclusive} |`,
     '',
     'Share of splits in which the raw p-value of a primary metric was below a level (a valid test has each at most its level):',
     '',

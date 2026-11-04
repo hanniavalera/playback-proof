@@ -240,21 +240,21 @@ describe('PB-AB power: what each verdict costs at a true shift (the full pipelin
   const metric = startupMetric({ practicalThreshold: 1.5 * sigma });
   const rates = (shift: number) => verdictRates(pilot, metric, shift, design, { resamples: 200 });
 
-  it('adds up to one, and at no difference mostly says so, almost never ships or refuses B', () => {
+  it('adds up to one, and at no difference mostly says equivalent, almost never calls A or B better', () => {
     const none = rates(0);
     expect(Object.values(none).reduce((sum, value) => sum + value, 0)).toBeCloseTo(1, 12);
-    expect(none['no-difference']).toBeGreaterThan(0.8);
-    expect(none['ship-b'] + none['do-not-ship-b']).toBeLessThan(0.03);
+    expect(none.equivalent).toBeGreaterThan(0.8);
+    expect(none['b-better'] + none['a-better']).toBeLessThan(0.03);
   });
 
-  it('ships B when it is much better and refuses it when it is much worse', () => {
-    expect(rates(-4 * sigma)['ship-b']).toBeGreaterThan(0.95);
-    expect(rates(4 * sigma)['do-not-ship-b']).toBeGreaterThan(0.95);
+  it('calls B better when it is much better and A better when B is much worse', () => {
+    expect(rates(-4 * sigma)['b-better']).toBeGreaterThan(0.95);
+    expect(rates(4 * sigma)['a-better']).toBeGreaterThan(0.95);
   });
 
-  it('ships an improvement of exactly the threshold only rarely: the rule wants the whole interval beyond it', () => {
+  it('calls an improvement of exactly the threshold better only rarely: the rule wants the whole interval beyond it', () => {
     const atThreshold = rates(-1.5 * sigma);
-    expect(atThreshold['ship-b']).toBeLessThan(0.15);
+    expect(atThreshold['b-better']).toBeLessThan(0.15);
     expect(atThreshold.inconclusive).toBeGreaterThan(0.5);
   });
 
@@ -266,7 +266,7 @@ describe('PB-AB power: what each verdict costs at a true shift (the full pipelin
       seed: 12,
     });
     expect(Object.values(quiet).reduce((sum, value) => sum + value, 0)).toBeCloseTo(1, 12);
-    expect(quiet['ship-b']).toBeLessThan(0.05);
+    expect(quiet['b-better']).toBeLessThan(0.05);
   });
 });
 
