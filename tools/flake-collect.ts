@@ -74,7 +74,9 @@ export function invocationFor(options: CollectOptions, index: number): Invocatio
       '--reporter',
       [...options.reporters, FLAKE_REPORTER].join(','),
       '--output',
-      resolve(options.runDir, 'test-results'),
+      // Playwright empties its output directory at the start of an invocation: one directory per repetition keeps the
+      // traces and diagnostics of the repetitions that failed, which is what a flake is diagnosed from.
+      resolve(options.runDir, 'test-results', `run-${index}`),
       ...options.playwrightArgs,
     ],
     env: { PB_RUN_ID: `${options.runIdPrefix}-${index}`, PB_FLAKE_RUN_FILE: runFile },

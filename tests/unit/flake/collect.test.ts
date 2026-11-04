@@ -96,7 +96,7 @@ describe('PB-LAB-004 flake-collect: the invocation of a repetition', () => {
         '--reporter',
         `dot,${FLAKE_REPORTER}`,
         '--output',
-        '/work/reports/flake/collect/test-results',
+        '/work/reports/flake/collect/test-results/run-2',
         '--workers=1',
       ],
       env: { PB_RUN_ID: 'collect-test-2', PB_FLAKE_RUN_FILE: '/work/reports/flake/collect/run-2.json' },
