@@ -110,10 +110,12 @@ Sections 1 to 6 are collections: repetitions of one tier or one test, run on pur
 
 **macOS WebKit: every flaky and failed outcome is one test, PB-ABR-002** (merge tier). In its window it has 18 executions, 6 flaky and 1 failed (33.3 % flaky), and its verdict is `not-enough-data`, because a test is judged from 20 executions and an invalid run is not an execution; its invalid runs, 5 of 23 scheduled (21.7 %, budget 40 %), are `ok`. By time, with the commit that brought the classifier of PB-ABR-002 ([ADR-106](../../decisions/e2e-abr.md), `ac3c539`) as the divide:
 
-| Builds                                          | Passed clean | Ended as an invalid run | Flaky (first attempt failed, retry passed) | Failed both attempts |
+| Builds                                          | Passed clean | Ended as an invalid run | Flaky (first attempt failed, the retry did not) | Failed both attempts |
 | ----------------------------------------------- | -----------: | ----------------------: | -----------------------------------------: | -------------------: |
 | 9 first builds of the history, before the classifier |            5 |                       0 |                                          3 |                    1 |
 | the other 14, which contain it                  |            6 |                       5 |                                          3 |                    0 |
+
+In 5 of the 6 flaky builds the retry passed. In the sixth (the run of `df80c71`) the retry was skipped as an invalid run: Playwright, and so the tracker, call a failed attempt followed by a skipped one flaky, which is why that build counts, although nobody can say whether its retry would have passed.
 
 What it shows:
 
