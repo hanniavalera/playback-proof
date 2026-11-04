@@ -64,6 +64,19 @@ export function clearKeyPatch(pair: ClearKeyParam | null): { drm?: { clearKeys: 
   return pair ? { drm: { clearKeys: { [pair.keyId]: pair.key } } } : {};
 }
 
+/**
+ * The query string without `clearKey` (`''` when nothing else is left), or null when it had none. The page puts this back into the
+ * address bar once it has read the pair: a browser repeats the page's URL in some of its own console messages (Firefox does, in its
+ * warning about `requestMediaKeySystemAccess`), and the key is public but stays out of logs.
+ */
+export function withoutClearKey(search: string): string | null {
+  const query = new URLSearchParams(search);
+  if (!query.has('clearKey')) return null;
+  query.delete('clearKey');
+  const rest = query.toString();
+  return rest === '' ? '' : `?${rest}`;
+}
+
 export function parsePlayerParams(search: string | URLSearchParams): ParsedParams {
   const query = typeof search === 'string' ? new URLSearchParams(search) : search;
   const params: ResolvedPlayerParams = { ...PARAM_DEFAULTS };

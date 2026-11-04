@@ -3,7 +3,7 @@ import { configFor, mergePatches } from './configs.ts';
 import { PlayerHook } from './hook.ts';
 import type { PlayerEnvironment, PlayerLike, VideoLike } from './hook.ts';
 import { createHud } from './hud.ts';
-import { clearKeyPatch, parsePlayerParams } from './params.ts';
+import { clearKeyPatch, parsePlayerParams, withoutClearKey } from './params.ts';
 
 // shaka.js, Shaka's own compiled build copied verbatim by tools/build-player.ts, is loaded by index.html before this script
 // and defines this global. It is a second script rather than part of this bundle so that the page runs exactly the bytes
@@ -18,6 +18,11 @@ declare const shaka: typeof shakaTypes;
 
 const video = document.getElementById('video') as HTMLVideoElement;
 const { params, problems } = parsePlayerParams(location.search);
+
+// A ClearKey pair is public, but a browser repeats the page's URL in some of its own console messages (Firefox does): once it is read it
+// leaves the address bar, so that it stays out of the logs a failing test attaches.
+const search = withoutClearKey(location.search);
+if (search !== null) history.replaceState(history.state, '', `${location.pathname}${search}${location.hash}`);
 
 // Before any source is attached, so that autoplay is allowed in every engine without a gesture (or not, with muted=0).
 video.muted = params.muted;

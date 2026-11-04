@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { PARAM_DEFAULTS, clearKeyPatch, parsePlayerParams } from '../../../src/player/params.ts';
+import {
+  PARAM_DEFAULTS,
+  clearKeyPatch,
+  parsePlayerParams,
+  withoutClearKey,
+} from '../../../src/player/params.ts';
 import type { ResolvedPlayerParams } from '../../../src/player/params.ts';
 import type { PlayerPageParams } from '../../../src/shared/qa.ts';
 import { playerUrl } from '../../../src/shared/urls.ts';
@@ -214,5 +219,39 @@ describe('clearKeyPatch: what the page hands to Shaka before the load', () => {
 
   it('is empty without a pair: a page that was not given a key configures nothing', () => {
     expect(clearKeyPatch(null)).toEqual({});
+  });
+});
+
+describe('withoutClearKey: the address bar once the pair has been read', () => {
+  it('drops the pair and keeps every other parameter, which still parse to what they were', () => {
+    const before = queryOf(
+      playerUrl({
+        manifest: '/s/a b/v/dash/manifest.mpd',
+        config: 'B',
+        start: 2,
+        clearKey: { keyId: KEY_ID, key: KEY },
+      }),
+    );
+    const after = withoutClearKey(`?${before}`);
+    expect(after).not.toBeNull();
+    expect(after).not.toContain('clearKey');
+    expect(after).not.toContain(KEY);
+    const { params } = parsePlayerParams(after as string);
+    expect(params).toMatchObject({
+      manifest: '/s/a b/v/dash/manifest.mpd',
+      config: 'B',
+      start: 2,
+      clearKey: null,
+    });
+  });
+
+  it('is an empty query when the pair was the only parameter, and null when there was none to take out', () => {
+    expect(withoutClearKey(`clearKey=${KEY_ID}%3A${KEY}`)).toBe('');
+    expect(withoutClearKey('manifest=%2Fm.mpd&muted=0')).toBeNull();
+    expect(withoutClearKey('')).toBeNull();
+  });
+
+  it('takes a refused value out too (a mistyped real key must not stay in the address bar), and every repeat', () => {
+    expect(withoutClearKey('clearKey=nonsense&muted=0&clearKey=again')).toBe('?muted=0');
   });
 });
