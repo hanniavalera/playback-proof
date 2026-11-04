@@ -20,6 +20,7 @@
     "verify:streams": "tsx tools/verify-streams.ts",
     "serve": "tsx tools/serve.ts",
     "bench:server": "tsx tools/bench-server.ts",
+    "smoke:service": "tsx tools/smoke-service.ts",
     "player:smoke": "tsx tools/player-smoke.ts",
     "codec-matrix": "tsx tools/codec-matrix.ts",
     "docker:pw": "bash tools/docker/pw.sh",
