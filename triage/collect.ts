@@ -344,6 +344,7 @@ function envIdOf(
 interface TestReading {
   failure?: Failure;
   skipped?: SkippedTest;
+  notRun?: boolean;
   interrupted?: boolean;
   passed?: boolean;
 }
@@ -356,6 +357,10 @@ function readTest(suiteTitles: readonly string[], spec: PwSpec, test: PwTest, co
   const id = idOf(spec.title ?? '', suiteTitles);
 
   if (test.status === 'skipped') {
+    // Playwright reports a test that never started as `skipped` too, with no attempt at all (a listing, `--list`, or a run stopped before
+    // it): that is not a skip, and calling it a skip with no reason would say a bug where there is none. A skip has an attempt that ended
+    // `skipped`, and the reason in its annotations.
+    if (results.length === 0) return { notRun: true };
     const annotations = toAnnotations(test.annotations, ...results.map((result) => result.annotations));
     const reason = annotations.find(
       (a) => (a.type === 'skip' || a.type === 'fixme') && a.description.trim() !== '',
@@ -521,6 +526,7 @@ export function readReport(
     failed: 0,
     flaky: 0,
     skipped: 0,
+    notRun: 0,
     interrupted: 0,
     runErrors: (report.errors ?? []).length,
     startTime: report.stats?.startTime ?? null,
@@ -537,6 +543,8 @@ export function readReport(
       } else if (reading.skipped) {
         skipped.push(reading.skipped);
         summary.skipped += 1;
+      } else if (reading.notRun) {
+        summary.notRun += 1;
       } else if (reading.interrupted) {
         summary.interrupted += 1;
       } else if (reading.passed) {

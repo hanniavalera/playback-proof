@@ -46,6 +46,7 @@ export function buildReport(
       flaky: collection.failures.length - failed,
       clusters: clusters.length,
       skipped: collection.skipped.length,
+      notRun: collection.sources.reduce((sum, source) => sum + source.notRun, 0),
       interrupted: collection.sources.reduce((sum, source) => sum + source.interrupted, 0),
     },
     clusters: [...clusters],
@@ -207,6 +208,10 @@ export function renderText(
     lines.push(
       `interrupted: ${plural(report.totals.interrupted, 'test')}, which the run stopped on, not clustered`,
     );
+  if (report.totals.notRun > 0)
+    lines.push(
+      `not run: ${plural(report.totals.notRun, 'test')} with no attempt (a listing, or a run stopped before them): neither failures nor skips`,
+    );
   for (const problem of report.problems) lines.push(`problem: ${problem}`);
   if (report.summaryNote) lines.push(report.summaryNote);
   if (options.wrote && options.wrote.length > 0) lines.push(`wrote ${options.wrote.join(' and ')}`);
@@ -316,18 +321,24 @@ export function renderMarkdown(report: TriageReport): string {
       '',
     );
   }
+  if (report.totals.notRun > 0) {
+    out.push(
+      `${plural(report.totals.notRun, 'test')} did not run: they have no attempt at all (the report is of a listing, or the run was stopped before they started). They are neither failures nor skips.`,
+      '',
+    );
+  }
   if (report.problems.length > 0)
     out.push('## What could not be read', '', ...report.problems.map((p) => `- ${oneLine(p, 400)}`), '');
   out.push('## Reports read', '');
   if (report.sources.length === 0) out.push('None.', '');
   else {
     out.push(
-      '| Report | Tests | Passed | Failed | Flaky | Skipped | Interrupted | Run errors |',
-      '| --- | --- | --- | --- | --- | --- | --- | --- |',
+      '| Report | Tests | Passed | Failed | Flaky | Skipped | Not run | Interrupted | Run errors |',
+      '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
     );
     for (const s of report.sources) {
       out.push(
-        `| ${cell(s.path)} | ${s.tests} | ${s.passed} | ${s.failed} | ${s.flaky} | ${s.skipped} | ${s.interrupted} | ${s.runErrors} |`,
+        `| ${cell(s.path)} | ${s.tests} | ${s.passed} | ${s.failed} | ${s.flaky} | ${s.skipped} | ${s.notRun} | ${s.interrupted} | ${s.runErrors} |`,
       );
     }
     out.push('');

@@ -20,6 +20,7 @@ const source = (path = 'reports/playwright.json') => ({
   failed: 2,
   flaky: 1,
   skipped: 1,
+  notRun: 0,
   interrupted: 0,
   runErrors: 0,
   startTime: null,
@@ -45,7 +46,14 @@ describe('PB-LAB-005 triage report: the numbers', () => {
       failure({ outcome: 'timedOut', project: 'webkit', message: wait }),
       failure({ outcome: 'flaky', id: 'PB-VOD-004', message: 'Error: other' }),
     ]);
-    expect(r.totals).toStrictEqual({ failures: 2, flaky: 1, clusters: 2, skipped: 0, interrupted: 0 });
+    expect(r.totals).toStrictEqual({
+      failures: 2,
+      flaky: 1,
+      clusters: 2,
+      skipped: 0,
+      notRun: 0,
+      interrupted: 0,
+    });
     expect(r.schemaVersion).toBe(1);
     expect(r.generatedAt).toBe('2026-11-04T06:00:00.000Z');
     expect(JSON.parse(renderJson(r))).toMatchObject({ totals: { clusters: 2 } });
@@ -94,7 +102,7 @@ describe('PB-LAB-005 triage report: the markdown', () => {
     expect(md).toContain('## What could not be read');
     expect(md).toContain('- reports/broken.json: could not be read');
     expect(md).toContain('## Reports read');
-    expect(md).toContain('| reports/playwright.json | 10 | 6 | 2 | 1 | 1 | 0 | 0 |');
+    expect(md).toContain('| reports/playwright.json | 10 | 6 | 2 | 1 | 1 | 0 | 0 | 0 |');
     expect(md).toContain('No model summaries: they are opt-in');
     expect(md.endsWith('\n')).toBe(true);
   });
@@ -204,6 +212,22 @@ describe('PB-LAB-005 triage report: the markdown', () => {
       '3 tests were interrupted (the run was stopped before they finished) and are not clustered.',
     );
     expect(renderText(r)).toContain('interrupted: 3 tests, which the run stopped on, not clustered');
+  });
+
+  it('says that tests with no attempt did not run, and that they are neither failures nor skips', () => {
+    const listing = report([], { sources: [{ ...source(), tests: 66, passed: 0, skipped: 0, notRun: 66 }] });
+    expect(listing.totals).toMatchObject({ failures: 0, skipped: 0, notRun: 66 });
+    const markdown = renderMarkdown(listing);
+    expect(markdown).toContain('66 tests did not run: they have no attempt at all');
+    expect(markdown).toContain('They are neither failures nor skips.');
+    expect(markdown).toContain(
+      '| Report | Tests | Passed | Failed | Flaky | Skipped | Not run | Interrupted |',
+    );
+    expect(markdown).toContain('| reports/playwright.json | 66 | 0 | 2 | 1 | 0 | 66 | 0 | 0 |');
+    expect(markdown).not.toContain('silent skip');
+    expect(renderText(listing)).toContain(
+      'not run: 66 tests with no attempt (a listing, or a run stopped before them): neither failures nor skips',
+    );
   });
 });
 

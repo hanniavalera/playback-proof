@@ -187,6 +187,8 @@ export interface SourceSummary {
   failed: number;
   flaky: number;
   skipped: number;
+  /** Tests with no attempt at all: the report is of a listing (`--list`), or the run was stopped before they started. Neither failures nor skips. */
+  notRun: number;
   interrupted: number;
   /** Errors of the run itself (`errors[]` of the report). */
   runErrors: number;
@@ -297,7 +299,14 @@ export interface TriageReport {
   /** What was read: the directory as given, the reports found in it. */
   from: string;
   sources: SourceSummary[];
-  totals: { failures: number; flaky: number; clusters: number; skipped: number; interrupted: number };
+  totals: {
+    failures: number;
+    flaky: number;
+    clusters: number;
+    skipped: number;
+    notRun: number;
+    interrupted: number;
+  };
   clusters: Cluster[];
   skipped: SkippedTest[];
   problems: string[];

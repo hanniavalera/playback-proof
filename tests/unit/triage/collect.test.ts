@@ -290,6 +290,18 @@ describe('PB-LAB-005 triage collection: what is not a failure', () => {
     expect(summary).toMatchObject({ tests: 3, passed: 1, skipped: 2 });
   });
 
+  it('does not call a test with no attempt a skip: a listing, or a run stopped before it, has nothing to blame and no bug to flag', () => {
+    const { failures, skipped, summary } = read([
+      { title: 'PB-VOD-001 starts', attempts: [] },
+      { title: 'PB-VOD-002 plays', project: 'webkit', attempts: [] },
+      { title: 'PB-VOD-003 ends', attempts: [{ status: 'skipped' }] },
+    ]);
+    expect(failures).toStrictEqual([]);
+    // Only the test that ran up to a skip is a skip, and without a reason it is still the bug it was.
+    expect(skipped.map((s) => [s.id, s.reason])).toStrictEqual([['PB-VOD-003', null]]);
+    expect(summary).toMatchObject({ tests: 3, passed: 0, skipped: 1, notRun: 2 });
+  });
+
   it('does not make a failure of a test the run stopped on, and counts it', () => {
     const { failures, summary } = read([
       { title: 'PB-VOD-005 seeks', attempts: [{ status: 'interrupted' }] },
