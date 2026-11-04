@@ -15,7 +15,7 @@ import {
 } from '../../../src/server/media/segmenter.ts';
 import { parseMediaSegment } from '../../../src/server/media/isobmff.ts';
 import { parseWebmMediaSegment } from '../../../src/server/media/ebml.ts';
-import { syntheticIndex } from './support/support.ts';
+import { syntheticIndex, protectedAudioInit } from './support/support.ts';
 
 const pattern = (n: number): number[] =>
   Array.from({ length: n }, (_, i) => [94, 94, 94, 93][i % 4] as number);
@@ -137,6 +137,39 @@ describe('buildIsobmffSegments', () => {
     expect(() => buildIsobmffSegments({ trackId: 1, ticksPerSample: 512, packets, counts: [1, 2] })).toThrow(
       /cannot be split/,
     );
+  });
+
+  it('moves each sample IV into the segment its sample lands in, on the 94, 94, 94, 93 cut', () => {
+    const counts = audioSegmentFrameCounts(4, 2, AAC_GRID);
+    const packets: Packet[] = Array.from({ length: 375 }, (_, i) => {
+      const iv = Buffer.alloc(8);
+      iv.writeBigUInt64BE(BigInt(i));
+      return { data: Buffer.from([i & 0xff, i >> 8, 0xaa]), sync: true, iv };
+    });
+    const segments = buildIsobmffSegments({
+      trackId: 1,
+      ticksPerSample: 1024,
+      packets,
+      counts,
+      requireSyncStart: false,
+    });
+    const init = protectedAudioInit();
+    let from = 0;
+    segments.forEach((seg, k) => {
+      const traf = parseMediaSegment(seg, init).fragments[0]?.trafs[0];
+      const own = packets.slice(from, from + (counts[k] as number));
+      expect(traf?.encryption?.ivs.map((v) => v.toString('hex'))).toEqual(
+        own.map((p) => (p.iv as Buffer).toString('hex')),
+      );
+      // the IV belongs to the very sample stored next to it: bytes and IV of every sample line up
+      traf?.samples.forEach((s, i) =>
+        expect(seg.subarray(s.offset, s.offset + s.size).equals((own[i] as Packet).data)).toBe(true),
+      );
+      from += own.length;
+    });
+    expect(segments.map((s) => parseMediaSegment(s, init).fragments[0]?.trafs[0]?.samples.length)).toEqual([
+      94, 94, 94, 93,
+    ]);
   });
 });
 

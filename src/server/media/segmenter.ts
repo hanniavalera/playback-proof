@@ -18,6 +18,8 @@ export interface Packet {
   data: Buffer;
   /** A random access point. Every audio packet is one; a video packet is when it is a keyframe. */
   sync: boolean;
+  /** Common Encryption: this sample's initialization vector. It belongs to the sample, so it moves with it into whichever segment it lands. */
+  iv?: Buffer;
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------
@@ -117,6 +119,10 @@ export function readIsobmffPackets(file: Buffer): IsobmffSource {
   if (parsedInit.tracks.length !== 1)
     throw new Error(`intermediate MP4 has ${parsedInit.tracks.length} tracks, expected 1`);
   const track = parsedInit.tracks[0] as InitTrack;
+  if (track.entry.protection)
+    throw new Error(
+      'intermediate MP4 is protected: the lab encrypts after the cut, ffmpeg must write clear samples',
+    );
   const parsed = parseMediaSegment(file, parsedInit);
   const packets: Packet[] = [];
   const durations: number[] = [];
@@ -221,7 +227,10 @@ export function buildIsobmffSegments(opts: IsobmffSegmentation): Buffer[] {
       trackId: opts.trackId,
       sequenceNumber: i + 1,
       baseMediaDecodeTime: sampleIndex * opts.ticksPerSample,
-      samples: group.map((p) => ({ data: p.data, duration: opts.ticksPerSample, sync: p.sync })),
+      samples: group.map((p) => {
+        const sample = { data: p.data, duration: opts.ticksPerSample, sync: p.sync };
+        return p.iv ? { ...sample, iv: p.iv } : sample;
+      }),
     });
     sampleIndex += group.length;
     return segment;

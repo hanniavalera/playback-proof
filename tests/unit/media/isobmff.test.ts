@@ -10,8 +10,10 @@ import {
   payloadStart,
   readBoxes,
   removeBoxes,
+  type Box,
   type ParsedInit,
 } from '../../../src/server/media/isobmff.ts';
+import { protectedAudioInit } from './support/support.ts';
 
 const u32 = (n: number): Buffer => {
   const b = Buffer.alloc(4);
@@ -137,6 +139,103 @@ describe('buildMediaSegment and parseMediaSegment', () => {
   });
 });
 
+describe('Common Encryption boxes: senc, saiz and saio of a protected track', () => {
+  const iv = (n: number): Buffer => {
+    const b = Buffer.alloc(8);
+    b.writeBigUInt64BE(BigInt(n));
+    return b;
+  };
+  const samples = [10, 11, 12].map((n) => ({
+    data: Buffer.from(`sample-${n}`),
+    duration: 1024,
+    sync: true,
+    iv: iv(n),
+  }));
+  const init = protectedAudioInit();
+  const build = (): Buffer =>
+    buildMediaSegment({ trackId: 1, sequenceNumber: 1, baseMediaDecodeTime: 0, samples });
+
+  /** The boxes inside the traf of a segment. */
+  const trafBoxes = (seg: Buffer): Box[] => {
+    const moof = readBoxes(seg).find((b) => b.type === 'moof') as Box;
+    const traf = childBoxes(seg, moof).find((b) => b.type === 'traf') as Box;
+    return childBoxes(seg, traf);
+  };
+  const find = (seg: Buffer, type: string): Box => trafBoxes(seg).find((b) => b.type === type) as Box;
+
+  it('writes senc, saio and saiz after the trun and reads the IVs back in sample order', () => {
+    const seg = build();
+    expect(trafBoxes(seg).map((b) => b.type)).toEqual(['tfhd', 'tfdt', 'trun', 'senc', 'saio', 'saiz']);
+    const traf = parseMediaSegment(seg, init).fragments[0]?.trafs[0];
+    expect(traf?.encryption?.ivs.map((v) => Number(v.readBigUInt64BE()))).toEqual([10, 11, 12]);
+    // the trun data offset still points at the first sample once the three extra boxes are in the moof
+    const at = traf?.samples[0]?.offset ?? 0;
+    expect(seg.subarray(at, at + 9).toString()).toBe('sample-10');
+  });
+
+  it('writes nothing of the sort for a track without IVs', () => {
+    const clear = buildMediaSegment({
+      trackId: 1,
+      sequenceNumber: 1,
+      baseMediaDecodeTime: 0,
+      samples: samples.map(({ iv: _iv, ...s }) => s),
+    });
+    expect(readBoxes(clear).some((b) => ['senc', 'saio', 'saiz'].includes(b.type))).toBe(false);
+    expect(parseMediaSegment(clear).fragments[0]?.trafs[0]?.encryption).toBeUndefined();
+  });
+
+  it('refuses IVs on some samples only, IVs of different sizes, and a size that is neither 8 nor 16', () => {
+    const [first, ...rest] = samples;
+    const mixed = [first as (typeof samples)[number], ...rest.map(({ iv: _iv, ...s }) => s)];
+    expect(() =>
+      buildMediaSegment({ trackId: 1, sequenceNumber: 1, baseMediaDecodeTime: 0, samples: mixed }),
+    ).toThrow(/every sample has an IV of the same size or none/);
+    const uneven = samples.map((s, i) => (i === 1 ? { ...s, iv: Buffer.alloc(16) } : s));
+    expect(() =>
+      buildMediaSegment({ trackId: 1, sequenceNumber: 1, baseMediaDecodeTime: 0, samples: uneven }),
+    ).toThrow(/same size/);
+    const short = samples.map((s) => ({ ...s, iv: Buffer.alloc(4) }));
+    expect(() =>
+      buildMediaSegment({ trackId: 1, sequenceNumber: 1, baseMediaDecodeTime: 0, samples: short }),
+    ).toThrow(/IV size 4/);
+  });
+
+  it('rejects a senc whose track is not protected in the init segment (or that has no init at all)', () => {
+    expect(() => parseMediaSegment(build())).toThrow(BoxError);
+    expect(() => parseMediaSegment(build())).toThrow(/not protected/);
+  });
+
+  it.each([
+    [
+      'saio pointing one byte off the first IV',
+      'saio',
+      4 + 4 + 3,
+      (old: number) => (old + 1) & 0xff,
+      /saio points at/,
+    ],
+    ['saiz saying 16 bytes of auxiliary information for 8-byte IVs', 'saiz', 4, () => 16, /saiz says 16/],
+    [
+      'a senc that counts 2 entries for 3 samples',
+      'senc',
+      4 + 3,
+      () => 2,
+      /senc has 2 entries for 3 samples/,
+    ],
+    ['a senc with the subsample flag', 'senc', 3, () => 2, /subsample map is not supported/],
+  ])('rejects %s', (_name, type, at, change, message) => {
+    const seg = build();
+    const position = find(seg, type).start + 8 + at;
+    seg[position] = change(seg[position] as number);
+    expect(() => parseMediaSegment(seg, init)).toThrow(message);
+  });
+
+  it('rejects saiz and saio without a senc: auxiliary information outside the moof is not supported', () => {
+    const seg = build();
+    seg.write('free', find(seg, 'senc').start + 4, 'latin1');
+    expect(() => parseMediaSegment(seg, init)).toThrow(/saiz\/saio without senc/);
+  });
+});
+
 /** A hand-made fragment: tfhd and trun flags chosen by the test, with the moof size and data offset worked out. */
 function fragment(opts: {
   tfhdFlags: number;
@@ -187,6 +286,7 @@ describe('sample durations, sizes and flags: trun, then tfhd, then trex', () => 
       tracks: [
         {
           trackId: 1,
+          entry: { kind: 'audio', format: 'mp4a', channelCount: 2, sampleRate: 48_000 },
           trex: {
             defaultSampleDescriptionIndex: 1,
             defaultSampleDuration: 1024,

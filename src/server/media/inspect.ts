@@ -3,12 +3,20 @@
 // this (never from what the generator meant to write), and tools/verify-streams.ts compares it with ffprobe's numbers.
 //
 // Structural rules enforced for every segment (a violation is an error that names the segment):
-//   fMP4: [styp] + exactly one moof + exactly one mdat, no sidx, one traf of the track, tfdt present, samples tile the mdat payload;
+//   fMP4: [styp] + exactly one moof + exactly one mdat, no sidx, one traf of the track, tfdt present, samples tile the mdat payload,
+//         and exactly one IV per sample (senc) when the track is protected, none when it is not;
 //   WebM: exactly one Cluster.
 
 import { parseVp9Frame, vp9LevelFor } from './codecs.ts';
 import { parseWebmInit, parseWebmMediaSegment, type ParsedWebmInit, type WebmTrack } from './ebml.ts';
-import { parseInit, parseMediaSegment, payloadStart, vp9CodecString, type InitTrack } from './isobmff.ts';
+import {
+  parseInit,
+  parseMediaSegment,
+  payloadStart,
+  vp9CodecString,
+  type InitTrack,
+  type Protection,
+} from './isobmff.ts';
 
 export interface InspectedSegment {
   /** Decode time of the first sample, in ticks. */
@@ -30,6 +38,8 @@ export interface InspectedRep {
   frameRate?: number;
   channels?: number;
   sampleRate?: number;
+  /** Common Encryption of the track, when its sample entry is protected. */
+  protection?: Protection;
   segments: InspectedSegment[];
 }
 
@@ -41,6 +51,7 @@ function inspectIsobmff(initBuf: Buffer, segments: Buffer[]): InspectedRep {
     throw new Error(
       'init segment has an edit list: the media timeline would differ from the presentation timeline',
     );
+  const protection = track.entry.protection;
   let firstSampleDuration = 0;
   let firstKeyframeWidth: number | undefined;
   const out: InspectedSegment[] = segments.map((buf, i) => {
@@ -64,6 +75,10 @@ function inspectIsobmff(initBuf: Buffer, segments: Buffer[]): InspectedRep {
     const mdat = parsed.mdats[0];
     if (!mdat) throw new Error(`${where}: no mdat`);
     if (traf.samples.length === 0) throw new Error(`${where}: no samples`);
+    // A protected track has exactly one IV per sample, and an unprotected one has none: a mixed-up init and segment would decode as noise.
+    if (protection && traf.encryption?.ivs.length !== traf.samples.length)
+      throw new Error(`${where}: the track is protected but the segment has no matching senc`);
+    if (!protection && traf.encryption) throw new Error(`${where}: senc in a track that is not protected`);
     // The samples must tile the mdat payload exactly: no stray bytes, nothing outside the box.
     let cursor = payloadStart(mdat);
     for (const s of traf.samples) {
@@ -80,7 +95,8 @@ function inspectIsobmff(initBuf: Buffer, segments: Buffer[]): InspectedRep {
     if (i === 0) {
       firstSampleDuration = (traf.samples[0] as { duration: number }).duration;
       const first = traf.samples[0];
-      if (first && track.entry.kind === 'video') {
+      // The bitstream of a protected track is ciphertext: only ffmpeg with the key can read it (tools/verify-streams.ts does).
+      if (first && track.entry.kind === 'video' && !protection) {
         const frame = parseVp9Frame(buf.subarray(first.offset, first.offset + first.size));
         if (!frame.keyFrame) throw new Error(`${where}: first frame is not a VP9 key frame`);
         firstKeyframeWidth = frame.width;
@@ -106,6 +122,7 @@ function inspectIsobmff(initBuf: Buffer, segments: Buffer[]): InspectedRep {
     codecs: track.codec,
     segments: out,
   };
+  if (protection) rep.protection = protection;
   if (track.entry.kind === 'video') {
     rep.width = track.entry.width;
     rep.height = track.entry.height;

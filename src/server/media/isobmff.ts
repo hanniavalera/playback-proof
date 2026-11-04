@@ -1,8 +1,9 @@
 // A small, strict ISO BMFF (MP4) box reader and writer: only what the media pipeline needs, no dependencies.
 //
-//   reader: ftyp / styp, moov (mvhd, trak > tkhd, edts, mdia > mdhd, hdlr, minf > stbl > stsd > vpcC | esds, mvex > trex),
-//           moof (mfhd, traf > tfhd, tfdt, trun), mdat, sidx (only to detect it);
-//   writer: styp, one-fragment media segments (moof + mdat), and removal of boxes from an init segment;
+//   reader: ftyp / styp, moov (mvhd, trak > tkhd, edts, mdia > mdhd, hdlr, minf > stbl > stsd > vpcC | esds | sinf > frma, schm, tenc,
+//           mvex > trex), moof (mfhd, traf > tfhd, tfdt, trun, senc, saiz, saio), mdat, sidx (only to detect it);
+//   writer: styp, one-fragment media segments (moof + mdat, with senc/saiz/saio for a protected track), and the edits of an init
+//           segment (removing boxes, replacing one);
 //   rewriteTfdt: the live loop's only mutation of a segment.
 //
 // Strictness is deliberate: every size is bounds-checked against its container and anything unexpected throws a BoxError that says
@@ -207,10 +208,12 @@ export interface EsdsInfo {
 
 export interface VisualEntry {
   kind: 'video';
+  /** The four-character code of the sample entry as written ('vp09', or 'encv' when it is protected). */
   format: string;
   width: number;
   height: number;
   vpcC?: VpcC;
+  protection?: Protection;
 }
 
 export interface AudioEntry {
@@ -219,6 +222,19 @@ export interface AudioEntry {
   channelCount: number;
   sampleRate: number;
   esds?: EsdsInfo;
+  protection?: Protection;
+}
+
+/** What the `sinf` of a protected sample entry ('encv', 'enca') says: Common Encryption, AES-CTR on whole samples ('cenc'). */
+export interface Protection {
+  /** The real format of the entry: 'vp09', 'mp4a'. */
+  originalFormat: string;
+  scheme: string;
+  schemeVersion: number;
+  /** tenc default_KID as 32 lower-case hex digits. */
+  defaultKid: string;
+  /** Bytes of the per-sample initialization vector (8 or 16). */
+  ivSize: number;
 }
 
 export interface TrexDefaults {
@@ -339,6 +355,45 @@ function parseEsds(buf: Buffer, box: Box): EsdsInfo {
   };
 }
 
+/** `encv` and `enca` entries carry a `sinf`, and no other entry may. */
+function protectionOf(buf: Buffer, entry: Box, kids: Box[]): Protection | undefined {
+  const sinf = firstBox(kids, 'sinf');
+  const protectedEntry = entry.type === 'encv' || entry.type === 'enca';
+  if (protectedEntry !== (sinf !== undefined)) {
+    throw new BoxError(
+      `sample entry '${entry.type}' at ${entry.start}: ${protectedEntry ? 'has no sinf' : 'has a sinf but is not encv/enca'}`,
+    );
+  }
+  return sinf ? parseSinf(buf, sinf) : undefined;
+}
+
+function parseSinf(buf: Buffer, sinf: Box): Protection {
+  const where = `sinf at ${sinf.start}`;
+  const kids = childBoxes(buf, sinf);
+  const originalFormat = payloadReader(buf, requireBox(kids, 'frma', where)).fourcc();
+  const sr = payloadReader(buf, requireBox(kids, 'schm', where));
+  fullBoxHeader(sr);
+  const scheme = sr.fourcc();
+  const schemeVersion = sr.u32();
+  if (scheme !== 'cenc')
+    throw new BoxError(`${where}: protection scheme '${scheme}' is not supported (only 'cenc', AES-CTR)`);
+  const schi = requireBox(kids, 'schi', where);
+  const tencBox = requireBox(childBoxes(buf, schi), 'tenc', `schi at ${schi.start}`);
+  const tr = payloadReader(buf, tencBox);
+  fullBoxHeader(tr);
+  tr.skip(2); // reserved, or crypt/skip byte blocks (pattern encryption, which 'cenc' does not use)
+  const isProtected = tr.u8();
+  const ivSize = tr.u8();
+  const defaultKid = tr.bytes(16).toString('hex');
+  if (isProtected !== 1)
+    throw new BoxError(`tenc at ${tencBox.start}: default_isProtected is ${isProtected}`);
+  if (ivSize !== 8 && ivSize !== 16)
+    throw new BoxError(
+      `tenc at ${tencBox.start}: per-sample IV size ${ivSize} is not supported (8 or 16; no constant IV)`,
+    );
+  return { originalFormat, scheme, schemeVersion, defaultKid, ivSize };
+}
+
 function parseSampleEntry(
   buf: Buffer,
   entry: Box,
@@ -359,6 +414,8 @@ function parseSampleEntry(
       out.vpcC = parseVpcC(buf, vpccBox);
       codec = vp9CodecString(out.vpcC.profile, out.vpcC.level, out.vpcC.bitDepth);
     }
+    const protection = protectionOf(buf, entry, kids);
+    if (protection) out.protection = protection;
     return { entry: out, codec };
   }
   if (handler === 'soun') {
@@ -379,6 +436,8 @@ function parseSampleEntry(
       out.esds = parseEsds(buf, esdsBox);
       codec = `mp4a.${out.esds.objectTypeIndication.toString(16)}.${out.esds.audioObjectType}`;
     }
+    const protection = protectionOf(buf, entry, kids);
+    if (protection) out.protection = protection;
     return { entry: out, codec };
   }
   throw new BoxError(`unsupported track handler '${handler}'`);
@@ -504,6 +563,12 @@ export interface ParsedTrackFragment {
   duration: number;
   /** Sum of the sample sizes. */
   dataSize: number;
+  /** Common Encryption: the per-sample initialization vectors of a protected track (senc), in sample order. */
+  encryption?: SampleEncryption;
+}
+
+export interface SampleEncryption {
+  ivs: Buffer[];
 }
 
 export interface ParsedFragment {
@@ -554,11 +619,87 @@ function parseTfhd(buf: Buffer, box: Box): Tfhd {
   return out;
 }
 
+const SENC_SUBSAMPLES = 0x000002;
+const SAIZ_AUX_INFO_TYPE = 0x000001;
+const SAIO_AUX_INFO_TYPE = 0x000001;
+
+/**
+ * senc + saiz + saio of a traf. The lab encrypts whole samples (no subsample map), so every sample's auxiliary information is exactly
+ * its IV: `saiz` must say so for every sample and `saio` must point at the first IV inside the senc box. Everything is cross-checked,
+ * because a segmenter that moves samples between segments has to move their IVs with them.
+ */
+function parseSampleEncryption(
+  buf: Buffer,
+  kids: Box[],
+  baseOffset: number,
+  sampleCount: number,
+  ivSize: number | undefined,
+  where: string,
+): SampleEncryption | undefined {
+  const sencs = kids.filter((b) => b.type === 'senc');
+  const saizs = kids.filter((b) => b.type === 'saiz');
+  const saios = kids.filter((b) => b.type === 'saio');
+  if (sencs.length === 0) {
+    if (saizs.length + saios.length > 0)
+      throw new BoxError(
+        `${where}: saiz/saio without senc (auxiliary information outside the moof is not supported)`,
+      );
+    return undefined;
+  }
+  if (sencs.length !== 1 || saizs.length !== 1 || saios.length !== 1) {
+    throw new BoxError(
+      `${where}: expected one senc, one saiz and one saio, found ${sencs.length}, ${saizs.length} and ${saios.length}`,
+    );
+  }
+  if (ivSize === undefined)
+    throw new BoxError(
+      `${where}: senc in a track whose sample entry is not protected (no tenc in the init segment)`,
+    );
+  const senc = sencs[0] as Box;
+  const sr = payloadReader(buf, senc);
+  const { flags: sencFlags } = fullBoxHeader(sr);
+  if (sencFlags & SENC_SUBSAMPLES)
+    throw new BoxError(
+      `${where}: senc with a subsample map is not supported (the lab encrypts whole samples)`,
+    );
+  const count = sr.u32();
+  if (count !== sampleCount)
+    throw new BoxError(`${where}: senc has ${count} entries for ${sampleCount} samples`);
+  const firstIv = sr.pos;
+  const ivs: Buffer[] = [];
+  for (let i = 0; i < count; i++) ivs.push(sr.bytes(ivSize));
+  if (sr.left !== 0)
+    throw new BoxError(`${where}: senc has ${sr.left} stray bytes after its ${count} entries`);
+
+  const zr = payloadReader(buf, saizs[0] as Box);
+  const { flags: saizFlags } = fullBoxHeader(zr);
+  if (saizFlags & SAIZ_AUX_INFO_TYPE) zr.skip(8);
+  const defaultSize = zr.u8();
+  const saizCount = zr.u32();
+  if (defaultSize !== ivSize)
+    throw new BoxError(
+      `${where}: saiz says ${defaultSize} bytes of auxiliary information per sample, the IV is ${ivSize}`,
+    );
+  if (saizCount !== sampleCount)
+    throw new BoxError(`${where}: saiz covers ${saizCount} samples, the fragment has ${sampleCount}`);
+
+  const or = payloadReader(buf, saios[0] as Box);
+  const { version: saioVersion, flags: saioFlags } = fullBoxHeader(or);
+  if (saioFlags & SAIO_AUX_INFO_TYPE) or.skip(8);
+  const entries = or.u32();
+  if (entries !== 1) throw new BoxError(`${where}: saio has ${entries} offsets, expected 1`);
+  const offset = saioVersion === 1 ? or.u64() : or.u32();
+  if (baseOffset + offset !== firstIv)
+    throw new BoxError(`${where}: saio points at byte ${baseOffset + offset}, the first IV is at ${firstIv}`);
+  return { ivs };
+}
+
 function parseTraf(
   buf: Buffer,
   traf: Box,
   moof: Box,
   trexFor: (trackId: number) => TrexDefaults | undefined,
+  ivSizeFor: (trackId: number) => number | undefined,
 ): ParsedTrackFragment {
   const where = `traf at ${traf.start}`;
   const kids = childBoxes(buf, traf);
@@ -612,7 +753,7 @@ function parseTraf(
     }
     firstTrun = false;
   }
-  return {
+  const out: ParsedTrackFragment = {
     trackId: tfhd.trackId,
     baseMediaDecodeTime,
     tfdtVersion: version,
@@ -621,6 +762,16 @@ function parseTraf(
     duration: samples.reduce((sum, s) => sum + s.duration, 0),
     dataSize: samples.reduce((sum, s) => sum + s.size, 0),
   };
+  const encryption = parseSampleEncryption(
+    buf,
+    kids,
+    baseOffset,
+    samples.length,
+    ivSizeFor(tfhd.trackId),
+    where,
+  );
+  if (encryption) out.encryption = encryption;
+  return out;
 }
 
 /** Parses the moof/mdat boxes of a media segment (a whole file works too: it lists every fragment). `init` supplies the trex defaults. */
@@ -628,6 +779,8 @@ export function parseMediaSegment(segment: Buffer, init?: ParsedInit): ParsedMed
   const boxes = readBoxes(segment);
   const trexFor = (trackId: number): TrexDefaults | undefined =>
     init?.tracks.find((t) => t.trackId === trackId)?.trex;
+  const ivSizeFor = (trackId: number): number | undefined =>
+    init?.tracks.find((t) => t.trackId === trackId)?.entry.protection?.ivSize;
   const fragments: ParsedFragment[] = [];
   for (const moof of boxes.filter((b) => b.type === 'moof')) {
     const kids = childBoxes(segment, moof);
@@ -637,7 +790,7 @@ export function parseMediaSegment(segment: Buffer, init?: ParsedInit): ParsedMed
     const sequenceNumber = mr.u32();
     const trafs = kids
       .filter((b) => b.type === 'traf')
-      .map((traf) => parseTraf(segment, traf, moof, trexFor));
+      .map((traf) => parseTraf(segment, traf, moof, trexFor, ivSizeFor));
     fragments.push({ moof, sequenceNumber, trafs });
   }
   const styp = firstBox(boxes, 'styp');
@@ -745,6 +898,8 @@ export interface WriteSample {
   duration: number;
   /** Sync sample (a video keyframe; every audio frame). */
   sync: boolean;
+  /** Common Encryption: the sample's own initialization vector (8 or 16 bytes), moved along with the sample. All samples or none. */
+  iv?: Buffer;
 }
 
 export interface MediaSegmentSpec {
@@ -761,8 +916,10 @@ const SYNC_SAMPLE_FLAGS = 0x0200_0000;
 const NON_SYNC_SAMPLE_FLAGS = 0x0101_0000;
 
 /**
- * One CMAF-style fragment: [styp] moof(mfhd, traf(tfhd, tfdt v1, trun)) mdat. Every sample carries its own duration, size and flags
- * in the trun, so a reader never depends on defaults that live in the init segment. No sidx: it would need its own rewrite per loop.
+ * One CMAF-style fragment: [styp] moof(mfhd, traf(tfhd, tfdt v1, trun [, senc, saio, saiz])) mdat. Every sample carries its own duration,
+ * size and flags in the trun, so a reader never depends on defaults that live in the init segment. No sidx: it would need its own
+ * rewrite per loop. When the samples carry initialization vectors (a protected track), senc/saio/saiz follow the trun in the order
+ * ffmpeg writes them, with saio pointing at the first IV and saiz saying that every sample's auxiliary information is its IV.
  */
 export function buildMediaSegment(spec: MediaSegmentSpec): Buffer {
   const { samples } = spec;
@@ -770,6 +927,14 @@ export function buildMediaSegment(spec: MediaSegmentSpec): Buffer {
   if (!Number.isSafeInteger(spec.baseMediaDecodeTime) || spec.baseMediaDecodeTime < 0) {
     throw new RangeError(`buildMediaSegment: invalid baseMediaDecodeTime ${spec.baseMediaDecodeTime}`);
   }
+  const ivs = samples.map((s) => s.iv);
+  const protectedTrack = ivs[0] !== undefined;
+  const ivSize = ivs[0]?.length ?? 0;
+  if (ivs.some((iv) => (iv !== undefined) !== protectedTrack || (iv && iv.length !== ivSize)))
+    throw new RangeError('buildMediaSegment: either every sample has an IV of the same size or none does');
+  if (protectedTrack && ivSize !== 8 && ivSize !== 16)
+    throw new RangeError(`buildMediaSegment: IV size ${ivSize} is not 8 or 16`);
+
   const mfhd = fullBox('mfhd', 0, 0, u32(spec.sequenceNumber));
   const tfhd = fullBox('tfhd', 0, TFHD_DEFAULT_BASE_IS_MOOF, u32(spec.trackId));
   const tfdtValue = Buffer.alloc(8);
@@ -778,7 +943,10 @@ export function buildMediaSegment(spec: MediaSegmentSpec): Buffer {
 
   const trunHeaderSize = 8 + 4 + 4 + 4; // box header, version/flags, sample_count, data_offset
   const trunSize = trunHeaderSize + samples.length * 12;
-  const trafSize = 8 + tfhd.length + tfdt.length + trunSize;
+  const sencSize = protectedTrack ? 8 + 4 + 4 + samples.length * ivSize : 0;
+  const saioSize = protectedTrack ? 8 + 4 + 4 + 4 : 0;
+  const saizSize = protectedTrack ? 8 + 4 + 1 + 4 : 0;
+  const trafSize = 8 + tfhd.length + tfdt.length + trunSize + sencSize + saioSize + saizSize;
   const moofSize = 8 + mfhd.length + trafSize;
   const dataOffset = moofSize + 8; // first sample byte, relative to the moof start (default-base-is-moof)
 
@@ -800,13 +968,44 @@ export function buildMediaSegment(spec: MediaSegmentSpec): Buffer {
     TRUN_DATA_OFFSET | TRUN_SAMPLE_DURATION | TRUN_SAMPLE_SIZE | TRUN_SAMPLE_FLAGS,
     trunBody,
   );
-  const traf = box('traf', tfhd, tfdt, trun);
+  const trafParts = [tfhd, tfdt, trun];
+  if (protectedTrack) {
+    const senc = fullBox('senc', 0, 0, u32(samples.length), ...(ivs as Buffer[]));
+    // From the moof start to the first IV: moof header, mfhd, traf header, the boxes before senc, senc header + version/flags + count.
+    const firstIvAt = 8 + mfhd.length + 8 + tfhd.length + tfdt.length + trun.length + 8 + 4 + 4;
+    const saio = fullBox('saio', 0, 0, u32(1), u32(firstIvAt));
+    const saiz = fullBox('saiz', 0, 0, Buffer.from([ivSize]), u32(samples.length));
+    trafParts.push(senc, saio, saiz);
+  }
+  const traf = box('traf', ...trafParts);
   const moof = box('moof', mfhd, traf);
   if (moof.length !== moofSize)
     throw new Error(`buildMediaSegment: moof is ${moof.length} bytes, expected ${moofSize}`);
   const mdat = box('mdat', ...samples.map((s) => s.data));
   if (mdat.length - 8 !== dataSize) throw new Error('buildMediaSegment: mdat size mismatch');
   return Buffer.concat([...(spec.styp === false ? [] : [buildStyp()]), moof, mdat]);
+}
+
+/**
+ * Returns `init` with the box at `path` (for example ['moov', 'trak', 'mdia', 'minf', 'stbl', 'stsd']) replaced by `replace(its bytes)`
+ * and the sizes of the containers on the way fixed. Every box that matches the path is replaced (all the traks). The containers on the
+ * path must be plain boxes (a header and children, as moov, trak, mdia, minf and stbl are).
+ */
+export function replaceBox(init: Buffer, path: string[], replace: (bytes: Buffer) => Buffer): Buffer {
+  const rebuild = (buf: Buffer, start: number, end: number, depth: number): Buffer => {
+    const parts: Buffer[] = [];
+    for (const b of readBoxes(buf, start, end)) {
+      if (b.type !== path[depth]) {
+        parts.push(buf.subarray(b.start, boxEnd(b)));
+      } else if (depth === path.length - 1) {
+        parts.push(replace(buf.subarray(b.start, boxEnd(b))));
+      } else {
+        parts.push(box(b.type, rebuild(buf, payloadStart(b), boxEnd(b), depth + 1)));
+      }
+    }
+    return Buffer.concat(parts);
+  };
+  return rebuild(init, 0, init.length, 0);
 }
 
 /**

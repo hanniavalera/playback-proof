@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import type { Protocol, RepInfo, StreamId, StreamInfo } from '../../../../src/shared/streams.ts';
 import { AAC_GRID, audioSegmentFrameCounts, OPUS_WEBM_GRID } from '../../../../src/server/media/segmenter.ts';
 import { CATALOG, type StreamSpec } from '../../../../src/server/media/specs.ts';
+import type { ParsedInit } from '../../../../src/server/media/isobmff.ts';
 import type { RepIndex, StreamIndex } from '../../../../src/server/media/types.ts';
 
 const REPO = fileURLToPath(new URL('../../../../', import.meta.url));
@@ -59,6 +60,50 @@ export function tinyWebmSpec(): StreamSpec {
 /** The smallest stream there is: 2 segments, one rung. Used where a test only needs bytes (determinism, repair, corruption). */
 export function microWebmSpec(): StreamSpec {
   return { ...tinyWebmSpec(), segmentCount: 2 };
+}
+
+/**
+ * The encrypted stream, small: 160x90, 4 segments (so the audio cut is 94, 94, 94, 93), the catalog's own key pair. The unencrypted
+ * twin (same spec, no `drm`) is what the decrypted output has to equal.
+ */
+export function tinyClearKeySpec(): StreamSpec {
+  return {
+    ...specOf('vod-cmaf-clearkey'),
+    segmentCount: 4,
+    rungs: [{ id: 'v360', width: 160, height: 90, bitrateKbps: 120 }],
+  };
+}
+
+/** What `parseInit` reports for one protected AAC track (cenc, 8-byte IVs): the context `parseMediaSegment` needs to read a senc. */
+export function protectedAudioInit(): ParsedInit {
+  return {
+    movieTimescale: 1000,
+    topLevelTypes: ['ftyp', 'moov'],
+    hasMvex: true,
+    tracks: [
+      {
+        trackId: 1,
+        handler: 'soun',
+        timescale: 48_000,
+        mdhdDuration: 0,
+        hasEditList: false,
+        codec: 'mp4a.40.2',
+        entry: {
+          kind: 'audio',
+          format: 'enca',
+          channelCount: 2,
+          sampleRate: 48_000,
+          protection: {
+            originalFormat: 'mp4a',
+            scheme: 'cenc',
+            schemeVersion: 0x10000,
+            defaultKid: '00'.repeat(16),
+            ivSize: 8,
+          },
+        },
+      },
+    ],
+  };
 }
 
 const sha = (n: number): string => n.toString(16).padStart(64, '0');
