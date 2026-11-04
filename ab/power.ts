@@ -27,9 +27,9 @@ import type { ArmId, SessionRecord } from './types.ts';
 // ab/analyze.ts on each simulated experiment, the bootstrap interval and the decision rule included.
 //
 // WHAT IT MEANS. Detecting is not deciding: a difference at the minimum detectable effect is found 80 % of the time, but the decision rule
-// also needs the whole interval beyond the practical threshold, which at a true shift equal to the threshold happens less than half the time
-// (ADR-147). `verdictRates` says how often each verdict comes out at a given true shift, which is the number that tells whether a design
-// can ever say "ship B" or "no difference".
+// also needs the whole interval beyond the practical threshold, which at a true shift equal to the threshold happens about one time in forty
+// (the far end of a 95 % interval lies beyond the true value only that often; ADR-147). `verdictRates` says how often each verdict comes out
+// at a given true shift, which is the number that tells whether a design can ever say "ship B" or "no difference".
 
 export type MetricKind = 'continuous' | 'binary';
 
@@ -295,7 +295,8 @@ export type VerdictRates = Record<Outcome, number>;
  * interval, Holm over a family of one, the rule) on every simulated experiment. At a shift of 0 the share of `no-difference` is the
  * chance the design can say "nothing that matters" about two configurations that are the same; at a shift equal to the threshold the
  * share of `ship-b` shows that the rule, which wants the whole interval beyond the threshold, ships a real improvement of exactly the
- * smallest size worth having less than half the time.
+ * smallest size worth having rarely (about one time in forty for a symmetric estimate: the far end of the interval is beyond the true value
+ * that often).
  */
 export function verdictRates(
   pilot: readonly number[],

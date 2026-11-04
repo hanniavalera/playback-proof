@@ -22,8 +22,10 @@ import { assertSample, chooseBig, tieGroupSizes } from './sample.ts';
 //
 // THE EXTENSION. `auto` is also exact when ties are heavy (on average three or more sessions share a value) and the programme is cheap
 // (a few ms for 30 against 30). The A/A calibration found why: on a metric that is zero in most sessions the rank sum lives on a coarse
-// lattice, and the normal approximation with a continuity correction of 1/2 declares identical samples different too often (7.3 % at
-// alpha 5 % on one pool, 7.8 % for a rebuffer count). The exact test does not have the problem and costs 3 to 5 ms there.
+// lattice, and the normal approximation with a continuity correction of 1/2 declares identical samples different too often (78 of 1000
+// random splits at alpha 5 % for the rebuffer counts of one synthetic pool of 60 sessions, 50 of them zero; the exact test: 34 of 1000, a
+// test pins both numbers). The exact test does not have the problem and costs about 4 ms there (median 3.6 ms, p90 4.3 ms over 60 samples
+// of 30 against 30, one thread, a machine shared with other work).
 
 /** `method: 'auto'` computes the exact p-value when both arms have at most this many sessions. */
 export const EXACT_MAX_PER_ARM = 12;
@@ -191,8 +193,8 @@ export function mannWhitneyVariance(n1: number, n2: number, groupSizes: readonly
  * Whether ties are heavy enough that the normal approximation is unreliable and the exact conditional distribution is cheap: on average
  * three or more pooled sessions share a value. The rank sum of such data lives on a coarse lattice (a zero-inflated count: the sum moves
  * in steps of the size of the ranks of the few non-zero sessions, a continuity correction of 1/2 is far too small for it) and the
- * approximation is too eager: on a synthetic A/A pool it declared identical sessions different 7.3 % of the time at alpha 5 %, against
- * 5.6 % for the exact test (ADR-141 in docs/decisions/ab.md).
+ * approximation is too eager: on a synthetic A/A pool of 60 sessions (50 of them zero), split 1000 times, it declared identical sessions
+ * different in 7.8 % of the splits at alpha 5 %, against 3.4 % for the exact test (ADR-141 in docs/decisions/ab.md; pinned by a test).
  */
 export function heavyTies(groupSizes: readonly number[]): boolean {
   const total = groupSizes.reduce((sum, size) => sum + size, 0);

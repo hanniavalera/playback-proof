@@ -2,13 +2,21 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { HarnessError } from '../src/lab/measure/runner.ts';
 import { calibrate, evaluateAa, poolFromResult, renderCalibration } from './aa.ts';
-import type { CalibrationResult } from './aa.ts';
 import { analyzeResult } from './analyze.ts';
 import { AB_USAGE, AbUsageError, parseAbArgs } from './args.ts';
 import type { AbOptions } from './args.ts';
 import { executeExperiment } from './execute.ts';
 import type { Machine } from './execute.ts';
-import { readRawResult, resultStem, stemOfRawFile, writeRawResult, writeReport } from './files.ts';
+import {
+  readCalibrations,
+  readRawResult,
+  resultStem,
+  stemOfRawFile,
+  writeCalibration,
+  writeRawResult,
+  writeReport,
+} from './files.ts';
+import type { CalibrationEntry } from './files.ts';
 import { analyzePilot, renderPilot } from './pilot.ts';
 import { gitRunnerFor, preregistrationCommit } from './provenance.ts';
 import { PreregistrationError, loadPreregistration } from './prereg.ts';
@@ -51,13 +59,14 @@ function summaryLines(raw: RawResult): string[] {
   });
 }
 
-/** `--report`: the report of a raw results file, again, next to it. */
+/** `--report`: the report of a raw results file, again, next to it (with the A/A calibrations that were written next to the raw results). */
 function modeReport(options: AbOptions, io: Io): number {
   const rawPath = resolve(io.root, options.file);
   const raw = readRawResult(rawPath);
   const dir = options.outDir === null ? dirname(rawPath) : resultsDir(options, io);
   const stem = stemOfRawFile(rawPath);
-  const report = renderReport(raw, analyzeResult(raw), { rawFile: repoRelative(rawPath, io) });
+  const calibrations = readCalibrations(dirname(rawPath), stem);
+  const report = renderReport(raw, analyzeResult(raw), { rawFile: repoRelative(rawPath, io), calibrations });
   const written = writeReport(dir, stem, report);
   io.err(`wrote ${repoRelative(written.markdown, io)} and ${repoRelative(written.json, io)}`);
   for (const line of summaryLines(raw)) io.out(line);
@@ -78,17 +87,14 @@ function modeCalibrate(options: AbOptions, io: Io): number {
     },
   });
   const dir = options.outDir === null ? dirname(rawPath) : resultsDir(options, io);
-  const stem = `${stemOfRawFile(rawPath)}.calibration`;
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(
-    join(dir, `${stem}.json`),
-    `${JSON.stringify({ condition: conditionId, ...result }, null, 2)}\n`,
+  const written = writeCalibration(
+    dir,
+    stemOfRawFile(rawPath),
+    { condition: conditionId, result },
+    renderCalibration(result),
   );
-  writeFileSync(join(dir, `${stem}.md`), MARKDOWN_SECTION(renderCalibration(result)));
   io.out(renderCalibration(result));
-  io.err(
-    `wrote ${repoRelative(join(dir, `${stem}.md`), io)} and ${repoRelative(join(dir, `${stem}.json`), io)}`,
-  );
+  io.err(`wrote ${repoRelative(written.markdown, io)} and ${repoRelative(written.json, io)}`);
   return result.pass ? 0 : 1;
 }
 
@@ -222,20 +228,28 @@ async function modeRun(
   io.err(`wrote ${repoRelative(rawFile, io)}`);
 
   const analysis = analyzeResult(raw);
-  const calibrations: Array<{ condition: string; result: CalibrationResult }> = [];
+  const calibrations: CalibrationEntry[] = [];
+  let calibrationProblem = false;
   if (prereg.kind === 'aa' && !options.noCalibration) {
-    for (const condition of raw.conditions) {
+    for (const condition of raw.conditions.filter((candidate) => candidate.aborted === null)) {
       const { plan: analysisPlan, sessions } = poolFromResult(raw, condition.id);
       io.err(
         `A/A calibration of ${condition.id}: ${sessions.length} sessions, ${options.splits ?? 2000} splits`,
       );
-      calibrations.push({
-        condition: condition.id,
-        result: calibrate(analysisPlan, sessions, {
+      try {
+        const result = calibrate(analysisPlan, sessions, {
           seed: prereg.seed,
           ...(options.splits === null ? {} : { splits: options.splits }),
-        }),
-      });
+        });
+        const entry = { condition: condition.id, result };
+        calibrations.push(entry);
+        const saved = writeCalibration(dir, stem, entry, renderCalibration(result));
+        io.err(`wrote ${repoRelative(saved.markdown, io)} and ${repoRelative(saved.json, io)}`);
+      } catch (error) {
+        if (!(error instanceof RangeError)) throw error;
+        calibrationProblem = true;
+        io.err(`PROBLEM: the A/A calibration of ${condition.id} could not be made: ${error.message}`);
+      }
     }
   }
   const report = renderReport(raw, analysis, { rawFile: repoRelative(rawFile, io), calibrations });
@@ -244,10 +258,11 @@ async function modeRun(
   for (const line of summaryLines(raw)) io.out(line);
 
   const stopped = raw.conditions.filter((condition) => condition.aborted !== null);
-  if (stopped.length > 0) {
-    io.err(
-      `PROBLEM: ${stopped.map((condition) => `${condition.id} stopped early: ${condition.aborted}`).join('; ')}`,
-    );
+  if (stopped.length > 0 || calibrationProblem) {
+    if (stopped.length > 0)
+      io.err(
+        `PROBLEM: ${stopped.map((condition) => `${condition.id} stopped early: ${condition.aborted}`).join('; ')}`,
+      );
     return 2;
   }
   if (prereg.kind === 'aa') {

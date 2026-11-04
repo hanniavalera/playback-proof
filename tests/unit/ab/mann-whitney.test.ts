@@ -337,8 +337,9 @@ describe('PB-AB Mann-Whitney U: heavy ties use the exact distribution (the exten
   });
 
   it('keeps a metric that is zero in most sessions at its level where the approximation does not (a pool of 60, 1000 random splits)', () => {
-    // The finding behind the extension: this pool of 60 sessions (a rebuffer count that is 0 in three of four) split into two arms of 30,
-    // 1000 times, with the same splits: the normal approximation says "different" in 7.8 % at alpha 5 %, the exact distribution in 3.4 %.
+    // The finding behind the extension: this pool of 60 sessions (a rebuffer count that is 0 in 50 of them) split into two arms of 30,
+    // 1000 times, with the same splits: the normal approximation says "different" in 78 splits (7.8 %) at alpha 5 %, the exact distribution
+    // in 34 (3.4 %).
     const pool = aaPool(generator(2026), 60).map((session) => session.values.rebufferCount as number);
     let approximate = 0;
     let exact = 0;
@@ -349,8 +350,8 @@ describe('PB-AB Mann-Whitney U: heavy ties use the exact distribution (the exten
       if (mannWhitneyU(a, b, { method: 'asymptotic' }).p < 0.05) approximate += 1;
       if (mannWhitneyU(a, b).p < 0.05) exact += 1;
     }
-    expect(approximate / 1000).toBeGreaterThan(0.07);
-    expect(exact / 1000).toBeLessThan(0.05);
+    expect(approximate).toBe(78);
+    expect(exact).toBe(34);
   });
 });
 

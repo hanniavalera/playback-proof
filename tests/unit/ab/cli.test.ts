@@ -138,6 +138,27 @@ describe('PB-AB command: a run', () => {
     expect(progress).toMatch(/\[PB-AB-002 high-latency\] 10\/10 [AB]: startup/);
   });
 
+  it('writes a report that --report reproduces byte for byte from the raw results', async () => {
+    writePlan('again.json', smallJson());
+    const machine = fakeMachine();
+    expect(
+      await main(
+        ['--prereg', 'again.json', '--allow-uncommitted-prereg', '--out-dir', 'out-again'],
+        capture().io,
+        machine.start,
+      ),
+    ).toBe(0);
+    const folder = join(directory, 'out-again');
+    const files = filesIn(folder);
+    const raw = files.find((name) => name.endsWith('.raw.json')) as string;
+    const reports = files.filter((name) => name.includes('.report.'));
+    const before = reports.map((name) => readFileSync(join(folder, name), 'utf8'));
+
+    expect(await main(['--report', join('out-again', raw)], capture().io, neverStarted)).toBe(0);
+    expect(filesIn(folder)).toStrictEqual(files);
+    expect(reports.map((name) => readFileSync(join(folder, name), 'utf8'))).toStrictEqual(before);
+  });
+
   it('runs only the condition it is told to, and stops the machine when it cannot', async () => {
     writePlan('one-condition.json', smallJson());
     const machine = fakeMachine();
@@ -200,11 +221,24 @@ describe('PB-AB command: a run', () => {
       machine.start,
     );
     expect(code).toBe(0);
-    const markdown = filesIn(join(directory, 'out-aa')).find((name) => name.endsWith('.report.md')) as string;
-    const report = readFileSync(join(directory, 'out-aa', markdown), 'utf8');
+    const folder = join(directory, 'out-aa');
+    const files = filesIn(folder);
+    const markdown = files.find((name) => name.endsWith('.report.md')) as string;
+    const report = readFileSync(join(folder, markdown), 'utf8');
     expect(report).toContain('## A/A calibration (PB-AB-001)');
     expect(report).toContain('PASS');
     expect(run.err.join('\n')).toContain('A/A calibration of high-latency: 60 sessions, 100 splits');
+    expect(files.filter((name) => name.includes('.calibration.'))).toStrictEqual([
+      expect.stringMatching(/\.calibration\.high-latency\.json$/),
+      expect.stringMatching(/\.calibration\.high-latency\.md$/),
+    ]);
+
+    // The calibration was written next to the raw results, so the report that is made again has it too.
+    const raw = files.find((name) => name.endsWith('.raw.json')) as string;
+    const reports = files.filter((name) => name.includes('.report.'));
+    const before = reports.map((name) => readFileSync(join(folder, name), 'utf8'));
+    expect(await main(['--report', join('out-aa', raw)], capture().io, neverStarted)).toBe(0);
+    expect(reports.map((name) => readFileSync(join(folder, name), 'utf8'))).toStrictEqual(before);
   });
 
   it('refuses the options of an A/A run on a plan that is not one, instead of ignoring them', async () => {
@@ -311,12 +345,15 @@ describe('PB-AB command: the modes without a browser', () => {
     );
     expect(code).toBe(0);
     expect(filesIn(join(directory, 'calibration'))).toStrictEqual([
-      'pool.env.20261105T090000Z.calibration.json',
-      'pool.env.20261105T090000Z.calibration.md',
+      'pool.env.20261105T090000Z.calibration.high-latency.json',
+      'pool.env.20261105T090000Z.calibration.high-latency.md',
       'pool.env.20261105T090000Z.raw.json',
     ]);
     const saved = JSON.parse(
-      readFileSync(join(directory, 'calibration', 'pool.env.20261105T090000Z.calibration.json'), 'utf8'),
+      readFileSync(
+        join(directory, 'calibration', 'pool.env.20261105T090000Z.calibration.high-latency.json'),
+        'utf8',
+      ),
     );
     expect(saved).toMatchObject({ condition: 'high-latency', splits: 100, alpha: 0.05, poolSessions: 60 });
     expect(run.out.join('\n')).toContain('A/A calibration (PB-AB-001)');
