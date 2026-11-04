@@ -38,3 +38,20 @@ export async function originStalled(session: TestSession): Promise<boolean> {
   if (!live) throw new Error(`the session ${session.id} is not live`);
   return live.stalled;
 }
+
+/**
+ * The `latencyMs` of a playhead that is inside the seek range, for the session's own live clock. The hook does not report the seek
+ * range, but it defines the latency as `seekRange().end + presentation delay - currentTime` (docs/METRICS.md), and Shaka's range is
+ * `[availability end - DVR depth, availability end - presentation delay]`: so the playhead is inside it when the latency is
+ * between the presentation delay and the DVR depth. Both bounds are given one segment of slack: where the playhead sits is only
+ * defined to within one segment (the stream is GOP-aligned to it), so a playhead a little past either end is not stranded. A
+ * playhead that really is stranded is further out than that: it is behind by the time it has been stuck.
+ */
+export function seekRangeLatencyBoundsMs(session: TestSession): { minMs: number; maxMs: number } {
+  const { live } = session;
+  if (!live) throw new Error(`the session ${session.id} is not live`);
+  return {
+    minMs: (live.presentationDelaySec - live.segmentDurationSec) * 1000,
+    maxMs: (live.windowSegments + 1) * live.segmentDurationSec * 1000,
+  };
+}
