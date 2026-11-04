@@ -64,7 +64,12 @@ export function rungsCarriedBy(ladder: Ladder, kbps: number): Rung[] {
   return ladder.rungs.filter((rung) => rung.variantBandwidth <= kbps * 1000);
 }
 
-/** The best rung the link carries, or null when it carries none. */
-export function bestRungCarriedBy(ladder: Ladder, kbps: number): Rung | null {
-  return rungsCarriedBy(ladder, kbps).at(-1) ?? null;
+/** The best rung the link carries; throws when it carries none (a spec that expects to settle on a rung needs one). */
+export function bestRungCarriedBy(ladder: Ladder, kbps: number): Rung {
+  const best = rungsCarriedBy(ladder, kbps).at(-1);
+  if (!best) {
+    const lowest = `${ladder.lowest.rep} needs ${ladder.lowest.variantBandwidth} bps`;
+    throw new Error(`a link of ${kbps} kbps carries no rung of the ladder (the lowest, ${lowest})`);
+  }
+  return best;
 }

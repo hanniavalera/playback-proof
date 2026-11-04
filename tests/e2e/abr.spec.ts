@@ -1,16 +1,95 @@
 import { profile } from '../../src/shared/profiles.ts';
-import { ladderOf } from './abr/ladder.ts';
+import { settleWindowSeconds, throttleOf } from './abr/conditions.ts';
+import { bestRungCarriedBy, ladderOf } from './abr/ladder.ts';
 import { describeSegments, videoSegmentRequests } from './abr/log.ts';
 import { describeVariantChanges, variantChanges } from './abr/variants.ts';
-import { expectHealthyPlayback, expectNoErrors, expectNoRebuffer } from './support/assertions.ts';
+import {
+  expectAtMostRebuffers,
+  expectHealthyPlayback,
+  expectNoErrors,
+  expectNoRebuffer,
+} from './support/assertions.ts';
 import { expect, test } from './support/fixtures.ts';
 import { streamInfoOf } from './support/session.ts';
-import { requestLogCursor, waitForRequest } from './support/waiting.ts';
+import { requestLogCursor, requestsFor, waitForRequest } from './support/waiting.ts';
 
 // ABR tests are the slowest of the lab: the player's adaptation runs on seconds (Shaka's `abr.switchInterval` is 8 s, its buffering
-// goal 10 s), so a test is 20 to 40 s of real playback. They need their own budget; every wait inside has its own, generous one.
-const ABR_TEST_TIMEOUT_MS = 90_000;
+// goal 10 s), so a test is 20 to 40 s of real playback. They need their own budget (the longest wait path of a test is under 120 s,
+// the most a spec may ask for); every wait inside has its own, generous bound, so a failure is reported by the wait and not by the timeout.
+const ABR_TEST_TIMEOUT_MS = 120_000;
 const WAIT_MS = 40_000;
+// 8 s until the link weakens + two decisions 8 s apart + one 720p segment in flight at 600 kbps (6 s) = 30 s, and 15 s of margin.
+const DOWNSHIFT_WAIT_MS = 45_000;
+
+test(
+  'PB-ABR-002 downshifts when bandwidth drops mid-playback (bandwidth-drop): at most one rebuffer, settles on a rung the network can carry',
+  { tag: ['@merge', '@dash'] },
+  async ({ newSession, streamFor, player }) => {
+    test.setTimeout(ABR_TEST_TIMEOUT_MS);
+    const rules = profile('bandwidth-drop');
+    const session = await newSession({ stream: streamFor('vod', 'dash'), protocol: 'dash', faults: rules });
+    const stream = await streamInfoOf(session);
+    const ladder = ladderOf(stream);
+    // The rung the arithmetic of the profile says the link can carry (600 kbps: 240p and its audio, 364 kbps; 360p needs 764).
+    const throttle = throttleOf(rules);
+    const settle = bestRungCarriedBy(ladder, throttle.kbps);
+    expect(settle.rep, 'the ladder has a rung above the one the link carries to step down from').not.toBe(
+      ladder.top.rep,
+    );
+
+    const qa = await player(session).open();
+    await qa.waitFor('firstframe');
+
+    // The start rung is Shaka's choice and differs per engine (720p in Chromium, 360p in the others): the test only needs the player to
+    // end up on the rung the link carries. The link weakens 8 s after the first media request. Shaka decides at most every 8 s on a
+    // segment download, and it may need two decisions (720p to 360p to 240p, seen in about half of the runs in Chromium) because its
+    // estimate still holds the fast samples of the first 8 s at the first decision. The segment in flight when the link weakens takes
+    // about 6 s at 600 kbps. So the step to 240p comes between 10 and 26 s into the playback in the runs measured; the wait is a
+    // bound for a failure (8 s + two decisions 8 s apart + one 6 s segment + margin), never the pace of the test.
+    const down = await qa.waitFor('variant-changed', {
+      detail: { reason: 'abr', height: settle.height },
+      timeoutMs: DOWNSHIFT_WAIT_MS,
+    });
+    expect(down.detail?.bandwidth, 'bandwidth declared by the variant the player stepped down to').toBe(
+      settle.variantBandwidth,
+    );
+
+    // Settled: nothing can change before the switch interval has elapsed, so watch past it, and past the next segment decisions.
+    const window = settleWindowSeconds(stream.segmentDurationSec);
+    await qa.waitForMediaTime(down.mediaTime + window, { timeoutMs: WAIT_MS });
+
+    const afterDown = await qa.events(down.index + 1);
+    expect(
+      describeVariantChanges(variantChanges(afterDown)),
+      `rung changes in the ${window} s after the step down to ${settle.height}p (qa.events()): none`,
+    ).toBe('none');
+    const metrics = await qa.metrics();
+    expect(metrics.bitrate.current?.height, 'active rung (metrics.bitrate.current) at the end').toBe(
+      settle.height,
+    );
+    expectAtMostRebuffers(metrics, 1);
+    expectHealthyPlayback(metrics);
+
+    // The origin's account: from the first segment of the settled rung on, nothing else is requested, and the last segments it
+    // delivered are of that rung.
+    const log = await session.service.log(session.id);
+    const video = videoSegmentRequests(log);
+    const firstSettled = video.findIndex((entry) => entry.rep === settle.rep);
+    expect(firstSettled, `${settle.rep} segments in the request log`).toBeGreaterThanOrEqual(0);
+    expect(
+      video
+        .slice(firstSettled)
+        .filter((entry) => entry.rep !== settle.rep)
+        .map((entry) => `${entry.rep} #${entry.number}`),
+      `video segments requested after the first ${settle.rep} one (request log): ${describeSegments(video)}`,
+    ).toEqual([]);
+    const delivered = videoSegmentRequests(requestsFor(log, { status: 'ok' }));
+    expect(
+      delivered.slice(-3).map((entry) => entry.rep),
+      `rungs of the last three video segments the origin delivered (request log): ${describeSegments(delivered)}`,
+    ).toEqual([settle.rep, settle.rep, settle.rep]);
+  },
+);
 
 test(
   'PB-ABR-004 a manual rung change (selectVariantByHeight) is seamless: no rebuffer, no error, continuous playhead',
