@@ -116,6 +116,11 @@ function describeThrown(error: unknown): string {
   return error instanceof Error ? `${error.name}: ${error.message}` : String(error);
 }
 
+/** What a thrown value calls itself (`NotAllowedError` for a refused play()), unless it is the generic `Error`: that says nothing. */
+function thrownName(error: unknown): string | undefined {
+  return error instanceof Error && error.name !== '' && error.name !== 'Error' ? error.name : undefined;
+}
+
 export class PlayerHook implements QAHook {
   readonly version = 1 as const;
   readonly ready: Promise<void>;
@@ -314,7 +319,15 @@ export class PlayerHook implements QAHook {
   // ------------------------------------------------------------------------------------------------ errors
 
   private recordError(source: ErrorSource, error: unknown, severity = 1): void {
-    this.timeline.record('error', { code: 0, category: 0, severity, message: describeThrown(error), source });
+    const codeName = thrownName(error);
+    this.timeline.record('error', {
+      code: 0,
+      category: 0,
+      severity,
+      message: describeThrown(error),
+      source,
+      ...(codeName ? { codeName } : {}),
+    });
   }
 
   /** The page's own failures: `window.onerror` and unhandled rejections are wired here by main.ts. */

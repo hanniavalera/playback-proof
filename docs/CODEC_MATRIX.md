@@ -18,18 +18,20 @@ Which formats really play in the browsers the lab tests with, per environment, a
 | Environment | Command | Date (UTC) | OS | Node | Playwright | ffmpeg (probe media) | Commit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `docker-linux-arm64` | `npm run docker:pw -- npm run codec-matrix -- --browsers chromium,firefox,webkit --attempts 5` | 2026-11-04 | Ubuntu 24.04.5 LTS arm64, kernel 6.5.11-linuxkit, 12 CPUs (container limited to 4) | v24.22.1 | 1.64.1 | 9.0.2 | `3e10134` |
+| `gha-linux-x64` | `npm run codec-matrix -- --browsers chromium,firefox,webkit --attempts 5` | 2026-11-04 | Ubuntu 24.04.5 LTS x64, kernel 7.0.0-1017-azure, 4 CPUs | v22.23.4 | 1.64.1 | 6.1.1-3ubuntu5 | `7791a78` |
+| `gha-macos-arm64` | `npm run codec-matrix -- --browsers chromium,firefox,webkit --attempts 5` | 2026-11-04 | macOS 15.8.2 arm64, kernel 24.6.0, 3 CPUs | v22.23.4 | 1.64.1 | 9.0.2 | `7791a78` |
 | `local-darwin-arm64` | `npm run codec-matrix -- --browsers chromium,webkit,firefox --attempts 5` | 2026-11-04 | macOS 27.2 arm64, kernel 27.2.0, 12 CPUs | v22.11.0 | 1.64.1 | 9.0.2 | `3e10134` |
 
 ## Results
 
 ### At a glance: the lab flavours in every environment and engine
 
-| Flavour | docker-linux-arm64: chromium 156.0.8078.4 | docker-linux-arm64: firefox 157.0 | docker-linux-arm64: webkit 27.2 | local-darwin-arm64: chromium 156.0.8078.4 | local-darwin-arm64: firefox | local-darwin-arm64: webkit 27.2 |
-| --- | --- | --- | --- | --- | --- | --- |
-| `cmaf-vp9-aac` | ok 5/5 | ok 5/5 | **intermittent 2/5 — claims true but fails** | ok 5/5 | launch failed | ok 5/5 |
-| `cmaf-vp9-opus` | ok 5/5 | ok 5/5 | **intermittent 4/5 — claims true but fails** | ok 5/5 | launch failed | fail 0/5 (claims false) |
-| `webm-vp9-opus` | ok 5/5 | ok 5/5 | **intermittent 2/5 — claims true but fails** | ok 5/5 | launch failed | ok 5/5 |
-| `cmaf-h264-aac` | ok 5/5 | ok 5/5 | **intermittent 3/5 — claims true but fails** | ok 5/5 | launch failed | ok 5/5 |
+| Flavour | docker-linux-arm64: chromium 156.0.8078.4 | docker-linux-arm64: firefox 157.0 | docker-linux-arm64: webkit 27.2 | gha-linux-x64: chromium 156.0.8078.4 | gha-linux-x64: firefox 157.0 | gha-linux-x64: webkit 27.2 | gha-macos-arm64: chromium 156.0.8078.4 | gha-macos-arm64: firefox 157.0 | gha-macos-arm64: webkit 27.2 | local-darwin-arm64: chromium 156.0.8078.4 | local-darwin-arm64: firefox | local-darwin-arm64: webkit 27.2 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `cmaf-vp9-aac` | ok 5/5 | ok 5/5 | **intermittent 2/5 — claims true but fails** | ok 5/5 | ok 5/5 | **intermittent 2/5 — claims true but fails** | ok 5/5 | ok 5/5 | ok 5/5 | ok 5/5 | launch failed | ok 5/5 |
+| `cmaf-vp9-opus` | ok 5/5 | ok 5/5 | **intermittent 4/5 — claims true but fails** | ok 5/5 | ok 5/5 | **intermittent 1/5 — claims true but fails** | ok 5/5 | ok 5/5 | fail 0/5 (claims false) | ok 5/5 | launch failed | fail 0/5 (claims false) |
+| `webm-vp9-opus` | ok 5/5 | ok 5/5 | **intermittent 2/5 — claims true but fails** | ok 5/5 | ok 5/5 | **intermittent 1/5 — claims true but fails** | ok 5/5 | ok 5/5 | ok 5/5 | ok 5/5 | launch failed | ok 5/5 |
+| `cmaf-h264-aac` | ok 5/5 | ok 5/5 | **intermittent 3/5 — claims true but fails** | ok 5/5 | ok 5/5 | **intermittent 2/5 — claims true but fails** | ok 5/5 | ok 5/5 | ok 5/5 | ok 5/5 | launch failed | ok 5/5 |
 
 ### docker-linux-arm64: Ubuntu 24.04.5 LTS, arm64
 
@@ -103,6 +105,154 @@ User agents:
 
 - chromium: `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36`
 - firefox: `Mozilla/5.0 (X11; Linux x86_64; rv:157.0) Gecko/20100101 Firefox/157.0`
+- webkit: `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15`
+
+### gha-linux-x64: Ubuntu 24.04.5 LTS, x64
+
+5 attempts per case, a fresh browser process for every attempt, pass = media time >= 1 s and (for video) >= 5 frames presented. Raw data: [`gha-linux-x64.json`](results/codec-matrix/gha-linux-x64.json).
+
+#### Playback through MSE (real decode)
+
+| Case | chromium 156.0.8078.4 | firefox 157.0 | webkit 27.2 |
+| --- | --- | --- | --- |
+| **Lab flavours: what the lab's streams are made of** |  |  |  |
+| `cmaf-vp9-aac` fMP4: VP9 + AAC (primary) | ok 5/5 | ok 5/5 | **intermittent 2/5 — claims true but fails** |
+| `cmaf-vp9-opus` fMP4: VP9 + Opus | ok 5/5 | ok 5/5 | **intermittent 1/5 — claims true but fails** |
+| `webm-vp9-opus` WebM: VP9 + Opus | ok 5/5 | ok 5/5 | **intermittent 1/5 — claims true but fails** |
+| `cmaf-h264-aac` fMP4: H.264 + AAC | ok 5/5 | ok 5/5 | **intermittent 2/5 — claims true but fails** |
+| **Single tracks: which track of a flavour an engine cannot handle** |  |  |  |
+| `vp9-fmp4-video` fMP4: VP9 video only | ok 5/5 | ok 5/5 | **intermittent 2/5 — claims true but fails** |
+| `vp9-webm-video` WebM: VP9 video only | ok 5/5 | ok 5/5 | **intermittent 1/5 — claims true but fails** |
+| `h264-fmp4-video` fMP4: H.264 video only | ok 5/5 | ok 5/5 | **fail 0/5 — claims true but fails** |
+| `vp8-webm-video` WebM: VP8 video only | ok 5/5 | ok 5/5 | **intermittent 1/5 — claims true but fails** |
+| `aac-fmp4-audio` fMP4: AAC audio only | ok 5/5 | ok 5/5 | **intermittent 3/5 — claims true but fails** |
+| `opus-fmp4-audio` fMP4: Opus audio only | ok 5/5 | ok 5/5 | **intermittent 3/5 — claims true but fails** |
+| `opus-webm-audio` WebM: Opus audio only | ok 5/5 | ok 5/5 | **intermittent 1/5 — claims true but fails** |
+| **Informational: codecs the lab does not stream** |  |  |  |
+| `av1-fmp4-video` fMP4: AV1 video only | ok 5/5 | ok 5/5 | **intermittent 3/5 — claims true but fails** |
+| `hevc-fmp4-video` fMP4: HEVC video only | fail 0/5 (claims false) | ok 5/5 | **intermittent 1/5 — claims true but fails** |
+
+#### Control: the same files as a plain `<video src>` (no MediaSource)
+
+Where a control plays and the matching MSE case does not, the file is sound and the failure is in the engine's MSE pipeline.
+
+| Control | chromium 156.0.8078.4 | firefox 157.0 | webkit 27.2 |
+| --- | --- | --- | --- |
+| `native-vp9-fmp4-video` fMP4 VP9 video | ok 5/5 | ok 5/5 | ok 5/5 |
+| `native-aac-fmp4-audio` fMP4 AAC audio | ok 5/5 | ok 5/5 | ok 5/5 |
+| `native-vp9-webm-video` WebM VP9 video | ok 5/5 | ok 5/5 | ok 5/5 |
+| `native-opus-webm-audio` WebM Opus audio | ok 5/5 | ok 5/5 | ok 5/5 |
+
+#### Sensitivity: `cmaf-vp9-aac` under differently behaving pages
+
+The same case and the same bytes, with one thing changed about how the page drives the element. A verdict that flips between rows depends on the page, not only on the engine.
+
+| Page profile | chromium 156.0.8078.4 | firefox 157.0 | webkit 27.2 |
+| --- | --- | --- | --- |
+| `default` muted element, data fetched after the SourceBuffers exist (like a player page) | ok 5/5 | ok 5/5 | **intermittent 2/5 — claims true but fails** |
+| `unmuted` element not muted, otherwise like the default | ok 5/5 | ok 5/5 | ok 5/5 |
+| `prefetch` muted, but the data is fetched before the MediaSource exists | ok 5/5 | ok 5/5 | ok 5/5 |
+
+#### What each engine claims
+
+| `MediaSource.isTypeSupported(...)` | chromium 156.0.8078.4 | firefox 157.0 | webkit 27.2 |
+| --- | --- | --- | --- |
+| `video/mp4; codecs="vp09.00.10.08"` | true | true | true |
+| `audio/mp4; codecs="mp4a.40.2"` | true | true | true |
+| `audio/mp4; codecs="opus"` | true | true | true |
+| `video/webm; codecs="vp09.00.10.08"` | true | true | true |
+| `audio/webm; codecs="opus"` | true | true | true |
+| `video/mp4; codecs="avc1.42E01E"` | true | true | true |
+| `video/webm; codecs="vp8"` | true | true | true |
+| `video/mp4; codecs="av01.0.04M.08"` | true | true | true |
+| `video/mp4; codecs="hvc1.1.6.L93.B0"` | false | true | true |
+
+#### Engine facts
+
+| Engine | Version | MSE API | Native HLS (`canPlayType`) | `requestVideoFrameCallback` | `getVideoPlaybackQuality` |
+| --- | --- | --- | --- | --- | --- |
+| chromium | 156.0.8078.4 | MediaSource | maybe | yes | yes |
+| firefox | 157.0 | MediaSource | no | yes | yes |
+| webkit | 27.2 | MediaSource | no | yes | yes |
+
+User agents:
+
+- chromium: `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36`
+- firefox: `Mozilla/5.0 (X11; Linux x86_64; rv:157.0) Gecko/20100101 Firefox/157.0`
+- webkit: `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15`
+
+### gha-macos-arm64: macOS 15.8.2, arm64
+
+5 attempts per case, a fresh browser process for every attempt, pass = media time >= 1 s and (for video) >= 5 frames presented. Raw data: [`gha-macos-arm64.json`](results/codec-matrix/gha-macos-arm64.json).
+
+#### Playback through MSE (real decode)
+
+| Case | chromium 156.0.8078.4 | firefox 157.0 | webkit 27.2 |
+| --- | --- | --- | --- |
+| **Lab flavours: what the lab's streams are made of** |  |  |  |
+| `cmaf-vp9-aac` fMP4: VP9 + AAC (primary) | ok 5/5 | ok 5/5 | ok 5/5 |
+| `cmaf-vp9-opus` fMP4: VP9 + Opus | ok 5/5 | ok 5/5 | fail 0/5 (claims false) |
+| `webm-vp9-opus` WebM: VP9 + Opus | ok 5/5 | ok 5/5 | ok 5/5 |
+| `cmaf-h264-aac` fMP4: H.264 + AAC | ok 5/5 | ok 5/5 | ok 5/5 |
+| **Single tracks: which track of a flavour an engine cannot handle** |  |  |  |
+| `vp9-fmp4-video` fMP4: VP9 video only | ok 5/5 | ok 5/5 | ok 5/5 |
+| `vp9-webm-video` WebM: VP9 video only | ok 5/5 | ok 5/5 | ok 5/5 |
+| `h264-fmp4-video` fMP4: H.264 video only | ok 5/5 | ok 5/5 | ok 5/5 |
+| `vp8-webm-video` WebM: VP8 video only | ok 5/5 | ok 5/5 | ok 5/5 |
+| `aac-fmp4-audio` fMP4: AAC audio only | ok 5/5 | ok 5/5 | ok 5/5 |
+| `opus-fmp4-audio` fMP4: Opus audio only | ok 5/5 | ok 5/5 | fail 0/5 (claims false) |
+| `opus-webm-audio` WebM: Opus audio only | ok 5/5 | ok 5/5 | ok 5/5 |
+| **Informational: codecs the lab does not stream** |  |  |  |
+| `av1-fmp4-video` fMP4: AV1 video only | ok 5/5 | ok 5/5 | **fail 0/5 — claims true but fails** |
+| `hevc-fmp4-video` fMP4: HEVC video only | fail 0/5 (claims false) | ok 5/5 | ok 5/5 |
+
+#### Control: the same files as a plain `<video src>` (no MediaSource)
+
+Where a control plays and the matching MSE case does not, the file is sound and the failure is in the engine's MSE pipeline.
+
+| Control | chromium 156.0.8078.4 | firefox 157.0 | webkit 27.2 |
+| --- | --- | --- | --- |
+| `native-vp9-fmp4-video` fMP4 VP9 video | ok 5/5 | ok 5/5 | ok 5/5 |
+| `native-aac-fmp4-audio` fMP4 AAC audio | ok 5/5 | ok 5/5 | ok 5/5 |
+| `native-vp9-webm-video` WebM VP9 video | ok 5/5 | ok 5/5 | ok 5/5 |
+| `native-opus-webm-audio` WebM Opus audio | ok 5/5 | ok 5/5 | ok 5/5 |
+
+#### Sensitivity: `cmaf-vp9-aac` under differently behaving pages
+
+The same case and the same bytes, with one thing changed about how the page drives the element. A verdict that flips between rows depends on the page, not only on the engine.
+
+| Page profile | chromium 156.0.8078.4 | firefox 157.0 | webkit 27.2 |
+| --- | --- | --- | --- |
+| `default` muted element, data fetched after the SourceBuffers exist (like a player page) | ok 5/5 | ok 5/5 | ok 5/5 |
+| `unmuted` element not muted, otherwise like the default | ok 5/5 | ok 5/5 | ok 5/5 |
+| `prefetch` muted, but the data is fetched before the MediaSource exists | ok 5/5 | ok 5/5 | ok 5/5 |
+
+#### What each engine claims
+
+| `MediaSource.isTypeSupported(...)` | chromium 156.0.8078.4 | firefox 157.0 | webkit 27.2 |
+| --- | --- | --- | --- |
+| `video/mp4; codecs="vp09.00.10.08"` | true | true | true |
+| `audio/mp4; codecs="mp4a.40.2"` | true | true | true |
+| `audio/mp4; codecs="opus"` | true | true | false |
+| `video/webm; codecs="vp09.00.10.08"` | true | true | true |
+| `audio/webm; codecs="opus"` | true | true | true |
+| `video/mp4; codecs="avc1.42E01E"` | true | true | true |
+| `video/webm; codecs="vp8"` | true | true | true |
+| `video/mp4; codecs="av01.0.04M.08"` | true | true | true |
+| `video/mp4; codecs="hvc1.1.6.L93.B0"` | false | true | true |
+
+#### Engine facts
+
+| Engine | Version | MSE API | Native HLS (`canPlayType`) | `requestVideoFrameCallback` | `getVideoPlaybackQuality` |
+| --- | --- | --- | --- | --- | --- |
+| chromium | 156.0.8078.4 | MediaSource | maybe | yes | yes |
+| firefox | 157.0 | MediaSource | no | yes | yes |
+| webkit | 27.2 | MediaSource | maybe | yes | yes |
+
+User agents:
+
+- chromium: `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36`
+- firefox: `Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:157.0) Gecko/20100101 Firefox/157.0`
 - webkit: `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15`
 
 ### local-darwin-arm64: macOS 27.2, arm64
@@ -194,7 +344,19 @@ Each gap is an engine in an environment where the lab cannot rely on what it str
 - **Evidence:** [`docker-linux-arm64.json`](results/codec-matrix/docker-linux-arm64.json): `engines.webkit.cases["cmaf-vp9-aac"]`, `engines.webkit.cases["webm-vp9-opus"]`, `engines.webkit.sensitivity`, `engines.webkit.controls`.
 - **Consequence for the lab:** Specs that need VOD over DASH, VOD over HLS, live over DASH, live over HLS are skipped in this engine and environment, with the reason `no vod stream plays over dash in webkit 27.2: cmaf-vp9-aac intermittent 2/5 ([play] NotSupportedError: The operation is not supported.), isTypeSupported claims true; webm-vp9-opus intermittent 2/5 ([play] NotSupportedError: The operation is not supported.), isTypeSupported claims true (see docs/CODEC_MATRIX.md)`.
 
-### Gap 2: firefox does not start on local-darwin-arm64
+### Gap 2: webkit 27.2 on gha-linux-x64: MSE playback of `cmaf-vp9-aac`, `webm-vp9-opus` is not reliable
+
+- **Environment, engine:** gha-linux-x64: Ubuntu 24.04.5 LTS, x64; webkit 27.2.
+- **Symptom:**
+  - `cmaf-vp9-aac`: intermittent 2/5. Most frequent failure: `[play] NotSupportedError: The operation is not supported.`; media element error `MediaError 4 (MEDIA_ERR_SRC_NOT_SUPPORTED): Failed to push buffer` (3 of 5 attempts). `isTypeSupported` claims true.
+  - `webm-vp9-opus`: intermittent 1/5. Most frequent failure: `[play] NotSupportedError: The operation is not supported.`; media element error `MediaError 4 (MEDIA_ERR_SRC_NOT_SUPPORTED): Failed to push buffer` (4 of 5 attempts). `isTypeSupported` claims true.
+  - Same flavour under other page profiles: `unmuted` ok 5/5, `prefetch` ok 5/5. The verdict depends on how the page drives MSE ([ADR-031](decisions/codecs.md)).
+  - Plain `<video src>` playback of the same files: all 4 controls ok, so the files are sound and the failure is in the MSE pipeline.
+  - All 13 cases of this engine: 0 ok, 12 intermittent, 1 fail. An `ok` cell next to intermittent ones can be luck: 5 attempts are a sample, not a guarantee, which is why a flavour must pass every attempt to count as supported.
+- **Evidence:** [`gha-linux-x64.json`](results/codec-matrix/gha-linux-x64.json): `engines.webkit.cases["cmaf-vp9-aac"]`, `engines.webkit.cases["webm-vp9-opus"]`, `engines.webkit.sensitivity`, `engines.webkit.controls`.
+- **Consequence for the lab:** Specs that need VOD over DASH, VOD over HLS, live over DASH, live over HLS are skipped in this engine and environment, with the reason `no vod stream plays over dash in webkit 27.2: cmaf-vp9-aac intermittent 2/5 ([play] NotSupportedError: The operation is not supported.), isTypeSupported claims true; webm-vp9-opus intermittent 1/5 ([play] NotSupportedError: The operation is not supported.), isTypeSupported claims true (see docs/CODEC_MATRIX.md)`.
+
+### Gap 3: firefox does not start on local-darwin-arm64
 
 - **Environment, engine:** local-darwin-arm64: macOS 27.2, arm64; firefox.
 - **Symptom:** the browser process could not be launched. Its own error text (up to Playwright's call log, which repeats it; the whole text is in the JSON):
@@ -212,7 +374,7 @@ Each gap is an engine in an environment where the lab cannot rely on what it str
   ```
 
 - **Evidence:** [`local-darwin-arm64.json`](results/codec-matrix/local-darwin-arm64.json), `engines.firefox.launchFailed`.
-- **Consequence for the lab:** no firefox suite can run in this environment; a spec that is started there must report the launch failure, not skip silently ([ADR-034](decisions/codecs.md)). firefox runs the playback suites in `docker-linux-arm64` (see [CONTRACTS.md](CONTRACTS.md), section 2).
+- **Consequence for the lab:** no firefox suite can run in this environment; a spec that is started there must report the launch failure, not skip silently ([ADR-034](decisions/codecs.md)). firefox runs the playback suites in `docker-linux-arm64`, `gha-linux-x64`, `gha-macos-arm64` (see [CONTRACTS.md](CONTRACTS.md), section 2).
 
 ### Other disagreements and failures
 
@@ -230,6 +392,22 @@ These are real failures or disagreements too, but no lab stream is made of them,
 | docker-linux-arm64 | webkit 27.2 | `aac-fmp4-audio` | **intermittent 2/5 — claims true but fails** | `[currentTime] MediaError 4: Failed to push buffer`; media element error `MediaError 4 (MEDIA_ERR_SRC_NOT_SUPPORTED): Failed to push buffer` (3 of 5 attempts) |
 | docker-linux-arm64 | webkit 27.2 | `opus-webm-audio` | **intermittent 4/5 — claims true but fails** | `[currentTime] MediaError 4: Failed to push buffer`; media element error `MediaError 4 (MEDIA_ERR_SRC_NOT_SUPPORTED): Failed to push buffer` (1 of 5 attempts) |
 | docker-linux-arm64 | webkit 27.2 | `av1-fmp4-video` | **intermittent 3/5 — claims true but fails** | `[play] NotSupportedError: The operation is not supported.`; media element error `MediaError 4 (MEDIA_ERR_SRC_NOT_SUPPORTED): Failed to push buffer` (2 of 5 attempts) |
+| gha-linux-x64 | chromium 156.0.8078.4 | `hevc-fmp4-video` | fail 0/5 (claims false) | `[addSourceBuffer] NotSupportedError: Failed to execute 'addSourceBuffer' on 'MediaSource': The type provided ('video/mp4; codecs="hvc1.1.6.L93.B0"') is unsupported.` (5 of 5 attempts) |
+| gha-linux-x64 | webkit 27.2 | `cmaf-vp9-opus` | **intermittent 1/5 — claims true but fails** | `[play] NotSupportedError: The operation is not supported.`; media element error `MediaError 4 (MEDIA_ERR_SRC_NOT_SUPPORTED): Failed to push buffer` (4 of 5 attempts) |
+| gha-linux-x64 | webkit 27.2 | `cmaf-h264-aac` | **intermittent 2/5 — claims true but fails** | `[play] NotSupportedError: The operation is not supported.`; media element error `MediaError 4 (MEDIA_ERR_SRC_NOT_SUPPORTED): Failed to push buffer` (3 of 5 attempts) |
+| gha-linux-x64 | webkit 27.2 | `vp9-fmp4-video` | **intermittent 2/5 — claims true but fails** | `[play] NotSupportedError: The operation is not supported.`; media element error `MediaError 4 (MEDIA_ERR_SRC_NOT_SUPPORTED): Failed to push buffer` (3 of 5 attempts) |
+| gha-linux-x64 | webkit 27.2 | `vp9-webm-video` | **intermittent 1/5 — claims true but fails** | `[play] NotSupportedError: The operation is not supported.`; media element error `MediaError 4 (MEDIA_ERR_SRC_NOT_SUPPORTED): Failed to push buffer` (4 of 5 attempts) |
+| gha-linux-x64 | webkit 27.2 | `h264-fmp4-video` | **fail 0/5 — claims true but fails** | `[play] NotSupportedError: The operation is not supported.`; media element error `MediaError 4 (MEDIA_ERR_SRC_NOT_SUPPORTED): Failed to push buffer` (5 of 5 attempts) |
+| gha-linux-x64 | webkit 27.2 | `vp8-webm-video` | **intermittent 1/5 — claims true but fails** | `[play] NotSupportedError: The operation is not supported.`; media element error `MediaError 4 (MEDIA_ERR_SRC_NOT_SUPPORTED): Failed to push buffer` (4 of 5 attempts) |
+| gha-linux-x64 | webkit 27.2 | `aac-fmp4-audio` | **intermittent 3/5 — claims true but fails** | `[currentTime] MediaError 4: Failed to push buffer`; media element error `MediaError 4 (MEDIA_ERR_SRC_NOT_SUPPORTED): Failed to push buffer` (2 of 5 attempts) |
+| gha-linux-x64 | webkit 27.2 | `opus-fmp4-audio` | **intermittent 3/5 — claims true but fails** | `[currentTime] MediaError 4: Failed to push buffer`; media element error `MediaError 4 (MEDIA_ERR_SRC_NOT_SUPPORTED): Failed to push buffer` (2 of 5 attempts) |
+| gha-linux-x64 | webkit 27.2 | `opus-webm-audio` | **intermittent 1/5 — claims true but fails** | `[currentTime] MediaError 4: Failed to push buffer`; media element error `MediaError 4 (MEDIA_ERR_SRC_NOT_SUPPORTED): Failed to push buffer` (4 of 5 attempts) |
+| gha-linux-x64 | webkit 27.2 | `av1-fmp4-video` | **intermittent 3/5 — claims true but fails** | `[play] NotSupportedError: The operation is not supported.`; media element error `MediaError 4 (MEDIA_ERR_SRC_NOT_SUPPORTED): Failed to push buffer` (2 of 5 attempts) |
+| gha-linux-x64 | webkit 27.2 | `hevc-fmp4-video` | **intermittent 1/5 — claims true but fails** | `[play] NotSupportedError: The operation is not supported.`; media element error `MediaError 4 (MEDIA_ERR_SRC_NOT_SUPPORTED): Failed to push buffer` (4 of 5 attempts) |
+| gha-macos-arm64 | chromium 156.0.8078.4 | `hevc-fmp4-video` | fail 0/5 (claims false) | `[addSourceBuffer] NotSupportedError: Failed to execute 'addSourceBuffer' on 'MediaSource': The type provided ('video/mp4; codecs="hvc1.1.6.L93.B0"') is unsupported.` (5 of 5 attempts) |
+| gha-macos-arm64 | webkit 27.2 | `cmaf-vp9-opus` | fail 0/5 (claims false) | `[addSourceBuffer] NotSupportedError: The operation is not supported.` (5 of 5 attempts) |
+| gha-macos-arm64 | webkit 27.2 | `opus-fmp4-audio` | fail 0/5 (claims false) | `[addSourceBuffer] NotSupportedError: The operation is not supported.` (5 of 5 attempts) |
+| gha-macos-arm64 | webkit 27.2 | `av1-fmp4-video` | **fail 0/5 — claims true but fails** | `[play] timeout after 20000 ms` (5 of 5 attempts) |
 | local-darwin-arm64 | chromium 156.0.8078.4 | `hevc-fmp4-video` | fail 0/5 (claims false) | `[addSourceBuffer] NotSupportedError: Failed to execute 'addSourceBuffer' on 'MediaSource': The type provided ('video/mp4; codecs="hvc1.1.6.L93.B0"') is unsupported.` (5 of 5 attempts) |
 | local-darwin-arm64 | webkit 27.2 | `cmaf-vp9-opus` | fail 0/5 (claims false) | `[addSourceBuffer] NotSupportedError: The operation is not supported.` (5 of 5 attempts) |
 | local-darwin-arm64 | webkit 27.2 | `opus-fmp4-audio` | fail 0/5 (claims false) | `[addSourceBuffer] NotSupportedError: The operation is not supported.` (5 of 5 attempts) |
@@ -254,6 +432,12 @@ The choice per environment and engine, computed from the committed results:
 | docker-linux-arm64 | chromium 156.0.8078.4 | `vod-cmaf` | `vod-cmaf` | `live-cmaf` | `live-cmaf` |
 | docker-linux-arm64 | firefox 157.0 | `vod-cmaf` | `vod-cmaf` | `live-cmaf` | `live-cmaf` |
 | docker-linux-arm64 | webkit 27.2 | skipped | skipped | skipped | skipped |
+| gha-linux-x64 | chromium 156.0.8078.4 | `vod-cmaf` | `vod-cmaf` | `live-cmaf` | `live-cmaf` |
+| gha-linux-x64 | firefox 157.0 | `vod-cmaf` | `vod-cmaf` | `live-cmaf` | `live-cmaf` |
+| gha-linux-x64 | webkit 27.2 | skipped | skipped | skipped | skipped |
+| gha-macos-arm64 | chromium 156.0.8078.4 | `vod-cmaf` | `vod-cmaf` | `live-cmaf` | `live-cmaf` |
+| gha-macos-arm64 | firefox 157.0 | `vod-cmaf` | `vod-cmaf` | `live-cmaf` | `live-cmaf` |
+| gha-macos-arm64 | webkit 27.2 | `vod-cmaf` | `vod-cmaf` | `live-cmaf` | `live-cmaf` |
 | local-darwin-arm64 | chromium 156.0.8078.4 | `vod-cmaf` | `vod-cmaf` | `live-cmaf` | `live-cmaf` |
 | local-darwin-arm64 | firefox | skipped | skipped | skipped | skipped |
 | local-darwin-arm64 | webkit 27.2 | `vod-cmaf` | `vod-cmaf` | `live-cmaf` | `live-cmaf` |

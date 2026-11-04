@@ -1,0 +1,2092 @@
+{
+  "schemaVersion": 1,
+  "envId": "gha-macos-arm64",
+  "generatedAt": "2026-11-04T03:23:27.135Z",
+  "invokedVia": "direct",
+  "args": [
+    "--browsers",
+    "chromium,firefox,webkit",
+    "--attempts",
+    "5"
+  ],
+  "host": {
+    "os": {
+      "platform": "darwin",
+      "arch": "arm64",
+      "release": "24.6.0",
+      "name": "macOS 15.8.2"
+    },
+    "cpus": 3,
+    "memoryGiB": 7,
+    "node": "v22.23.4",
+    "playwright": "1.64.1",
+    "git": {
+      "commit": "7791a78",
+      "dirty": false
+    }
+  },
+  "media": {
+    "ffmpeg": "9.0.2",
+    "specHash": "45d1d26001eac593532d30783f3c407a12389fbc3bbe7a0f9c6c9e6f538ce518",
+    "files": {
+      "v-vp9.mp4": {
+        "sha256": "7cd66acbc412f41cdbed70dea0ad593024167cfb505dcd5c6ebf78daa2fb4932",
+        "bytes": 298028
+      },
+      "v-vp9.webm": {
+        "sha256": "79ae6be8e5f645a0bcbf351b1c801de19950cac3ae9fab73b2fe0a120d703428",
+        "bytes": 297829
+      },
+      "v-vp8.webm": {
+        "sha256": "e84a5ab5b48ab4870371031bfe0fdbbc4be095bdea488e78616136d4c71d933b",
+        "bytes": 303178
+      },
+      "v-h264.mp4": {
+        "sha256": "fff6433e0b7338d9d8f176b7379bc10a74d45cc07edafe9c2fce340c43d4b23a",
+        "bytes": 306370
+      },
+      "v-av1.mp4": {
+        "sha256": "7777ac2f6364671b7a765fd1c3eb8115c4057f28c540dd31bf8790a5040c411c",
+        "bytes": 372889
+      },
+      "v-hevc.mp4": {
+        "sha256": "879a6336fc066ac0d46689913898d172688c4f401213cb6a02148f8aba3dc59c",
+        "bytes": 328667
+      },
+      "a-aac.mp4": {
+        "sha256": "cc4dcf0457ef8c56a2b331dd70f01f47581cd23d487ca3e1027f91b04ae1d155",
+        "bytes": 34363
+      },
+      "a-opus.mp4": {
+        "sha256": "71a47099ac0e047130acd9193140e2bde16a5a42134aafa95526c0d7f087c93c",
+        "bytes": 41387
+      },
+      "a-opus.webm": {
+        "sha256": "1b03d6484a2478edb388d2b7e995f6d604fd8190acb00f576239f045651c8b28",
+        "bytes": 41403
+      }
+    }
+  },
+  "options": {
+    "attempts": 5,
+    "freshProcess": true,
+    "timeoutMs": 20000,
+    "thresholdSec": 1,
+    "minFrames": 5
+  },
+  "engines": {
+    "chromium": {
+      "browserVersion": "156.0.8078.4",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36",
+      "mediaSource": "MediaSource",
+      "nativeHls": {
+        "application/vnd.apple.mpegurl": "maybe",
+        "application/x-mpegURL": "maybe"
+      },
+      "requestVideoFrameCallback": true,
+      "getVideoPlaybackQuality": true,
+      "isTypeSupported": {
+        "video/mp4; codecs=\"vp09.00.10.08\"": true,
+        "audio/mp4; codecs=\"mp4a.40.2\"": true,
+        "audio/mp4; codecs=\"opus\"": true,
+        "video/webm; codecs=\"vp09.00.10.08\"": true,
+        "audio/webm; codecs=\"opus\"": true,
+        "video/mp4; codecs=\"avc1.42E01E\"": true,
+        "video/webm; codecs=\"vp8\"": true,
+        "video/mp4; codecs=\"av01.0.04M.08\"": true,
+        "video/mp4; codecs=\"hvc1.1.6.L93.B0\"": false
+      },
+      "cases": {
+        "cmaf-vp9-aac": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.03,
+              "framesPresented": 28
+            },
+            {
+              "ok": true,
+              "currentTime": 1.05,
+              "framesPresented": 29
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 29
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 24
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 20
+            }
+          ]
+        },
+        "cmaf-vp9-opus": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 23
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 24
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 23
+            },
+            {
+              "ok": true,
+              "currentTime": 1.03,
+              "framesPresented": 29
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 20
+            }
+          ]
+        },
+        "webm-vp9-opus": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 27
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 24
+            },
+            {
+              "ok": true,
+              "currentTime": 1.03,
+              "framesPresented": 24
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 26
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 25
+            }
+          ]
+        },
+        "cmaf-h264-aac": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.05,
+              "framesPresented": 26
+            },
+            {
+              "ok": true,
+              "currentTime": 1.04,
+              "framesPresented": 27
+            },
+            {
+              "ok": true,
+              "currentTime": 1.04,
+              "framesPresented": 25
+            },
+            {
+              "ok": true,
+              "currentTime": 1.04,
+              "framesPresented": 29
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 25
+            }
+          ]
+        },
+        "vp9-fmp4-video": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.06,
+              "framesPresented": 15
+            },
+            {
+              "ok": true,
+              "currentTime": 1.05,
+              "framesPresented": 21
+            },
+            {
+              "ok": true,
+              "currentTime": 1.04,
+              "framesPresented": 20
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 15
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 16
+            }
+          ]
+        },
+        "vp9-webm-video": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.05,
+              "framesPresented": 15
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 19
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 16
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 16
+            },
+            {
+              "ok": true,
+              "currentTime": 1.06,
+              "framesPresented": 15
+            }
+          ]
+        },
+        "h264-fmp4-video": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.08,
+              "framesPresented": 21
+            },
+            {
+              "ok": true,
+              "currentTime": 1.05,
+              "framesPresented": 16
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 16
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 15
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 20
+            }
+          ]
+        },
+        "vp8-webm-video": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 16
+            },
+            {
+              "ok": true,
+              "currentTime": 1.04,
+              "framesPresented": 15
+            },
+            {
+              "ok": true,
+              "currentTime": 1.03,
+              "framesPresented": 16
+            },
+            {
+              "ok": true,
+              "currentTime": 1.03,
+              "framesPresented": 17
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 18
+            }
+          ]
+        },
+        "aac-fmp4-audio": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.06,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.05,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.15,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.05,
+              "framesPresented": 0
+            }
+          ]
+        },
+        "opus-fmp4-audio": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.1,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.05,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.18,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.03,
+              "framesPresented": 0
+            }
+          ]
+        },
+        "opus-webm-audio": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.1,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.11,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.04,
+              "framesPresented": 0
+            }
+          ]
+        },
+        "av1-fmp4-video": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.12,
+              "framesPresented": 17
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 17
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 16
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 19
+            },
+            {
+              "ok": true,
+              "currentTime": 1.05,
+              "framesPresented": 13
+            }
+          ]
+        },
+        "hevc-fmp4-video": {
+          "attempts": 5,
+          "passes": 0,
+          "reliability": "fail",
+          "typeSupportedClaim": false,
+          "failure": {
+            "stage": "addSourceBuffer",
+            "error": "NotSupportedError: Failed to execute 'addSourceBuffer' on 'MediaSource': The type provided ('video/mp4; codecs=\"hvc1.1.6.L93.B0\"') is unsupported.",
+            "count": 5
+          },
+          "runs": [
+            {
+              "ok": false,
+              "stage": "addSourceBuffer",
+              "error": "NotSupportedError: Failed to execute 'addSourceBuffer' on 'MediaSource': The type provided ('video/mp4; codecs=\"hvc1.1.6.L93.B0\"') is unsupported.",
+              "currentTime": 0,
+              "framesPresented": 0
+            },
+            {
+              "ok": false,
+              "stage": "addSourceBuffer",
+              "error": "NotSupportedError: Failed to execute 'addSourceBuffer' on 'MediaSource': The type provided ('video/mp4; codecs=\"hvc1.1.6.L93.B0\"') is unsupported.",
+              "currentTime": 0,
+              "framesPresented": 0
+            },
+            {
+              "ok": false,
+              "stage": "addSourceBuffer",
+              "error": "NotSupportedError: Failed to execute 'addSourceBuffer' on 'MediaSource': The type provided ('video/mp4; codecs=\"hvc1.1.6.L93.B0\"') is unsupported.",
+              "currentTime": 0,
+              "framesPresented": 0
+            },
+            {
+              "ok": false,
+              "stage": "addSourceBuffer",
+              "error": "NotSupportedError: Failed to execute 'addSourceBuffer' on 'MediaSource': The type provided ('video/mp4; codecs=\"hvc1.1.6.L93.B0\"') is unsupported.",
+              "currentTime": 0,
+              "framesPresented": 0
+            },
+            {
+              "ok": false,
+              "stage": "addSourceBuffer",
+              "error": "NotSupportedError: Failed to execute 'addSourceBuffer' on 'MediaSource': The type provided ('video/mp4; codecs=\"hvc1.1.6.L93.B0\"') is unsupported.",
+              "currentTime": 0,
+              "framesPresented": 0
+            }
+          ]
+        }
+      },
+      "controls": {
+        "native-vp9-fmp4-video": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 14
+            },
+            {
+              "ok": true,
+              "currentTime": 1.03,
+              "framesPresented": 14
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 15
+            },
+            {
+              "ok": true,
+              "currentTime": 1.03,
+              "framesPresented": 17
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 16
+            }
+          ]
+        },
+        "native-aac-fmp4-audio": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.04,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.11,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.08,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.07,
+              "framesPresented": 0
+            }
+          ]
+        },
+        "native-vp9-webm-video": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 18
+            },
+            {
+              "ok": true,
+              "currentTime": 1.05,
+              "framesPresented": 15
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 15
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 15
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 15
+            }
+          ]
+        },
+        "native-opus-webm-audio": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.18,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.08,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.07,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.15,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 0
+            }
+          ]
+        }
+      },
+      "sensitivity": {
+        "unmuted": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.03,
+              "framesPresented": 19
+            },
+            {
+              "ok": true,
+              "currentTime": 1.08,
+              "framesPresented": 16
+            },
+            {
+              "ok": true,
+              "currentTime": 1.08,
+              "framesPresented": 20
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 13
+            },
+            {
+              "ok": true,
+              "currentTime": 1.12,
+              "framesPresented": 16
+            }
+          ]
+        },
+        "prefetch": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 25
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 26
+            },
+            {
+              "ok": true,
+              "currentTime": 1.05,
+              "framesPresented": 27
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 24
+            },
+            {
+              "ok": true,
+              "currentTime": 1.07,
+              "framesPresented": 26
+            }
+          ]
+        }
+      }
+    },
+    "firefox": {
+      "browserVersion": "157.0",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:157.0) Gecko/20100101 Firefox/157.0",
+      "mediaSource": "MediaSource",
+      "nativeHls": {
+        "application/vnd.apple.mpegurl": "",
+        "application/x-mpegURL": ""
+      },
+      "requestVideoFrameCallback": true,
+      "getVideoPlaybackQuality": true,
+      "isTypeSupported": {
+        "video/mp4; codecs=\"vp09.00.10.08\"": true,
+        "audio/mp4; codecs=\"mp4a.40.2\"": true,
+        "audio/mp4; codecs=\"opus\"": true,
+        "video/webm; codecs=\"vp09.00.10.08\"": true,
+        "audio/webm; codecs=\"opus\"": true,
+        "video/mp4; codecs=\"avc1.42E01E\"": true,
+        "video/webm; codecs=\"vp8\"": true,
+        "video/mp4; codecs=\"av01.0.04M.08\"": true,
+        "video/mp4; codecs=\"hvc1.1.6.L93.B0\"": true
+      },
+      "cases": {
+        "cmaf-vp9-aac": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.07,
+              "framesPresented": 33
+            },
+            {
+              "ok": true,
+              "currentTime": 1.1,
+              "framesPresented": 34
+            },
+            {
+              "ok": true,
+              "currentTime": 1.04,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 31
+            }
+          ]
+        },
+        "cmaf-vp9-opus": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.06,
+              "framesPresented": 33
+            },
+            {
+              "ok": true,
+              "currentTime": 1.14,
+              "framesPresented": 43
+            },
+            {
+              "ok": true,
+              "currentTime": 1.07,
+              "framesPresented": 33
+            },
+            {
+              "ok": true,
+              "currentTime": 1.04,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.03,
+              "framesPresented": 32
+            }
+          ]
+        },
+        "webm-vp9-opus": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.03,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.04,
+              "framesPresented": 39
+            },
+            {
+              "ok": true,
+              "currentTime": 1.04,
+              "framesPresented": 42
+            },
+            {
+              "ok": true,
+              "currentTime": 1.05,
+              "framesPresented": 33
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 39
+            }
+          ]
+        },
+        "cmaf-h264-aac": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.14,
+              "framesPresented": 41
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 36
+            },
+            {
+              "ok": true,
+              "currentTime": 1.09,
+              "framesPresented": 34
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 32
+            }
+          ]
+        },
+        "vp9-fmp4-video": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.04,
+              "framesPresented": 33
+            },
+            {
+              "ok": true,
+              "currentTime": 1.04,
+              "framesPresented": 32
+            }
+          ]
+        },
+        "vp9-webm-video": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.05,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 35
+            }
+          ]
+        },
+        "h264-fmp4-video": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.05,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.04,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.12,
+              "framesPresented": 34
+            },
+            {
+              "ok": true,
+              "currentTime": 1.14,
+              "framesPresented": 35
+            },
+            {
+              "ok": true,
+              "currentTime": 1.12,
+              "framesPresented": 35
+            }
+          ]
+        },
+        "vp8-webm-video": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 33
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.09,
+              "framesPresented": 34
+            },
+            {
+              "ok": true,
+              "currentTime": 1.03,
+              "framesPresented": 34
+            }
+          ]
+        },
+        "aac-fmp4-audio": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.26,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.32,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.18,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.28,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.21,
+              "framesPresented": 0
+            }
+          ]
+        },
+        "opus-fmp4-audio": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.28,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.2,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.33,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.04,
+              "framesPresented": 0
+            }
+          ]
+        },
+        "opus-webm-audio": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.24,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.14,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.27,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.1,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.1,
+              "framesPresented": 0
+            }
+          ]
+        },
+        "av1-fmp4-video": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.03,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.03,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.14,
+              "framesPresented": 35
+            },
+            {
+              "ok": true,
+              "currentTime": 1.1,
+              "framesPresented": 35
+            }
+          ]
+        },
+        "hevc-fmp4-video": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.03,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.03,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.13,
+              "framesPresented": 35
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            }
+          ]
+        }
+      },
+      "controls": {
+        "native-vp9-fmp4-video": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.11,
+              "framesPresented": 34
+            },
+            {
+              "ok": true,
+              "currentTime": 1.04,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.04,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.06,
+              "framesPresented": 33
+            },
+            {
+              "ok": true,
+              "currentTime": 1.09,
+              "framesPresented": 34
+            }
+          ]
+        },
+        "native-aac-fmp4-audio": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.15,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.21,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.04,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.29,
+              "framesPresented": 0
+            }
+          ]
+        },
+        "native-vp9-webm-video": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.07,
+              "framesPresented": 33
+            },
+            {
+              "ok": true,
+              "currentTime": 1.07,
+              "framesPresented": 33
+            },
+            {
+              "ok": true,
+              "currentTime": 1.05,
+              "framesPresented": 33
+            },
+            {
+              "ok": true,
+              "currentTime": 1.03,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            }
+          ]
+        },
+        "native-opus-webm-audio": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.23,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.21,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.11,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.31,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.16,
+              "framesPresented": 0
+            }
+          ]
+        }
+      },
+      "sensitivity": {
+        "unmuted": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.1,
+              "framesPresented": 34
+            },
+            {
+              "ok": true,
+              "currentTime": 1.1,
+              "framesPresented": 34
+            },
+            {
+              "ok": true,
+              "currentTime": 1.08,
+              "framesPresented": 33
+            },
+            {
+              "ok": true,
+              "currentTime": 1.14,
+              "framesPresented": 35
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 32
+            }
+          ]
+        },
+        "prefetch": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.05,
+              "framesPresented": 33
+            },
+            {
+              "ok": true,
+              "currentTime": 1.07,
+              "framesPresented": 33
+            },
+            {
+              "ok": true,
+              "currentTime": 1.05,
+              "framesPresented": 43
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            }
+          ]
+        }
+      }
+    },
+    "webkit": {
+      "browserVersion": "27.2",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+      "mediaSource": "MediaSource",
+      "nativeHls": {
+        "application/vnd.apple.mpegurl": "maybe",
+        "application/x-mpegURL": "maybe"
+      },
+      "requestVideoFrameCallback": true,
+      "getVideoPlaybackQuality": true,
+      "isTypeSupported": {
+        "video/mp4; codecs=\"vp09.00.10.08\"": true,
+        "audio/mp4; codecs=\"mp4a.40.2\"": true,
+        "audio/mp4; codecs=\"opus\"": false,
+        "video/webm; codecs=\"vp09.00.10.08\"": true,
+        "audio/webm; codecs=\"opus\"": true,
+        "video/mp4; codecs=\"avc1.42E01E\"": true,
+        "video/webm; codecs=\"vp8\"": true,
+        "video/mp4; codecs=\"av01.0.04M.08\"": true,
+        "video/mp4; codecs=\"hvc1.1.6.L93.B0\"": true
+      },
+      "cases": {
+        "cmaf-vp9-aac": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 30
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            }
+          ]
+        },
+        "cmaf-vp9-opus": {
+          "attempts": 5,
+          "passes": 0,
+          "reliability": "fail",
+          "typeSupportedClaim": false,
+          "failure": {
+            "stage": "addSourceBuffer",
+            "error": "NotSupportedError: The operation is not supported.",
+            "count": 5
+          },
+          "runs": [
+            {
+              "ok": false,
+              "stage": "addSourceBuffer",
+              "error": "NotSupportedError: The operation is not supported.",
+              "currentTime": 0,
+              "framesPresented": 0
+            },
+            {
+              "ok": false,
+              "stage": "addSourceBuffer",
+              "error": "NotSupportedError: The operation is not supported.",
+              "currentTime": 0,
+              "framesPresented": 0
+            },
+            {
+              "ok": false,
+              "stage": "addSourceBuffer",
+              "error": "NotSupportedError: The operation is not supported.",
+              "currentTime": 0,
+              "framesPresented": 0
+            },
+            {
+              "ok": false,
+              "stage": "addSourceBuffer",
+              "error": "NotSupportedError: The operation is not supported.",
+              "currentTime": 0,
+              "framesPresented": 0
+            },
+            {
+              "ok": false,
+              "stage": "addSourceBuffer",
+              "error": "NotSupportedError: The operation is not supported.",
+              "currentTime": 0,
+              "framesPresented": 0
+            }
+          ]
+        },
+        "webm-vp9-opus": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 31
+            }
+          ]
+        },
+        "cmaf-h264-aac": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 31
+            }
+          ]
+        },
+        "vp9-fmp4-video": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 30
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 30
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            }
+          ]
+        },
+        "vp9-webm-video": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 30
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 30
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            }
+          ]
+        },
+        "h264-fmp4-video": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 30
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 30
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            }
+          ]
+        },
+        "vp8-webm-video": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 30
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 30
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 30
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 30
+            }
+          ]
+        },
+        "aac-fmp4-audio": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.21,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.21,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.2,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.2,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.21,
+              "framesPresented": 0
+            }
+          ]
+        },
+        "opus-fmp4-audio": {
+          "attempts": 5,
+          "passes": 0,
+          "reliability": "fail",
+          "typeSupportedClaim": false,
+          "failure": {
+            "stage": "addSourceBuffer",
+            "error": "NotSupportedError: The operation is not supported.",
+            "count": 5
+          },
+          "runs": [
+            {
+              "ok": false,
+              "stage": "addSourceBuffer",
+              "error": "NotSupportedError: The operation is not supported.",
+              "currentTime": 0,
+              "framesPresented": 0
+            },
+            {
+              "ok": false,
+              "stage": "addSourceBuffer",
+              "error": "NotSupportedError: The operation is not supported.",
+              "currentTime": 0,
+              "framesPresented": 0
+            },
+            {
+              "ok": false,
+              "stage": "addSourceBuffer",
+              "error": "NotSupportedError: The operation is not supported.",
+              "currentTime": 0,
+              "framesPresented": 0
+            },
+            {
+              "ok": false,
+              "stage": "addSourceBuffer",
+              "error": "NotSupportedError: The operation is not supported.",
+              "currentTime": 0,
+              "framesPresented": 0
+            },
+            {
+              "ok": false,
+              "stage": "addSourceBuffer",
+              "error": "NotSupportedError: The operation is not supported.",
+              "currentTime": 0,
+              "framesPresented": 0
+            }
+          ]
+        },
+        "opus-webm-audio": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.21,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.21,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.21,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.21,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.2,
+              "framesPresented": 0
+            }
+          ]
+        },
+        "av1-fmp4-video": {
+          "attempts": 5,
+          "passes": 0,
+          "reliability": "fail",
+          "typeSupportedClaim": true,
+          "failure": {
+            "stage": "play",
+            "error": "timeout after 20000 ms",
+            "count": 5
+          },
+          "runs": [
+            {
+              "ok": false,
+              "stage": "play",
+              "error": "timeout after 20000 ms",
+              "currentTime": 0,
+              "framesPresented": 0
+            },
+            {
+              "ok": false,
+              "stage": "play",
+              "error": "timeout after 20000 ms",
+              "currentTime": 0,
+              "framesPresented": 0
+            },
+            {
+              "ok": false,
+              "stage": "play",
+              "error": "timeout after 20000 ms",
+              "currentTime": 0,
+              "framesPresented": 0
+            },
+            {
+              "ok": false,
+              "stage": "play",
+              "error": "timeout after 20000 ms",
+              "currentTime": 0,
+              "framesPresented": 0
+            },
+            {
+              "ok": false,
+              "stage": "play",
+              "error": "timeout after 20000 ms",
+              "currentTime": 0,
+              "framesPresented": 0
+            }
+          ]
+        },
+        "hevc-fmp4-video": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 30
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 30
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 30
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 30
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 30
+            }
+          ]
+        }
+      },
+      "controls": {
+        "native-vp9-fmp4-video": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.03,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 32
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 32
+            }
+          ]
+        },
+        "native-aac-fmp4-audio": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 0
+            }
+          ]
+        },
+        "native-vp9-webm-video": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 30
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 30
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 30
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 30
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 30
+            }
+          ]
+        },
+        "native-opus-webm-audio": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.18,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.19,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.2,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.21,
+              "framesPresented": 0
+            },
+            {
+              "ok": true,
+              "currentTime": 1.2,
+              "framesPresented": 0
+            }
+          ]
+        }
+      },
+      "sensitivity": {
+        "unmuted": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 31
+            }
+          ]
+        },
+        "prefetch": {
+          "attempts": 5,
+          "passes": 5,
+          "reliability": "ok",
+          "typeSupportedClaim": true,
+          "runs": [
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.02,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1.01,
+              "framesPresented": 31
+            },
+            {
+              "ok": true,
+              "currentTime": 1,
+              "framesPresented": 31
+            }
+          ]
+        }
+      }
+    }
+  }
+}

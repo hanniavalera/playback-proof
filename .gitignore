@@ -12,4 +12,5 @@ coverage/
 !.env.example
 # local scratch, never committed
 .tmp/
+.vitest/
 .jenkins-home/

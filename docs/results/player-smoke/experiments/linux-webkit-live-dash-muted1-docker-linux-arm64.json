@@ -1,0 +1,1506 @@
+{
+  "schemaVersion": 1,
+  "tool": "player-smoke",
+  "envId": "docker-linux-arm64",
+  "generatedAt": "2026-11-04T03:36:51.798Z",
+  "invokedVia": "docker:pw",
+  "args": [
+    "--browsers",
+    "webkit",
+    "--sessions",
+    "live-dash",
+    "--repeat",
+    "10",
+    "--muted",
+    "1",
+    "--no-capabilities",
+    "--out",
+    "docs/results/player-smoke/experiments/linux-webkit-live-dash-muted1-docker-linux-arm64.json"
+  ],
+  "dockerCpus": 4,
+  "host": {
+    "os": {
+      "platform": "linux",
+      "arch": "arm64",
+      "release": "6.5.11-linuxkit",
+      "name": "Ubuntu 24.04.5 LTS"
+    },
+    "cpus": 12,
+    "memoryGiB": 7.7,
+    "node": "v24.22.1",
+    "playwright": "1.64.1",
+    "git": {
+      "commit": "ad58062",
+      "dirty": false
+    }
+  },
+  "service": {
+    "origin": "http://127.0.0.1:<port>",
+    "health": {
+      "status": "ok",
+      "version": "0.1.0",
+      "ffmpeg": "9.0.2",
+      "streams": {
+        "vod-cmaf": "ready",
+        "vod-cmaf-short": "ready",
+        "vod-webm": "ready",
+        "live-cmaf": "ready",
+        "vod-cmaf-clearkey": "ready"
+      },
+      "player": "built",
+      "uptimeSec": 0.135
+    }
+  },
+  "options": {
+    "browsers": [
+      "webkit"
+    ],
+    "repeat": 10,
+    "muted": true,
+    "sessions": [
+      "live-dash"
+    ],
+    "config": "A",
+    "mediaSeconds": 3,
+    "timeoutMs": 20000,
+    "holdMs": 0,
+    "useCapabilities": false
+  },
+  "capabilities": "defaults (vod-cmaf, live-cmaf)",
+  "engines": {
+    "webkit": {
+      "browserVersion": "27.2",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+      "facts": {
+        "downlinkMbps": null,
+        "requestVideoFrameCallback": true,
+        "getVideoPlaybackQuality": true,
+        "mediaSource": "MediaSource",
+        "hlsCanPlayType": ""
+      }
+    }
+  },
+  "summary": [
+    {
+      "engine": "webkit",
+      "session": "live-dash",
+      "runs": 10,
+      "passes": 10,
+      "failures": 0,
+      "skips": 0
+    }
+  ],
+  "failures": [],
+  "results": [
+    {
+      "repeat": 1,
+      "engine": "webkit",
+      "session": "live-dash",
+      "status": "pass",
+      "stream": "live-cmaf",
+      "durationMs": 3476,
+      "startupMs": 161,
+      "mediaTime": 27,
+      "rebuffers": 0,
+      "decoded": 91,
+      "dropped": 0,
+      "presented": 90,
+      "rungHeight": 720,
+      "startRungHeight": 360,
+      "switches": 1,
+      "latencyMs": 6113.3106736719965,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/a1fbf7b5a2fb/live-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": true,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "playing",
+        "startupMs": 161,
+        "startup": {
+          "manifestMs": 17,
+          "loadedMs": 25
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 91,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 90
+        },
+        "bitrate": {
+          "switches": 1,
+          "current": {
+            "id": 2,
+            "bandwidth": 1839698,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 126,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 148,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ]
+        },
+        "live": {
+          "isLive": true,
+          "latencyMs": 6113.3106736719965,
+          "latencyMaxMs": 6113.55727953784,
+          "presentationDelayMs": 6000,
+          "edgeSeeks": 0
+        },
+        "errors": [],
+        "playback": {
+          "currentTime": 27.008022687,
+          "duration": null,
+          "paused": false,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 4.9919763129999986,
+          "readyState": 4
+        }
+      },
+      "errors": [],
+      "checks": [
+        {
+          "name": "browser supported by Shaka",
+          "ok": true,
+          "detail": "supported=true"
+        },
+        {
+          "name": "page parameters usable",
+          "ok": true
+        },
+        {
+          "name": "plays through MSE (loadMode media-source)",
+          "ok": true,
+          "detail": "loadMode=media-source"
+        },
+        {
+          "name": "first frame presented (startupMs known)",
+          "ok": true,
+          "detail": "startupMs=161"
+        },
+        {
+          "name": "media time advanced 3 s",
+          "ok": true,
+          "detail": "reached 27.00 s, needed 27.00 s"
+        },
+        {
+          "name": "no error events",
+          "ok": true
+        },
+        {
+          "name": "live latency measured",
+          "ok": true,
+          "detail": "latencyMs=6113.3106736719965 presentationDelayMs=6000"
+        }
+      ],
+      "consoleErrors": [
+        "warning: Shaka Player's internal Manifest structure is NOT covered by semantic versioning compatibility guarantees.  It may change at any time!  Please consider filing a feature request for whatever you use getManifest() for."
+      ]
+    },
+    {
+      "repeat": 2,
+      "engine": "webkit",
+      "session": "live-dash",
+      "status": "pass",
+      "stream": "live-cmaf",
+      "durationMs": 3363,
+      "startupMs": 126,
+      "mediaTime": 27,
+      "rebuffers": 0,
+      "decoded": 91,
+      "dropped": 0,
+      "presented": 91,
+      "rungHeight": 720,
+      "startRungHeight": 360,
+      "switches": 1,
+      "latencyMs": 6096.252662189574,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/cf5e3a67eef0/live-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": true,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "playing",
+        "startupMs": 126,
+        "startup": {
+          "manifestMs": 16,
+          "loadedMs": 24
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 91,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 91
+        },
+        "bitrate": {
+          "switches": 1,
+          "current": {
+            "id": 2,
+            "bandwidth": 1839698,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 103,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 122,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ]
+        },
+        "live": {
+          "isLive": true,
+          "latencyMs": 6096.252662189574,
+          "latencyMaxMs": 6097.180017132078,
+          "presentationDelayMs": 6000,
+          "edgeSeeks": 0
+        },
+        "errors": [],
+        "playback": {
+          "currentTime": 27.018080729,
+          "duration": null,
+          "paused": false,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 4.981918270999998,
+          "readyState": 4
+        }
+      },
+      "errors": [],
+      "checks": [
+        {
+          "name": "browser supported by Shaka",
+          "ok": true,
+          "detail": "supported=true"
+        },
+        {
+          "name": "page parameters usable",
+          "ok": true
+        },
+        {
+          "name": "plays through MSE (loadMode media-source)",
+          "ok": true,
+          "detail": "loadMode=media-source"
+        },
+        {
+          "name": "first frame presented (startupMs known)",
+          "ok": true,
+          "detail": "startupMs=126"
+        },
+        {
+          "name": "media time advanced 3 s",
+          "ok": true,
+          "detail": "reached 27.00 s, needed 27.00 s"
+        },
+        {
+          "name": "no error events",
+          "ok": true
+        },
+        {
+          "name": "live latency measured",
+          "ok": true,
+          "detail": "latencyMs=6096.252662189574 presentationDelayMs=6000"
+        }
+      ],
+      "consoleErrors": [
+        "warning: Shaka Player's internal Manifest structure is NOT covered by semantic versioning compatibility guarantees.  It may change at any time!  Please consider filing a feature request for whatever you use getManifest() for."
+      ]
+    },
+    {
+      "repeat": 3,
+      "engine": "webkit",
+      "session": "live-dash",
+      "status": "pass",
+      "stream": "live-cmaf",
+      "durationMs": 3358,
+      "startupMs": 119,
+      "mediaTime": 27,
+      "rebuffers": 0,
+      "decoded": 91,
+      "dropped": 0,
+      "presented": 91,
+      "rungHeight": 720,
+      "startRungHeight": 360,
+      "switches": 1,
+      "latencyMs": 6094.677350208741,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/e686fd9c0f8a/live-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": true,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "playing",
+        "startupMs": 119,
+        "startup": {
+          "manifestMs": 16,
+          "loadedMs": 23
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 91,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 91
+        },
+        "bitrate": {
+          "switches": 1,
+          "current": {
+            "id": 2,
+            "bandwidth": 1839698,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 98,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 115,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ]
+        },
+        "live": {
+          "isLive": true,
+          "latencyMs": 6094.677350208741,
+          "latencyMaxMs": 6095.2087481512435,
+          "presentationDelayMs": 6000,
+          "edgeSeeks": 0
+        },
+        "errors": [],
+        "playback": {
+          "currentTime": 27.01665602,
+          "duration": null,
+          "paused": false,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 4.98334298,
+          "readyState": 4
+        }
+      },
+      "errors": [],
+      "checks": [
+        {
+          "name": "browser supported by Shaka",
+          "ok": true,
+          "detail": "supported=true"
+        },
+        {
+          "name": "page parameters usable",
+          "ok": true
+        },
+        {
+          "name": "plays through MSE (loadMode media-source)",
+          "ok": true,
+          "detail": "loadMode=media-source"
+        },
+        {
+          "name": "first frame presented (startupMs known)",
+          "ok": true,
+          "detail": "startupMs=119"
+        },
+        {
+          "name": "media time advanced 3 s",
+          "ok": true,
+          "detail": "reached 27.00 s, needed 27.00 s"
+        },
+        {
+          "name": "no error events",
+          "ok": true
+        },
+        {
+          "name": "live latency measured",
+          "ok": true,
+          "detail": "latencyMs=6094.677350208741 presentationDelayMs=6000"
+        }
+      ],
+      "consoleErrors": [
+        "warning: Shaka Player's internal Manifest structure is NOT covered by semantic versioning compatibility guarantees.  It may change at any time!  Please consider filing a feature request for whatever you use getManifest() for."
+      ]
+    },
+    {
+      "repeat": 4,
+      "engine": "webkit",
+      "session": "live-dash",
+      "status": "pass",
+      "stream": "live-cmaf",
+      "durationMs": 3326,
+      "startupMs": 125,
+      "mediaTime": 27,
+      "rebuffers": 0,
+      "decoded": 91,
+      "dropped": 0,
+      "presented": 90,
+      "rungHeight": 720,
+      "startRungHeight": 360,
+      "switches": 1,
+      "latencyMs": 6088.731808767821,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/1b6a2f3076ea/live-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": true,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "playing",
+        "startupMs": 125,
+        "startup": {
+          "manifestMs": 17,
+          "loadedMs": 25
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 91,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 90
+        },
+        "bitrate": {
+          "switches": 1,
+          "current": {
+            "id": 2,
+            "bandwidth": 1839698,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 94,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 112,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ]
+        },
+        "live": {
+          "isLive": true,
+          "latencyMs": 6088.731808767821,
+          "latencyMaxMs": 6088.731808767821,
+          "presentationDelayMs": 6000,
+          "edgeSeeks": 0
+        },
+        "errors": [],
+        "playback": {
+          "currentTime": 27.017601447,
+          "duration": null,
+          "paused": false,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 4.982397552999998,
+          "readyState": 4
+        }
+      },
+      "errors": [],
+      "checks": [
+        {
+          "name": "browser supported by Shaka",
+          "ok": true,
+          "detail": "supported=true"
+        },
+        {
+          "name": "page parameters usable",
+          "ok": true
+        },
+        {
+          "name": "plays through MSE (loadMode media-source)",
+          "ok": true,
+          "detail": "loadMode=media-source"
+        },
+        {
+          "name": "first frame presented (startupMs known)",
+          "ok": true,
+          "detail": "startupMs=125"
+        },
+        {
+          "name": "media time advanced 3 s",
+          "ok": true,
+          "detail": "reached 27.00 s, needed 27.00 s"
+        },
+        {
+          "name": "no error events",
+          "ok": true
+        },
+        {
+          "name": "live latency measured",
+          "ok": true,
+          "detail": "latencyMs=6088.731808767821 presentationDelayMs=6000"
+        }
+      ],
+      "consoleErrors": [
+        "warning: Shaka Player's internal Manifest structure is NOT covered by semantic versioning compatibility guarantees.  It may change at any time!  Please consider filing a feature request for whatever you use getManifest() for."
+      ]
+    },
+    {
+      "repeat": 5,
+      "engine": "webkit",
+      "session": "live-dash",
+      "status": "pass",
+      "stream": "live-cmaf",
+      "durationMs": 3335,
+      "startupMs": 119,
+      "mediaTime": 27,
+      "rebuffers": 0,
+      "decoded": 91,
+      "dropped": 0,
+      "presented": 91,
+      "rungHeight": 720,
+      "startRungHeight": 360,
+      "switches": 1,
+      "latencyMs": 6088.945162745482,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/6d859cd38b9e/live-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": true,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "playing",
+        "startupMs": 119,
+        "startup": {
+          "manifestMs": 16,
+          "loadedMs": 24
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 91,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 91
+        },
+        "bitrate": {
+          "switches": 1,
+          "current": {
+            "id": 2,
+            "bandwidth": 1839698,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 92,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 109,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ]
+        },
+        "live": {
+          "isLive": true,
+          "latencyMs": 6088.945162745482,
+          "latencyMaxMs": 6089.087674128905,
+          "presentationDelayMs": 6000,
+          "edgeSeeks": 0
+        },
+        "errors": [],
+        "playback": {
+          "currentTime": 27.012388217,
+          "duration": null,
+          "paused": false,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 4.987610782999997,
+          "readyState": 4
+        }
+      },
+      "errors": [],
+      "checks": [
+        {
+          "name": "browser supported by Shaka",
+          "ok": true,
+          "detail": "supported=true"
+        },
+        {
+          "name": "page parameters usable",
+          "ok": true
+        },
+        {
+          "name": "plays through MSE (loadMode media-source)",
+          "ok": true,
+          "detail": "loadMode=media-source"
+        },
+        {
+          "name": "first frame presented (startupMs known)",
+          "ok": true,
+          "detail": "startupMs=119"
+        },
+        {
+          "name": "media time advanced 3 s",
+          "ok": true,
+          "detail": "reached 27.00 s, needed 27.00 s"
+        },
+        {
+          "name": "no error events",
+          "ok": true
+        },
+        {
+          "name": "live latency measured",
+          "ok": true,
+          "detail": "latencyMs=6088.945162745482 presentationDelayMs=6000"
+        }
+      ],
+      "consoleErrors": [
+        "warning: Shaka Player's internal Manifest structure is NOT covered by semantic versioning compatibility guarantees.  It may change at any time!  Please consider filing a feature request for whatever you use getManifest() for."
+      ]
+    },
+    {
+      "repeat": 6,
+      "engine": "webkit",
+      "session": "live-dash",
+      "status": "pass",
+      "stream": "live-cmaf",
+      "durationMs": 3314,
+      "startupMs": 135,
+      "mediaTime": 27,
+      "rebuffers": 0,
+      "decoded": 91,
+      "dropped": 0,
+      "presented": 90,
+      "rungHeight": 720,
+      "startRungHeight": 360,
+      "switches": 1,
+      "latencyMs": 6089.754317202392,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/a0a725b1922c/live-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": true,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "playing",
+        "startupMs": 135,
+        "startup": {
+          "manifestMs": 15,
+          "loadedMs": 23
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 91,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 90
+        },
+        "bitrate": {
+          "switches": 1,
+          "current": {
+            "id": 2,
+            "bandwidth": 1839698,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 89,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 105,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ]
+        },
+        "live": {
+          "isLive": true,
+          "latencyMs": 6089.754317202392,
+          "latencyMaxMs": 6089.884550151247,
+          "presentationDelayMs": 6000,
+          "edgeSeeks": 0
+        },
+        "errors": [],
+        "playback": {
+          "currentTime": 27.005579259,
+          "duration": null,
+          "paused": false,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 4.994419740999998,
+          "readyState": 4
+        }
+      },
+      "errors": [],
+      "checks": [
+        {
+          "name": "browser supported by Shaka",
+          "ok": true,
+          "detail": "supported=true"
+        },
+        {
+          "name": "page parameters usable",
+          "ok": true
+        },
+        {
+          "name": "plays through MSE (loadMode media-source)",
+          "ok": true,
+          "detail": "loadMode=media-source"
+        },
+        {
+          "name": "first frame presented (startupMs known)",
+          "ok": true,
+          "detail": "startupMs=135"
+        },
+        {
+          "name": "media time advanced 3 s",
+          "ok": true,
+          "detail": "reached 27.00 s, needed 27.00 s"
+        },
+        {
+          "name": "no error events",
+          "ok": true
+        },
+        {
+          "name": "live latency measured",
+          "ok": true,
+          "detail": "latencyMs=6089.754317202392 presentationDelayMs=6000"
+        }
+      ],
+      "consoleErrors": [
+        "warning: Shaka Player's internal Manifest structure is NOT covered by semantic versioning compatibility guarantees.  It may change at any time!  Please consider filing a feature request for whatever you use getManifest() for."
+      ]
+    },
+    {
+      "repeat": 7,
+      "engine": "webkit",
+      "session": "live-dash",
+      "status": "pass",
+      "stream": "live-cmaf",
+      "durationMs": 3328,
+      "startupMs": 116,
+      "mediaTime": 27,
+      "rebuffers": 0,
+      "decoded": 91,
+      "dropped": 0,
+      "presented": 91,
+      "rungHeight": 720,
+      "startRungHeight": 360,
+      "switches": 1,
+      "latencyMs": 6087.200212224733,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/36381eecb49d/live-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": true,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "playing",
+        "startupMs": 116,
+        "startup": {
+          "manifestMs": 15,
+          "loadedMs": 24
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 91,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 91
+        },
+        "bitrate": {
+          "switches": 1,
+          "current": {
+            "id": 2,
+            "bandwidth": 1839698,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 92,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 109,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ]
+        },
+        "live": {
+          "isLive": true,
+          "latencyMs": 6087.200212224733,
+          "latencyMaxMs": 6087.355807668825,
+          "presentationDelayMs": 6000,
+          "edgeSeeks": 0
+        },
+        "errors": [],
+        "playback": {
+          "currentTime": 27.01313324,
+          "duration": null,
+          "paused": false,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 4.986865760000001,
+          "readyState": 4
+        }
+      },
+      "errors": [],
+      "checks": [
+        {
+          "name": "browser supported by Shaka",
+          "ok": true,
+          "detail": "supported=true"
+        },
+        {
+          "name": "page parameters usable",
+          "ok": true
+        },
+        {
+          "name": "plays through MSE (loadMode media-source)",
+          "ok": true,
+          "detail": "loadMode=media-source"
+        },
+        {
+          "name": "first frame presented (startupMs known)",
+          "ok": true,
+          "detail": "startupMs=116"
+        },
+        {
+          "name": "media time advanced 3 s",
+          "ok": true,
+          "detail": "reached 27.00 s, needed 27.00 s"
+        },
+        {
+          "name": "no error events",
+          "ok": true
+        },
+        {
+          "name": "live latency measured",
+          "ok": true,
+          "detail": "latencyMs=6087.200212224733 presentationDelayMs=6000"
+        }
+      ],
+      "consoleErrors": [
+        "warning: Shaka Player's internal Manifest structure is NOT covered by semantic versioning compatibility guarantees.  It may change at any time!  Please consider filing a feature request for whatever you use getManifest() for."
+      ]
+    },
+    {
+      "repeat": 8,
+      "engine": "webkit",
+      "session": "live-dash",
+      "status": "pass",
+      "stream": "live-cmaf",
+      "durationMs": 3336,
+      "startupMs": 137,
+      "mediaTime": 27,
+      "rebuffers": 0,
+      "decoded": 91,
+      "dropped": 0,
+      "presented": 90,
+      "rungHeight": 720,
+      "startRungHeight": 360,
+      "switches": 1,
+      "latencyMs": 6089.974182186403,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/67b2889999f0/live-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": true,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "playing",
+        "startupMs": 137,
+        "startup": {
+          "manifestMs": 16,
+          "loadedMs": 24
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 91,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 90
+        },
+        "bitrate": {
+          "switches": 1,
+          "current": {
+            "id": 2,
+            "bandwidth": 1839698,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 94,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 111,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ]
+        },
+        "live": {
+          "isLive": true,
+          "latencyMs": 6089.974182186403,
+          "latencyMaxMs": 6091.087393192747,
+          "presentationDelayMs": 6000,
+          "edgeSeeks": 0
+        },
+        "errors": [],
+        "playback": {
+          "currentTime": 27.016359312,
+          "duration": null,
+          "paused": false,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 4.983639688,
+          "readyState": 4
+        }
+      },
+      "errors": [],
+      "checks": [
+        {
+          "name": "browser supported by Shaka",
+          "ok": true,
+          "detail": "supported=true"
+        },
+        {
+          "name": "page parameters usable",
+          "ok": true
+        },
+        {
+          "name": "plays through MSE (loadMode media-source)",
+          "ok": true,
+          "detail": "loadMode=media-source"
+        },
+        {
+          "name": "first frame presented (startupMs known)",
+          "ok": true,
+          "detail": "startupMs=137"
+        },
+        {
+          "name": "media time advanced 3 s",
+          "ok": true,
+          "detail": "reached 27.00 s, needed 27.00 s"
+        },
+        {
+          "name": "no error events",
+          "ok": true
+        },
+        {
+          "name": "live latency measured",
+          "ok": true,
+          "detail": "latencyMs=6089.974182186403 presentationDelayMs=6000"
+        }
+      ],
+      "consoleErrors": [
+        "warning: Shaka Player's internal Manifest structure is NOT covered by semantic versioning compatibility guarantees.  It may change at any time!  Please consider filing a feature request for whatever you use getManifest() for."
+      ]
+    },
+    {
+      "repeat": 9,
+      "engine": "webkit",
+      "session": "live-dash",
+      "status": "pass",
+      "stream": "live-cmaf",
+      "durationMs": 3405,
+      "startupMs": 126,
+      "mediaTime": 27,
+      "rebuffers": 0,
+      "decoded": 91,
+      "dropped": 0,
+      "presented": 91,
+      "rungHeight": 720,
+      "startRungHeight": 360,
+      "switches": 1,
+      "latencyMs": 6092.360943189576,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/14d43ee62a46/live-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": true,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "playing",
+        "startupMs": 126,
+        "startup": {
+          "manifestMs": 18,
+          "loadedMs": 27
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 91,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 91
+        },
+        "bitrate": {
+          "switches": 1,
+          "current": {
+            "id": 2,
+            "bandwidth": 1839698,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 105,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 124,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ]
+        },
+        "live": {
+          "isLive": true,
+          "latencyMs": 6092.360943189576,
+          "latencyMaxMs": 6093.226266592164,
+          "presentationDelayMs": 6000,
+          "edgeSeeks": 0
+        },
+        "errors": [],
+        "playback": {
+          "currentTime": 27.021972448,
+          "duration": null,
+          "paused": false,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 4.978026551999999,
+          "readyState": 4
+        }
+      },
+      "errors": [],
+      "checks": [
+        {
+          "name": "browser supported by Shaka",
+          "ok": true,
+          "detail": "supported=true"
+        },
+        {
+          "name": "page parameters usable",
+          "ok": true
+        },
+        {
+          "name": "plays through MSE (loadMode media-source)",
+          "ok": true,
+          "detail": "loadMode=media-source"
+        },
+        {
+          "name": "first frame presented (startupMs known)",
+          "ok": true,
+          "detail": "startupMs=126"
+        },
+        {
+          "name": "media time advanced 3 s",
+          "ok": true,
+          "detail": "reached 27.00 s, needed 27.00 s"
+        },
+        {
+          "name": "no error events",
+          "ok": true
+        },
+        {
+          "name": "live latency measured",
+          "ok": true,
+          "detail": "latencyMs=6092.360943189576 presentationDelayMs=6000"
+        }
+      ],
+      "consoleErrors": [
+        "warning: Shaka Player's internal Manifest structure is NOT covered by semantic versioning compatibility guarantees.  It may change at any time!  Please consider filing a feature request for whatever you use getManifest() for."
+      ]
+    },
+    {
+      "repeat": 10,
+      "engine": "webkit",
+      "session": "live-dash",
+      "status": "pass",
+      "stream": "live-cmaf",
+      "durationMs": 3342,
+      "startupMs": 125,
+      "mediaTime": 27,
+      "rebuffers": 0,
+      "decoded": 91,
+      "dropped": 0,
+      "presented": 90,
+      "rungHeight": 720,
+      "startRungHeight": 360,
+      "switches": 1,
+      "latencyMs": 6086.945535726319,
+      "info": {
+        "shakaVersion": "v5.3.3",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+        "config": "A",
+        "configOverrides": {},
+        "configDefaults": {},
+        "configured": [],
+        "manifestUri": "/s/d78d99bf2d1e/live-cmaf/dash/manifest.mpd",
+        "supported": true,
+        "loadMode": "media-source",
+        "params": {
+          "config": "A",
+          "autoplay": true,
+          "muted": true,
+          "start": null,
+          "abr": true,
+          "hud": false
+        },
+        "paramProblems": []
+      },
+      "metrics": {
+        "state": "playing",
+        "startupMs": 125,
+        "startup": {
+          "manifestMs": 15,
+          "loadedMs": 23
+        },
+        "rebuffer": {
+          "count": 0,
+          "totalMs": 0,
+          "ratio": 0,
+          "events": []
+        },
+        "frames": {
+          "decoded": 91,
+          "dropped": 0,
+          "droppedRatio": 0,
+          "presented": 90
+        },
+        "bitrate": {
+          "switches": 1,
+          "current": {
+            "id": 2,
+            "bandwidth": 1839698,
+            "width": 1280,
+            "height": 720,
+            "videoCodec": "vp09.00.31.08",
+            "audioCodec": "mp4a.40.2"
+          },
+          "history": [
+            {
+              "t": 92,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 110,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ]
+        },
+        "live": {
+          "isLive": true,
+          "latencyMs": 6086.945535726319,
+          "latencyMaxMs": 6086.982141729493,
+          "presentationDelayMs": 6000,
+          "edgeSeeks": 0
+        },
+        "errors": [],
+        "playback": {
+          "currentTime": 27.017387865,
+          "duration": null,
+          "paused": false,
+          "ended": false,
+          "playbackRate": 1,
+          "bufferedAheadSec": 4.982611134999999,
+          "readyState": 4
+        }
+      },
+      "errors": [],
+      "checks": [
+        {
+          "name": "browser supported by Shaka",
+          "ok": true,
+          "detail": "supported=true"
+        },
+        {
+          "name": "page parameters usable",
+          "ok": true
+        },
+        {
+          "name": "plays through MSE (loadMode media-source)",
+          "ok": true,
+          "detail": "loadMode=media-source"
+        },
+        {
+          "name": "first frame presented (startupMs known)",
+          "ok": true,
+          "detail": "startupMs=125"
+        },
+        {
+          "name": "media time advanced 3 s",
+          "ok": true,
+          "detail": "reached 27.00 s, needed 27.00 s"
+        },
+        {
+          "name": "no error events",
+          "ok": true
+        },
+        {
+          "name": "live latency measured",
+          "ok": true,
+          "detail": "latencyMs=6086.945535726319 presentationDelayMs=6000"
+        }
+      ],
+      "consoleErrors": [
+        "warning: Shaka Player's internal Manifest structure is NOT covered by semantic versioning compatibility guarantees.  It may change at any time!  Please consider filing a feature request for whatever you use getManifest() for."
+      ]
+    }
+  ]
+}

@@ -29,6 +29,7 @@ describe('the command line', () => {
       config: 'A',
       mediaSeconds: 3,
       timeoutMs: 20_000,
+      holdMs: 0,
       useCapabilities: true,
       help: false,
     });
@@ -50,6 +51,8 @@ describe('the command line', () => {
         '2.5',
         '--timeout',
         '8000',
+        '--hold-ms',
+        '1500',
         '--origin',
         'http://127.0.0.1:4640',
         '--out',
@@ -67,6 +70,7 @@ describe('the command line', () => {
       config: 'B',
       mediaSeconds: 2.5,
       timeoutMs: 8000,
+      holdMs: 1500,
       out: 'docs/results/x.json',
       useCapabilities: false,
       help: false,
@@ -94,6 +98,9 @@ describe('the command line', () => {
     [['--media-seconds', 'abc'], /--media-seconds must be a number > 0/],
     [['--timeout=-1'], /--timeout must be a positive integer/],
     [['--timeout', '-1'], /ambiguous/],
+    [['--hold-ms', '-5'], /ambiguous/],
+    [['--hold-ms=-5'], /--hold-ms must be an integer >= 0/],
+    [['--hold-ms', '1.5'], /--hold-ms must be an integer >= 0/],
     [['--nonsense'], /nonsense/],
     [['positional'], /positional/i],
   ])('refuses %j', (argv, message) => {
@@ -331,7 +338,7 @@ describe('the table and the summary', () => {
     ]);
     const lines = table.split('\n');
     expect(lines[0]).toMatch(
-      /^run\s+engine\s+session\s+stream\s+result\s+startup\s+media\s+rebuf\s+dropped\/decoded\s+presented\s+rung\s+latency\s+note$/,
+      /^run\s+engine\s+session\s+stream\s+result\s+startup\s+media clock\s+rebuf\s+dropped\/decoded\s+presented\s+rung\s+latency\s+note$/,
     );
     expect(lines[1]).toMatch(
       /^1\s+chromium\s+vod-dash\s+vod-cmaf\s+PASS\s+300 ms\s+3\.20 s\s+0\s+0\/96\s+95\s+360p\s+-$/,

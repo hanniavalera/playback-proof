@@ -501,8 +501,24 @@ describe('actions', () => {
     video.playError = new DOMException('play() failed because the user did not interact', 'NotAllowedError');
     await expect(hook.play()).rejects.toThrow(/qa\.play\(\) was rejected: NotAllowedError.*#0/s);
     expect(hook.metrics().errors).toMatchObject([
-      { code: 0, source: 'play', message: expect.stringContaining('NotAllowedError') },
+      {
+        code: 0,
+        codeName: 'NotAllowedError',
+        source: 'play',
+        message: expect.stringContaining('NotAllowedError'),
+      },
     ]);
+  });
+
+  it('names a refused play() by its DOMException name, and leaves a plain Error without a code name', async () => {
+    const { hook, video } = await harness();
+    video.playError = new Error('boom');
+    await expect(hook.play()).rejects.toThrow(/qa\.play\(\) was rejected: Error: boom/);
+    video.playError = new DOMException('not supported', 'NotSupportedError');
+    await expect(hook.play()).rejects.toThrow(/NotSupportedError/);
+    const errors = hook.metrics().errors;
+    expect(errors[0]).not.toHaveProperty('codeName');
+    expect(errors[1]).toMatchObject({ codeName: 'NotSupportedError', source: 'play' });
   });
 
   it('pause resolves on `paused`, and returns at once when already paused', async () => {
