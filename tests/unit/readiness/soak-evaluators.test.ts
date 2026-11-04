@@ -64,13 +64,63 @@ describe('a healthy soak', () => {
     expect([...verdicts]).toEqual(['GO']);
   });
 
-  it('reports the advisory lines without letting them decide', () => {
+  it('judges the latency level after the faults as a criterion, and a flat latency above the maximum is that and not a drift', () => {
     const result = evaluateSoak(soak({ latency: () => 10_100 }));
-    // 10.1 s is above the latency maximum (an advisory here: PB-RDY-002 judges it), and it is flat: not a drift.
-    expect(get(result.evaluations, 'soak.latency-max').verdict).toBe('NO-GO');
-    expect(get(result.evaluations, 'soak.latency-max').scope).toBe('advisory');
+    // 10.1 s is above the latency maximum and above the p95 limit, and it is flat: a NO-GO of the latency level, not a drift.
+    for (const id of ['soak.latency-max', 'soak.latency-p95']) {
+      expect(get(result.evaluations, id).verdict).toBe('NO-GO');
+      expect(get(result.evaluations, id).scope).toBe('criterion');
+    }
     expect(get(result.evaluations, 'soak.latency-drift').verdict).toBe('GO');
+    expect(result.verdict).toBe('NO-GO');
+    expect(get(result.evaluations, 'soak.latency-max').sentence).toContain(
+      'of the 49 reads were above 10.00 s, the first at minute',
+    );
+  });
+
+  it('lets the lines that are advisory decide nothing: the recoverable errors that no fault explains and the manifest cadence', () => {
+    const result = evaluateSoak(soak({ errors: [error(100, 1, 'HTTP_ERROR')] }));
+    expect(get(result.evaluations, 'soak.unexplained-recoverable-errors').verdict).toBe('NO-GO');
+    expect(get(result.evaluations, 'soak.unexplained-recoverable-errors').scope).toBe('advisory');
+    expect(result.evaluations.filter((e) => e.scope === 'advisory').map((e) => e.id)).toEqual([
+      'soak.unexplained-recoverable-errors',
+      'cadence.median',
+      'cadence.longest',
+    ]);
     expect(result.verdict).toBe('GO');
+  });
+
+  it('cannot judge the latency level from fewer reads than PB-RDY-002 needs for a percentile, and says so', () => {
+    // 5 minutes with a 60 s warm-up give 49 reads. A fault at 70 s that lasts 150 s, and the 74 s that the player is given to settle after it,
+    // leave the reads at 60 and 65 s and those after 294 s: 4 of the 20 that a percentile needs.
+    const result = evaluateSoak(soak({ faults: [fault(70, 150)], latency: () => 6200 }));
+    expect(get(result.evaluations, 'soak.latency-p95').verdict).toBe('INCONCLUSIVE');
+    expect(get(result.evaluations, 'soak.latency-max').verdict).toBe('INCONCLUSIVE');
+    expect(get(result.evaluations, 'soak.latency-max').sentence).toContain(
+      'of the 20 needed to judge a percentile',
+    );
+    expect(result.verdict).toBe('INCONCLUSIVE');
+  });
+
+  it('judges the reads after the settling window of every fault, so that a player that came back is GO and one that left again is not', () => {
+    // Back at 6.2 s soon after the outage: GO. Back, and then 10.5 s again from the second minute on: NO-GO, though the first look is fine.
+    const back = evaluateSoak(
+      soak({
+        minutes: 8,
+        faults: [fault(240, 10)],
+        latency: (sec) => (sec < 250 ? 6200 : sec < 300 ? 10_900 : 6200),
+      }),
+    );
+    expect(get(back.evaluations, 'soak.latency-max').verdict).toBe('GO');
+    const leftAgain = evaluateSoak(
+      soak({
+        minutes: 8,
+        faults: [fault(240, 10)],
+        latency: (sec) => (sec < 250 ? 6200 : sec < 300 ? 10_900 : sec < 420 ? 6200 : 10_500),
+      }),
+    );
+    expect(get(leftAgain.evaluations, 'soak.latency-max').verdict).toBe('NO-GO');
+    expect(get(leftAgain.evaluations, 'soak.latency-p95').detail?.readsAboveMaximum).toBeGreaterThan(0);
   });
 });
 
@@ -122,7 +172,10 @@ describe('latency drift', () => {
     expect(ols).toBeGreaterThan(LIVE_LIMITS.maxLatencyDriftMs * 2.5);
     const estimators = drift.detail?.estimators as { disagree: boolean; verdictsDiffer: boolean };
     expect(estimators).toMatchObject({ disagree: true, verdictsDiffer: true });
-    expect(evaluateSoak(soak({ latency })).verdict).toBe('GO');
+    // The drift line stays GO in the soak; the read of 30 s is a latency above the maximum, which is the line of its own that fails.
+    const soaked = evaluateSoak(soak({ latency }));
+    expect(get(soaked.evaluations, 'soak.latency-drift').verdict).toBe('GO');
+    expect(get(soaked.evaluations, 'soak.latency-max').verdict).toBe('NO-GO');
   });
 
   it('still sees a real slow ramp when the soak also ends on a wild read', () => {

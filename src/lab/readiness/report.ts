@@ -14,6 +14,7 @@ import type {
   SoakKind,
   SoakSample,
 } from './soak-evaluators.ts';
+import { aggregate } from './verdict.ts';
 import type { CheckId, Evaluation, Verdict } from './verdict.ts';
 
 // The result files of the readiness checks and of the soak: what is committed under docs/results/readiness and docs/results/soak, and what
@@ -260,6 +261,34 @@ export const soakFileNameOf = (report: SoakReport): string =>
     protocol: report.stream?.protocol ?? 'dash',
     plan: report.options,
   });
+
+/**
+ * The lines of a soak that were advisory in the files measured up to commit `0d62c1d` and are criteria since ADR-159c: the latency level
+ * after the faults. A file that is read back is judged by today's criteria: the numbers in it are never touched, and a line that was
+ * evidence when the file was measured counts as what it is now.
+ */
+export const LATENCY_LEVEL_LINES: ReadonlySet<string> = new Set(['soak.latency-p95', 'soak.latency-max']);
+
+/**
+ * The verdict of a stored soak under today's criteria, and the lines that make it differ from the stored one (an advisory latency line that
+ * was not a GO when the file was measured and decides now). For a file measured with the criteria of today it is the stored verdict.
+ */
+export function soakVerdictToday(report: SoakReport): { verdict: Verdict; changedBy: Evaluation[] } {
+  const promoted = (evaluation: Evaluation): boolean =>
+    LATENCY_LEVEL_LINES.has(evaluation.id) && evaluation.scope === 'advisory';
+  const verdict = aggregate(
+    report.evaluations.map((evaluation) =>
+      promoted(evaluation) ? { ...evaluation, scope: 'criterion' as const } : evaluation,
+    ),
+  );
+  const changedBy =
+    verdict === report.verdict
+      ? []
+      : report.evaluations.filter(
+          (evaluation) => promoted(evaluation) && evaluation.verdict !== 'GO' && evaluation.verdict !== 'N/A',
+        );
+  return { verdict, changedBy };
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Reading a file back

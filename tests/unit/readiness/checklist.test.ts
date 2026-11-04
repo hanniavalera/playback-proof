@@ -24,6 +24,7 @@ import {
   soakFileName,
   soakFileNameOf,
   soakIdentity,
+  soakVerdictToday,
 } from '../../../src/lab/readiness/report.ts';
 import type { Engine } from '../../../src/lab/readiness/soak-evaluators.ts';
 import { evaluateSoak } from '../../../src/lab/readiness/soak-evaluators.ts';
@@ -141,6 +142,23 @@ function soakReport(
     requests: { total: 0, refusedCount: 0, byKind: {}, refused: [], repeated: [] },
     harness: { firstHeapMb: 40, lastHeapMb: 42.5, firstServiceRssMb: 150, lastServiceRssMb: 152 },
   };
+}
+
+/**
+ * A soak as the files of the first evidence on GitHub's runners have it (commit 0d62c1d): the two latency lines are advisory and carry a
+ * verdict of their own, and the verdict of the soak does not depend on them.
+ */
+function asMeasuredBefore(
+  report: SoakReport,
+  latencyMs: number,
+  verdict: 'GO' | 'NO-GO' = 'NO-GO',
+): SoakReport {
+  const evaluations = report.evaluations.map((evaluation) =>
+    evaluation.id === 'soak.latency-p95' || evaluation.id === 'soak.latency-max'
+      ? { ...evaluation, scope: 'advisory' as const, value: latencyMs, verdict }
+      : evaluation,
+  );
+  return { ...report, evaluations, verdict: aggregate(evaluations) };
 }
 
 describe('the sheet of a readiness run', () => {
@@ -370,6 +388,64 @@ describe('the checklist of TEST_STRATEGY.md section 8', () => {
     expect(renderSoakReport(endsLoaded)).not.toContain('busy');
   });
 
+  it("judges a stored soak by today's criteria: the latency lines that were advisory when it was measured decide now, and the numbers in it are not touched", () => {
+    const fresh = soakReport('chromium', 30);
+    expect(soakVerdictToday(fresh)).toEqual({ verdict: 'GO', changedBy: [] });
+    const measuredBefore = asMeasuredBefore(fresh, 10_620);
+    // As the file says: GO, with two advisory lines at NO-GO.
+    expect(measuredBefore.verdict).toBe('GO');
+    expect(
+      measuredBefore.evaluations.filter((e) => e.scope === 'advisory' && e.verdict === 'NO-GO'),
+    ).toHaveLength(2);
+    const today = soakVerdictToday(measuredBefore);
+    expect(today.verdict).toBe('NO-GO');
+    expect(today.changedBy.map((line) => line.id)).toEqual(['soak.latency-p95', 'soak.latency-max']);
+    // The file itself is as it was.
+    expect(measuredBefore.verdict).toBe('GO');
+    expect(measuredBefore.evaluations.find((e) => e.id === 'soak.latency-max')?.value).toBe(10_620);
+    // An old file whose advisory latency lines were GO is GO today; one measured with the criteria of today is judged as stored.
+    const fine = asMeasuredBefore(fresh, 6_990, 'GO');
+    expect(soakVerdictToday(fine)).toEqual({ verdict: 'GO', changedBy: [] });
+    const failedToday = soakReport('chromium', 30, { latency: () => 10_620 });
+    expect(failedToday.verdict).toBe('NO-GO');
+    expect(soakVerdictToday(failedToday).verdict).toBe('NO-GO');
+    expect(soakVerdictToday(failedToday).changedBy).toEqual([]);
+  });
+
+  it("blocks item 4 on the soak of A that was GO when the latency of the soak was only evidence, and says why in the line; a candidate's is listed the same way and blocks nothing", async () => {
+    const good = await configuration('A', liveSync);
+    const three = (['chromium', 'firefox', 'webkit'] as const).map((engine) => report(engine, [good]));
+    const stored = (engine: Engine): SoakReport => asMeasuredBefore(soakReport(engine, 30), 10_620);
+    const soaks = (['chromium', 'firefox', 'webkit'] as const).map(stored);
+    const items = checklist({ readiness: three, soaks });
+    const item = items.find((candidate) => candidate.number === 4);
+    expect(item?.status).toBe('blocked');
+    expect(item?.evidence.join('\n')).toContain(
+      'release soak of 30 min: NO-GO (measured GO, when the latency of the soak was evidence and not a criterion;',
+    );
+    expect(item?.evidence.join('\n')).toContain('Latency, p95 10.62 s against <= 8.00 s');
+    expect(item?.evidence.join('\n')).toContain('Latency, maximum 10.62 s against <= 10.00 s');
+    expect(item?.evidence.join('\n')).toContain('ADR-159c');
+    // A candidate whose stored soak says GO and whose latency lines were fine is listed as GO and does not change item 4.
+    const onlyCandidate = {
+      ...asMeasuredBefore(soakReport('chromium', 30), 6_990, 'GO'),
+      configuration: { id: 'live-sync', label: 'x', patch: liveSync as never },
+    };
+    const withCandidate = checklist({
+      readiness: three,
+      soaks: [soakReport('chromium', 30), soakReport('firefox', 30), soakReport('webkit', 30), onlyCandidate],
+    });
+    expect(withCandidate.find((candidate) => candidate.number === 4)?.status).toBe('done');
+    // The sheet of the stored file says what it is judged as now.
+    const sheet = renderSoakReport(stored('chromium'));
+    expect(sheet).toMatch(/Soak verdict\s+GO/);
+    expect(sheet).toMatch(/Judged by today's criteria \(ADR-159c\)\s+NO-GO/);
+    expect(sheet).toContain(
+      'This file was measured when the latency of the soak after the faults was evidence',
+    );
+    expect(renderSoakReport(soakReport('chromium', 30))).not.toContain("Judged by today's criteria");
+  });
+
   it('calls a machine busy only when its 1-minute load is above its number of CPUs', () => {
     const at = (load1: number, cpus: number) => ({ at: 'x', load1, load5: 0, load15: 0, cpus });
     expect(isBusy(at(3, 3))).toBe(false);
@@ -446,11 +522,14 @@ describe('the sheet of a soak', () => {
   });
 
   it('prints the note of a line that is a GO: two estimators of the drift that disagree are on the sheet', () => {
+    // A wild read at the very end is a drift for least squares and not for Theil-Sen; it is also a latency above the maximum, which is the
+    // line of its own that makes the soak a NO-GO here (the drift is not).
     const text = renderSoakReport(
       soakReport('chromium', 5, { latency: (sec) => (sec === 300 ? 30_000 : 6200) }),
     );
-    expect(text).toMatch(/Soak verdict\s+GO/);
     expect(text).toMatch(/GO\s+Latency drift\s+0 ms\s+<= 1\.00 s/);
+    expect(text).toMatch(/NO-GO\s+Latency, maximum\s+30\.00 s\s+<= 10\.00 s/);
+    expect(text).toMatch(/Soak verdict\s+NO-GO/);
     expect(text).toContain('Notes:');
     expect(text).toContain('Latency drift: The two estimators of the drift disagree');
   });

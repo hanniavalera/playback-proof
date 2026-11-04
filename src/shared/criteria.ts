@@ -11,6 +11,10 @@
 //   arithmetic  computed from other numbers by the stated rule, so it follows when its inputs change
 //   assumption  a judgment with no formula behind it
 //
+// The readiness limits were validated in Phase 7 against the first evidence on GitHub's runners (docs/READINESS.md) and none was revised:
+// a limit is a requirement of a live event, and the margin between it and what localhost measures is a measurement, recorded per check
+// and engine and never a reason to lower the limit (ADR-159b, docs/decisions/readiness-evidence.md).
+//
 // Code that enforces a policy imports the plain numbers (`LIVE_LIMITS.latencyMaxMs`); the documents render the whole entry.
 
 export type PolicyUnit = 'ms' | 's' | 'min' | 'days' | 'count' | 'score' | 'ratio' | 'MB' | 'x' | 'fps';
@@ -104,21 +108,21 @@ export const LIVE_READINESS = {
     5_000,
     'ms',
     '`startupMs` (load-requested to firstframe) of every sampled join; the maximum is compared.',
-    'About 2.5 segments. A join on localhost is a handful of small requests, so the limit is loose on purpose: it fails a join that is plainly broken under event conditions, while the performance gate (PB-PERF-001) detects small regressions. Phase 7 replaces it with a multiple of the measured join time.',
+    "About 2.5 segments. A join on localhost is a handful of small requests, so the limit is loose on purpose: it fails a join that is plainly broken under event conditions, while the performance gate (PB-PERF-001) detects small regressions. Phase 7 measured the worst join on GitHub's runners at a small fraction of it and kept it: a limit is a requirement and a margin is a measurement (ADR-159b, docs/READINESS.md).",
   ),
   latencyTargetMs: latencyTarget,
   latencyP95MaxMs: arithmetic(
     'Latency, p95',
     latencyTarget.value + SEGMENT_MS,
     'ms',
-    'p95 of the `latencyMs` samples over the measurement window after the first frame.',
+    'p95 of the `latencyMs` samples over the measurement window after the first frame (PB-RDY-002), and over a soak: after the warm-up, outside every injected fault and the time allowed to settle after it, from at least 20 reads (PB-RDY-005).',
     'Target plus one segment: the stream is GOP-aligned to the segment, so a start, seek or catch-up position is only defined to within one segment.',
   ),
   latencyMaxMs: arithmetic(
     'Latency, maximum',
     latencyTarget.value + 2 * SEGMENT_MS,
     'ms',
-    'Largest `latencyMs` sample outside an injected fault window.',
+    'Largest `latencyMs` sample outside an injected fault window (PB-RDY-002), and over a soak: after the warm-up, outside every injected fault and the time allowed to settle after it, from at least 20 reads (PB-RDY-005).',
     'Target plus two segments: one segment of positioning granularity and one of manifest-refresh lag. Beyond it the player is further behind than the system can explain.',
   ),
   injectedStallMs: injectedStall,
@@ -134,7 +138,7 @@ export const LIVE_READINESS = {
     60_000,
     'ms',
     'Time from recovery (`playing`) until `latencyMs` is back within the maximum above and stays there for 5 s.',
-    'A member who lived through an outage should be back at the live edge within about a minute (30 segments). Phase 7 measures what the default configuration and the candidate really achieve: a limit the default cannot meet is a finding, not a number to relax.',
+    "A member who lived through an outage should be back at the live edge within about a minute (30 segments). Phase 7 measured it on GitHub's runners: the defaults cannot meet it (a finding, not a number to relax) and the candidate `live-sync` meets it in a fraction of it (docs/READINESS.md).",
   ),
   manifestPeriodMs: fact(
     'Manifest update period',

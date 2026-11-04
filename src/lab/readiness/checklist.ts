@@ -1,6 +1,6 @@
 import { LIVE_LIMITS } from '../../shared/criteria.ts';
 import type { CheckResult } from './checks.ts';
-import { isBusy, loadPerCpu } from './report.ts';
+import { isBusy, loadPerCpu, soakVerdictToday } from './report.ts';
 import type { ConfigurationResult, LoadReading, MachineLoad, ReadinessReport, SoakReport } from './report.ts';
 import type { Engine } from './soak-evaluators.ts';
 import { formatLimit, formatValue } from './verdict.ts';
@@ -146,6 +146,7 @@ export function renderReadinessReport(report: ReadinessReport): string {
 export function renderSoakReport(report: SoakReport): string {
   const criteria = report.evaluations.filter((evaluation) => evaluation.scope === 'criterion');
   const advisory = report.evaluations.filter((evaluation) => evaluation.scope === 'advisory');
+  const today = soakVerdictToday(report);
   const lengthText =
     report.length === 'release'
       ? 'release soak'
@@ -161,6 +162,12 @@ export function renderSoakReport(report: SoakReport): string {
       : `injected: ${report.faults.map((fault) => `${fault.kind} for ${Math.round((fault.endMs - fault.startMs) / 1000)} s at minute ${((fault.startMs - report.firstFrameMs) / 60_000).toFixed(1)}`).join('; ')}`,
     '',
     `${pad('Soak verdict', 64)}${report.verdict}`,
+    ...(today.verdict === report.verdict
+      ? []
+      : [
+          `${pad("Judged by today's criteria (ADR-159c)", 64)}${today.verdict}`,
+          `  This file was measured when the latency of the soak after the faults was evidence and decided nothing; it is a criterion now, and ${today.changedBy.map((line) => `${line.label} ${valueText(line)} against ${formatLimit(line.limit, line.unit, line.bound)}`).join(', ')} decide${today.changedBy.length === 1 ? 's' : ''} it.`,
+        ]),
     ...criteria.map((evaluation) => evaluationLine(evaluation, '  ')),
     ...(advisory.length > 0
       ? [
@@ -320,29 +327,39 @@ export function checklist(input: ChecklistInput): ChecklistItem[] {
     owner: false,
   });
 
-  // 4. The release soak passed in every engine.
+  // 4. The release soak passed in every engine. A stored soak is judged by today's criteria (`soakVerdictToday`): the file keeps what it
+  // measured, and when it says GO because the latency of the soak was only evidence then, the line says what it is judged as now.
+  const todayOf = (report: SoakReport): Verdict => soakVerdictToday(report).verdict;
+  const changedNote = (report: SoakReport): string => {
+    const { verdict, changedBy } = soakVerdictToday(report);
+    return verdict === report.verdict
+      ? ''
+      : ` (measured ${report.verdict}, when the latency of the soak was evidence and not a criterion; ${changedBy.map((line) => `${line.label} ${valueText(line)} against ${formatLimit(line.limit, line.unit, line.bound)}`).join(', ')} decide it now, ADR-159c)`;
+  };
+  const kindOf = (report: SoakReport, ci: string): string =>
+    report.length === 'release' ? 'release soak' : report.length === 'ci' ? ci : 'short run';
   const releaseSoaks = input.soaks.filter((report) => report.configuration.id === 'A');
   const soakLines = releaseSoaks.map(
     (report) =>
-      `${label(report)}: ${report.length === 'release' ? 'release soak' : report.length === 'ci' ? 'CI soak only' : 'short run'} of ${Number(report.options.minutes.toFixed(2))} min: ${report.verdict}${busyAtStart(report)}`,
+      `${label(report)}: ${kindOf(report, 'CI soak only')} of ${Number(report.options.minutes.toFixed(2))} min: ${todayOf(report)}${changedNote(report)}${busyAtStart(report)}`,
   );
   // A candidate's soak is evidence for a decision about the candidate, never for the build as it ships: it is listed and does not count.
   const candidateLines = input.soaks
     .filter((report) => report.configuration.id !== 'A')
     .map(
       (report) =>
-        `${label(report)}: ${report.length === 'release' ? 'release soak' : report.length === 'ci' ? 'CI soak' : 'short run'} of ${Number(report.options.minutes.toFixed(2))} min of the candidate ${report.configuration.id}: ${report.verdict} (evidence for a decision about the candidate, not about the build)${busyAtStart(report)}`,
+        `${label(report)}: ${kindOf(report, 'CI soak')} of ${Number(report.options.minutes.toFixed(2))} min of the candidate ${report.configuration.id}: ${todayOf(report)} (evidence for a decision about the candidate, not about the build)${changedNote(report)}${busyAtStart(report)}`,
     );
   const releaseVerdicts = ENGINE_ORDER.map((engine): Verdict => {
     const forEngine = releaseSoaks.filter((report) => report.engine === engine);
     const release = forEngine.filter((report) => report.length === 'release');
-    if (release.some((report) => report.verdict === 'NO-GO')) return 'NO-GO';
-    if (forEngine.some((report) => report.verdict === 'NO-GO')) return 'NO-GO';
-    return release.length > 0 && release.every((report) => report.verdict === 'GO') ? 'GO' : 'INCONCLUSIVE';
+    if (release.some((report) => todayOf(report) === 'NO-GO')) return 'NO-GO';
+    if (forEngine.some((report) => todayOf(report) === 'NO-GO')) return 'NO-GO';
+    return release.length > 0 && release.every((report) => todayOf(report) === 'GO') ? 'GO' : 'INCONCLUSIVE';
   });
   items.push({
     number: 4,
-    text: 'The release soak passed in every engine: no unrecovered stall, no critical error and none that no injected fault explains, rebuffer ratio, latency drift and dropped frames within their limits, and heap growth within its limit in Chromium.',
+    text: 'The release soak passed in every engine: no unrecovered stall, no critical error and none that no injected fault explains, rebuffer ratio, latency drift, the latency level after the faults and dropped frames within their limits, and heap growth within its limit in Chromium.',
     status: statusOf(releaseVerdicts),
     evidence: [
       ...soakLines,
