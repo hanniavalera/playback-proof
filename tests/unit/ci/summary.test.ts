@@ -231,6 +231,21 @@ describe('a skipped test', () => {
     );
   });
 
+  it('shows the whole reason of an invalid run (ADR-106), with its numbers first, and counts it in the header', () => {
+    const reason =
+      "invalid run: forced climb to 360p 5.9 s after the step down, 10 of 974 frames dropped. The 8 s switch interval allows no decision of the adaptation that soon after the step down, and the load dropped frames: Shaka's dropped-frame protection, which bans the rung that plays for 30 s, fits, and it leaves only rungs above the 240p that the 600 kbps link carries, so this attempt cannot say whether the player flaps (ADR-106).";
+    const markdown = render(
+      reportOf([
+        skipped([
+          { type: 'invalid-run', description: reason },
+          { type: 'skip', description: reason },
+        ]),
+      ]),
+    );
+    expect(markdown).toContain('0 failed, 0 flaky, 0 passed, 1 skipped');
+    expect(markdown).toContain(`| PB-VOD-003 WebM VOD starts | firefox | ${reason} |`);
+  });
+
   it('blames the run, not the test, when the run stopped before the test could start (the global timeout)', () => {
     const markdown = render(
       reportOf([skipped([])], { errors: ['Timed out waiting 660s for the test suite to run'] }),
