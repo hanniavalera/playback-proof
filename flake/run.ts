@@ -30,6 +30,13 @@ export function isExecuted(outcome: Outcome): outcome is ExecutedOutcome {
 
 export type Tier = 'merge' | 'release';
 
+/** The tier a set of tags stands for (docs/CONTRACTS.md section 7): `@merge` gates every pull request and wins over `@release`. */
+export function tierOfTags(tags: readonly string[]): Tier | null {
+  if (tags.includes('@merge')) return 'merge';
+  if (tags.includes('@release')) return 'release';
+  return null;
+}
+
 export interface Attempt {
   status: AttemptStatus;
   durationMs: number;
@@ -61,7 +68,8 @@ export interface TestRecord {
   attempts: Attempt[];
 }
 
-export type RunStatus = 'passed' | 'failed' | 'timedout' | 'interrupted';
+export const RUN_STATUSES = ['passed', 'failed', 'timedout', 'interrupted'] as const;
+export type RunStatus = (typeof RUN_STATUSES)[number];
 
 export interface FlakeRun {
   schemaVersion: typeof RUN_SCHEMA_VERSION;
@@ -124,4 +132,134 @@ export function executionsOf(runs: readonly FlakeRun[]): Execution[] {
     }
   }
   return out;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Reading a record back: the history and the run files are read by tools that act on them, so everything is checked.
+
+export class RunFormatError extends Error {
+  override name = 'RunFormatError';
+}
+
+type Json = Record<string, unknown>;
+
+function bad(source: string, path: string, message: string): never {
+  throw new RunFormatError(`${source}: ${path}: ${message}`);
+}
+
+function asObject(value: unknown, source: string, path: string): Json {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    bad(source, path, 'expected an object');
+  }
+  return value as Json;
+}
+
+function asText(value: unknown, source: string, path: string): string {
+  if (typeof value !== 'string' || value.trim() === '') bad(source, path, 'expected a non-empty string');
+  return value;
+}
+
+function asCount(value: unknown, source: string, path: string, min = 0): number {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < min) {
+    bad(source, path, `expected an integer >= ${min}`);
+  }
+  return value;
+}
+
+function asMillis(value: unknown, source: string, path: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    bad(source, path, 'expected a number >= 0');
+  }
+  return value;
+}
+
+function oneOf<T extends string>(value: unknown, allowed: readonly T[], source: string, path: string): T {
+  if (typeof value !== 'string' || !(allowed as readonly string[]).includes(value)) {
+    bad(source, path, `expected one of ${allowed.join(', ')}, found ${JSON.stringify(value)}`);
+  }
+  return value as T;
+}
+
+/** `new Date().toISOString()`: UTC, with a `Z`. Anything else would not sort as text, and the history is ordered by it. */
+export const ISO_UTC = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/;
+
+function parseAttempt(value: unknown, source: string, path: string): Attempt {
+  const attempt = asObject(value, source, path);
+  oneOf(attempt.status, ATTEMPT_STATUSES, source, `${path}.status`);
+  asMillis(attempt.durationMs, source, `${path}.durationMs`);
+  if (attempt.signature !== undefined) asText(attempt.signature, source, `${path}.signature`);
+  return attempt as unknown as Attempt;
+}
+
+function parseTest(value: unknown, source: string, path: string): TestRecord {
+  const test = asObject(value, source, path);
+  for (const field of ['id', 'title', 'file', 'project']) asText(test[field], source, `${path}.${field}`);
+  if (!Array.isArray(test.tags) || test.tags.some((tag) => typeof tag !== 'string')) {
+    bad(source, `${path}.tags`, 'expected a list of strings');
+  }
+  const tier =
+    test.tier === null ? null : oneOf(test.tier, ['merge', 'release'] as const, source, `${path}.tier`);
+  const expectedTier = tierOfTags(test.tags as string[]);
+  if (tier !== expectedTier) {
+    bad(
+      source,
+      `${path}.tier`,
+      `says ${String(tier)} but the tags ${JSON.stringify(test.tags)} are ${String(expectedTier)}`,
+    );
+  }
+  const outcome = oneOf(test.outcome, OUTCOMES, source, `${path}.outcome`);
+  if (typeof test.quarantined !== 'boolean') bad(source, `${path}.quarantined`, 'expected a boolean');
+  asCount(test.retries, source, `${path}.retries`);
+  if (test.skipReason !== undefined) asText(test.skipReason, source, `${path}.skipReason`);
+  if (test.experimental !== undefined && test.experimental !== true) {
+    bad(source, `${path}.experimental`, 'expected true, or the field absent');
+  }
+  if (!Array.isArray(test.attempts) || test.attempts.length === 0) {
+    bad(source, `${path}.attempts`, 'expected at least one attempt');
+  }
+  test.attempts.forEach((attempt: unknown, index: number) =>
+    parseAttempt(attempt, source, `${path}.attempts[${index}]`),
+  );
+  if (outcome === 'flaky' && test.attempts.length < 2) {
+    bad(
+      source,
+      `${path}.outcome`,
+      'flaky needs at least two attempts: a test that ran once cannot have been retried',
+    );
+  }
+  return test as unknown as TestRecord;
+}
+
+/** A run record read from JSON: every field the tools rely on is checked, and fields it does not know are kept, not dropped. */
+export function parseRun(value: unknown, source = 'run'): FlakeRun {
+  const run = asObject(value, source, '$');
+  if (run.schemaVersion !== RUN_SCHEMA_VERSION) {
+    bad(
+      source,
+      '$.schemaVersion',
+      `expected ${RUN_SCHEMA_VERSION}, found ${JSON.stringify(run.schemaVersion)}: this tool does not read that version`,
+    );
+  }
+  for (const field of ['runId', 'invocationId', 'commit', 'envId', 'playwrightVersion']) {
+    asText(run[field], source, `$.${field}`);
+  }
+  const date = asText(run.date, source, '$.date');
+  if (!ISO_UTC.test(date) || Number.isNaN(Date.parse(date))) {
+    bad(
+      source,
+      '$.date',
+      `expected an ISO 8601 UTC time like 2026-11-03T22:19:10.045Z, found ${JSON.stringify(date)}`,
+    );
+  }
+  oneOf(run.status, RUN_STATUSES, source, '$.status');
+  asMillis(run.durationMs, source, '$.durationMs');
+  if (run.shard !== undefined) {
+    const shard = asObject(run.shard, source, '$.shard');
+    const current = asCount(shard.current, source, '$.shard.current', 1);
+    const total = asCount(shard.total, source, '$.shard.total', 1);
+    if (current > total) bad(source, '$.shard', `shard ${current} of ${total}`);
+  }
+  if (!Array.isArray(run.tests)) bad(source, '$.tests', 'expected a list');
+  run.tests.forEach((test: unknown, index: number) => parseTest(test, source, `$.tests[${index}]`));
+  return run as unknown as FlakeRun;
 }
