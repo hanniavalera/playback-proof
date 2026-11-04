@@ -2,7 +2,9 @@ import { profile } from '../../src/shared/profiles.ts';
 import { expectNoErrors, expectNoRebuffer } from './support/assertions.ts';
 import { expect, test } from './support/fixtures.ts';
 import { streamInfoOf } from './support/session.ts';
+import { requestLogCursor, requestsFor } from './support/waiting.ts';
 import { END_TOLERANCE_SEC, waitForEnded } from './vod/ending.ts';
+import { SEEK_LANDING_TOLERANCE_SEC, logAround, seekAndRecord } from './vod/seeking.ts';
 import { allSegments, distinctAscending, middleOfSegment, segmentNumbers } from './vod/segments.ts';
 
 /**
@@ -20,6 +22,8 @@ const MIN_CONTROL_ADVANCE_SEC = 0.1;
 const RESUME_TOLERANCE_SEC = 0.5;
 /** How much media a resumed player must play for "playback continued from there" to be shown. */
 const CONTINUE_SEC = 1;
+/** How far from the start of the title the first `playing` of a restart may be: the resume of a pause was measured at 4 to 63 ms past the paused position. */
+const RESTART_TOLERANCE_SEC = 0.5;
 
 test(
   'PB-VOD-003 plays a short title to the end (vod-cmaf-short): ended fires near the duration, no rebuffer, no error',
@@ -136,5 +140,99 @@ test(
       'seeking and seeked events since play() was called (qa.events())',
     ).toEqual([]);
     expectNoRebuffer(await qa.metrics());
+  },
+);
+
+test(
+  'PB-VOD-010 seek into the last segment: playback runs on to ended',
+  { tag: ['@release', '@dash'] },
+  async ({ newSession, streamFor, player }) => {
+    const session = await newSession({
+      stream: streamFor('vod', 'dash'),
+      protocol: 'dash',
+      faults: profile('clean'),
+    });
+    const info = await streamInfoOf(session);
+    const qa = await player(session).open();
+    await qa.waitFor('firstframe');
+    await qa.waitForMediaTime(1);
+
+    const target = middleOfSegment(info, info.segmentCount);
+    const logCursor = await requestLogCursor(session);
+    const seek = await seekAndRecord(qa, target);
+    const ended = await waitForEnded(qa, session, info, {
+      since: seek.since,
+      remainingSec: info.durationSec - target,
+    });
+
+    expect(
+      Math.abs(seek.seeked.mediaTime - target),
+      `distance in seconds between the media time of the seeked event (${seek.seeked.mediaTime} s) and the target (${target} s)`,
+    ).toBeLessThanOrEqual(SEEK_LANDING_TOLERANCE_SEC);
+    expect(
+      Math.abs(ended.mediaTime - info.durationSec),
+      `distance in seconds between the media time of the \`ended\` event (${ended.mediaTime} s) and the end of the title (${info.durationSec} s)`,
+    ).toBeLessThanOrEqual(END_TOLERANCE_SEC);
+    expect((await qa.metrics()).state, 'player state (metrics.state) after the end of the title').toBe(
+      'ended',
+    );
+
+    // The origin's side: the last segment of both tracks was asked for after the seek, and delivered.
+    const { after } = await logAround(session, logCursor);
+    for (const track of ['video', 'audio'] as const) {
+      expect(
+        segmentNumbers(after, info, track, { status: 'ok' }),
+        `${track} segments the origin delivered after the seek (request log): the last one is ${info.segmentCount}`,
+      ).toContain(info.segmentCount);
+    }
+  },
+);
+
+test(
+  'PB-VOD-011 play after ended: play() restarts from the beginning without reloading',
+  { tag: ['@release', '@dash'] },
+  async ({ newSession, player }) => {
+    const session = await newSession({
+      stream: 'vod-cmaf-short',
+      protocol: 'dash',
+      faults: profile('clean'),
+    });
+    const info = await streamInfoOf(session);
+    const qa = await player(session).open();
+    await qa.waitFor('firstframe');
+    await waitForEnded(qa, session, info);
+
+    const since = await qa.cursor();
+    const logCursor = await requestLogCursor(session);
+    await qa.play();
+    const restartedAt = (await qa.waitFor('playing', { since })).mediaTime;
+    const reached = await qa.waitForMediaTime(CONTINUE_SEC);
+    const timeline = await qa.events(since);
+
+    // From the beginning: the first `playing` after play() is at the start of the title and the clock runs on from there. A player that
+    // stayed at the end would have the clock at 12 s here, which `waitForMediaTime(1)` accepts at once: the distance to 1 s is what shows it.
+    expect(
+      restartedAt,
+      `media time of the playing event after play() (qa.events()); the title had ended at ${info.durationSec} s`,
+    ).toBeLessThanOrEqual(RESTART_TOLERANCE_SEC);
+    expect(
+      reached - CONTINUE_SEC,
+      `media time reached (${reached} s) beyond the ${CONTINUE_SEC} s the wait was for: the clock did not restart from the beginning`,
+    ).toBeLessThanOrEqual(RESUME_TOLERANCE_SEC);
+    const metrics = await qa.metrics();
+    expect(metrics.state, 'player state (metrics.state) after play() on an ended title').toBe('playing');
+
+    // Without reloading: the timeline has no load, and the origin was not asked for the manifest again.
+    expect(
+      timeline.filter((event) =>
+        ['load-requested', 'manifest-loaded', 'loaded', 'unloaded'].includes(event.name),
+      ),
+      'load, manifest and unload events since play() was called (qa.events())',
+    ).toEqual([]);
+    const { after } = await logAround(session, logCursor);
+    expect(
+      requestsFor(after, { kind: 'manifest' }),
+      'manifest requests the origin saw since play() was called (request log)',
+    ).toEqual([]);
   },
 );
