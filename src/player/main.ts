@@ -3,7 +3,7 @@ import { configFor, mergePatches } from './configs.ts';
 import { PlayerHook } from './hook.ts';
 import type { PlayerEnvironment, PlayerLike, VideoLike } from './hook.ts';
 import { createHud } from './hud.ts';
-import { parsePlayerParams } from './params.ts';
+import { clearKeyPatch, parsePlayerParams } from './params.ts';
 
 // shaka.js, Shaka's own compiled build copied verbatim by tools/build-player.ts, is loaded by index.html before this script
 // and defines this global. It is a second script rather than part of this bundle so that the page runs exactly the bytes
@@ -66,8 +66,12 @@ async function createEnvironment(): Promise<PlayerEnvironment> {
 }
 
 async function start(): Promise<void> {
-  // The preset's overrides, plus the one page parameter that is a Shaka setting. Applied before anything loads.
-  const patch = mergePatches(configFor(params.config), params.abr ? {} : { abr: { enabled: false } });
+  // The preset's overrides, plus the page parameters that are Shaka settings (ABR off, a ClearKey pair). Applied before anything loads.
+  const patch = mergePatches(
+    configFor(params.config),
+    params.abr ? {} : { abr: { enabled: false } },
+    clearKeyPatch(params.clearKey),
+  );
   await hook.boot(createEnvironment, patch);
   try {
     await hook.ready;

@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { PARAM_DEFAULTS, parsePlayerParams } from '../../../src/player/params.ts';
+import { PARAM_DEFAULTS, clearKeyPatch, parsePlayerParams } from '../../../src/player/params.ts';
 import type { ResolvedPlayerParams } from '../../../src/player/params.ts';
 import type { PlayerPageParams } from '../../../src/shared/qa.ts';
 import { playerUrl } from '../../../src/shared/urls.ts';
+
+// Public throw-away values, the shape of the test stream's pair (16 bytes each as hex): they protect nothing.
+const KEY_ID = '706c61796261636b70726f6f662d6964';
+const KEY = '706c61796261636b70726f6f666b6579';
 
 function queryOf(url: string): string {
   const mark = url.indexOf('?');
@@ -18,6 +22,7 @@ function resolved(p: PlayerPageParams): ResolvedPlayerParams {
     start: p.start ?? null,
     abr: p.abr ?? true,
     hud: p.hud ?? false,
+    clearKey: p.clearKey ?? null,
   };
 }
 
@@ -40,6 +45,7 @@ describe('round trip with playerUrl', () => {
     ],
     ['a manifest that is an absolute URL', { manifest: 'http://127.0.0.1:4640/s/x/v/hls/master.m3u8' }],
     ['a manifest with non-ASCII characters', { manifest: '/s/é/ü/日本.mpd' }],
+    ['a ClearKey pair', { manifest: '/m.mpd', clearKey: { keyId: KEY_ID, key: KEY } }],
   ];
 
   it.each(cases)('%s', (_name, input) => {
@@ -52,10 +58,17 @@ describe('round trip with playerUrl', () => {
     const url = playerUrl({ manifest: '/m.mpd', config: 'B' });
     expect(parsePlayerParams(url.slice(url.indexOf('?'))).params.config).toBe('B');
   });
+
+  it('hands a stream catalog entry (StreamInfo.drm, with its scheme) over as it is: only the pair travels', () => {
+    const drm = { scheme: 'clearkey' as const, keyId: KEY_ID, key: KEY };
+    const query = queryOf(playerUrl({ manifest: '/m.mpd', clearKey: drm }));
+    expect(new URLSearchParams(query).get('clearKey')).toBe(`${KEY_ID}:${KEY}`);
+    expect(parsePlayerParams(query).params.clearKey).toEqual({ keyId: KEY_ID, key: KEY });
+  });
 });
 
 describe('defaults', () => {
-  it('are muted autoplay with configuration A, ABR on, no HUD, no manifest and no start position', () => {
+  it('are muted autoplay with configuration A, ABR on, no HUD, no manifest, no start position and no key', () => {
     const { params, problems } = parsePlayerParams('');
     expect(params).toEqual(PARAM_DEFAULTS);
     expect(params).toEqual({
@@ -66,6 +79,7 @@ describe('defaults', () => {
       start: null,
       abr: true,
       hud: false,
+      clearKey: null,
     });
     expect(problems).toEqual([]);
   });
@@ -101,6 +115,21 @@ describe('what is accepted', () => {
 
   it('takes the first of a repeated parameter', () => {
     expect(parsePlayerParams('config=B&config=A').params.config).toBe('B');
+  });
+
+  it('reads a ClearKey pair of two 32-digit hex numbers, in any case, as lower case', () => {
+    const { params, problems } = parsePlayerParams(
+      `clearKey=${KEY_ID.toUpperCase()}:${KEY.slice(0, 16).toUpperCase()}${KEY.slice(16)}`,
+    );
+    expect(params.clearKey).toEqual({ keyId: KEY_ID, key: KEY });
+    expect(problems).toEqual([]);
+  });
+
+  it('reads the pair with its colon written as the browser or playerUrl writes it (%3A)', () => {
+    expect(parsePlayerParams(`clearKey=${KEY_ID}%3A${KEY}`).params.clearKey).toEqual({
+      keyId: KEY_ID,
+      key: KEY,
+    });
   });
 });
 
@@ -142,5 +171,48 @@ describe('what is refused: reported, and the default is kept', () => {
   it('reports every bad parameter, not only the first', () => {
     const { problems } = parsePlayerParams('muted=x&config=Z&start=-5');
     expect(problems).toHaveLength(3);
+  });
+
+  const uuid = KEY_ID.replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, '$1-$2-$3-$4-$5');
+  it.each([
+    ['an empty value', ''],
+    ['no colon', KEY_ID],
+    ['nothing after the colon', `${KEY_ID}:`],
+    ['nothing before the colon', `:${KEY}`],
+    ['two colons', `${KEY_ID}:${KEY}:${KEY}`],
+    ['a key id of 31 digits', `${KEY_ID.slice(1)}:${KEY}`],
+    ['a key of 33 digits', `${KEY_ID}:${KEY}0`],
+    ['a key that is not hex', `${KEY_ID}:${'g'.repeat(32)}`],
+    ['a key id written as a UUID, with dashes', `${uuid}:${KEY}`],
+    [
+      'the base64url form of the pair (22 characters each), which Shaka would take',
+      `AAAAAAAAAAAAAAAAAAAAAA:AAAAAAAAAAAAAAAAAAAAAA`,
+    ],
+  ])(
+    'clearKey with %s: no key is configured, and the report does not repeat what was given',
+    (_what, raw) => {
+      const { params, problems } = parsePlayerParams(`clearKey=${encodeURIComponent(raw)}`);
+      expect(params.clearKey).toBeNull();
+      expect(problems).toHaveLength(1);
+      expect(problems[0]).toContain('clearKey');
+      expect(problems[0]).toContain('no key is configured');
+      for (const part of raw.split(':')) if (part.length >= 8) expect(problems[0]).not.toContain(part);
+    },
+  );
+
+  it('a bad pair does not discard the other parameters', () => {
+    const { params, problems } = parsePlayerParams(`manifest=%2Fm.mpd&clearKey=${KEY_ID}&muted=0`);
+    expect(params).toMatchObject({ manifest: '/m.mpd', muted: false, clearKey: null });
+    expect(problems).toHaveLength(1);
+  });
+});
+
+describe('clearKeyPatch: what the page hands to Shaka before the load', () => {
+  it("is Shaka's drm.clearKeys, a map from the key id to the key", () => {
+    expect(clearKeyPatch({ keyId: KEY_ID, key: KEY })).toEqual({ drm: { clearKeys: { [KEY_ID]: KEY } } });
+  });
+
+  it('is empty without a pair: a page that was not given a key configures nothing', () => {
+    expect(clearKeyPatch(null)).toEqual({});
   });
 });
