@@ -22,7 +22,13 @@ export async function sampleLatency(
   const { from, seconds, stepSec = 1 } = window;
   const samples: LatencySample[] = [];
   for (let elapsed = stepSec; elapsed <= seconds; elapsed += stepSec) {
-    await qa.waitForMediaTime(from + elapsed);
+    // The window may end in a stall: what the latency did until then is the evidence, and the samples would be lost with the throw.
+    // The message carries the original one, so it is not attached again as a `cause` (Playwright would print it twice: ADR-078).
+    await qa.waitForMediaTime(from + elapsed).catch((error: Error) => {
+      throw new Error(
+        `${error.message}\nLatency (metrics.live.latencyMs) at each second of media time before the clock stopped: ${describeSeries(samples, from)}`,
+      );
+    });
     const metrics = await qa.metrics();
     samples.push({ mediaTime: metrics.playback.currentTime, latencyMs: metrics.live.latencyMs });
   }

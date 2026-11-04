@@ -1,4 +1,5 @@
 import type { LiveClockInfo, RequestLogEntry } from '../../../src/shared/api.ts';
+import { DEFAULT_WAIT_MS } from '../support/player.ts';
 import type { PlayerHandle } from '../support/player.ts';
 import type { TestSession } from '../support/session.ts';
 import { waitForRequests } from '../support/waiting.ts';
@@ -62,7 +63,13 @@ export async function readCheckpoints(
   const checkpoints: Checkpoint[] = [];
   let answered = await waitForRequests(session, options.isRefresh, { count: 1 });
   for (let refresh = 1; refresh <= options.refreshes; refresh++) {
-    answered = await waitForRequests(session, options.isRefresh, { count: 1 + refresh });
+    answered = await waitForRequests(session, options.isRefresh, { count: 1 + refresh }).catch(
+      (error: Error) => {
+        throw new Error(
+          `the origin answered ${answered.length - 1} refreshes with a 200 and then no more within ${DEFAULT_WAIT_MS / 1000} s, so refresh ${refresh} of ${options.refreshes} never happened: the player stopped tracking the window, or what it asked for was refused.\n${error.message}`,
+        );
+      },
+    );
     const metrics = await qa.metrics();
     const edge = await publishedEdge(session);
     checkpoints.push({

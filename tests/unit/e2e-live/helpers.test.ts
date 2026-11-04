@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { LiveClockInfo, RequestLogEntry } from '../../../src/shared/api.ts';
+import { ServiceClient } from '../../../src/lab/service-client.ts';
+import type { LiveClockInfo, RequestLogEntry, SessionDetail } from '../../../src/shared/api.ts';
 import { edgeAt, firstVideoSegmentRequest, liveClockOf, publishedEndSec } from '../../e2e/live/edge.ts';
 import {
   advanceProblems,
@@ -7,9 +8,11 @@ import {
   fetchesVideoSegmentFrom,
   gapsBetween,
   rangeProblems,
+  readCheckpoints,
 } from '../../e2e/live/refresh.ts';
 import type { Checkpoint } from '../../e2e/live/refresh.ts';
 import { describeSeries, measuredLatencies, percentile, sampleLatency } from '../../e2e/live/series.ts';
+import type { TestSession } from '../../e2e/support/session.ts';
 
 // The helpers of the live specs (tests/e2e/live): they decide whether a spec passes, so they are checked without a browser. The cases
 // are the ones where a wrong answer would make a spec pass for the wrong reason: the edge arithmetic at a segment boundary, what counts
@@ -227,5 +230,69 @@ describe('a latency series', () => {
     expect(waits).toEqual([25, 26, 27, 28]);
     expect(samples.map((sample) => sample.latencyMs)).toEqual([6025, 6026, 6027, 6028]);
     expect(await sampleLatency(handle, { from: 0, seconds: 4, stepSec: 2 })).toHaveLength(2);
+  });
+
+  it('keeps what it measured when the clock stops, because that is the evidence of the stall', async () => {
+    let reads = 0;
+    const handle = {
+      waitForMediaTime: (seconds: number): Promise<number> =>
+        reads < 2
+          ? Promise.resolve(seconds)
+          : Promise.reject(new Error(`qa.waitForMediaTime(${seconds}) timed out`)),
+      metrics: () => {
+        reads += 1;
+        return Promise.resolve({
+          playback: { currentTime: 24 + reads },
+          live: { latencyMs: 6100 + reads * 1000 },
+        }) as never;
+      },
+    };
+    await expect(sampleLatency(handle, { from: 24, seconds: 5 })).rejects.toThrow(
+      /timed out[\s\S]*before the clock stopped: \+1 s 7100 ms, \+2 s 8100 ms/,
+    );
+  });
+});
+
+describe('readCheckpoints', () => {
+  class FakeClient extends ServiceClient {
+    constructor(
+      private readonly entries: RequestLogEntry[],
+      private readonly edge: number,
+    ) {
+      super('http://127.0.0.1:1');
+    }
+    override log(_id: string, since = 0): Promise<RequestLogEntry[]> {
+      return Promise.resolve(this.entries.filter((e) => e.seq > since));
+    }
+    override detail(): Promise<SessionDetail> {
+      return Promise.resolve({ live: { ...live, edgeNumber: this.edge } } as unknown as SessionDetail);
+    }
+  }
+
+  it('reads the player and the origin after each answered refresh, and ignores the answer that came with the load', async () => {
+    const manifests = [90, 2092, 4094, 6096].map((ms, index) =>
+      entry(index + 1, { kind: 'manifest', rep: undefined, number: undefined, msSinceStart: ms }),
+    );
+    const session = {
+      id: 's1',
+      stream: 'live-cmaf',
+      live,
+      service: new FakeClient(manifests, 18),
+    } as unknown as TestSession;
+    let time = 24;
+    const qa = {
+      metrics: () =>
+        Promise.resolve({ playback: { currentTime: (time += 2) }, live: { latencyMs: 6200 } }) as never,
+    };
+    const { checkpoints, answered } = await readCheckpoints(session, qa, {
+      isRefresh: answeredManifest(),
+      refreshes: 3,
+    });
+    expect(answered).toHaveLength(4);
+    expect(checkpoints).toEqual([
+      { refresh: 1, arrivedMs: 2092, mediaTime: 26, latencyMs: 6200, edge: 18 },
+      { refresh: 2, arrivedMs: 4094, mediaTime: 28, latencyMs: 6200, edge: 18 },
+      { refresh: 3, arrivedMs: 6096, mediaTime: 30, latencyMs: 6200, edge: 18 },
+    ]);
   });
 });
