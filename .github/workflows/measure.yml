@@ -1,0 +1,317 @@
+name: measure
+
+run-name: measure ${{ inputs.task }} ${{ inputs.engine }} ${{ inputs.runner }} (${{ inputs.label }})
+
+# Long measurements on GitHub's runners, started by hand, so that they run in parallel with the work on a workstation: the performance
+# baseline and its A/A check, an A/B experiment, the readiness checks, a soak and a flake collection. It runs for nobody but people who
+# can already dispatch a workflow (that takes write access) and never for a pull request. Nothing here decides anything: the job
+# uploads what the task wrote, and every number carries the environment id of the runner that measured it.
+# How to dispatch it, how to download the result, what each runner is called and why a shared VM is noisier than a quiet workstation:
+# docs/CI.md ("Measurements on GitHub runners"). The decisions: ADR-175 to ADR-177 in docs/decisions/ci-measure.md.
+#
+# What the inputs may do (ADR-175): they reach the shell only through `env:` (no script contains an expression, so an argument is data
+# and never code), `task`, `runner` and `engine` are closed choices, and the token is read-only. tests/unit/ci/measure.test.ts keeps it.
+#
+# Each task runs the command of its npm script. Three are not on main yet, and the test lists them as pending with their branch:
+# perf-aa needs perf/aa.ts (p5/perf), ab needs ab/run.ts (p6/ab), readiness and soak need live/*.ts (p7/live). A branch is measured by
+# dispatching on a ref that has both the code and this file.
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: What to run
+        type: choice
+        required: true
+        options:
+          - perf-baseline
+          - perf-aa
+          - ab
+          - readiness
+          - soak
+          - flake-collect
+      runner:
+        description: Where to run it
+        type: choice
+        default: ubuntu-24.04
+        options:
+          - ubuntu-24.04
+          - macos-15
+      engine:
+        description: The browser to install, and the profile, engine or project the task is given (chromium-cpu4x installs Chromium)
+        type: choice
+        default: chromium
+        options:
+          - chromium
+          - firefox
+          - webkit
+          - chromium-cpu4x
+      args:
+        description: Extra arguments for the task, split on spaces and never evaluated (no quoting; a JSON value must not contain a space)
+        type: string
+        default: ''
+      repeat:
+        description: perf-aa only, how many times the gate is run against its own baseline (1 to 50)
+        type: number
+        default: 10
+      timeout_minutes:
+        description: The job's time limit, 1 to 340; the task itself gets 10 minutes less, so that the results are still uploaded
+        type: number
+        default: 60
+      label:
+        description: Names the artifact, measure-<task>-<label>-<runner> (anything but letters, digits, dots, dashes and underscores becomes a dash)
+        type: string
+        default: run
+
+permissions:
+  contents: read
+
+# One measurement per task, label, runner and engine at a time, and a running one is never cancelled. A third dispatch with the same
+# four values cancels the second one that is waiting, so give each measurement its own label.
+concurrency:
+  group: measure-${{ inputs.task }}-${{ inputs.label }}-${{ inputs.runner }}-${{ inputs.engine }}
+  cancel-in-progress: false
+
+jobs:
+  streams:
+    name: streams
+    uses: ./.github/workflows/streams.yml
+
+  measure:
+    name: measure (${{ inputs.task }}, ${{ inputs.engine }}, ${{ inputs.runner }})
+    needs: streams
+    runs-on: ${{ inputs.runner }}
+    # The net under the task, which has its own limit ten minutes shorter. 360 minutes is the most a hosted job may run.
+    timeout-minutes: ${{ inputs.timeout_minutes > 340 && 340 || inputs.timeout_minutes < 1 && 1 || inputs.timeout_minutes }}
+    env:
+      # Playwright's own runs (the flake collection) use the workers of the merge gate: one on the three-CPU macOS runner (ci.yml).
+      PB_WORKERS: ${{ inputs.runner == 'macos-15' && 1 || 2 }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The A/B runner asks git when the pre-registration was committed, and a shallow clone would answer with the tip.
+          fetch-depth: 0
+          persist-credentials: false
+
+      # The artifact name and the limit of the task, from the inputs and nothing else. It cannot fail, so the upload below always has
+      # a name: the label is the one free text of the workflow, and a name with a slash or a colon is refused by the upload.
+      - name: Name the run
+        id: meta
+        env:
+          TASK: ${{ inputs.task }}
+          RUNS_ON: ${{ inputs.runner }}
+          LABEL: ${{ inputs.label }}
+          TIMEOUT: ${{ inputs.timeout_minutes }}
+        run: |
+          label="$(printf '%s' "$LABEL" | tr -c 'A-Za-z0-9._-' '-' | cut -c1-60)"
+          if [ -z "$label" ]; then label=run; fi
+          task_timeout=50
+          case "$TIMEOUT" in
+            [0-9] | [0-9][0-9] | [0-9][0-9][0-9])
+              task_timeout=$((10#$TIMEOUT > 340 ? 330 : 10#$TIMEOUT - 10))
+              if [ "$task_timeout" -lt 1 ]; then task_timeout=1; fi
+              ;;
+          esac
+          {
+            echo "artifact=measure-${TASK}-${label}-${RUNS_ON}"
+            echo "task_timeout=$task_timeout"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Check the inputs
+        env:
+          TASK: ${{ inputs.task }}
+          ENGINE: ${{ inputs.engine }}
+          TIMEOUT: ${{ inputs.timeout_minutes }}
+          REPEAT: ${{ inputs.repeat }}
+        run: |
+          fail() {
+            echo "::error::$1"
+            exit 2
+          }
+          case "$TASK" in
+            ab | readiness | soak)
+              if [ "$ENGINE" = chromium-cpu4x ]; then
+                fail "$TASK knows the engines chromium, firefox and webkit, and not chromium-cpu4x"
+              fi
+              ;;
+          esac
+          case "$TIMEOUT" in
+            [0-9] | [0-9][0-9] | [0-9][0-9][0-9]) ;;
+            *) fail "timeout_minutes must be a whole number of minutes, from 1 to 340" ;;
+          esac
+          if [ "$TIMEOUT" -lt 1 ] || [ "$TIMEOUT" -gt 340 ]; then
+            fail "timeout_minutes must be a whole number of minutes, from 1 to 340"
+          fi
+          if [ "$TASK" = perf-aa ]; then
+            case "$REPEAT" in
+              [0-9] | [0-9][0-9]) ;;
+              *) fail "repeat must be a whole number of passes, from 1 to 50" ;;
+            esac
+            if [ "$REPEAT" -lt 1 ] || [ "$REPEAT" -gt 50 ]; then
+              fail "repeat must be a whole number of passes, from 1 to 50"
+            fi
+          fi
+
+      - name: Set up Node, the streams and the browser
+        uses: ./.github/actions/setup
+        with:
+          streams: 'true'
+          browser: ${{ inputs.engine == 'chromium-cpu4x' && 'chromium' || inputs.engine }}
+      - name: Build the player
+        run: npm run build:player
+
+      # The machine, before the task starts. The environment id is what the code itself will call this runner (src/shared/env.ts).
+      - name: Record the machine
+        shell: bash
+        env:
+          TASK: ${{ inputs.task }}
+          ENGINE: ${{ inputs.engine }}
+          RUNS_ON: ${{ inputs.runner }}
+          LABEL: ${{ inputs.label }}
+        run: |
+          mkdir -p reports
+          {
+            echo "measure: $TASK, engine $ENGINE, runner $RUNS_ON"
+            echo "label: $LABEL"
+            echo "started: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "commit: $(git rev-parse HEAD) ($GITHUB_REF_NAME)"
+            echo "environment id: $(npx tsx -e 'import("./src/shared/env.ts").then((m) => console.log(m.detectEnvId()))')"
+            echo "runner: ${RUNNER_OS:-?} ${RUNNER_ARCH:-?}, ${RUNNER_ENVIRONMENT:-?}, image ${ImageOS:-?} ${ImageVersion:-?}"
+            echo "uname: $(uname -a)"
+            if [ "$(uname -s)" = Darwin ]; then
+              echo "cpus: $(sysctl -n hw.ncpu)"
+              echo "cpu: $(sysctl -n machdep.cpu.brand_string 2>/dev/null || echo unknown)"
+              echo "memory: $(($(sysctl -n hw.memsize) / 1048576)) MiB"
+              echo "os: $(sw_vers -productName) $(sw_vers -productVersion)"
+            else
+              echo "cpus: $(nproc)"
+              echo "cpu: $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2- | sed 's/^ *//')"
+              echo "memory: $(awk '/MemTotal/ { printf "%d MiB", $2 / 1024 }' /proc/meminfo)"
+              echo "os: $(grep PRETTY_NAME /etc/os-release | cut -d= -f2 | tr -d '"')"
+            fi
+            echo "uptime: $(uptime)"
+            echo "node: $(node --version), npm: $(npm --version)"
+            echo "playwright: $(npx playwright --version)"
+            if command -v ffmpeg >/dev/null 2>&1; then
+              echo "ffmpeg: $(ffmpeg -version | head -n 1)"
+            else
+              echo "ffmpeg: not installed (the streams come from the streams job)"
+            fi
+          } | tee reports/measure-machine.txt
+
+      # The only step that runs the task. The extra arguments are split on spaces into words and handed over as words: nothing evaluates
+      # them. The engine goes where each CLI takes it (--profile of the performance harness, --engine of the live commands, --project of
+      # the flake collector); the A/B plan names its own engine, so `engine` only picks the browser to install for it.
+      - name: Run the task
+        shell: bash
+        timeout-minutes: ${{ fromJSON(steps.meta.outputs.task_timeout) }}
+        env:
+          TASK: ${{ inputs.task }}
+          ENGINE: ${{ inputs.engine }}
+          ARGS: ${{ inputs.args }}
+          REPEAT: ${{ inputs.repeat }}
+        run: |
+          ARGV=()
+          read -r -a ARGV <<< "$ARGS"
+          case "$TASK" in
+            perf-baseline)
+              npm run perf:baseline -- --profile "$ENGINE" "${ARGV[@]}"
+              ;;
+            perf-aa)
+              # The gate against its own baseline, REPEAT times, each pass with a report of its own; perf/aa.ts then counts the false
+              # alarms. A pass that exits 1 is a result (a false positive), one that exits 2 is a measurement that cannot be trusted.
+              mkdir -p reports/perf-aa
+              exits=""
+              pass=1
+              while [ "$pass" -le "$REPEAT" ]; do
+                echo "::group::A/A pass $pass of $REPEAT"
+                code=0
+                npm run perf:gate -- --profile "$ENGINE" --reports-dir "reports/perf-aa/pass-$pass" "${ARGV[@]}" || code=$?
+                echo "pass $pass: exit code $code"
+                exits="$exits $code"
+                echo "::endgroup::"
+                pass=$((pass + 1))
+              done
+              echo "exit codes of the passes:$exits"
+              npx tsx perf/aa.ts reports/perf-aa/pass-*/*/"$ENGINE".json
+              case " $exits " in
+                *" 2 "*)
+                  echo "::error::A pass could not be trusted (exit code 2): the A/A summary is incomplete"
+                  exit 1
+                  ;;
+              esac
+              ;;
+            ab)
+              npm run ab -- "${ARGV[@]}"
+              ;;
+            readiness)
+              npm run readiness -- --engine "$ENGINE" "${ARGV[@]}"
+              ;;
+            soak)
+              npm run soak -- --engine "$ENGINE" "${ARGV[@]}"
+              ;;
+            flake-collect)
+              npm run flake:collect -- --project "$ENGINE" "${ARGV[@]}"
+              ;;
+            *)
+              echo "::error::unknown task"
+              exit 2
+              ;;
+          esac
+
+      # The load and the files the task left, whatever it did. The files are the ones newer than the machine record (what is in the
+      # artifact next to them is what the checkout already had: docs/results, perf/baselines), so the record is only appended to after
+      # the files have been listed.
+      - name: Record the machine again and what the task wrote
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p reports
+          if [ -f reports/measure-machine.txt ]; then
+            {
+              echo "files the task wrote or changed under perf/baselines, docs/results and flake/history:"
+              { find perf/baselines docs/results flake/history -type f -newer reports/measure-machine.txt 2>/dev/null || true; } | sort
+            } > reports/measure-produced.txt
+            {
+              echo
+              echo "finished: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+              echo "uptime: $(uptime)"
+            } >> reports/measure-machine.txt
+            cat reports/measure-produced.txt
+          else
+            echo "the job stopped before the machine was recorded" | tee reports/measure-produced.txt
+          fi
+
+      - name: Upload the results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.meta.outputs.artifact }}
+          path: |
+            perf/baselines
+            docs/results
+            flake/history
+            reports
+            test-results
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Summarise
+        if: always()
+        shell: bash
+        env:
+          RUN_ID: ${{ github.run_id }}
+          ARTIFACT: ${{ steps.meta.outputs.artifact }}
+          STATUS: ${{ job.status }}
+        run: |
+          {
+            echo "### $ARTIFACT: $STATUS"
+            echo
+            echo 'Download: `gh run download '"$RUN_ID"' --name '"$ARTIFACT"' --dir results/'"$ARTIFACT"'`'
+            echo
+            if [ -f reports/measure-machine.txt ]; then
+              echo '```text'
+              cat reports/measure-machine.txt
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
