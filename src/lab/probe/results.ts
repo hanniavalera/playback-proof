@@ -195,3 +195,10 @@ export function redactPaths(text: string, home: string, tmp: string): string {
   if (tmp && tmp !== '/') out = out.split(tmp).join('<tmpdir>');
   return out;
 }
+
+// Playwright colours its call log with ANSI escapes; they would end up as control characters in committed JSON and Markdown.
+const ANSI_ESCAPE = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*[A-Za-z]`, 'g');
+
+export function stripAnsi(text: string): string {
+  return text.replace(ANSI_ESCAPE, '');
+}

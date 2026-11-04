@@ -326,8 +326,14 @@ function renderGap(gap: LabGap, index: number, files: readonly ResultFile[]): st
   if (isLaunchFailure(engine)) {
     out.push(`### Gap ${index}: ${name} does not start on ${file.envId}`, '');
     out.push(`- **Environment, engine:** ${envTitle(file)}; ${name}.`);
-    out.push('- **Symptom:** the browser process could not be launched. Its own error text:', '');
-    out.push('  ```text', ...engine.launchFailed.split('\n').map((line) => `  ${line}`), '  ```', '');
+    // Playwright repeats the browser's own log under "Call log:"; the document shows the browser's part, the JSON all of it.
+    const browserLog = engine.launchFailed.split(/\n\s*Call log:/)[0] ?? engine.launchFailed;
+    const shown = browserLog.split('\n').map((line) => (line.trim() === '' ? '' : `  ${line.trimEnd()}`));
+    out.push(
+      `- **Symptom:** the browser process could not be launched. Its own error text${browserLog === engine.launchFailed ? '' : " (up to Playwright's call log, which repeats it; the whole text is in the JSON)"}:`,
+      '',
+    );
+    out.push('  ```text', ...shown, '  ```', '');
     out.push(`- **Evidence:** ${link}, ${code(`engines.${name}.launchFailed`)}.`);
     const elsewhere = files
       .filter((other) => other.envId !== file.envId)
@@ -480,7 +486,7 @@ export function renderMatrix(inputs: readonly ResultFile[]): string {
     `- A **case** appends one or two ffmpeg-generated tracks (test patterns, 4 s, a keyframe every 2 s) to a ${code('MediaSource')}, plays the element, and passes only when media time passes the threshold **and**, for video, frames were presented. The element is muted and the data is fetched after the SourceBuffers exist, like a player page does it (the sensitivity table shows what happens when the page behaves differently). The probe never trusts ${code('MediaSource.isTypeSupported')}: a browser can claim support and still fail to play.`,
     '- A **cell** is the verdict over all attempts of a case, as `verdict passes/attempts`: `ok 5/5` decoded in every attempt; `intermittent 2/5` decoded in some; `fail 0/5` in none. `launch failed` means the engine did not start in that environment; `—` means the case was not run.',
     '- **Claims** are what `MediaSource.isTypeSupported` answered for every track type of the case. A cell is flagged **claims true but fails** when the engine claims support yet at least one attempt did not decode: the capability report cannot be trusted there. `claims false but plays` is the opposite disagreement. A plain `(claims false)` next to a failure is an honest "not supported".',
-    '- Every attempt runs in a fresh browser process unless the run says otherwise (state leaks between cases in some engines), and the attempts repeat so that an intermittent engine shows as such. A time limit exists only as a safety net: a timeout is reported as a failure at the stage it happened in, never used as a measurement.',
+    '- Every attempt runs in a fresh browser process unless the run says otherwise, so one attempt cannot influence the next (a first probe suspected state leaking between cases in Linux WebKit; fresh processes remove the question), and the attempts repeat so that an intermittent engine shows as such. A time limit exists only as a safety net: a timeout is reported as a failure at the stage it happened in, never used as a measurement.',
     "- Failure text is the engine's own: `[stage] error`, where the stage is the step of the probe that failed (`launch`, `navigate`, `setup`, `sourceopen`, `addSourceBuffer`, `fetch`, `append`, `endOfStream`, `play`, `currentTime`, `frames`, `evaluate`), plus the media element's `MediaError` when it had one.",
     '- Results of different environments are never merged: a number measured on a laptop says nothing about a CI runner.',
     '',

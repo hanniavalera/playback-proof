@@ -112,6 +112,10 @@ describe('renderMatrix', () => {
     const gaps = document.split('## Documented gaps')[1] ?? '';
     expect(gaps).toContain('### Gap 2: firefox does not start on fixture-mac-arm64');
     expect(gaps).toContain('Could not find profile folder');
+    // The document shows the browser's own log; Playwright's repeated call log stays in the JSON only.
+    expect(gaps).not.toContain('Call log:');
+    expect(gaps).toContain('the whole text is in the JSON');
+    expect(gaps).not.toMatch(/ +\n/);
     expect(gaps).toContain('firefox runs the playback suites in `fixture-linux-arm64`');
     expect(gaps).toContain('`engines.firefox.launchFailed`');
   });

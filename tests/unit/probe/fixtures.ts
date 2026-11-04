@@ -157,7 +157,7 @@ export function twoEnvironments(): ResultFile[] {
     }),
     firefox: {
       launchFailed:
-        'browserType.launch: Failed to launch the browser process.\nBrowser logs:\n<launching> ~/fixture/firefox -headless\nCould not find profile folder',
+        'browserType.launch: Failed to launch the browser process.\nBrowser logs:\n\n<launching> ~/fixture/firefox -headless\nCould not find profile folder\nCall log:\n  - <launching> ~/fixture/firefox -headless\n  - Could not find profile folder',
     },
     webkit: probedEngine({
       version: '3.0',

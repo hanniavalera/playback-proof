@@ -8,6 +8,7 @@ import {
   dominantFailure,
   normalizeError,
   redactPaths,
+  stripAnsi,
   summarizeAttempts,
 } from '../../../src/lab/probe/results.ts';
 import type { AttemptResult } from '../../../src/lab/probe/results.ts';
@@ -147,6 +148,14 @@ describe('error text helpers', () => {
 
   it('does not mangle text when the home directory is the root (a container user without a home)', () => {
     expect(redactPaths('/etc/x and /tmp/y', '/', '/')).toBe('/etc/x and /tmp/y');
+  });
+
+  it('strips the colour codes Playwright puts into its call log (they must not reach committed files)', () => {
+    const esc = String.fromCharCode(27);
+    expect(stripAnsi(`${esc}[2m  - <launched> pid=1${esc}[22m ${esc}[1;31mred${esc}[0m`)).toBe(
+      '  - <launched> pid=1 red',
+    );
+    expect(stripAnsi('plain [2m text')).toBe('plain [2m text');
   });
 
   it('names MediaError codes the way the platform does', () => {

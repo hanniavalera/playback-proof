@@ -4,7 +4,7 @@ import { DEFAULT_PROFILE, FILE_FORMATS, PROBE_FILE_IDS, mimeTypesOf } from './fo
 import type { ControlCase, PageProfile, ProbeCase } from './formats.ts';
 import { collectBrowserFacts, probeInPage } from './in-page.ts';
 import type { BrowserFacts, InPageOutcome, InPageSpec } from './in-page.ts';
-import { normalizeError, redactPaths, summarizeAttempts } from './results.ts';
+import { normalizeError, redactPaths, stripAnsi, summarizeAttempts } from './results.ts';
 import type { AttemptResult, CaseResult, EngineResult, ProbeStage } from './results.ts';
 import { startStaticServer } from './static-server.ts';
 import type { StaticServer } from './static-server.ts';
@@ -82,7 +82,7 @@ function resolveOptions(options: RunOptions): ResolvedOptions {
 }
 
 function scrub(text: string): string {
-  return normalizeError(redactPaths(text, homedir(), tmpdir()));
+  return normalizeError(redactPaths(stripAnsi(text), homedir(), tmpdir()));
 }
 
 /** The first lines of an error: Playwright appends long call logs that say nothing more. */
