@@ -1,0 +1,435 @@
+{
+  "schemaVersion": 1,
+  "kind": "ab-report",
+  "experiment": {
+    "id": "pipeline-check",
+    "kind": "pipeline-check",
+    "catalogId": null,
+    "title": "Pipeline check: six sessions that prove the harness runs end to end (it decides nothing)"
+  },
+  "preregistration": {
+    "path": "ab/prereg/pipeline-check.json",
+    "sha256": "c52c09eae2d7b9b0101610b3e25dcd5a9b9ddaf728adb099ad141984f3d98cdd",
+    "proves": true,
+    "provenance": "The pre-registration file was committed unmodified in 1a4095b on 2026-11-04T10:29:02-06:00, before the run started (2026-11-04T16:46:41.756Z)."
+  },
+  "environment": {
+    "envId": "local-darwin-arm64",
+    "host": {
+      "os": {
+        "platform": "darwin",
+        "arch": "arm64",
+        "release": "27.2.0",
+        "name": "macOS 27.2"
+      },
+      "cpus": 12,
+      "memoryGiB": 16,
+      "node": "v22.11.0",
+      "playwright": "1.64.1",
+      "git": {
+        "commit": "1dce76c",
+        "dirty": false
+      }
+    },
+    "browser": {
+      "name": "chromium",
+      "version": "156.0.8078.4",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+    },
+    "ffmpeg": "9.0.2",
+    "streams": {
+      "vod-cmaf": "66738540703f45d7ccfb51c91b8ccd40fe53bec59cb7bbef41fde9d03270ec06",
+      "vod-cmaf-short": "52288c8dbedb24753b7ce482292ae144a3aa33e57d68e145db6dfcdcb17d1dd0",
+      "vod-webm": "ed602bbaec0d94a1adda7ad70fefdc1652fbaf8a0d27001e9f287e85b8630c5e",
+      "live-cmaf": "edf24480e4244b97e3031cb01a542d0b859a148b16bbbaac2b63af5796a4cdb9",
+      "vod-cmaf-clearkey": "f1d6817ae45923e9bad0afba463d325a8050c35c158ea071d28927f5c1cd024a"
+    }
+  },
+  "run": {
+    "startedAt": "2026-11-04T16:46:41.756Z",
+    "finishedAt": "2026-11-04T16:47:23.526Z",
+    "command": "npm run ab -- --prereg ab/prereg/pipeline-check.json --port 4720 --out-dir docs/results/ab/pipeline-check"
+  },
+  "design": {
+    "engine": "chromium",
+    "sessionsPerArm": 2,
+    "warmupSessionsPerArm": 1,
+    "alpha": 0.05,
+    "bootstrapResamples": 1000,
+    "seed": 20261104,
+    "interleaving": "blocks of two, the arm that goes first alternates"
+  },
+  "warnings": [],
+  "validity": {
+    "valid": true,
+    "evidence": false,
+    "gates": [
+      {
+        "id": "preregistration",
+        "title": "Pre-registration fixed first",
+        "passed": true,
+        "detail": "The plan embedded in the results hashes to c52c09eae2d7b9b0101610b3e25dcd5a9b9ddaf728adb099ad141984f3d98cdd. The pre-registration file was committed unmodified in 1a4095b on 2026-11-04T10:29:02-06:00, before the run started (2026-11-04T16:46:41.756Z)."
+      },
+      {
+        "id": "design",
+        "title": "Design followed",
+        "passed": true,
+        "detail": "6 sessions in 1 condition: blocks of two, the arm that goes first alternating, 1 warm-up block first, 2 measured per arm, exactly the plan's schedule, rules and stream."
+      },
+      {
+        "id": "configuration",
+        "title": "Configuration proved",
+        "passed": true,
+        "detail": "6 finished sessions: the page reported the configuration of its arm, with exactly its overrides, and played through Media Source Extensions."
+      },
+      {
+        "id": "condition",
+        "title": "Condition applied, the same in both arms",
+        "passed": true,
+        "detail": "6 finished sessions: the service held exactly the registered rules, and every rule fired on at least 19 requests of the session (19 to 29 requests per session); both arms were created with the same rules."
+      },
+      {
+        "id": "failures",
+        "title": "Failures few and even",
+        "passed": true,
+        "detail": "0 of 4 measured sessions failed (reported, never dropped): under the pre-registered maximum of 10 % of an arm, and the arms failed alike."
+      },
+      {
+        "id": "machine",
+        "title": "Machine quiet at the start",
+        "passed": true,
+        "enforced": false,
+        "detail": "The 1-minute load average was 4.0 before the first session, on 12 CPUs (the limit is 50 % of them, 6.0)."
+      }
+    ],
+    "summary": "Plumbing checks passed (6 of 6). This is a pipeline check, plumbing only, not evidence."
+  },
+  "conditions": [
+    {
+      "id": "high-latency",
+      "analysis": {
+        "warmup": {
+          "A": 1,
+          "B": 1
+        },
+        "attempted": {
+          "A": 2,
+          "B": 2
+        },
+        "analysed": {
+          "A": 2,
+          "B": 2
+        },
+        "metrics": [
+          {
+            "id": "startupMs",
+            "label": "Startup time",
+            "unit": "ms",
+            "kind": "continuous",
+            "nA": 2,
+            "nB": 2,
+            "warnings": [],
+            "summaryA": {
+              "n": 2,
+              "mean": 637.0500000119209,
+              "median": 637.0500000119209,
+              "p10": 585.8100000023842,
+              "p90": 688.2900000214577,
+              "min": 573,
+              "max": 701.1000000238419
+            },
+            "summaryB": {
+              "n": 2,
+              "mean": 693,
+              "median": 693,
+              "p10": 668.6,
+              "p90": 717.4,
+              "min": 662.5,
+              "max": 723.5
+            },
+            "countsA": null,
+            "countsB": null,
+            "effect": {
+              "kind": "hodges-lehmann",
+              "estimate": 55.94999998807907,
+              "low": -38.60000002384186,
+              "high": 150.5,
+              "level": 0.95,
+              "method": "Hodges-Lehmann shift, seeded percentile bootstrap interval (1000 resamples)"
+            },
+            "cliffs": {
+              "delta": 0.5,
+              "label": "large"
+            },
+            "test": {
+              "name": "mann-whitney",
+              "method": "exact permutation distribution",
+              "p": 0.6666666666666666
+            },
+            "ecdf": {
+              "probabilities": [
+                0.1,
+                0.2,
+                0.3,
+                0.4,
+                0.5,
+                0.6,
+                0.7,
+                0.8,
+                0.9
+              ],
+              "a": [
+                585.8100000023842,
+                598.6200000047684,
+                611.4300000071526,
+                624.2400000095367,
+                637.0500000119209,
+                649.8600000143051,
+                662.6700000166893,
+                675.4800000190735,
+                688.2900000214577
+              ],
+              "b": [
+                668.6,
+                674.7,
+                680.8,
+                686.9,
+                693,
+                699.1,
+                705.2,
+                711.3,
+                717.4
+              ]
+            },
+            "role": "primary",
+            "direction": "lower-is-better",
+            "threshold": 100,
+            "pAdjusted": 0.6666666666666666,
+            "significant": false
+          },
+          {
+            "id": "rebufferShare",
+            "label": "Share of sessions with a rebuffer",
+            "unit": "share",
+            "kind": "binary",
+            "nA": 2,
+            "nB": 2,
+            "warnings": [],
+            "summaryA": null,
+            "summaryB": null,
+            "countsA": {
+              "events": 0,
+              "total": 2,
+              "share": 0
+            },
+            "countsB": {
+              "events": 0,
+              "total": 2,
+              "share": 0
+            },
+            "effect": {
+              "kind": "share-difference",
+              "estimate": 0,
+              "low": -0.657619772493347,
+              "high": 0.657619772493347,
+              "level": 0.95,
+              "method": "difference of the shares, Newcombe's hybrid score interval"
+            },
+            "cliffs": null,
+            "test": {
+              "name": "fisher",
+              "method": "exact (hypergeometric, two-sided)",
+              "p": 1
+            },
+            "ecdf": null,
+            "role": "secondary",
+            "direction": "lower-is-better",
+            "threshold": null,
+            "pAdjusted": null,
+            "significant": false
+          },
+          {
+            "id": "rebufferRatio",
+            "label": "Rebuffer ratio",
+            "unit": "ratio",
+            "kind": "continuous",
+            "nA": 2,
+            "nB": 2,
+            "warnings": [],
+            "summaryA": {
+              "n": 2,
+              "mean": 0,
+              "median": 0,
+              "p10": 0,
+              "p90": 0,
+              "min": 0,
+              "max": 0
+            },
+            "summaryB": {
+              "n": 2,
+              "mean": 0,
+              "median": 0,
+              "p10": 0,
+              "p90": 0,
+              "min": 0,
+              "max": 0
+            },
+            "countsA": null,
+            "countsB": null,
+            "effect": {
+              "kind": "hodges-lehmann",
+              "estimate": 0,
+              "low": 0,
+              "high": 0,
+              "level": 0.95,
+              "method": "Hodges-Lehmann shift, seeded percentile bootstrap interval (1000 resamples)"
+            },
+            "cliffs": {
+              "delta": 0,
+              "label": "negligible"
+            },
+            "test": {
+              "name": "mann-whitney",
+              "method": "exact permutation distribution",
+              "p": 1
+            },
+            "ecdf": {
+              "probabilities": [
+                0.1,
+                0.2,
+                0.3,
+                0.4,
+                0.5,
+                0.6,
+                0.7,
+                0.8,
+                0.9
+              ],
+              "a": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "b": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "role": "secondary",
+            "direction": "lower-is-better",
+            "threshold": null,
+            "pAdjusted": null,
+            "significant": false
+          }
+        ],
+        "family": [
+          "startupMs"
+        ],
+        "failures": {
+          "attemptedA": 2,
+          "attemptedB": 2,
+          "failedA": 0,
+          "failedB": 0,
+          "fisherP": 1,
+          "guardTripped": false,
+          "guardWhy": null,
+          "sessions": []
+        },
+        "startRungs": {
+          "A": {
+            "720": 2
+          },
+          "B": {
+            "240": 2
+          },
+          "shared": [],
+          "disjoint": true,
+          "differs": true,
+          "note": "The arms never started on the same rung (A: 720p: 2; B: 240p: 2). Any difference in startup, and in the first seconds of playback, includes whatever the first rung does: the first rung is set by the configuration (ADR-064), and the two configurations are compared as shipped, so this experiment cannot say how much of a difference is the first rung and how much is the rest of the configuration. A rung-matched comparison is not possible with these data."
+        },
+        "recoverableErrors": {
+          "A": 0,
+          "B": 0
+        },
+        "decision": null,
+        "decisionNote": "This is a pipeline check: a few sessions that show the harness runs end to end. Its statistics are printed to show the report works; they decide nothing.",
+        "exploratory": [
+          {
+            "title": "Metrics that were not pre-registered",
+            "note": "Recorded in every session and compared here with the same tests, but with raw p-values, no adjustment and no threshold: they describe, they decide nothing, and one in twenty of them will look significant by chance.",
+            "rows": [
+              {
+                "label": "Rebuffer count",
+                "unit": "count",
+                "kind": "continuous",
+                "nA": 2,
+                "nB": 2,
+                "effect": 0,
+                "low": 0,
+                "high": 0,
+                "p": 1,
+                "note": "not pre-registered"
+              },
+              {
+                "label": "Rebuffer duration",
+                "unit": "ms",
+                "kind": "continuous",
+                "nA": 2,
+                "nB": 2,
+                "effect": 0,
+                "low": 0,
+                "high": 0,
+                "p": 1,
+                "note": "not pre-registered"
+              },
+              {
+                "label": "Rung switches",
+                "unit": "count",
+                "kind": "continuous",
+                "nA": 2,
+                "nB": 2,
+                "effect": 1.5,
+                "low": 1,
+                "high": 2,
+                "p": 0.3333333333333333,
+                "note": "not pre-registered"
+              },
+              {
+                "label": "Dropped-frame ratio",
+                "unit": "ratio",
+                "kind": "continuous",
+                "nA": 2,
+                "nB": 2,
+                "effect": 0,
+                "low": 0,
+                "high": 0,
+                "p": 1,
+                "note": "not pre-registered"
+              }
+            ]
+          },
+          {
+            "title": "Startup within the rung the sessions started on (rung-matched)",
+            "note": "No start rung was reached by at least 5 sessions of both arms: a rung-matched comparison is not possible with these data.",
+            "rows": []
+          }
+        ]
+      },
+      "aa": null
+    }
+  ],
+  "calibrations": []
+}
