@@ -138,6 +138,28 @@ describe('PB-AB Mann-Whitney U: published critical values', () => {
     expect(mannWhitneyU([9], [3]).p).toBe(1);
     expect(mannWhitneyU([4], [4]).p).toBe(1);
   });
+
+  // The illustration of the encyclopedia article on the test (Aesop's six tortoises and six hares): the finishing order T H H H H H T T T T T H.
+  // It counts a win as finishing first, so the values here are finishing places, and my U1 (pairs in which the first sample is LARGER) is the
+  // number of wins of the second sample: U for the tortoises is 11, for the hares 25.
+  it('reproduces the tortoises and the hares: U = 11 for the tortoises and 25 for the hares, and p = 2 P(U <= 11) from the Gaussian binomial', () => {
+    const order = [...'THHHHHTTTTTH'];
+    const places = (animal: string): number[] => order.flatMap((c, i) => (c === animal ? [i + 1] : []));
+    const tortoises = places('T');
+    const hares = places('H');
+    expect(tortoises).toStrictEqual([1, 7, 8, 9, 10, 11]);
+
+    const result = mannWhitneyU(hares, tortoises);
+    expect(result.u1).toBe(11);
+    expect(result.u2).toBe(25);
+    expect(mannWhitneyU(tortoises, hares).u1).toBe(25);
+
+    const counts = uCounts(6, 6);
+    const lower = counts.slice(0, 12).reduce((sum, count) => sum + count, 0);
+    expect(result.method).toBe('exact');
+    expect(result.p).toBeCloseTo((2 * lower) / counts.reduce((sum, count) => sum + count, 0), 14);
+    expect(result.p).toBeGreaterThan(0.05);
+  });
 });
 
 describe('PB-AB Mann-Whitney U: the correction for ties', () => {
