@@ -3,6 +3,7 @@ import {
   FLAKE_POLICY,
   GATE_BUDGETS,
   LIVE_READINESS,
+  PERF_POLICY,
   PERF_SECONDS_PER_RUN,
   TEST_SECONDS_BY_AREA,
 } from '../../../src/shared/criteria.ts';
@@ -21,6 +22,7 @@ import {
   renderGateBudgets,
   renderLiveCriteria,
   renderMergeBudget,
+  renderPerfPolicy,
   renderPolicyTable,
   renderRiskTiers,
 } from '../../../tools/policy-tables.ts';
@@ -148,6 +150,14 @@ describe('PB-LAB-006 the generated policy tables', () => {
       for (const p of Object.values(set)) expect(text).toContain(`| ${p.label} | ${formatLimit(p)} |`);
     }
     expect(text).toContain('| Ceiling: merge-tier browser tests per engine | 30 |');
+  });
+
+  it('renders every performance threshold with its number and the kind of its basis', () => {
+    const text = renderPerfPolicy();
+    expect(expectWellFormedTables(text)).toBe(1);
+    for (const p of Object.values(PERF_POLICY)) expect(text).toContain(`| ${p.label} | ${formatLimit(p)} |`);
+    expect(text).toContain('| Frame rate (PB-PERF-002): floor | 1 fps |');
+    expect(text).toContain('| Stability limit: baseline CV | 15 % |');
   });
 
   it('renders the thresholds and a rule for every lane', () => {

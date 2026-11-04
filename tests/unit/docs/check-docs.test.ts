@@ -160,6 +160,7 @@ describe('PB-LAB-006 generated blocks of the strategy', () => {
       'RISK_TIERS',
       'AREA_LEGEND',
       'GATE_BUDGETS',
+      'PERF_POLICY',
       'FLAKE_POLICY',
       'LIVE_CRITERIA',
       'FAULT_PROFILES',
