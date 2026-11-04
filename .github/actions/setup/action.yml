@@ -66,28 +66,23 @@ runs:
       shell: bash
       env:
         BROWSER: ${{ inputs.browser }}
-      # A browser download that stalls holds the job until its timeout (one did, for the whole 15 minutes, on a Firefox leg): every
-      # attempt gets five minutes, in a process group of its own so that the watchdog stops the download and what it started, and
-      # there are three attempts. A failure that is not a stall (a package that does not exist) fails three times and says so.
+      # Two things went wrong on the hosted runners. A package download from the mirror stalled for the whole 15 minutes of the job
+      # timeout. And the first answer to that, a watchdog that killed the install after five minutes, was worse: the apt-get it had
+      # started (as root, through sudo) was still downloading from a slow mirror, outlived the kill, and held the dpkg lock, so the next
+      # two attempts failed at once. Nothing here kills a process now. Apt is told to give up on a connection that stalls for 30 s and
+      # to retry it, and to wait for the dpkg lock; the install itself gets three attempts for a mirror that answered with an error.
       run: |
-        install() {
-          if [ "$RUNNER_OS" = "Linux" ]; then
-            npx playwright install --with-deps "$BROWSER"
-          else
-            npx playwright install "$BROWSER"
-          fi
-        }
-        set -m
+        if [ "$RUNNER_OS" = "Linux" ]; then
+          printf '%s\n' 'Acquire::Retries "5";' 'Acquire::http::Timeout "30";' 'Acquire::https::Timeout "30";' 'DPkg::Lock::Timeout "300";' \
+            | sudo tee /etc/apt/apt.conf.d/80-ci-resilience > /dev/null
+        fi
         for attempt in 1 2 3; do
-          install &
-          pid=$!
-          ( sleep 300; kill -TERM -- "-$pid" 2>/dev/null ) &
-          watchdog=$!
-          if wait "$pid"; then
-            kill -TERM -- "-$watchdog" 2>/dev/null || true
-            exit 0
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            npx playwright install --with-deps "$BROWSER" && exit 0
+          else
+            npx playwright install "$BROWSER" && exit 0
           fi
-          kill -TERM -- "-$watchdog" 2>/dev/null || true
-          echo "::warning::the Playwright install of $BROWSER failed or did not finish in 5 minutes (attempt $attempt of 3)"
+          echo "::warning::the Playwright install of $BROWSER failed (attempt $attempt of 3)"
+          sleep 10
         done
         exit 1
