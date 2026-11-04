@@ -227,7 +227,7 @@ describe('the Linux WebKit override, in both of its settings', () => {
     expect(on.experimental).toContain(
       'Linux WebKit runs the specs although the codec probe is intermittent there',
     );
-    expect(on.experimental).toContain('80 of 80');
+    expect(on.experimental).toContain('100 of 100');
     expect(on.basis).toContain('RUN_SPECS_IN_LINUX_WEBKIT');
     expect(engineGap(on)).toBeNull();
     expect(gapForStream(on, 'vod-webm')).toBeNull();

@@ -35,11 +35,11 @@ import type { ResultFile } from './probe/report.ts';
  *
  * Why it is `true`. The codec probe's own page (a muted element, data fetched after the SourceBuffers exist) plays 2 of 5 attempts
  * of the primary flavour in Linux WebKit and 9 of 20 in the N=20 spot check (ADR-031 to ADR-033 in docs/decisions/codecs.md;
- * docs/results/codec-matrix). The REAL player page, which adds every SourceBuffer before it fetches, passed 80 of 80 runs, each in a
+ * docs/results/codec-matrix). The REAL player page, which adds every SourceBuffer before it fetches, passed 100 of 100 runs, each in a
  * fresh browser process, in the Playwright image (arm64, WebKit 27.2): `vod-dash` and `vod-hls` 20 of 20 muted and 20 of 20 unmuted,
  * `live-dash` 10 of 10 each way, a pass being 3 s of media time with a first frame and no error event
  * (docs/results/player-smoke/experiments/linux-webkit-*.json; ADR-062 to ADR-068 in docs/decisions/player.md, the measurement is in
- * ADR-067: the 95 % upper bound on the failure rate is 3.7 %). It is the evidence of one image, one architecture, one WebKit build and
+ * ADR-067: the 95 % upper bound on the failure rate is 2.95 %). It is the evidence of one image, one architecture, one WebKit build and
  * short plays: WebM, live over HLS and long sessions were not part of it, so a failure there is data for the experiment and not a
  * regression of the player. Setting it back to `false` is the whole way back to "gap by evidence".
  */
@@ -47,7 +47,7 @@ export const RUN_SPECS_IN_LINUX_WEBKIT = true;
 
 /** The text of the `experimental-engine` annotation, and of what a failure in this engine means. */
 export const EXPERIMENTAL_LINUX_WEBKIT =
-  'Linux WebKit runs the specs although the codec probe is intermittent there: the real player page passed 80 of 80 runs (docs/results/player-smoke/experiments, ADR-067 in docs/decisions/player.md). Experimental: a failure is tracked as a flake of this engine.';
+  'Linux WebKit runs the specs although the codec probe is intermittent there: the real player page passed 100 of 100 runs (docs/results/player-smoke/experiments, ADR-067 in docs/decisions/player.md). Experimental: a failure is tracked as a flake of this engine.';
 
 export const MATRIX_DIR = fileURLToPath(new URL('../../docs/results/codec-matrix/', import.meta.url));
 
