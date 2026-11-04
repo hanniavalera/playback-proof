@@ -1,0 +1,123 @@
+{
+  "what": "The first CI evidence of the ABR suite, and what it says about PB-ABR-003 (and, for the review, PB-ABR-002 and PB-ABR-006). Condensed from the failure attachments of the two failed attempts of PB-ABR-003 on the GitHub macOS runner (qa-events.json, qa-metrics.json, request-log.json, session-detail.json inside reports/playwright.json of the artifact reports-webkit-macos) and from the `measured` annotations of every ABR result of the other legs. Nothing was edited; the replay of the estimator is a computation over the origin's own numbers and is labelled as such.",
+  "sources": {
+    "failedRun": {
+      "run": 41793007785,
+      "workflow": "ci/flake-wiring nightly (hanniavalera/playback-proof#4)",
+      "job": "126450559420 (release (webkit-macos), 10m13s)",
+      "artifacts": ["reports-webkit-macos", "reports-chromium", "reports-firefox", "reports-webkit-linux"],
+      "workers": 1
+    },
+    "earlierRun": {
+      "run": 41785550198,
+      "workflow": "p4/gha nightly (hanniavalera/playback-proof#1)",
+      "job": "126426832529 (release (webkit-macos), 9m38s)",
+      "workers": 2
+    },
+    "fetched": "gh run download <run> --repo hanniavalera/playback-proof -n <artifact>; gh api repos/hanniavalera/playback-proof/actions/jobs/126450559420/logs"
+  },
+  "environment": {
+    "runner": "GitHub-hosted macOS (macos-15, arm64, 3 CPUs), envId gha-macos-arm64",
+    "engine": "WebKit 27.2 (Version/27.2 Safari/605.1.15)",
+    "player": "Shaka 5.3.3, configuration A (no override), the specs at the commit of the merged p3/abr branch"
+  },
+  "failure": "media time from the recovery to the first step up (qa.events()): the bound is the switch interval and three segments. Expected: <= 14, Received: 21.871019792 (attempt 0); 16.350025749 (attempt 1)",
+  "attempts": {
+    "attempt0": {
+      "testSeconds": 45.3,
+      "stepUpSecondsAfterRecovery": 21.87,
+      "recoveryAtMediaSeconds": 20.13,
+      "pageClockSecondsFromLoadRequested_rungChanges": [
+        { "at": 0.04, "media": 0.0, "to": "360p", "reason": "start" },
+        { "at": 0.73, "media": 0.33, "to": "720p", "reason": "abr" },
+        { "at": 12.31, "media": 11.91, "to": "360p", "reason": "abr" },
+        { "at": 20.31, "media": 19.91, "to": "240p", "reason": "abr" },
+        { "at": 42.4, "media": 42.0, "to": "720p", "reason": "abr" }
+      ],
+      "gapsBetweenChangesSeconds": [11.58, 8.0, 22.09],
+      "originRules": {
+        "throttle600kbpsFirstSeenByARequestAt": 8.82,
+        "throttle6000kbpsFirstSeenByARequestAt": 21.56,
+        "why": "the 240p segment in flight when the rule was replaced (requested at 20.34 s, 75 kB in 1,211 ms) finished under the 600 kbps rule"
+      },
+      "originVideoSegmentsUnder6000kbps": { "count": 13, "bytesEach": "about 75,000", "medianKbps": 7295, "totalMsRange": [81, 94], "outlier": "one of 387 ms, 303 ms of it before its first byte" },
+      "originVideoSegmentsCutOffByThePlayer": ["v720 #10 after 268,443 of 449,862 bytes, at 12.33 s", "v360 #13 after 36,558 bytes, at 20.3 s"],
+      "frames": { "decoded": 1271, "dropped": 37, "presented": 1230, "droppedRatio": 0.029 },
+      "rebuffers": 0
+    },
+    "attempt1": {
+      "testSeconds": 41.4,
+      "stepUpSecondsAfterRecovery": 16.35,
+      "recoveryAtMediaSeconds": 22.0,
+      "pageClockSecondsFromLoadRequested_rungChanges": [
+        { "at": 0.04, "media": 0.0, "to": "360p", "reason": "start" },
+        { "at": 1.11, "media": 0.7, "to": "720p", "reason": "abr" },
+        { "at": 17.4, "media": 16.99, "to": "360p", "reason": "abr" },
+        { "at": 22.32, "media": 21.91, "to": "240p", "reason": "abr" },
+        { "at": 39.95, "media": 38.35, "to": "720p", "reason": "abr" }
+      ],
+      "gapsBetweenChangesSeconds": [16.29, 4.92, 17.63],
+      "originRules": {
+        "throttle600kbpsFirstSeenByARequestAt": 8.65,
+        "throttle6000kbpsFirstSeenByARequestAt": 23.59,
+        "why": "the 240p segment in flight when the rule was replaced (requested at 22.41 s, 75 kB in 1,166 ms) finished under the 600 kbps rule"
+      },
+      "originVideoSegmentsUnder6000kbps": { "count": 13, "bytesEach": "about 75,000", "medianKbps": 7296, "totalMsRange": [79, 117] },
+      "originVideoSegmentsCutOffByThePlayer": ["v720 #11 after 204,766 bytes, at 17.4 s"],
+      "frames": { "decoded": 1164, "dropped": 40, "droppedRatio": 0.034 },
+      "rebuffers": { "count": 1, "totalMs": 1146, "atMediaSeconds": 22.0 }
+    }
+  },
+  "estimatorReplay": {
+    "what": "Shaka's EwmaBandwidthEstimator replayed over the origin's request log: half-lives 2 s (fast) and 5 s (slow), weight = download seconds, zero-factor correction, samples under 16 kB or 5 ms ignored, estimate = min(fast, slow); sample duration = the origin's totalMs (a throttled download is cut into progress samples of 16 kB or 100 ms). It is a model: the page's own durations are not on record.",
+    "thresholdsKbps": { "360p": 786, "720p": 1941 },
+    "estimateAboveThresholdFromSeconds": {
+      "attempt0": { "360p": 21.6, "720p": 38.6, "720pWith20msFetchOverheadPerSample": 32.9 },
+      "attempt1": { "360p": 23.8, "720p": "not by 39.96 s (1,790 kbps)", "720pWith20msFetchOverheadPerSample": 40.0 }
+    },
+    "whyItClimbsSlowly": "the estimator's clock is download time: a 75 kB segment at 7 Mbps is 85 ms of weight and comes once in 2 s, so the slow average (half-life 5 s) moves 1.2 % of the distance to the new rate per segment: about 3 segments to cross 786 kbps, about 20 to cross 1,941 kbps."
+  },
+  "otherLegsOfTheSameRuns": {
+    "firstStepUpAfterTheRecoverySeconds": {
+      "41793007785": { "chromium": 8.2, "firefox": 9.8, "webkitLinux": 8.2, "webkitMacOS": "failed twice: 21.9 and 16.4" },
+      "41785550198": { "chromium": 9.8, "firefox": 9.5, "webkitLinux": 9.8, "webkitMacOS": 7.8 }
+    },
+    "pb-abr-002_mediaSecondsOfTheTwoStepDowns_rebuffers": {
+      "41793007785": {
+        "chromium": "16.34, 24.38; 0",
+        "firefox": "16.06, 24.15; 0",
+        "webkitLinux": "16.33, 24.38; 0",
+        "webkitMacOS": "16.65, 21.89; 1 (passed)"
+      },
+      "41785550198": {
+        "chromium": "16.27, 24.32; 0",
+        "firefox": "16.04, 24.09; 0",
+        "webkitLinux": "16.36, 24.40; 0",
+        "webkitMacOS": "attempt 0: 17.93, 23.05; 2 (failed: at media 20.00 s for 203 ms, at 22.00 s for 377 ms; 32 of 1067 frames dropped; page clock 19.57 s and 25.54 s). attempt 1: 11.90, 19.91; 0 (passed)"
+      }
+    },
+    "droppedFramesInPb-abr-001": {
+      "chromium": "0 of 365, 0 of 364",
+      "firefox": "0 of 360, 0 of 360",
+      "webkitLinux": "0 of 362, 0 of 361",
+      "webkitMacOS": "4 of 371, 7 of 366"
+    },
+    "pb-abr-006": {
+      "firstFrameMs_bound5724": [2898, 2903, 2906, 2918, 2939, 2943, 2992, 3003],
+      "droppedFrames": "0 of 359 to 366 in all eight executions, the macOS runner's two included"
+    }
+  },
+  "readThisWay": [
+    "The origin was not the cause. Under the 6000 kbps rule it delivered 13 video segments per attempt at a median 7.3 Mbps; the page is what was slow, and on the same runs Chromium, Firefox and Linux WebKit dropped no frame.",
+    "Shaka's adaptation decides at most once per abr.switchInterval (8 s), and every choice restarts the wait (SimpleAbrManager.chooseVariant sets lastTimeChosenMs_). In attempt 0 the choices were at 0.73 s (the start-up shortcut) and at the first download after 8.73 s (an audio segment, 8.82 s): the next evaluation could not come before 16.8 s, so the change at 12.31 s was not one. In attempt 1 the change to 240p came 4.9 s after the one to 360p.",
+    "The only choices that skip the interval in Shaka 5.3.3 are Player.disableStream (called by the dropped-frame protection abr.droppedFrames, on by default, when 15 % of the frames of a 2 s window are dropped, and by a failing request, of which there was none) and Player.checkVariants_, which gives the variants back on a 1 s timer after the 30 s of the ban and chooses again at once.",
+    "Attempt 0 fits two bans: of 720p at 12.31 s (until 42.31 s) and of 360p at 20.31 s (until 50.31 s). The estimate allowed 360p from about 21.6 s and the player stayed on 240p for 22.1 s; the step up at 42.40 s is the end of the first ban (30.09 s after it began) and it chose 720p, skipping the banned 360p.",
+    "Attempt 1 fits one ban, of 360p at 22.32 s. With 360p unavailable the player needs the estimate of the top rung (1,941 kbps instead of 786), which the replay with 20 ms of fetch overhead per sample reaches at the 25th segment, 39.96 s; the step up was at 39.95 s.",
+    "The same explanation fits the one failure of PB-ABR-006 in Firefox (docs/results/e2e-abr/firefox-abr-006-flake.json): a ban of the playing 240p leaves only 360p and 720p to choose from."
+  ],
+  "notProved": [
+    "The hook records a change by Shaka's `adaptation` event (a decision) and by `variantchanged` (a ban, its end, a failover) alike, as reason `abr`, so the bans are inferred from the interval, the dropped frames and the 30.09 s, not read.",
+    "The page counters have no time axis: when the frames were dropped is not known, nor whether the cause was decoding, the stall before the second change in attempt 1, or the machine's load.",
+    "Nothing here was reproduced: the dev host drops no frame."
+  ]
+}

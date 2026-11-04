@@ -34,7 +34,8 @@ export function settleWindowSeconds(segmentDurationSec: number): number {
  * step down: the switch interval since that decision (the manager cannot decide before), up to one segment until a download completes
  * and it decides, one more segment of samples for its estimate to cross the threshold of the next rung (each segment of the lowest
  * rung moves the slow estimate by about 80 kbps: bytes x 8 x ln 2 / its 5 s half-life), and one segment of margin. Measured in the
- * runs behind this number (Chromium and WebKit, 6000 kbps): 9.6 s.
+ * runs behind this number (Chromium and WebKit, 6000 kbps): 9.6 s; on a CI runner, in the three engines that dropped no frame: 8.2 to
+ * 9.8 s. It is the bound of the link alone: where a ban can have held a rung it is `upshiftBound` in bans.ts that says how long.
  */
 export function upshiftBoundSeconds(segmentDurationSec: number): number {
   return SHAKA_SWITCH_INTERVAL_S + 3 * segmentDurationSec;

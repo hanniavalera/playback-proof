@@ -1,13 +1,8 @@
 import { profile } from '../../src/shared/profiles.ts';
 import { compareHistoryWithLog, rungRuns } from './abr/agreement.ts';
-import {
-  SHAKA_SWITCH_INTERVAL_S,
-  droppedFramesNote,
-  settleWindowSeconds,
-  throttleOf,
-  upshiftBoundSeconds,
-} from './abr/conditions.ts';
-import { orExplain } from './abr/explain.ts';
+import { banEvidence, banNote, upshiftBound, upshiftWaitMs } from './abr/bans.ts';
+import { SHAKA_SWITCH_INTERVAL_S, settleWindowSeconds, throttleOf } from './abr/conditions.ts';
+import { orExplain, withExplanation } from './abr/explain.ts';
 import { bestRungCarriedBy, ladderOf, rungOf } from './abr/ladder.ts';
 import { describeSegments, fromFirstOf, videoSegmentRequests } from './abr/log.ts';
 import { startupBound } from './abr/startup.ts';
@@ -34,6 +29,10 @@ const ABR_TEST_TIMEOUT_MS = 120_000;
 const WAIT_MS = 40_000;
 // 8 s until the link weakens + two decisions 8 s apart + one 720p segment in flight at 600 kbps (6 s) = 30 s, and 15 s of margin.
 const DOWNSHIFT_WAIT_MS = 45_000;
+// The origin's side of the step up (PB-ABR-003): the first request of the new rung follows the switch within milliseconds (PB-ABR-007
+// measures 4 to 23 ms), so this is a bound for a failure. With the waits before it (45 s for the step down, 43 s for the step up) the
+// longest path of the test is 108 s plus its setup, under its 120 s: a failure comes from the wait that failed, never from the timeout.
+const UPSHIFT_DELIVERY_WAIT_MS = 20_000;
 // The link a recovered connection offers: 3.2 times the top rung's declared 1,845 kbps (video + audio), so it carries every rung with
 // room to spare, and finite, so that a 75 KB segment of the lowest rung takes 100 ms to arrive: far above the 5 ms under which Shaka
 // does not count a download (PB-ABR-003).
@@ -103,7 +102,7 @@ test(
     );
     expect(
       describeVariantChanges(variantChanges(await qa.events(top.index + 1))),
-      `rung changes in the ${window} s after reaching ${ladder.top.height}p (qa.events()): none. ${droppedFramesNote(metrics.frames)}`,
+      `rung changes in the ${window} s after reaching ${ladder.top.height}p (qa.events()): none. ${banNote(metrics.frames, changes)}`,
     ).toBe('none');
     expect(metrics.bitrate.current?.height, 'active rung (metrics.bitrate.current) at the end').toBe(
       ladder.top.height,
@@ -172,19 +171,23 @@ test(
     await qa.waitForMediaTime(down.mediaTime + window, { timeoutMs: WAIT_MS });
 
     const metrics = await qa.metrics();
+    const changes = variantChanges(await qa.events());
     const afterDown = await qa.events(down.index + 1);
     expect(
       describeVariantChanges(variantChanges(afterDown)),
-      `rung changes in the ${window} s after the step down to ${settle.height}p (qa.events()): none. ${droppedFramesNote(metrics.frames)}`,
+      `rung changes in the ${window} s after the step down to ${settle.height}p (qa.events()): none. ${banNote(metrics.frames, changes)}`,
     ).toBe('none');
     testInfo.annotations.push({
       type: 'measured',
-      description: `rungs: ${describeVariantChanges(variantChanges(await qa.events()))}; rebuffers ${metrics.rebuffer.count}`,
+      description: `rungs: ${describeVariantChanges(changes)}; rebuffers ${metrics.rebuffer.count}`,
     });
     expect(metrics.bitrate.current?.height, 'active rung (metrics.bitrate.current) at the end').toBe(
       settle.height,
     );
-    expectAtMostRebuffers(metrics, 1);
+    withExplanation(
+      () => expectAtMostRebuffers(metrics, 1),
+      `rung changes of the load (qa.events()): ${describeVariantChanges(changes)}. Each segment of a rung that the ${throttle.kbps} kbps link does not carry takes longer to arrive than it plays, so whether the player stalls depends on how early it left the rung it was on when the link weakened (ADR-097). ${banNote(metrics.frames, changes)}`,
+    );
     expectHealthyPlayback(metrics);
 
     // The origin's account: from the first segment of the settled rung on, nothing else is requested, and the last segments it
@@ -246,16 +249,38 @@ test(
 
     const [up] = variantChanges([
       await orExplain(
-        qa.waitFor('variant-changed', { since: eventsSince, timeoutMs: WAIT_MS }),
-        `the player stayed on ${settle.height}p for ${WAIT_MS / 1000} s after the link recovered to ${RECOVERED_LINK_KBPS} kbps, which carries every rung: members stay at low quality after the network recovers.`,
+        qa.waitFor('variant-changed', {
+          since: eventsSince,
+          timeoutMs: upshiftWaitMs(stream.segmentDurationSec),
+        }),
+        `the player stayed on ${settle.height}p for ${upshiftWaitMs(stream.segmentDurationSec) / 1000} s after the link recovered to ${RECOVERED_LINK_KBPS} kbps, which carries every rung: members stay at low quality after the network recovers.`,
+        async () => banNote((await qa.metrics()).frames, variantChanges(await qa.events())),
       ),
     ]);
     if (!up) throw new Error('the hook recorded no variant change');
     const elapsed = up.mediaTime - recoveredAt;
-    const bound = upshiftBoundSeconds(stream.segmentDurationSec);
+
+    // The bound depends on whether a ban can have held a rung (abr/bans.ts, ADR-095). Shaka bans the rung that is playing for 30 s when
+    // 15 % of the frames of a 2 s window were dropped, outside the switch interval, so after a recovery the rungs above can be out of
+    // reach for up to 31 s whatever the link does. On a GitHub macOS runner (WebKit, 3 CPUs, one worker) the page dropped 37 and 40 of
+    // about 1,200 frames and the first step up came 21.9 s (the first ban ended 30.1 s after it began) and 16.4 s (the rung above was
+    // banned, and the estimate had to reach the top rung's own threshold) after the recovery, while on the same run Chromium, Firefox and
+    // Linux WebKit dropped no frame and stepped up 8.2 to 9.8 s after it (nightly 41793007785; 7.8 to 9.9 s on the machine of the
+    // author). Where no frame was dropped and no change came sooner than the interval allows, no ban can have been in force and the
+    // bound is the link's, 14 s. Otherwise it is the ban's, 33 s. A player that does not climb, or climbs after a minute, fails in both.
+    const metrics = await qa.metrics();
+    const bound = upshiftBound(
+      stream.segmentDurationSec,
+      banEvidence({
+        frames: metrics.frames,
+        changesBeforeRecovery: variantChanges(await qa.events()).filter(
+          (change) => change.index < eventsSince,
+        ),
+      }),
+    );
     testInfo.annotations.push({
       type: 'measured',
-      description: `first step up to ${up.height}p ${elapsed.toFixed(1)} s of media time after the recovery (bound ${bound} s)`,
+      description: `first step up to ${up.height}p ${elapsed.toFixed(1)} s of media time after the recovery (bound ${bound.seconds} s, ${bound.regime === 'ban' ? 'a ban may have held a rung' : 'no ban can have held a rung'}); dropped frames ${metrics.frames.dropped} of ${metrics.frames.decoded}`,
     });
     expect(
       `${up.height}p ${up.reason}`,
@@ -267,8 +292,8 @@ test(
     ).toBeGreaterThan(settle.height);
     expect(
       elapsed,
-      `media time from the recovery to the first step up (qa.events()): the bound is the switch interval and three segments`,
-    ).toBeLessThanOrEqual(bound);
+      `media time from the recovery to the first step up (qa.events()): ${bound.basis}`,
+    ).toBeLessThanOrEqual(bound.seconds);
 
     // The origin's account: the higher rung was asked for and delivered after the recovery, not only announced.
     const upRung = rungOf(ladder, { height: up.height });
@@ -276,7 +301,7 @@ test(
       session,
       (entry) =>
         entry.kind === 'segment' && entry.rep === upRung.rep && !entry.pending && entry.status === 200,
-      { since: logSince, timeoutMs: WAIT_MS },
+      { since: logSince, timeoutMs: UPSHIFT_DELIVERY_WAIT_MS },
     );
     expect(delivered.rep, 'rung of a segment the origin delivered after the step up (request log)').toBe(
       upRung.rep,
@@ -508,15 +533,16 @@ test(
     await qa.waitForMediaTime(Math.max(EARLY_PLAYBACK_S, low.mediaTime + window), { timeoutMs: WAIT_MS });
 
     const metrics = await qa.metrics();
+    const changes = variantChanges(await qa.events());
     testInfo.annotations.push({
       type: 'measured',
-      description: `rungs: ${describeVariantChanges(variantChanges(await qa.events()))}; dropped frames ${metrics.frames.dropped} of ${metrics.frames.decoded}`,
+      description: `rungs: ${describeVariantChanges(changes)}; dropped frames ${metrics.frames.dropped} of ${metrics.frames.decoded}`,
     });
     // The rung comes first: a rebuffer on this link is what follows from leaving the one rung it carries, so it is the rung that is the
     // cause to report (and the dropped frames, the one non-network reason Shaka has to leave it).
     expect(
       describeVariantChanges(variantChanges(await qa.events(low.index + 1))),
-      `rung changes after settling on ${ladder.lowest.height}p (qa.events()): none. ${droppedFramesNote(metrics.frames)}`,
+      `rung changes after settling on ${ladder.lowest.height}p (qa.events()): none. ${banNote(metrics.frames, changes)}`,
     ).toBe('none');
     expect(metrics.bitrate.current?.height, 'active rung (metrics.bitrate.current) at the end').toBe(
       ladder.lowest.height,
