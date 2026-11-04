@@ -26,7 +26,7 @@ import {
   soakDir,
   writeResult,
 } from './readiness-run.ts';
-import { ResultFileError, readinessFileName, soakFileName } from './report.ts';
+import { ResultFileError, readinessFileNameOf, soakFileNameOf } from './report.ts';
 import type { BrowserInfo, LoadReading, ReadinessReport, StreamRecord } from './report.ts';
 import { buildSoakReport, runSoak } from './soak.ts';
 import { playwrightSoakDriver } from './soak-driver.ts';
@@ -94,6 +94,7 @@ function fromResults(options: ReadinessOptions, deps: CommandDeps): number {
   const root = options.resultsDir ?? deps.resultsRoot;
   try {
     const loaded = loadResults(root);
+    for (const note of loaded.notes) deps.err(`note: ${note}`);
     if (loaded.readiness.length === 0 && loaded.soaks.length === 0) {
       deps.err(`no result files under ${root}/readiness or /soak`);
       return 2;
@@ -197,7 +198,7 @@ export async function runReadinessCommand(argv: string[], deps: CommandDeps): Pr
         );
         reports.push(report);
         deps.out(`${renderReadinessReport(report)}\n`);
-        if (options.write) deps.err(`wrote ${writeResult(outDir, readinessFileName(envId, engine), report)}`);
+        if (options.write) deps.err(`wrote ${writeResult(outDir, readinessFileNameOf(report), report)}`);
       } finally {
         await browser.close().catch(() => undefined);
       }
@@ -209,7 +210,10 @@ export async function runReadinessCommand(argv: string[], deps: CommandDeps): Pr
 
   if (reports.length === 0) return 2;
   try {
-    const committed = options.write ? loadResults(deps.resultsRoot) : { readiness: [], soaks: [] };
+    const committed = options.write
+      ? loadResults(deps.resultsRoot)
+      : { readiness: [], soaks: [], notes: [] as string[] };
+    for (const note of committed.notes) deps.err(`note: ${note}`);
     const readiness = options.write ? withCommitted(reports, committed.readiness) : reports;
     deps.out(renderChecklist({ readiness, soaks: committed.soaks }));
   } catch (error) {
@@ -323,7 +327,7 @@ export async function runSoakCommand(argv: string[], deps: CommandDeps): Promise
       );
     if (options.write) {
       const dir = options.outDir ?? soakDir(deps.resultsRoot);
-      deps.err(`wrote ${writeResult(dir, soakFileName(envId, options.engine, options.minutes), report)}`);
+      deps.err(`wrote ${writeResult(dir, soakFileNameOf(report), report)}`);
     }
     return report.verdict === 'GO' ? 0 : report.verdict === 'NO-GO' ? 1 : 2;
   } finally {

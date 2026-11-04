@@ -1,6 +1,6 @@
 import { LIVE_LIMITS } from '../../shared/criteria.ts';
 import { median, percentile } from '../measure/stats.ts';
-import { evaluateManifestCadence } from './evaluators.ts';
+import { MIN_LATENCY_SAMPLES, evaluateManifestCadence } from './evaluators.ts';
 import type { TimeWindow } from './evaluators.ts';
 import { fitLine, perHour, pooledSlope, pooledTheilSen, quartileShift } from './regression.ts';
 import type { Point } from './regression.ts';
@@ -664,22 +664,42 @@ export function evaluateSoakLength(input: SoakInput, limits: Limits = LIVE_LIMIT
 // ---------------------------------------------------------------------------------------------------------------------
 // Everything about a soak
 
-/** Latency p95 and maximum after the warm-up and outside the injected faults: the numbers of PB-RDY-002, for a reader of the soak. */
-export function advisoryLatency(input: SoakInput, limits: Limits = LIVE_LIMITS): Evaluation[] {
+/**
+ * The live-edge latency over the whole soak, held to the limits of PB-RDY-002 (the p95 and the maximum) after the warm-up and outside every
+ * injected fault and the time the policy gives the player to settle after it (the stall-recovery limit and the restoration limit: the
+ * window that PB-RDY-003 allows). It is a criterion: the latency a member sits at is the requirement of a live event, and the soak is the
+ * longest look at it, 20 minutes after a fault in a release soak where PB-RDY-003 watches for 65 s. The first soaks on GitHub's runners
+ * were GO while the defaults sat 4 to 6 s behind the edge for the rest of the soak, and while the candidate sat 12.5 s behind it for the
+ * last nine minutes of one: the lines were advisory then (ADR-159c, docs/decisions/readiness-evidence.md).
+ */
+export function evaluateLatencyLevel(input: SoakInput, limits: Limits = LIVE_LIMITS): Evaluation[] {
   const from = input.firstFrameMs + input.warmupMs;
   const windows = settlingWindows(input.faults, limits);
   const reads = input.samples.flatMap((sample) =>
     sample.atMs >= from && !inside(windows, sample.atMs) && sample.latencyMs !== null
-      ? [sample.latencyMs]
+      ? [{ atMs: sample.atMs, latencyMs: sample.latencyMs }]
       : [],
   );
-  const p95 = reads.length === 0 ? null : percentile(reads, 0.95);
-  const max = reads.length === 0 ? null : Math.max(...reads);
+  const values = reads.map((read) => read.latencyMs);
+  const enough = values.length >= MIN_LATENCY_SAMPLES;
+  const p95 = values.length === 0 ? null : percentile(values, 0.95);
+  const max = values.length === 0 ? null : Math.max(...values);
+  const above = reads.filter((read) => read.latencyMs > limits.latencyMaxMs);
+  const first = above[0];
   const detail = {
-    reads: reads.length,
+    reads: values.length,
+    minimumReads: MIN_LATENCY_SAMPLES,
+    readsAboveMaximum: above.length,
+    firstAboveMaximumMinute: first ? (first.atMs - input.firstFrameMs) / 60_000 : null,
+    settleMs: limits.stallRecoveryMaxMs + limits.latencyRestoreMaxMs,
     note: 'after the warm-up, outside the injected faults and the time the player is given to settle after them',
   };
-  const lacking = reads.length === 0 ? { verdict: 'INCONCLUSIVE' as const } : {};
+  const tooFew = enough ? {} : { verdict: 'INCONCLUSIVE' as const };
+  const where = `outside the injected faults and the ${formatMs(detail.settleMs)} the policy gives the player to settle after each`;
+  const tooFewSentence = `Only ${plural(values.length, 'latency read')} of the ${MIN_LATENCY_SAMPLES} needed to judge a percentile were taken ${where}: the latency level of this soak cannot be judged.`;
+  const aboveSentence = first
+    ? ` ${above.length} of the ${values.length} reads were above ${formatMs(limits.latencyMaxMs)}, the first at minute ${detail.firstAboveMaximumMinute?.toFixed(1)}: the player did not come back, or came back and left again.`
+    : '';
   return [
     evaluation({
       id: 'soak.latency-p95',
@@ -690,11 +710,12 @@ export function advisoryLatency(input: SoakInput, limits: Limits = LIVE_LIMITS):
       limitKey: 'latencyP95MaxMs',
       bound: 'at-most',
       limits,
-      scope: 'advisory',
       detail,
-      ...lacking,
-      sentence: ({ value, limit }) =>
-        `Latency at the 95th percentile over the soak: ${value} (${limit}). Judged by PB-RDY-002; here as evidence.`,
+      ...tooFew,
+      sentence: ({ verdict, value, limit }) =>
+        !enough
+          ? tooFewSentence
+          : `Latency at the 95th percentile of ${values.length} reads of the soak, ${where}: ${value} (the limit is ${limit}, the one of PB-RDY-002).${verdict === 'GO' ? '' : aboveSentence}`,
     }),
     evaluation({
       id: 'soak.latency-max',
@@ -705,11 +726,12 @@ export function advisoryLatency(input: SoakInput, limits: Limits = LIVE_LIMITS):
       limitKey: 'latencyMaxMs',
       bound: 'at-most',
       limits,
-      scope: 'advisory',
       detail,
-      ...lacking,
-      sentence: ({ value, limit }) =>
-        `The largest latency outside the faults: ${value} (${limit}). Judged by PB-RDY-002; here as evidence.`,
+      ...tooFew,
+      sentence: ({ verdict, value, limit }) =>
+        !enough
+          ? tooFewSentence
+          : `The largest latency of the soak, ${where}: ${value} (the limit is ${limit}, the one of PB-RDY-002).${verdict === 'GO' ? '' : aboveSentence}`,
     }),
   ];
 }
@@ -722,8 +744,8 @@ export interface SoakEvaluation {
 
 /**
  * The verdict of the soak and every line behind it. The criteria are those of the PB-RDY-005 row (stalls, critical errors, unexplained
- * critical errors, rebuffer ratio, drift, heap, dropped frames) plus the length; the advisory lines (latency, the manifest cadence over the
- * soak, the recoverable errors that no fault explains) are evidence and decide nothing.
+ * critical errors, rebuffer ratio, drift, the latency level after the faults, heap, dropped frames) plus the length; the advisory lines
+ * (the manifest cadence over the soak, the recoverable errors that no fault explains) are evidence and decide nothing.
  */
 export function evaluateSoak(input: SoakInput, limits: Limits = LIVE_LIMITS): SoakEvaluation {
   const evaluations = [
@@ -733,10 +755,10 @@ export function evaluateSoak(input: SoakInput, limits: Limits = LIVE_LIMITS): So
     evaluateUnexplainedCriticalErrors(input, limits),
     evaluateRebufferRatio(input, limits),
     evaluateLatencyDrift(input, limits),
+    ...evaluateLatencyLevel(input, limits),
     evaluateHeapGrowth(input, limits),
     evaluateDroppedFrames(input, limits),
     evaluateUnexplainedRecoverableErrors(input, limits),
-    ...advisoryLatency(input, limits),
     ...evaluateManifestCadence(input.manifestArrivalsMs, explainedWindows(input.faults, limits), limits, {
       check: 'PB-RDY-005',
       scope: 'advisory',

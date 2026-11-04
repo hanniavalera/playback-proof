@@ -9,16 +9,23 @@ import {
   renderSoakReport,
   runVerdict,
 } from '../../../src/lab/readiness/checklist.ts';
+import { defaultInjections } from '../../../src/lab/readiness/args.ts';
 import { candidateById } from '../../../src/lab/readiness/candidates.ts';
 import { runReadinessChecks } from '../../../src/lab/readiness/checks.ts';
 import type { ConfigurationResult, ReadinessReport, SoakReport } from '../../../src/lab/readiness/report.ts';
 import {
   ResultFileError,
+  isBusy,
   limitsSnapshot,
+  loadPerCpu,
   parseReadinessReport,
   parseSoakReport,
   readinessFileName,
+  readinessFileNameOf,
   soakFileName,
+  soakFileNameOf,
+  soakIdentity,
+  soakVerdictToday,
 } from '../../../src/lab/readiness/report.ts';
 import type { Engine } from '../../../src/lab/readiness/soak-evaluators.ts';
 import { evaluateSoak } from '../../../src/lab/readiness/soak-evaluators.ts';
@@ -119,8 +126,7 @@ function soakReport(
       warmupSec: 60,
       sampleSec: 5,
       heapEverySec: 30,
-      stallAtMinutes: null,
-      staleAtMinutes: null,
+      ...defaultInjections(minutes),
     },
     limits: limitsSnapshot(),
     length: evaluated.kind,
@@ -136,6 +142,23 @@ function soakReport(
     requests: { total: 0, refusedCount: 0, byKind: {}, refused: [], repeated: [] },
     harness: { firstHeapMb: 40, lastHeapMb: 42.5, firstServiceRssMb: 150, lastServiceRssMb: 152 },
   };
+}
+
+/**
+ * A soak as the files of the first evidence on GitHub's runners have it (commit 0d62c1d): the two latency lines are advisory and carry a
+ * verdict of their own, and the verdict of the soak does not depend on them.
+ */
+function asMeasuredBefore(
+  report: SoakReport,
+  latencyMs: number,
+  verdict: 'GO' | 'NO-GO' = 'NO-GO',
+): SoakReport {
+  const evaluations = report.evaluations.map((evaluation) =>
+    evaluation.id === 'soak.latency-p95' || evaluation.id === 'soak.latency-max'
+      ? { ...evaluation, scope: 'advisory' as const, value: latencyMs, verdict }
+      : evaluation,
+  );
+  return { ...report, evaluations, verdict: aggregate(evaluations) };
 }
 
 describe('the sheet of a readiness run', () => {
@@ -254,6 +277,242 @@ describe('the checklist of TEST_STRATEGY.md section 8', () => {
     );
   });
 
+  it('names the configuration of every result in item 1, says a repeated line once, and does not call the soak of a candidate A', async () => {
+    const good = await configuration('A', liveSync);
+    const ofCandidate: SoakReport = {
+      ...soakReport('chromium', 30),
+      configuration: {
+        id: 'live-sync',
+        label: 'A plus streaming.liveSync.enabled',
+        patch: liveSync as never,
+      },
+    };
+    const items = checklist({
+      readiness: [report('chromium', [good])],
+      soaks: [soakReport('chromium', 5), soakReport('chromium', 30), ofCandidate],
+    });
+    const lines = items.find((item) => item.number === 1)?.evidence ?? [];
+    // The readiness run, the CI soak and the release soak of A say the same thing about the build, and it is said once.
+    expect(lines.filter((line) => line.includes('configuration A'))).toHaveLength(1);
+    expect(lines.filter((line) => line.includes('configuration live-sync'))).toHaveLength(1);
+    expect(items.find((item) => item.number === 1)?.status).toBe('done');
+  });
+
+  it('names the protocol of a result that is not DASH on every line that names a result, so that two results of one engine are two lines', async () => {
+    const a = await configuration('A', null);
+    const dash = report('chromium', [a]);
+    const hls = { ...dash, stream: { ...dash.stream, protocol: 'hls' as const } };
+    const items = checklist({ readiness: [dash, hls], soaks: [] });
+    const lines = (number: number): string[] => items.find((item) => item.number === number)?.evidence ?? [];
+    for (const number of [3, 5]) {
+      expect(lines(number).filter((line) => line.startsWith('chromium (local-darwin-arm64):'))).toHaveLength(
+        1,
+      );
+      expect(
+        lines(number).filter((line) => line.startsWith('chromium (local-darwin-arm64, hls):')),
+      ).toHaveLength(1);
+    }
+    const soakOfHls = { ...soakReport('chromium', 5), stream: { ...dash.stream, protocol: 'hls' as const } };
+    const soakItem = checklist({ readiness: [dash], soaks: [soakOfHls] }).find((item) => item.number === 4);
+    expect(soakItem?.evidence.join('\n')).toContain(
+      'chromium (local-darwin-arm64, hls): CI soak only of 5 min',
+    );
+  });
+
+  it('says in the line of a soak that it did not inject the plan its length has, so that a soak with a stale manifest and no outage is not read as the CI soak of the policy', () => {
+    const policy = soakReport('webkit', 5);
+    const stale = {
+      ...policy,
+      options: { ...policy.options, stallAtMinutes: null, staleAtMinutes: 2 },
+      faults: [
+        {
+          kind: 'stale-manifest' as const,
+          startMs: policy.firstFrameMs + 120_000,
+          endMs: policy.firstFrameMs + 130_000,
+        },
+      ],
+    };
+    const nothing = { ...policy, options: { ...policy.options, stallAtMinutes: null }, faults: [] };
+    const item = (soaks: SoakReport[]): string =>
+      (checklist({ readiness: [], soaks }).find((candidate) => candidate.number === 4)?.evidence ?? []).join(
+        '\n',
+      );
+    expect(item([policy])).toContain('CI soak only of 5 min:');
+    expect(item([policy])).not.toContain('not the policy');
+    expect(item([stale])).toContain(
+      "CI soak only of 5 min (not the policy's plan: stale-manifest for 10 s at minute 2.0):",
+    );
+    expect(item([nothing])).toContain("CI soak only of 5 min (not the policy's plan: nothing):");
+    const asCandidate = {
+      ...stale,
+      configuration: { id: 'live-sync', label: 'x', patch: liveSync as never },
+    };
+    expect(item([asCandidate])).toContain(
+      "CI soak of 5 min (not the policy's plan: stale-manifest for 10 s at minute 2.0) of the candidate live-sync:",
+    );
+    // The sheet of the soak says the same thing in its own line, as it did.
+    expect(renderSoakReport(stale)).toContain('injected: stale-manifest for 10 s at minute 2.0');
+    expect(renderSoakReport(nothing)).toContain('injected: nothing');
+  });
+
+  it("lists a candidate's soak and does not count it: the release soak of the build as it ships is A's", async () => {
+    const good = await configuration('A', liveSync);
+    const three = (['chromium', 'firefox', 'webkit'] as const).map((engine) => report(engine, [good]));
+    const asCandidate = (engine: Engine): SoakReport => ({
+      ...soakReport(engine, 30),
+      configuration: {
+        id: 'live-sync',
+        label: 'A plus streaming.liveSync.enabled',
+        patch: liveSync as never,
+      },
+    });
+    const onlyCandidates = checklist({
+      readiness: three,
+      soaks: (['chromium', 'firefox', 'webkit'] as const).map(asCandidate),
+    });
+    const item = onlyCandidates.find((candidate) => candidate.number === 4);
+    expect(item?.status).toBe('open');
+    expect(item?.evidence.join('\n')).toContain('no release soak (30 min) on record for chromium');
+    expect(item?.evidence.join('\n')).toContain(
+      'release soak of 30 min of the candidate live-sync: GO (evidence for a decision about the candidate, not about the build)',
+    );
+    // With A's soaks as well the item is done, and the candidate's soaks are still listed beside them.
+    const both = checklist({
+      readiness: three,
+      soaks: (['chromium', 'firefox', 'webkit'] as const).flatMap((engine) => [
+        soakReport(engine, 30),
+        asCandidate(engine),
+      ]),
+    });
+    expect(both.find((candidate) => candidate.number === 4)?.status).toBe('done');
+    expect(both.find((candidate) => candidate.number === 4)?.evidence.join('\n')).toContain(
+      'the candidate live-sync',
+    );
+    // A failed candidate soak does not block the build.
+    const failedCandidate = {
+      ...asCandidate('chromium'),
+      verdict: 'NO-GO' as const,
+    };
+    const stillDone = checklist({
+      readiness: three,
+      soaks: [
+        soakReport('chromium', 30),
+        soakReport('firefox', 30),
+        soakReport('webkit', 30),
+        failedCandidate,
+      ],
+    });
+    expect(stillDone.find((candidate) => candidate.number === 4)?.status).toBe('done');
+  });
+
+  it('says on the sheet and in the checklist that a run started on a busy machine was measured under load, and says nothing of a quiet one', async () => {
+    const reading = (load1: number, cpus: number) => ({
+      at: '2030-01-01T00:00:00.000Z',
+      load1,
+      load5: 20,
+      load15: 5,
+      cpus,
+    });
+    const busy = {
+      ...soakReport('webkit', 5),
+      load: { before: reading(66.4, 3), after: reading(3.07, 3) },
+    };
+    const text = renderSoakReport(busy);
+    expect(text).toContain(
+      'the machine was busy when the run started: a 1-minute load of 66.4 on 3 CPUs (22.1 per CPU)',
+    );
+    expect(text).not.toContain('busy when the run ended');
+    expect(
+      checklist({ readiness: [], soaks: [busy] })
+        .find((item) => item.number === 4)
+        ?.evidence.join('\n'),
+    ).toContain('[busy at the start: load 66.4 on 3 CPUs]');
+    const good = await configuration('A', liveSync);
+    const loaded = {
+      ...report('webkit', [good]),
+      load: { before: reading(66.4, 3), after: reading(3.07, 3) },
+    };
+    expect(renderReadinessReport(loaded)).toContain('the machine was busy when the run started');
+    expect(
+      checklist({ readiness: [loaded], soaks: [] })
+        .find((item) => item.number === 3)
+        ?.evidence.join('\n'),
+    ).toContain('[busy at the start: load 66.4 on 3 CPUs]');
+    const quiet = { ...busy, load: { before: reading(0.5, 4), after: reading(1.0, 4) } };
+    expect(renderSoakReport(quiet)).not.toContain('busy');
+    // Only the start is judged: at the end the load is the run's own browser and service, which is no reason to doubt the run.
+    const endsLoaded = { ...busy, load: { before: reading(0.5, 4), after: reading(9, 4) } };
+    expect(renderSoakReport(endsLoaded)).not.toContain('busy');
+  });
+
+  it("judges a stored soak by today's criteria: the latency lines that were advisory when it was measured decide now, and the numbers in it are not touched", () => {
+    const fresh = soakReport('chromium', 30);
+    expect(soakVerdictToday(fresh)).toEqual({ verdict: 'GO', changedBy: [] });
+    const measuredBefore = asMeasuredBefore(fresh, 10_620);
+    // As the file says: GO, with two advisory lines at NO-GO.
+    expect(measuredBefore.verdict).toBe('GO');
+    expect(
+      measuredBefore.evaluations.filter((e) => e.scope === 'advisory' && e.verdict === 'NO-GO'),
+    ).toHaveLength(2);
+    const today = soakVerdictToday(measuredBefore);
+    expect(today.verdict).toBe('NO-GO');
+    expect(today.changedBy.map((line) => line.id)).toEqual(['soak.latency-p95', 'soak.latency-max']);
+    // The file itself is as it was.
+    expect(measuredBefore.verdict).toBe('GO');
+    expect(measuredBefore.evaluations.find((e) => e.id === 'soak.latency-max')?.value).toBe(10_620);
+    // An old file whose advisory latency lines were GO is GO today; one measured with the criteria of today is judged as stored.
+    const fine = asMeasuredBefore(fresh, 6_990, 'GO');
+    expect(soakVerdictToday(fine)).toEqual({ verdict: 'GO', changedBy: [] });
+    const failedToday = soakReport('chromium', 30, { latency: () => 10_620 });
+    expect(failedToday.verdict).toBe('NO-GO');
+    expect(soakVerdictToday(failedToday).verdict).toBe('NO-GO');
+    expect(soakVerdictToday(failedToday).changedBy).toEqual([]);
+  });
+
+  it("blocks item 4 on the soak of A that was GO when the latency of the soak was only evidence, and says why in the line; a candidate's is listed the same way and blocks nothing", async () => {
+    const good = await configuration('A', liveSync);
+    const three = (['chromium', 'firefox', 'webkit'] as const).map((engine) => report(engine, [good]));
+    const stored = (engine: Engine): SoakReport => asMeasuredBefore(soakReport(engine, 30), 10_620);
+    const soaks = (['chromium', 'firefox', 'webkit'] as const).map(stored);
+    const items = checklist({ readiness: three, soaks });
+    const item = items.find((candidate) => candidate.number === 4);
+    expect(item?.status).toBe('blocked');
+    expect(item?.evidence.join('\n')).toContain(
+      'release soak of 30 min: NO-GO (measured GO, when the latency of the soak was evidence and not a criterion;',
+    );
+    expect(item?.evidence.join('\n')).toContain('Latency, p95 10.62 s against <= 8.00 s');
+    expect(item?.evidence.join('\n')).toContain('Latency, maximum 10.62 s against <= 10.00 s');
+    expect(item?.evidence.join('\n')).toContain('ADR-159c');
+    // A candidate whose stored soak says GO and whose latency lines were fine is listed as GO and does not change item 4.
+    const onlyCandidate = {
+      ...asMeasuredBefore(soakReport('chromium', 30), 6_990, 'GO'),
+      configuration: { id: 'live-sync', label: 'x', patch: liveSync as never },
+    };
+    const withCandidate = checklist({
+      readiness: three,
+      soaks: [soakReport('chromium', 30), soakReport('firefox', 30), soakReport('webkit', 30), onlyCandidate],
+    });
+    expect(withCandidate.find((candidate) => candidate.number === 4)?.status).toBe('done');
+    // The sheet of the stored file says what it is judged as now.
+    const sheet = renderSoakReport(stored('chromium'));
+    expect(sheet).toMatch(/Soak verdict\s+GO/);
+    expect(sheet).toMatch(/Judged by today's criteria \(ADR-159c\)\s+NO-GO/);
+    expect(sheet).toContain(
+      'This file was measured when the latency of the soak after the faults was evidence',
+    );
+    expect(renderSoakReport(soakReport('chromium', 30))).not.toContain("Judged by today's criteria");
+  });
+
+  it('calls a machine busy only when its 1-minute load is above its number of CPUs', () => {
+    const at = (load1: number, cpus: number) => ({ at: 'x', load1, load5: 0, load15: 0, cpus });
+    expect(isBusy(at(3, 3))).toBe(false);
+    expect(isBusy(at(3.01, 3))).toBe(true);
+    expect(isBusy(at(0.2, 4))).toBe(false);
+    expect(isBusy(at(2.36, 4))).toBe(false);
+    expect(isBusy(at(66.39, 3))).toBe(true);
+    expect(loadPerCpu(at(8, 4))).toBe(2);
+  });
+
   it('is blocked by a soak that failed, even a short one', () => {
     const failed = soakReport('chromium', 2, { errors: [error(60, 2)] });
     expect(failed.verdict).toBe('NO-GO');
@@ -320,11 +579,14 @@ describe('the sheet of a soak', () => {
   });
 
   it('prints the note of a line that is a GO: two estimators of the drift that disagree are on the sheet', () => {
+    // A wild read at the very end is a drift for least squares and not for Theil-Sen; it is also a latency above the maximum, which is the
+    // line of its own that makes the soak a NO-GO here (the drift is not).
     const text = renderSoakReport(
       soakReport('chromium', 5, { latency: (sec) => (sec === 300 ? 30_000 : 6200) }),
     );
-    expect(text).toMatch(/Soak verdict\s+GO/);
     expect(text).toMatch(/GO\s+Latency drift\s+0 ms\s+<= 1\.00 s/);
+    expect(text).toMatch(/NO-GO\s+Latency, maximum\s+30\.00 s\s+<= 10\.00 s/);
+    expect(text).toMatch(/Soak verdict\s+NO-GO/);
     expect(text).toContain('Notes:');
     expect(text).toContain('Latency drift: The two estimators of the drift disagree');
   });
@@ -342,6 +604,108 @@ describe('the result files', () => {
     expect(readinessFileName('local-darwin-arm64', 'webkit')).toBe('local-darwin-arm64-webkit.json');
     expect(soakFileName('docker-linux-arm64', 'firefox', 30)).toBe('docker-linux-arm64-firefox-30m.json');
     expect(soakFileName('local-darwin-arm64', 'chromium', 2.5)).toBe('local-darwin-arm64-chromium-2.5m.json');
+  });
+
+  it("carry the candidate in a soak's name, and A keeps the name it always had (two soaks of one engine must not overwrite each other)", () => {
+    const a = { id: 'A', patch: null };
+    const liveSync = { id: 'live-sync', patch: { streaming: { liveSync: { enabled: true } } } };
+    expect(soakFileName('gha-linux-x64', 'chromium', 30, { configuration: a })).toBe(
+      'gha-linux-x64-chromium-30m.json',
+    );
+    expect(soakFileName('gha-linux-x64', 'chromium', 30, { configuration: null })).toBe(
+      'gha-linux-x64-chromium-30m.json',
+    );
+    expect(soakFileName('gha-linux-x64', 'chromium', 30, { configuration: liveSync })).toBe(
+      'gha-linux-x64-chromium-30m-live-sync.json',
+    );
+    expect(soakFileName('gha-linux-x64', 'chromium', 30, { configuration: liveSync })).not.toBe(
+      soakFileName('gha-linux-x64', 'chromium', 30, { configuration: a }),
+    );
+  });
+
+  it('carry the protocol when it is not DASH, in a readiness file and in a soak, and the order of the parts is fixed', () => {
+    expect(readinessFileName('gha-linux-x64', 'webkit', 'dash')).toBe('gha-linux-x64-webkit.json');
+    expect(readinessFileName('gha-linux-x64', 'webkit', 'hls')).toBe('gha-linux-x64-webkit-hls.json');
+    expect(soakFileName('gha-linux-x64', 'webkit', 5, { protocol: 'hls' })).toBe(
+      'gha-linux-x64-webkit-5m-hls.json',
+    );
+    expect(
+      soakFileName('gha-linux-x64', 'webkit', 5, {
+        protocol: 'hls',
+        configuration: { id: 'live-sync', patch: {} },
+      }),
+    ).toBe('gha-linux-x64-webkit-5m-hls-live-sync.json');
+  });
+
+  it('tell two custom patches apart by a digest of the patch, which does not depend on the order of its keys', () => {
+    const one = {
+      id: 'custom',
+      patch: { streaming: { liveSync: { enabled: false } }, abr: { enabled: false } },
+    };
+    const reordered = {
+      id: 'custom',
+      patch: { abr: { enabled: false }, streaming: { liveSync: { enabled: false } } },
+    };
+    const other = { id: 'custom', patch: { streaming: { liveSync: { enabled: true } } } };
+    const name = (configuration: { id: string; patch: unknown }): string =>
+      soakFileName('x', 'chromium', 5, { configuration });
+    expect(name(one)).toMatch(/^x-chromium-5m-custom-[0-9a-f]{8}\.json$/);
+    expect(name(reordered)).toBe(name(one));
+    expect(name(other)).not.toBe(name(one));
+  });
+
+  it('are named from what they hold: the name of a file is a function of its content', async () => {
+    const a = await configuration('A', null);
+    const candidate = await configuration('live-sync', liveSync);
+    const both = report('chromium', [a, candidate]);
+    expect(readinessFileNameOf(both)).toBe(readinessFileName(both.envId, 'chromium'));
+    const ofA = soakReport('webkit', 30);
+    expect(soakFileNameOf(ofA)).toBe(
+      soakFileName(ofA.envId, 'webkit', 30, { configuration: ofA.configuration, plan: ofA.options }),
+    );
+    const ofCandidate = { ...ofA, configuration: { id: 'live-sync', label: 'x', patch: liveSync } };
+    expect(soakFileNameOf(ofCandidate)).toBe(`${soakFileNameOf(ofA).replace(/\.json$/, '')}-live-sync.json`);
+    expect(soakIdentity(ofCandidate)).not.toBe(soakIdentity(ofA));
+  });
+
+  it("name what a soak injected only when it is not the policy's plan for its length, so that the soaks of the policy keep their names", () => {
+    const policyCi = { stallAtMinutes: 2.5, staleAtMinutes: null, warmupSec: 60 };
+    const policyRelease = { stallAtMinutes: 10, staleAtMinutes: 20, warmupSec: 60 };
+    expect(soakFileName('x', 'chromium', 5, { plan: policyCi })).toBe('x-chromium-5m.json');
+    expect(soakFileName('x', 'chromium', 30, { plan: policyRelease })).toBe('x-chromium-30m.json');
+    expect(
+      soakFileName('x', 'chromium', 5, { plan: { ...policyCi, stallAtMinutes: null, staleAtMinutes: 2 } }),
+    ).toBe('x-chromium-5m-nostall-stale2m.json');
+    expect(soakFileName('x', 'chromium', 30, { plan: { ...policyRelease, staleAtMinutes: null } })).toBe(
+      'x-chromium-30m-nostale.json',
+    );
+    expect(soakFileName('x', 'chromium', 5, { plan: { ...policyCi, stallAtMinutes: 1.5 } })).toBe(
+      'x-chromium-5m-stall1.5m.json',
+    );
+    expect(
+      soakFileName('x', 'chromium', 1, {
+        plan: { stallAtMinutes: 0.5, staleAtMinutes: null, warmupSec: 15 },
+      }),
+    ).toBe('x-chromium-1m-warmup15s.json');
+    // A plan that is not given is not named: a name is only as exact as what it was asked.
+    expect(soakFileName('x', 'chromium', 5)).toBe('x-chromium-5m.json');
+    // Order: length, plan, protocol, candidate.
+    expect(
+      soakFileName('x', 'webkit', 5, {
+        plan: { ...policyCi, stallAtMinutes: null, staleAtMinutes: 2 },
+        protocol: 'hls',
+        configuration: { id: 'live-sync', patch: {} },
+      }),
+    ).toBe('x-webkit-5m-nostall-stale2m-hls-live-sync.json');
+    // Two soaks that differ only in what they injected are two soaks.
+    const ordinary = soakReport('chromium', 5);
+    const stale = { ...ordinary, options: { ...ordinary.options, stallAtMinutes: null, staleAtMinutes: 2 } };
+    const policy = {
+      ...ordinary,
+      options: { ...ordinary.options, stallAtMinutes: 2.5, staleAtMinutes: null },
+    };
+    expect(soakIdentity(stale)).not.toBe(soakIdentity(policy));
+    expect(soakFileNameOf(stale)).not.toBe(soakFileNameOf(policy));
   });
 
   it('are read back as written, and refused with the list of what is wrong when they are not valid', async () => {

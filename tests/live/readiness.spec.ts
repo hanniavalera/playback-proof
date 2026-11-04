@@ -213,7 +213,7 @@ test(
 );
 
 test(
-  'PB-RDY-005 soak: no unrecovered stall, no critical error, rebuffer ratio, latency drift, JS heap growth (Chromium) and dropped frames within the limits',
+  'PB-RDY-005 soak: no unrecovered stall, no critical error, rebuffer ratio, latency drift, latency level after the faults, JS heap growth (Chromium) and dropped frames within the limits',
   { tag: ['@release', '@readiness', '@live', '@soak', '@dash'] },
   async (
     { browser, service, environment, streamFor, viewport, userAgent, deviceScaleFactor, isMobile, hasTouch },
