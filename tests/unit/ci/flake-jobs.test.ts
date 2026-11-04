@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { parseCliArgs } from '../../../flake/cli.ts';
@@ -15,18 +15,21 @@ import {
   WORKFLOW_DIR,
   code,
   commandOf,
+  jenkinsCalls,
   jobsOf,
   legsOf,
   read,
   scriptArgs,
   stepsOf,
 } from '../support/ci-files.ts';
+import type { Call } from '../support/ci-files.ts';
 import { makeScratch } from '../support/scratch.ts';
 
 // The flake gate of the GitHub workflows (ADR-170 to ADR-172, docs/CI.md). The workflows cannot run here, so these tests do what
 // can be done without GitHub: they check who may write (the trust model), and they run the arguments the workflow gives the gate,
 // as written in the workflow, against a real git repository laid out as the job lays out its workspace. The merge gate (ci.yml)
-// and the nightly (nightly.yml) have the same two jobs, and every test of a job runs for both.
+// and the nightly (nightly.yml) have the same two jobs, and every test of a job runs for both. The last test does the same for
+// the Flake stage of the Jenkinsfile (ADR-174): its commands against a history directory, with the layout its unstash loop makes.
 
 const BOT = 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>';
 const LINUX = detectEnvId({ GITHUB_ACTIONS: 'true', RUNNER_OS: 'Linux', RUNNER_ARCH: 'X64' });
@@ -390,5 +393,67 @@ describe('the flake jobs of the merge gate and of the nightly', () => {
     expect(
       linux.filter((r) => r.runId === 'gha-100-1').every((r) => r.tests.every((t) => t.tier === 'merge')),
     ).toBe(true);
+  });
+});
+
+describe('the Flake stage of the Jenkinsfile on a real history directory', () => {
+  const calls = jenkinsCalls(read('Jenkinsfile'));
+  const engines = calls
+    .filter((c) => c.script === 'gate:merge')
+    .map((c) => c.args.find((a) => a.startsWith('--project='))?.slice('--project='.length) ?? '');
+  const flake = calls.filter((c) => c.script === 'gate:flake');
+  const judged = flake.find((c) => !c.args.includes('--record'));
+  const recorded = flake.find((c) => c.args.includes('--record'));
+  const JENKINS = detectEnvId({ JENKINS_URL: 'http://jenkins:8080/' }, 'linux', 'arm64');
+
+  /** What the stage's unstash loop leaves in its workspace: the run files of each engine, in a directory of its own. */
+  function unstashed(workspace: string, build: string): void {
+    for (const engine of engines) {
+      const file = run([record({ project: engine })], {
+        runId: build,
+        invocationId: `${build}-${engine}`,
+        envId: JENKINS,
+      });
+      put(workspace, `reports/flake/${engine}/reports/flake/run.json`, renderRunFile(file));
+    }
+  }
+
+  it('judges a build of another branch and forgets it, and records a build of main in the volume the environment names', async () => {
+    expect(engines).toHaveLength(4);
+    expect(judged, 'a judging call').toBeDefined();
+    expect(recorded, 'a recording call').toBeDefined();
+    const root = makeScratch('ci-flake-');
+    scratches.push(root);
+    const workspace = join(root, 'workspace');
+    const volume = join(root, 'volume');
+    const strategy = lab(root);
+    const stage = async (call: Call | undefined): Promise<{ exit: number; out: string[] }> => {
+      const { io, out } = ioIn(workspace, strategy);
+      return {
+        exit: await gateCommand(call?.args ?? [], { ...io, env: { PB_FLAKE_HISTORY_DIR: volume } }),
+        out,
+      };
+    };
+    const lines = (): string[] =>
+      readFileSync(join(volume, `${JENKINS}.jsonl`), 'utf8')
+        .trim()
+        .split('\n');
+
+    unstashed(workspace, 'jenkins-playback-proof-1');
+    expect((await stage(judged)).exit).toBe(0);
+    expect(existsSync(volume), 'a judged build writes nothing').toBe(false);
+
+    expect((await stage(recorded)).exit).toBe(0);
+    expect(lines()).toHaveLength(4);
+    const again = await stage(recorded);
+    expect(again.exit).toBe(0);
+    expect(again.out.join('\n')).toContain('0 new runs');
+    expect(lines()).toHaveLength(4);
+
+    // The next build has a workspace of its own again: its runs are added to the file of the volume.
+    rmSync(join(workspace, 'reports'), { recursive: true });
+    unstashed(workspace, 'jenkins-playback-proof-2');
+    expect((await stage(recorded)).exit).toBe(0);
+    expect(lines()).toHaveLength(8);
   });
 });

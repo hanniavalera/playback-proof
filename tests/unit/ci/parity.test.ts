@@ -2,14 +2,17 @@ import { describe, expect, it } from 'vitest';
 import {
   WORKFLOW_DIR,
   allFiles,
+  callsIn,
   code,
   commandOf,
+  jenkinsCalls,
   jobsOf,
   legsOf,
   read,
   stepsOf,
-  words,
+  withoutGroovyComments,
 } from '../support/ci-files.ts';
+import type { Call } from '../support/ci-files.ts';
 
 // The same merge gate in two CI systems is only worth saying if the two files cannot drift apart unseen (ADR-173). This compares what
 // each of them calls: the gate scripts and their order, the projects of the merge gate, the arguments each script is given, and that
@@ -38,47 +41,11 @@ const ALLOWED = {
 const strategyOrder = (strategy: string): string[] =>
   [...strategy.matchAll(/^\| `(gate:[\w-]+)` \|/gm)].map((m) => m[1] ?? '');
 
-interface Call {
-  script: string;
-  args: string[];
-}
-
-/** Every `npm run <script> [-- arguments]` of a shell command, in order. A `${{ expression }}` is one word. */
-function callsIn(command: string): Call[] {
-  const tokens = words(
-    command.replace(
-      /\$\{\{\s*([^}]*?)\s*\}\}/g,
-      (_, expression: string) => `\${{${expression.replace(/\s+/g, '')}}}`,
-    ),
-  );
-  const calls: Call[] = [];
-  tokens.forEach((token, i) => {
-    const script = tokens[i + 2];
-    if (token !== 'npm' || tokens[i + 1] !== 'run' || script === undefined) return;
-    const rest = tokens.slice(i + 3);
-    const end = rest.findIndex((t) => ['&&', '||', ';', '|'].includes(t));
-    const args = end < 0 ? rest : rest.slice(0, end);
-    calls.push({ script, args: args[0] === '--' ? args.slice(1) : args });
-  });
-  return calls;
-}
-
-const withoutGroovyComments = (text: string): string =>
-  text
-    .split('\n')
-    .filter((line) => !line.trimStart().startsWith('//'))
-    .join('\n');
-
 /** The calls of the steps of a workflow, in the order of the file. */
 function workflowCalls(text: string): Call[] {
   return [...jobsOf(code(text)).values()].flatMap((job) =>
     stepsOf(job).flatMap((step) => callsIn(commandOf(step) ?? '')),
   );
-}
-
-/** The calls of a Jenkinsfile: its `sh '...'` lines, in order. */
-function jenkinsCalls(text: string): Call[] {
-  return [...withoutGroovyComments(text).matchAll(/^\s*sh '([^']+)'/gm)].flatMap((m) => callsIn(m[1] ?? ''));
 }
 
 const unique = <T>(items: readonly T[]): T[] => [...new Set(items)];

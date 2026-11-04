@@ -193,3 +193,40 @@ export function scriptArgs(
   const args = cut < 0 ? rest : rest.slice(0, cut);
   return args[0] === '--' ? args.slice(1) : args;
 }
+
+export interface Call {
+  script: string;
+  args: string[];
+}
+
+/** Every `npm run <script> [-- arguments]` of a shell command, in order. A `${{ expression }}` is one word. */
+export function callsIn(command: string): Call[] {
+  const tokens = words(
+    command.replace(
+      /\$\{\{\s*([^}]*?)\s*\}\}/g,
+      (_, expression: string) => `\${{${expression.replace(/\s+/g, '')}}}`,
+    ),
+  );
+  const calls: Call[] = [];
+  tokens.forEach((token, i) => {
+    const script = tokens[i + 2];
+    if (token !== 'npm' || tokens[i + 1] !== 'run' || script === undefined) return;
+    const rest = tokens.slice(i + 3);
+    const end = rest.findIndex((t) => ['&&', '||', ';', '|'].includes(t));
+    const args = end < 0 ? rest : rest.slice(0, end);
+    calls.push({ script, args: args[0] === '--' ? args.slice(1) : args });
+  });
+  return calls;
+}
+
+/** The Groovy file without its comment lines: a rule must not trip over the sentence that explains it. */
+export const withoutGroovyComments = (text: string): string =>
+  text
+    .split('\n')
+    .filter((line) => !line.trimStart().startsWith('//'))
+    .join('\n');
+
+/** The calls of a Jenkinsfile: its `sh '...'` lines, in order. */
+export function jenkinsCalls(text: string): Call[] {
+  return [...withoutGroovyComments(text).matchAll(/^\s*sh '([^']+)'/gm)].flatMap((m) => callsIn(m[1] ?? ''));
+}
