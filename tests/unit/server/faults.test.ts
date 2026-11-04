@@ -63,10 +63,15 @@ describe('validateFaultRules: what is rejected', () => {
     expect(errorsOf([{ type: 'latency', ms: 0 }])).toEqual([]);
   });
 
-  it.each([99, 600, 404.5, '404', null])('rejects status %j', (status) => {
+  // 1xx are interim responses: a client that is answered 101 or 199 waits for a final response that never comes.
+  it.each([99, 100, 101, 199, 600, 404.5, '404', null])('rejects status %j', (status) => {
     expect(errorsOf([{ type: 'status', status, match: { kind: 'segment' } }])).toContain(
-      'rules[0].status must be an integer from 100 to 599',
+      'rules[0].status must be an integer from 200 to 599',
     );
+  });
+
+  it.each([200, 204, 304, 404, 503, 599])('accepts status %j', (status) => {
+    expect(errorsOf([{ type: 'status', status, match: { kind: 'segment' } }])).toEqual([]);
   });
 
   it('requires match.kind for a status rule (no default: a 503 on everything is rarely what a test wants)', () => {

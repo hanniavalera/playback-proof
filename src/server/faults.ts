@@ -171,8 +171,8 @@ function parseRule(raw: unknown, path: string, ctx: FaultContext, problems: stri
       }
       break;
     case 'status':
-      if (isInteger(raw.status) && raw.status >= 100 && raw.status <= 599) rule.status = raw.status;
-      else problems.push(`${path}.status must be an integer from 100 to 599`);
+      if (isInteger(raw.status) && raw.status >= 200 && raw.status <= 599) rule.status = raw.status;
+      else problems.push(`${path}.status must be an integer from 200 to 599`);
       break;
     case 'stall':
       if (isInteger(raw.afterBytes) && raw.afterBytes >= 0) rule.afterBytes = raw.afterBytes;

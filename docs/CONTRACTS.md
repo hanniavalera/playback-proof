@@ -141,14 +141,29 @@ Base URL `http://127.0.0.1:${PB_PORT}` (default 4600). Types: `src/shared/api.ts
 - The request log is the second observation channel for tests: besides asking the player what it did (`window.__qa`) a test can ask the
   server what the player fetched (which segment numbers after a seek, which rung after a throttle, how often a 404 was retried).
 - Everything under `/s/<session>/` is logged (`RequestLogEntry`); `/api` and `/health` are not. The log of a session keeps its last 5000 entries.
+  "Everything" means every request of a session that exists, whatever the answer: a segment that does not exist, a method that is not allowed and a
+  path under the session that the service does not know (`kind: 'other'`) are entries too, with their 404 or 405. A request for a session that does not
+  exist (or has expired) is a 404 that no log can hold. The `path` of an entry has no query string.
   An entry is listed **from the request's arrival** with `pending: true` and the values so far (status 0 until the response head is sent), and is
   completed in place. `seq` is assigned at arrival, so the list is always in `seq` order and a cursor (`?since=<last seq seen>`) cannot skip a request that
   completes late; it also lets a test wait on the server ("a request for segment 7 has started") without sleeping.
+- A media request is decided in this order ([ADR-082](decisions/server.md)): the session must exist (404); the request is listed; the stream and the protocol of
+  the path must be the session's stream and one it offers, and the URL must be the one URL of the resource (404 otherwise: an extension that is not the
+  representation's, a segment number with a leading zero, an unknown representation, a method other than `GET` and `HEAD` is a 405); the fault plan is
+  decided from the request alone; what exists is decided at the instant of **arrival** (the live window, a segment that is not published yet is a 404);
+  then the answer is written with the plan applied, so a latency fault delays a decision that was already made, also a 404. A `status` fault answers with
+  that status and an empty body whatever the path (a segment that does not exist included: the origin is failing), and the faults that need a body
+  (throttle, stall, abort) do not apply to it. `Range` is ignored: the whole body is sent with a 200. Content types: `.mpd` `application/dash+xml`,
+  `.m3u8` `application/vnd.apple.mpegurl`, the `mimeType` of the representation for init and media segments.
+- Errors of the control API are JSON `{ error: string, details?: string[] }`: 400 (a body that is not valid, malformed JSON, a bad `since`), 404 (unknown
+  session, rule, path; a stream that is valid but was not generated), 405 with an `Allow` header, 413 (a body over 64 KiB: answered at once, the service
+  never buffers more than the limit), 503 (500 live sessions). `POST /api/sessions` answers 201 with a `Location` header. `GET /` is a plain-text index.
 - `GET /player/*` serves the built player (`dist/player`, produced by `npm run build:player`); `HealthInfo.player` says whether it exists.
   Static serving cannot leave that directory (path traversal is rejected, not sanitised). `HEAD` and `OPTIONS` (CORS preflight) work on every path.
 - Programmatic entry: `startServer(options)` in `src/server/index.ts` returns `{ origin, port, close() }` and is what the harnesses and tests use;
   `tools/serve.ts` (`npm run serve`) is the CLI: it reads `PB_PORT` (default 4600) and `PB_HOST` (default `127.0.0.1`), fails fast with a clear message
-  when a stream is missing (`npm run generate:streams` creates it: idempotent, content-addressed), and closes cleanly on SIGINT/SIGTERM.
+  when a stream is missing (`npm run generate:streams` creates it: idempotent, content-addressed), prints one line (`playback-proof service listening on <origin>`)
+  when it is ready, and closes cleanly on SIGINT/SIGTERM (exit code 0). `npm run smoke:service` runs the CLI against the real streams and checks what it serves.
 
 ## 5. Faults (see `src/shared/faults.ts`)
 
@@ -183,7 +198,7 @@ Exact semantics (the service implements them as written and its tests pin them):
   (session, manifest URL), recorded at serve time. A URL that had not been served before the rule became active has nothing to replay: its
   current body is served and becomes the body replayed for the rest of the window.
 - **Validation.** Invalid rules are rejected with 400 and a list of the problems: unknown `type`, non-finite or negative numbers, `kbps <= 0`,
-  `status` outside 100-599, a `live-stall` or `manifest-stale` rule on a VOD session, `status` without `match.kind`, a malformed `match`, a `times` that is not a
+  `status` outside 200-599 (1xx are interim responses: a client answered 101 or 199 would wait for a final one that never comes), a `live-stall` or `manifest-stale` rule on a VOD session, `status` without `match.kind`, a malformed `match`, a `times` that is not a
   positive integer, a duplicate rule id. `live-stall` and `manifest-stale` need `ms > 0`; `live-stall` takes no `match`, `times`, `afterMs` or `forMs`;
   `manifest-stale` takes no `forMs` or `times`, and its `match.kind`, if present, is `manifest` or `any`.
 
@@ -211,7 +226,8 @@ Exact semantics (the service implements them as written and its tests pin them):
 
 ## 8. Environments, ports, variables
 
-- `PB_PORT` (default 4600): service port. Parallel work uses disjoint ranges: media 4620-4629, server 4630-4639, player 4640-4649, e2e agents 4650-4699, perf and A/B 4700-4729, live 4730-4749, triage 4750-4759.
+- `PB_PORT` (default 4600): service port. Parallel work uses disjoint ranges: media 4620-4629, server 4630-4639, player 4640-4649, e2e agents 4650-4699, perf and A/B 4700-4729, live 4730-4749, triage 4750-4759. `PB_PORT=0` picks a free port (the line the CLI prints says which).
+- `PB_HOST` (default `127.0.0.1`), `PB_PLAYER_DIR` (default `dist/player`), `PB_CACHE_DIR` (the stream cache to serve, default `.cache/streams`), `PB_LOG=1` (one line per request on stderr): read by `npm run serve` only; `startServer` takes the same things as options.
 - `PB_ENV_ID`: explicit environment id; otherwise `detectEnvId()` (`src/shared/env.ts`): `local-darwin-arm64`, `docker-linux-arm64`, `gha-linux-x64`, `gha-macos-arm64`, `jenkins-linux-arm64`...
   Baselines are keyed by it and never compared across environments.
 - `PB_ORIGIN`: service origin for the client (default `http://127.0.0.1:${PB_PORT}`).
@@ -219,7 +235,7 @@ Exact semantics (the service implements them as written and its tests pin them):
 
 ## 9. Commands (names are fixed; implementations arrive with their phase)
 
-`npm run typecheck | lint | format:check | docs:check | build:player | generate:streams | verify:streams | serve | bench:server | player:smoke | codec-matrix | docker:pw | test:unit | test:e2e | test:merge | test:release | perf | perf:gate | perf:baseline | flake:report | flake:gate | ab | readiness | soak | triage`
+`npm run typecheck | lint | format:check | docs:check | build:player | generate:streams | verify:streams | serve | smoke:service | bench:server | player:smoke | codec-matrix | docker:pw | test:unit | test:e2e | test:merge | test:release | perf | perf:gate | perf:baseline | flake:report | flake:gate | ab | readiness | soak | triage`
 (`docker:pw -- <command>` runs a command inside the Playwright Linux image that matches the pinned `@playwright/test`, with the repository mounted: this is how Firefox runs on a macOS host and how the Linux CI environment is reproduced locally. `codec-matrix` probes the installed browsers and writes `docs/results/codec-matrix/<envId>.json`; `codec-matrix -- --render` regenerates [CODEC_MATRIX.md](CODEC_MATRIX.md) from every committed file and `-- --check` fails when it is stale. Options of both: `npm run codec-matrix -- --help`, `bash tools/docker/pw.sh --help`.)
 and the CI gate stages `gate:static | gate:unit | gate:merge | gate:perf | gate:flake | gate:triage`, which both GitHub Actions and the Jenkinsfile call.
 
