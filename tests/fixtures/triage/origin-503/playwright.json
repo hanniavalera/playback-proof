@@ -1,0 +1,743 @@
+{
+  "config": {
+    "rootDir": "/work/playback-proof/tests",
+    "projects": [
+      { "name": "chromium", "retries": 1 },
+      { "name": "firefox", "retries": 1 },
+      { "name": "webkit", "retries": 1 },
+      { "name": "chromium-cpu4x", "retries": 1 }
+    ]
+  },
+  "suites": [
+    {
+      "title": "e2e/recovery.spec.ts",
+      "specs": [
+        {
+          "title": "PB-REC-001 transient segment 404: the failed request is retried and succeeds, playback continues with no critical error and at most one rebuffer",
+          "tags": ["merge", "dash"],
+          "file": "e2e/recovery.spec.ts",
+          "line": 41,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15294,
+                  "retry": 0,
+                  "startTime": "2026-11-04T16:01:50.266Z",
+                  "error": {
+                    "message": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":1,\"status\":404,\"id\":\"f1\"} named 0 of the 1 request it was waited for within 15000 ms: the player never asked for what the rule matches, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 20 entries, the last 12:\n  #9 GET segment v360 #1 -> 503 in 0.92 ms\n  #10 GET init a-aac -> 200 in 0.31 ms\n  #11 GET segment a-aac #2 -> 503 in 0.5 ms\n  #12 GET segment a-aac #1 -> 503 in 0.11 ms\n  #13 GET segment a-aac #1 -> 503 in 0.57 ms\n  #14 GET segment a-aac #2 -> 503 in 0.32 ms\n  #15 GET segment v360 #1 -> 503 in 0.22 ms\n  #16 GET init v240 -> 200 in 0.82 ms\n  #17 GET segment v240 #1 -> 503 in 0.62 ms\n  #18 GET segment a-aac #1 -> 503 in 0.19 ms\n  #19 GET segment v240 #1 -> 503 in 0.19 ms\n  #20 GET segment a-aac #1 -> 503 in 0.22 ms",
+                    "stack": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":1,\"status\":404,\"id\":\"f1\"} named 0 of the 1 request it was waited for within 15000 ms: the player never asked for what the rule matches, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 20 entries, the last 12:\n  #9 GET segment v360 #1 -> 503 in 0.92 ms\n  #10 GET init a-aac -> 200 in 0.31 ms\n  #11 GET segment a-aac #2 -> 503 in 0.5 ms\n  #12 GET segment a-aac #1 -> 503 in 0.11 ms\n  #13 GET segment a-aac #1 -> 503 in 0.57 ms\n  #14 GET segment a-aac #2 -> 503 in 0.32 ms\n  #15 GET segment v360 #1 -> 503 in 0.22 ms\n  #16 GET init v240 -> 200 in 0.82 ms\n  #17 GET segment v240 #1 -> 503 in 0.62 ms\n  #18 GET segment a-aac #1 -> 503 in 0.19 ms\n  #19 GET segment v240 #1 -> 503 in 0.19 ms\n  #20 GET segment a-aac #1 -> 503 in 0.22 ms\n    at /work/playback-proof/tests/e2e/recovery.spec.ts:54:19"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "qa-events.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-REC-001-transient-segment-404-the-failed-request-is-retr-chromium/qa-events.json"
+                    },
+                    {
+                      "name": "qa-metrics.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-REC-001-transient-segment-404-the-failed-request-is-retr-chromium/qa-metrics.json"
+                    },
+                    {
+                      "name": "qa-info.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-REC-001-transient-segment-404-the-failed-request-is-retr-chromium/qa-info.json"
+                    },
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-REC-001-transient-segment-404-the-failed-request-is-retr-chromium/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-REC-001-transient-segment-404-the-failed-request-is-retr-chromium/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-REC-001-transient-segment-404-the-failed-request-is-retr-chromium/request-log.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15292,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:02:06.114Z",
+                  "error": {
+                    "message": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":1,\"status\":404,\"id\":\"f1\"} named 0 of the 1 request it was waited for within 15000 ms: the player never asked for what the rule matches, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 20 entries, the last 12:\n  #9 GET segment v360 #1 -> 503 in 0.24 ms\n  #10 GET init a-aac -> 200 in 0.37 ms\n  #11 GET segment a-aac #2 -> 503 in 0.07 ms\n  #12 GET segment a-aac #1 -> 503 in 0.06 ms\n  #13 GET segment a-aac #2 -> 503 in 0.15 ms\n  #14 GET segment a-aac #1 -> 503 in 0.26 ms\n  #15 GET segment v360 #1 -> 503 in 0.22 ms\n  #16 GET init v240 -> 200 in 0.21 ms\n  #17 GET segment v240 #1 -> 503 in 0.21 ms\n  #18 GET segment a-aac #1 -> 503 in 0.09 ms\n  #19 GET segment a-aac #1 -> 503 in 0.21 ms\n  #20 GET segment v240 #1 -> 503 in 0.19 ms",
+                    "stack": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":1,\"status\":404,\"id\":\"f1\"} named 0 of the 1 request it was waited for within 15000 ms: the player never asked for what the rule matches, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 20 entries, the last 12:\n  #9 GET segment v360 #1 -> 503 in 0.24 ms\n  #10 GET init a-aac -> 200 in 0.37 ms\n  #11 GET segment a-aac #2 -> 503 in 0.07 ms\n  #12 GET segment a-aac #1 -> 503 in 0.06 ms\n  #13 GET segment a-aac #2 -> 503 in 0.15 ms\n  #14 GET segment a-aac #1 -> 503 in 0.26 ms\n  #15 GET segment v360 #1 -> 503 in 0.22 ms\n  #16 GET init v240 -> 200 in 0.21 ms\n  #17 GET segment v240 #1 -> 503 in 0.21 ms\n  #18 GET segment a-aac #1 -> 503 in 0.09 ms\n  #19 GET segment a-aac #1 -> 503 in 0.21 ms\n  #20 GET segment v240 #1 -> 503 in 0.19 ms\n    at /work/playback-proof/tests/e2e/recovery.spec.ts:54:19"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "PB-REC-002 5xx burst on one segment: playback continues by retry or rung switch, with no critical error and at most one rebuffer",
+          "tags": ["merge", "dash"],
+          "file": "e2e/recovery.spec.ts",
+          "line": 107,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15299,
+                  "retry": 0,
+                  "startTime": "2026-11-04T16:02:21.941Z",
+                  "error": {
+                    "message": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":3,\"status\":503,\"id\":\"f1\"} named 0 of the 3 requests it was waited for within 15000 ms: the player never asked for what the rule matches, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 20 entries, the last 12:\n  #9 GET segment v360 #1 -> 503 in 0.08 ms\n  #10 GET init a-aac -> 200 in 0.07 ms\n  #11 GET segment a-aac #2 -> 503 in 0.05 ms\n  #12 GET segment a-aac #1 -> 503 in 0.14 ms\n  #13 GET segment v360 #1 -> 503 in 0.13 ms\n  #14 GET segment a-aac #1 -> 503 in 0.19 ms\n  #15 GET segment a-aac #2 -> 503 in 0.15 ms\n  #16 GET init v240 -> 200 in 0.23 ms\n  #17 GET segment v240 #1 -> 503 in 0.24 ms\n  #18 GET segment a-aac #1 -> 503 in 0.18 ms\n  #19 GET segment v240 #1 -> 503 in 0.17 ms\n  #20 GET segment a-aac #1 -> 503 in 0.17 ms",
+                    "stack": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":3,\"status\":503,\"id\":\"f1\"} named 0 of the 3 requests it was waited for within 15000 ms: the player never asked for what the rule matches, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 20 entries, the last 12:\n  #9 GET segment v360 #1 -> 503 in 0.08 ms\n  #10 GET init a-aac -> 200 in 0.07 ms\n  #11 GET segment a-aac #2 -> 503 in 0.05 ms\n  #12 GET segment a-aac #1 -> 503 in 0.14 ms\n  #13 GET segment v360 #1 -> 503 in 0.13 ms\n  #14 GET segment a-aac #1 -> 503 in 0.19 ms\n  #15 GET segment a-aac #2 -> 503 in 0.15 ms\n  #16 GET init v240 -> 200 in 0.23 ms\n  #17 GET segment v240 #1 -> 503 in 0.24 ms\n  #18 GET segment a-aac #1 -> 503 in 0.18 ms\n  #19 GET segment v240 #1 -> 503 in 0.17 ms\n  #20 GET segment a-aac #1 -> 503 in 0.17 ms\n    at /work/playback-proof/tests/e2e/recovery.spec.ts:121:19"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "qa-events.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-chromium/qa-events.json"
+                    },
+                    {
+                      "name": "qa-metrics.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-chromium/qa-metrics.json"
+                    },
+                    {
+                      "name": "qa-info.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-chromium/qa-info.json"
+                    },
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-chromium/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-chromium/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-chromium/request-log.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15290,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:02:37.743Z",
+                  "error": {
+                    "message": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":3,\"status\":503,\"id\":\"f1\"} named 0 of the 3 requests it was waited for within 15000 ms: the player never asked for what the rule matches, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 20 entries, the last 12:\n  #9 GET segment v360 #1 -> 503 in 0.08 ms\n  #10 GET init a-aac -> 200 in 0.06 ms\n  #11 GET segment a-aac #2 -> 503 in 0.05 ms\n  #12 GET segment a-aac #1 -> 503 in 0.1 ms\n  #13 GET segment v360 #1 -> 503 in 0.14 ms\n  #14 GET segment a-aac #1 -> 503 in 0.18 ms\n  #15 GET segment a-aac #2 -> 503 in 0.13 ms\n  #16 GET init v240 -> 200 in 0.17 ms\n  #17 GET segment v240 #1 -> 503 in 0.06 ms\n  #18 GET segment a-aac #1 -> 503 in 0.05 ms\n  #19 GET segment v240 #1 -> 503 in 0.2 ms\n  #20 GET segment a-aac #1 -> 503 in 0.18 ms",
+                    "stack": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":3,\"status\":503,\"id\":\"f1\"} named 0 of the 3 requests it was waited for within 15000 ms: the player never asked for what the rule matches, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 20 entries, the last 12:\n  #9 GET segment v360 #1 -> 503 in 0.08 ms\n  #10 GET init a-aac -> 200 in 0.06 ms\n  #11 GET segment a-aac #2 -> 503 in 0.05 ms\n  #12 GET segment a-aac #1 -> 503 in 0.1 ms\n  #13 GET segment v360 #1 -> 503 in 0.14 ms\n  #14 GET segment a-aac #1 -> 503 in 0.18 ms\n  #15 GET segment a-aac #2 -> 503 in 0.13 ms\n  #16 GET init v240 -> 200 in 0.17 ms\n  #17 GET segment v240 #1 -> 503 in 0.06 ms\n  #18 GET segment a-aac #1 -> 503 in 0.05 ms\n  #19 GET segment v240 #1 -> 503 in 0.2 ms\n  #20 GET segment a-aac #1 -> 503 in 0.18 ms\n    at /work/playback-proof/tests/e2e/recovery.spec.ts:121:19"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "PB-REC-001 transient segment 404: the failed request is retried and succeeds, playback continues with no critical error and at most one rebuffer",
+          "tags": ["merge", "dash"],
+          "file": "e2e/recovery.spec.ts",
+          "line": 41,
+          "tests": [
+            {
+              "projectName": "webkit",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 16092,
+                  "retry": 0,
+                  "startTime": "2026-11-04T16:04:28.222Z",
+                  "error": {
+                    "message": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":1,\"status\":404,\"id\":\"f1\"} named 0 of the 1 request it was waited for within 15000 ms: the player never asked for what the rule matches, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 20 entries, the last 12:\n  #9 GET segment v240 #1 -> 503 in 0.08 ms\n  #10 GET init a-aac -> 200 in 0.1 ms\n  #11 GET segment a-aac #2 -> 503 in 0.06 ms\n  #12 GET segment a-aac #1 -> 503 in 0.12 ms\n  #13 GET segment a-aac #2 -> 503 in 0.12 ms\n  #14 GET segment v240 #1 -> 503 in 0.12 ms\n  #15 GET segment a-aac #1 -> 503 in 0.12 ms\n  #16 GET init v720 -> 200 in 0.16 ms\n  #17 GET segment v720 #1 -> 503 in 0.08 ms\n  #18 GET segment a-aac #1 -> 503 in 0.06 ms\n  #19 GET segment v720 #1 -> 503 in 0.12 ms\n  #20 GET segment a-aac #1 -> 503 in 0.1 ms",
+                    "stack": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":1,\"status\":404,\"id\":\"f1\"} named 0 of the 1 request it was waited for within 15000 ms: the player never asked for what the rule matches, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 20 entries, the last 12:\n  #9 GET segment v240 #1 -> 503 in 0.08 ms\n  #10 GET init a-aac -> 200 in 0.1 ms\n  #11 GET segment a-aac #2 -> 503 in 0.06 ms\n  #12 GET segment a-aac #1 -> 503 in 0.12 ms\n  #13 GET segment a-aac #2 -> 503 in 0.12 ms\n  #14 GET segment v240 #1 -> 503 in 0.12 ms\n  #15 GET segment a-aac #1 -> 503 in 0.12 ms\n  #16 GET init v720 -> 200 in 0.16 ms\n  #17 GET segment v720 #1 -> 503 in 0.08 ms\n  #18 GET segment a-aac #1 -> 503 in 0.06 ms\n  #19 GET segment v720 #1 -> 503 in 0.12 ms\n  #20 GET segment a-aac #1 -> 503 in 0.1 ms\n    at /work/playback-proof/tests/e2e/recovery.spec.ts:54:19"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "qa-events.json",
+                      "contentType": "application/json",
+                      "path": "test-results/03-PB-REC-001-transient-segment-404-the-failed-request-is-retr-webkit/qa-events.json"
+                    },
+                    {
+                      "name": "qa-metrics.json",
+                      "contentType": "application/json",
+                      "path": "test-results/03-PB-REC-001-transient-segment-404-the-failed-request-is-retr-webkit/qa-metrics.json"
+                    },
+                    {
+                      "name": "qa-info.json",
+                      "contentType": "application/json",
+                      "path": "test-results/03-PB-REC-001-transient-segment-404-the-failed-request-is-retr-webkit/qa-info.json"
+                    },
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/03-PB-REC-001-transient-segment-404-the-failed-request-is-retr-webkit/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/03-PB-REC-001-transient-segment-404-the-failed-request-is-retr-webkit/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/03-PB-REC-001-transient-segment-404-the-failed-request-is-retr-webkit/request-log.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15618,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:04:45.029Z",
+                  "error": {
+                    "message": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":1,\"status\":404,\"id\":\"f1\"} named 0 of the 1 request it was waited for within 15000 ms: the player never asked for what the rule matches, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 20 entries, the last 12:\n  #9 GET segment v240 #1 -> 503 in 0.13 ms\n  #10 GET init a-aac -> 200 in 0.08 ms\n  #11 GET segment a-aac #2 -> 503 in 0.04 ms\n  #12 GET segment a-aac #1 -> 503 in 0.15 ms\n  #13 GET segment v240 #1 -> 503 in 0.13 ms\n  #14 GET segment a-aac #1 -> 503 in 0.12 ms\n  #15 GET segment a-aac #2 -> 503 in 0.17 ms\n  #16 GET init v720 -> 200 in 0.13 ms\n  #17 GET segment v720 #1 -> 503 in 0.07 ms\n  #18 GET segment a-aac #1 -> 503 in 0.06 ms\n  #19 GET segment v720 #1 -> 503 in 0.14 ms\n  #20 GET segment a-aac #1 -> 503 in 0.14 ms",
+                    "stack": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":1,\"status\":404,\"id\":\"f1\"} named 0 of the 1 request it was waited for within 15000 ms: the player never asked for what the rule matches, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 20 entries, the last 12:\n  #9 GET segment v240 #1 -> 503 in 0.13 ms\n  #10 GET init a-aac -> 200 in 0.08 ms\n  #11 GET segment a-aac #2 -> 503 in 0.04 ms\n  #12 GET segment a-aac #1 -> 503 in 0.15 ms\n  #13 GET segment v240 #1 -> 503 in 0.13 ms\n  #14 GET segment a-aac #1 -> 503 in 0.12 ms\n  #15 GET segment a-aac #2 -> 503 in 0.17 ms\n  #16 GET init v720 -> 200 in 0.13 ms\n  #17 GET segment v720 #1 -> 503 in 0.07 ms\n  #18 GET segment a-aac #1 -> 503 in 0.06 ms\n  #19 GET segment v720 #1 -> 503 in 0.14 ms\n  #20 GET segment a-aac #1 -> 503 in 0.14 ms\n    at /work/playback-proof/tests/e2e/recovery.spec.ts:54:19"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "PB-REC-002 5xx burst on one segment: playback continues by retry or rung switch, with no critical error and at most one rebuffer",
+          "tags": ["merge", "dash"],
+          "file": "e2e/recovery.spec.ts",
+          "line": 107,
+          "tests": [
+            {
+              "projectName": "webkit",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15527,
+                  "retry": 0,
+                  "startTime": "2026-11-04T16:05:01.251Z",
+                  "error": {
+                    "message": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":3,\"status\":503,\"id\":\"f1\"} named 0 of the 3 requests it was waited for within 15000 ms: the player never asked for what the rule matches, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 20 entries, the last 12:\n  #9 GET segment v240 #1 -> 503 in 0.09 ms\n  #10 GET init a-aac -> 200 in 0.06 ms\n  #11 GET segment a-aac #2 -> 503 in 0.07 ms\n  #12 GET segment a-aac #1 -> 503 in 0.11 ms\n  #13 GET segment a-aac #2 -> 503 in 0.11 ms\n  #14 GET segment v240 #1 -> 503 in 0.12 ms\n  #15 GET segment a-aac #1 -> 503 in 0.1 ms\n  #16 GET init v720 -> 200 in 0.12 ms\n  #17 GET segment v720 #1 -> 503 in 0.08 ms\n  #18 GET segment a-aac #1 -> 503 in 0.06 ms\n  #19 GET segment v720 #1 -> 503 in 0.15 ms\n  #20 GET segment a-aac #1 -> 503 in 0.15 ms",
+                    "stack": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":3,\"status\":503,\"id\":\"f1\"} named 0 of the 3 requests it was waited for within 15000 ms: the player never asked for what the rule matches, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 20 entries, the last 12:\n  #9 GET segment v240 #1 -> 503 in 0.09 ms\n  #10 GET init a-aac -> 200 in 0.06 ms\n  #11 GET segment a-aac #2 -> 503 in 0.07 ms\n  #12 GET segment a-aac #1 -> 503 in 0.11 ms\n  #13 GET segment a-aac #2 -> 503 in 0.11 ms\n  #14 GET segment v240 #1 -> 503 in 0.12 ms\n  #15 GET segment a-aac #1 -> 503 in 0.1 ms\n  #16 GET init v720 -> 200 in 0.12 ms\n  #17 GET segment v720 #1 -> 503 in 0.08 ms\n  #18 GET segment a-aac #1 -> 503 in 0.06 ms\n  #19 GET segment v720 #1 -> 503 in 0.15 ms\n  #20 GET segment a-aac #1 -> 503 in 0.15 ms\n    at /work/playback-proof/tests/e2e/recovery.spec.ts:121:19"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "qa-events.json",
+                      "contentType": "application/json",
+                      "path": "test-results/04-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-webkit/qa-events.json"
+                    },
+                    {
+                      "name": "qa-metrics.json",
+                      "contentType": "application/json",
+                      "path": "test-results/04-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-webkit/qa-metrics.json"
+                    },
+                    {
+                      "name": "qa-info.json",
+                      "contentType": "application/json",
+                      "path": "test-results/04-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-webkit/qa-info.json"
+                    },
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/04-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-webkit/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/04-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-webkit/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/04-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-webkit/request-log.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15582,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:05:17.411Z",
+                  "error": {
+                    "message": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":3,\"status\":503,\"id\":\"f1\"} named 0 of the 3 requests it was waited for within 15000 ms: the player never asked for what the rule matches, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 20 entries, the last 12:\n  #9 GET segment v240 #1 -> 503 in 0.08 ms\n  #10 GET init a-aac -> 200 in 0.07 ms\n  #11 GET segment a-aac #2 -> 503 in 0.05 ms\n  #12 GET segment a-aac #1 -> 503 in 0.07 ms\n  #13 GET segment v240 #1 -> 503 in 0.1 ms\n  #14 GET segment a-aac #2 -> 503 in 0.11 ms\n  #15 GET segment a-aac #1 -> 503 in 0.07 ms\n  #16 GET init v720 -> 200 in 0.13 ms\n  #17 GET segment v720 #1 -> 503 in 0.08 ms\n  #18 GET segment a-aac #1 -> 503 in 0.05 ms\n  #19 GET segment v720 #1 -> 503 in 0.1 ms\n  #20 GET segment a-aac #1 -> 503 in 0.11 ms",
+                    "stack": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":3,\"status\":503,\"id\":\"f1\"} named 0 of the 3 requests it was waited for within 15000 ms: the player never asked for what the rule matches, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 20 entries, the last 12:\n  #9 GET segment v240 #1 -> 503 in 0.08 ms\n  #10 GET init a-aac -> 200 in 0.07 ms\n  #11 GET segment a-aac #2 -> 503 in 0.05 ms\n  #12 GET segment a-aac #1 -> 503 in 0.07 ms\n  #13 GET segment v240 #1 -> 503 in 0.1 ms\n  #14 GET segment a-aac #2 -> 503 in 0.11 ms\n  #15 GET segment a-aac #1 -> 503 in 0.07 ms\n  #16 GET init v720 -> 200 in 0.13 ms\n  #17 GET segment v720 #1 -> 503 in 0.08 ms\n  #18 GET segment a-aac #1 -> 503 in 0.05 ms\n  #19 GET segment v720 #1 -> 503 in 0.1 ms\n  #20 GET segment a-aac #1 -> 503 in 0.11 ms\n    at /work/playback-proof/tests/e2e/recovery.spec.ts:121:19"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "suites": []
+    },
+    {
+      "title": "e2e/vod-seek.spec.ts",
+      "specs": [
+        {
+          "title": "PB-VOD-006 seek forward inside the buffered range: seeked fires and playback continues from the target with no rebuffer",
+          "tags": ["merge", "dash"],
+          "file": "e2e/vod-seek.spec.ts",
+          "line": 20,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15303,
+                  "retry": 0,
+                  "startTime": "2026-11-04T16:02:53.537Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n14 events so far, the last 14:\n  #0 t=76.7 media=0.000 load-requested {\"uri\":\"/s/a1d4d06c6384/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=77.5 media=0.000 buffering-start\n  #2 t=84.4 media=0.000 manifest-loaded\n  #3 t=87.9 media=0.000 buffering-start\n  #4 t=88.3 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=89.0 media=0.000 loaded\n  #6 t=1834.8 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a1d4d…\n  #7 t=2159.4 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a1d4d…\n  #8 t=2159.4 media=0.000 variant-changed {\"from\":2,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"abr\"}\n  #9 t=4174.6 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a1d4d…\n  #10 t=4174.6 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #11 t=4275.2 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a1d4d…\n  #12 t=6288.1 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a1d4d…\n  #13 t=6504.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a1d4d…",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n14 events so far, the last 14:\n  #0 t=76.7 media=0.000 load-requested {\"uri\":\"/s/a1d4d06c6384/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=77.5 media=0.000 buffering-start\n  #2 t=84.4 media=0.000 manifest-loaded\n  #3 t=87.9 media=0.000 buffering-start\n  #4 t=88.3 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=89.0 media=0.000 loaded\n  #6 t=1834.8 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a1d4d…\n  #7 t=2159.4 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a1d4d…\n  #8 t=2159.4 media=0.000 variant-changed {\"from\":2,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"abr\"}\n  #9 t=4174.6 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a1d4d…\n  #10 t=4174.6 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #11 t=4275.2 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a1d4d…\n  #12 t=6288.1 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a1d4d…\n  #13 t=6504.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a1d4d…\n    at /work/playback-proof/tests/e2e/vod-seek.spec.ts:31:5"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "qa-events.json",
+                      "contentType": "application/json",
+                      "path": "test-results/05-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-chromium/qa-events.json"
+                    },
+                    {
+                      "name": "qa-metrics.json",
+                      "contentType": "application/json",
+                      "path": "test-results/05-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-chromium/qa-metrics.json"
+                    },
+                    {
+                      "name": "qa-info.json",
+                      "contentType": "application/json",
+                      "path": "test-results/05-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-chromium/qa-info.json"
+                    },
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/05-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-chromium/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/05-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-chromium/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/05-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-chromium/request-log.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15302,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:03:09.325Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n14 events so far, the last 14:\n  #0 t=73.7 media=0.000 load-requested {\"uri\":\"/s/675a88cb374d/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=74.5 media=0.000 buffering-start\n  #2 t=82.1 media=0.000 manifest-loaded\n  #3 t=85.4 media=0.000 buffering-start\n  #4 t=85.9 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=86.6 media=0.000 loaded\n  #6 t=1935.3 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/675a8…\n  #7 t=1935.4 media=0.000 variant-changed {\"from\":2,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"abr\"}\n  #8 t=2741.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/675a8…\n  #9 t=3090.2 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/675a8…\n  #10 t=3834.5 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/675a8…\n  #11 t=3834.5 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #12 t=5923.5 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/675a8…\n  #13 t=6030.8 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/675a8…",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n14 events so far, the last 14:\n  #0 t=73.7 media=0.000 load-requested {\"uri\":\"/s/675a88cb374d/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=74.5 media=0.000 buffering-start\n  #2 t=82.1 media=0.000 manifest-loaded\n  #3 t=85.4 media=0.000 buffering-start\n  #4 t=85.9 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=86.6 media=0.000 loaded\n  #6 t=1935.3 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/675a8…\n  #7 t=1935.4 media=0.000 variant-changed {\"from\":2,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"abr\"}\n  #8 t=2741.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/675a8…\n  #9 t=3090.2 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/675a8…\n  #10 t=3834.5 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/675a8…\n  #11 t=3834.5 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #12 t=5923.5 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/675a8…\n  #13 t=6030.8 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/675a8…\n    at /work/playback-proof/tests/e2e/vod-seek.spec.ts:31:5"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "PB-VOD-006 seek forward inside the buffered range: seeked fires and playback continues from the target with no rebuffer",
+          "tags": ["merge", "dash"],
+          "file": "e2e/vod-seek.spec.ts",
+          "line": 20,
+          "tests": [
+            {
+              "projectName": "webkit",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15587,
+                  "retry": 0,
+                  "startTime": "2026-11-04T16:05:33.647Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n14 events so far, the last 14:\n  #0 t=121.0 media=0.000 load-requested {\"uri\":\"/s/53b76d5a65b2/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=125.0 media=0.000 buffering-start\n  #2 t=134.0 media=0.000 manifest-loaded\n  #3 t=169.0 media=0.000 buffering-start\n  #4 t=170.0 media=0.000 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}\n  #5 t=171.0 media=0.000 loaded\n  #6 t=1806.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/53b76…\n  #7 t=2072.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/53b76…\n  #8 t=2072.0 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #9 t=3835.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/53b76…\n  #10 t=3836.0 media=0.000 variant-changed {\"from\":0,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"abr\"}\n  #11 t=4077.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/53b76…\n  #12 t=5285.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/53b76…\n  #13 t=5848.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/53b76…",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n14 events so far, the last 14:\n  #0 t=121.0 media=0.000 load-requested {\"uri\":\"/s/53b76d5a65b2/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=125.0 media=0.000 buffering-start\n  #2 t=134.0 media=0.000 manifest-loaded\n  #3 t=169.0 media=0.000 buffering-start\n  #4 t=170.0 media=0.000 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}\n  #5 t=171.0 media=0.000 loaded\n  #6 t=1806.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/53b76…\n  #7 t=2072.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/53b76…\n  #8 t=2072.0 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #9 t=3835.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/53b76…\n  #10 t=3836.0 media=0.000 variant-changed {\"from\":0,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"abr\"}\n  #11 t=4077.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/53b76…\n  #12 t=5285.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/53b76…\n  #13 t=5848.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/53b76…\n    at /work/playback-proof/tests/e2e/vod-seek.spec.ts:31:5"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "qa-events.json",
+                      "contentType": "application/json",
+                      "path": "test-results/06-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-webkit/qa-events.json"
+                    },
+                    {
+                      "name": "qa-metrics.json",
+                      "contentType": "application/json",
+                      "path": "test-results/06-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-webkit/qa-metrics.json"
+                    },
+                    {
+                      "name": "qa-info.json",
+                      "contentType": "application/json",
+                      "path": "test-results/06-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-webkit/qa-info.json"
+                    },
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/06-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-webkit/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/06-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-webkit/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/06-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-webkit/request-log.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15606,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:05:49.849Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n14 events so far, the last 14:\n  #0 t=130.0 media=0.000 load-requested {\"uri\":\"/s/7263263e50c5/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=137.0 media=0.000 buffering-start\n  #2 t=147.0 media=0.000 manifest-loaded\n  #3 t=180.0 media=0.000 buffering-start\n  #4 t=181.0 media=0.000 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}\n  #5 t=182.0 media=0.000 loaded\n  #6 t=1991.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/72632…\n  #7 t=2605.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/72632…\n  #8 t=2605.0 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #9 t=4114.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/72632…\n  #10 t=4268.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/72632…\n  #11 t=4268.0 media=0.000 variant-changed {\"from\":0,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"abr\"}\n  #12 t=6396.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/72632…\n  #13 t=6650.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/72632…",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n14 events so far, the last 14:\n  #0 t=130.0 media=0.000 load-requested {\"uri\":\"/s/7263263e50c5/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=137.0 media=0.000 buffering-start\n  #2 t=147.0 media=0.000 manifest-loaded\n  #3 t=180.0 media=0.000 buffering-start\n  #4 t=181.0 media=0.000 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}\n  #5 t=182.0 media=0.000 loaded\n  #6 t=1991.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/72632…\n  #7 t=2605.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/72632…\n  #8 t=2605.0 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #9 t=4114.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/72632…\n  #10 t=4268.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/72632…\n  #11 t=4268.0 media=0.000 variant-changed {\"from\":0,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"abr\"}\n  #12 t=6396.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/72632…\n  #13 t=6650.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/72632…\n    at /work/playback-proof/tests/e2e/vod-seek.spec.ts:31:5"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "suites": []
+    },
+    {
+      "title": "e2e/vod-start.spec.ts",
+      "specs": [
+        {
+          "title": "PB-VOD-001 DASH VOD starts: first frame presented, 3 s of media time reached, no error",
+          "tags": ["merge", "cpu", "dash"],
+          "file": "e2e/vod-start.spec.ts",
+          "line": 78,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15300,
+                  "retry": 0,
+                  "startTime": "2026-11-04T16:03:25.114Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n14 events so far, the last 14:\n  #0 t=77.9 media=0.000 load-requested {\"uri\":\"/s/7c06e0c7db20/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=78.8 media=0.000 buffering-start\n  #2 t=86.5 media=0.000 manifest-loaded\n  #3 t=90.0 media=0.000 buffering-start\n  #4 t=90.4 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=91.2 media=0.000 loaded\n  #6 t=2308.4 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/7c06e…\n  #7 t=2326.6 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/7c06e…\n  #8 t=2326.6 media=0.000 variant-changed {\"from\":2,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"abr\"}\n  #9 t=4154.8 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/7c06e…\n  #10 t=4265.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/7c06e…\n  #11 t=4265.0 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #12 t=6320.4 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/7c06e…\n  #13 t=6664.6 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/7c06e…",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n14 events so far, the last 14:\n  #0 t=77.9 media=0.000 load-requested {\"uri\":\"/s/7c06e0c7db20/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=78.8 media=0.000 buffering-start\n  #2 t=86.5 media=0.000 manifest-loaded\n  #3 t=90.0 media=0.000 buffering-start\n  #4 t=90.4 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=91.2 media=0.000 loaded\n  #6 t=2308.4 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/7c06e…\n  #7 t=2326.6 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/7c06e…\n  #8 t=2326.6 media=0.000 variant-changed {\"from\":2,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"abr\"}\n  #9 t=4154.8 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/7c06e…\n  #10 t=4265.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/7c06e…\n  #11 t=4265.0 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #12 t=6320.4 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/7c06e…\n  #13 t=6664.6 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/7c06e…\n    at expectStartsAndPlays (/work/playback-proof/tests/e2e/vod-start.spec.ts:24:3)\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:88:5"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "qa-events.json",
+                      "contentType": "application/json",
+                      "path": "test-results/07-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-chromium/qa-events.json"
+                    },
+                    {
+                      "name": "qa-metrics.json",
+                      "contentType": "application/json",
+                      "path": "test-results/07-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-chromium/qa-metrics.json"
+                    },
+                    {
+                      "name": "qa-info.json",
+                      "contentType": "application/json",
+                      "path": "test-results/07-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-chromium/qa-info.json"
+                    },
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/07-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-chromium/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/07-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-chromium/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/07-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-chromium/request-log.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15326,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:03:40.922Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n14 events so far, the last 14:\n  #0 t=81.1 media=0.000 load-requested {\"uri\":\"/s/145f52429326/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=82.0 media=0.000 buffering-start\n  #2 t=89.5 media=0.000 manifest-loaded\n  #3 t=93.5 media=0.000 buffering-start\n  #4 t=94.0 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=94.7 media=0.000 loaded\n  #6 t=1856.2 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/145f5…\n  #7 t=2072.9 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/145f5…\n  #8 t=2073.0 media=0.000 variant-changed {\"from\":2,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"abr\"}\n  #9 t=4339.2 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/145f5…\n  #10 t=4722.6 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/145f5…\n  #11 t=4722.7 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #12 t=6499.3 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/145f5…\n  #13 t=6722.2 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/145f5…",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n14 events so far, the last 14:\n  #0 t=81.1 media=0.000 load-requested {\"uri\":\"/s/145f52429326/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=82.0 media=0.000 buffering-start\n  #2 t=89.5 media=0.000 manifest-loaded\n  #3 t=93.5 media=0.000 buffering-start\n  #4 t=94.0 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=94.7 media=0.000 loaded\n  #6 t=1856.2 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/145f5…\n  #7 t=2072.9 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/145f5…\n  #8 t=2073.0 media=0.000 variant-changed {\"from\":2,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"abr\"}\n  #9 t=4339.2 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/145f5…\n  #10 t=4722.6 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/145f5…\n  #11 t=4722.7 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #12 t=6499.3 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/145f5…\n  #13 t=6722.2 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/145f5…\n    at expectStartsAndPlays (/work/playback-proof/tests/e2e/vod-start.spec.ts:24:3)\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:88:5"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "PB-VOD-002 HLS VOD starts: first frame presented, 3 s of media time reached, no error",
+          "tags": ["merge", "hls"],
+          "file": "e2e/vod-start.spec.ts",
+          "line": 92,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15259,
+                  "retry": 0,
+                  "startTime": "2026-11-04T16:03:56.748Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n4 events so far, the last 4:\n  #0 t=75.5 media=0.000 load-requested {\"uri\":\"/s/d9b12fd44965/vod-cmaf/hls/master.m3u8\"}\n  #1 t=76.4 media=0.000 buffering-start\n  #2 t=1238.6 media=0.000 buffering-end\n  #3 t=1239.1 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/d9b12…",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n4 events so far, the last 4:\n  #0 t=75.5 media=0.000 load-requested {\"uri\":\"/s/d9b12fd44965/vod-cmaf/hls/master.m3u8\"}\n  #1 t=76.4 media=0.000 buffering-start\n  #2 t=1238.6 media=0.000 buffering-end\n  #3 t=1239.1 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/d9b12…\n    at expectStartsAndPlays (/work/playback-proof/tests/e2e/vod-start.spec.ts:24:3)\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:102:5"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "qa-events.json",
+                      "contentType": "application/json",
+                      "path": "test-results/08-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-chromium/qa-events.json"
+                    },
+                    {
+                      "name": "qa-metrics.json",
+                      "contentType": "application/json",
+                      "path": "test-results/08-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-chromium/qa-metrics.json"
+                    },
+                    {
+                      "name": "qa-info.json",
+                      "contentType": "application/json",
+                      "path": "test-results/08-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-chromium/qa-info.json"
+                    },
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/08-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-chromium/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/08-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-chromium/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/08-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-chromium/request-log.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15256,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:04:12.479Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n4 events so far, the last 4:\n  #0 t=72.6 media=0.000 load-requested {\"uri\":\"/s/711fc9b072a3/vod-cmaf/hls/master.m3u8\"}\n  #1 t=73.5 media=0.000 buffering-start\n  #2 t=1505.3 media=0.000 buffering-end\n  #3 t=1505.6 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/711fc…",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n4 events so far, the last 4:\n  #0 t=72.6 media=0.000 load-requested {\"uri\":\"/s/711fc9b072a3/vod-cmaf/hls/master.m3u8\"}\n  #1 t=73.5 media=0.000 buffering-start\n  #2 t=1505.3 media=0.000 buffering-end\n  #3 t=1505.6 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/711fc…\n    at expectStartsAndPlays (/work/playback-proof/tests/e2e/vod-start.spec.ts:24:3)\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:102:5"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "PB-VOD-001 DASH VOD starts: first frame presented, 3 s of media time reached, no error",
+          "tags": ["merge", "cpu", "dash"],
+          "file": "e2e/vod-start.spec.ts",
+          "line": 78,
+          "tests": [
+            {
+              "projectName": "webkit",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15579,
+                  "retry": 0,
+                  "startTime": "2026-11-04T16:06:06.066Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n14 events so far, the last 14:\n  #0 t=123.0 media=0.000 load-requested {\"uri\":\"/s/a06747e909fb/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=128.0 media=0.000 buffering-start\n  #2 t=136.0 media=0.000 manifest-loaded\n  #3 t=170.0 media=0.000 buffering-start\n  #4 t=170.0 media=0.000 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}\n  #5 t=171.0 media=0.000 loaded\n  #6 t=2031.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a0674…\n  #7 t=2032.0 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #8 t=2435.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a0674…\n  #9 t=4316.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a0674…\n  #10 t=4316.0 media=0.000 variant-changed {\"from\":0,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"abr\"}\n  #11 t=4807.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a0674…\n  #12 t=6097.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a0674…\n  #13 t=6097.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a0674…",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n14 events so far, the last 14:\n  #0 t=123.0 media=0.000 load-requested {\"uri\":\"/s/a06747e909fb/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=128.0 media=0.000 buffering-start\n  #2 t=136.0 media=0.000 manifest-loaded\n  #3 t=170.0 media=0.000 buffering-start\n  #4 t=170.0 media=0.000 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}\n  #5 t=171.0 media=0.000 loaded\n  #6 t=2031.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a0674…\n  #7 t=2032.0 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #8 t=2435.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a0674…\n  #9 t=4316.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a0674…\n  #10 t=4316.0 media=0.000 variant-changed {\"from\":0,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"abr\"}\n  #11 t=4807.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a0674…\n  #12 t=6097.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a0674…\n  #13 t=6097.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a0674…\n    at expectStartsAndPlays (/work/playback-proof/tests/e2e/vod-start.spec.ts:24:3)\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:88:5"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "qa-events.json",
+                      "contentType": "application/json",
+                      "path": "test-results/09-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-webkit/qa-events.json"
+                    },
+                    {
+                      "name": "qa-metrics.json",
+                      "contentType": "application/json",
+                      "path": "test-results/09-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-webkit/qa-metrics.json"
+                    },
+                    {
+                      "name": "qa-info.json",
+                      "contentType": "application/json",
+                      "path": "test-results/09-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-webkit/qa-info.json"
+                    },
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/09-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-webkit/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/09-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-webkit/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/09-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-webkit/request-log.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15616,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:06:22.250Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n14 events so far, the last 14:\n  #0 t=133.0 media=0.000 load-requested {\"uri\":\"/s/fb4895137e02/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=139.0 media=0.000 buffering-start\n  #2 t=147.0 media=0.000 manifest-loaded\n  #3 t=181.0 media=0.000 buffering-start\n  #4 t=181.0 media=0.000 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}\n  #5 t=182.0 media=0.000 loaded\n  #6 t=1817.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/fb489…\n  #7 t=2630.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/fb489…\n  #8 t=2631.0 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #9 t=4503.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/fb489…\n  #10 t=4584.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/fb489…\n  #11 t=4584.0 media=0.000 variant-changed {\"from\":0,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"abr\"}\n  #12 t=6433.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/fb489…\n  #13 t=7425.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/fb489…",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n14 events so far, the last 14:\n  #0 t=133.0 media=0.000 load-requested {\"uri\":\"/s/fb4895137e02/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=139.0 media=0.000 buffering-start\n  #2 t=147.0 media=0.000 manifest-loaded\n  #3 t=181.0 media=0.000 buffering-start\n  #4 t=181.0 media=0.000 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}\n  #5 t=182.0 media=0.000 loaded\n  #6 t=1817.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/fb489…\n  #7 t=2630.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/fb489…\n  #8 t=2631.0 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #9 t=4503.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/fb489…\n  #10 t=4584.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/fb489…\n  #11 t=4584.0 media=0.000 variant-changed {\"from\":0,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"abr\"}\n  #12 t=6433.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/fb489…\n  #13 t=7425.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/fb489…\n    at expectStartsAndPlays (/work/playback-proof/tests/e2e/vod-start.spec.ts:24:3)\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:88:5"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "PB-VOD-002 HLS VOD starts: first frame presented, 3 s of media time reached, no error",
+          "tags": ["merge", "hls"],
+          "file": "e2e/vod-start.spec.ts",
+          "line": 92,
+          "tests": [
+            {
+              "projectName": "webkit",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15595,
+                  "retry": 0,
+                  "startTime": "2026-11-04T16:06:38.478Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n4 events so far, the last 4:\n  #0 t=124.0 media=0.000 load-requested {\"uri\":\"/s/73eaad55ba77/vod-cmaf/hls/master.m3u8\"}\n  #1 t=128.0 media=0.000 buffering-start\n  #2 t=994.0 media=0.000 buffering-end\n  #3 t=994.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/73eaa…",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n4 events so far, the last 4:\n  #0 t=124.0 media=0.000 load-requested {\"uri\":\"/s/73eaad55ba77/vod-cmaf/hls/master.m3u8\"}\n  #1 t=128.0 media=0.000 buffering-start\n  #2 t=994.0 media=0.000 buffering-end\n  #3 t=994.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/73eaa…\n    at expectStartsAndPlays (/work/playback-proof/tests/e2e/vod-start.spec.ts:24:3)\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:102:5"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "qa-events.json",
+                      "contentType": "application/json",
+                      "path": "test-results/10-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-webkit/qa-events.json"
+                    },
+                    {
+                      "name": "qa-metrics.json",
+                      "contentType": "application/json",
+                      "path": "test-results/10-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-webkit/qa-metrics.json"
+                    },
+                    {
+                      "name": "qa-info.json",
+                      "contentType": "application/json",
+                      "path": "test-results/10-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-webkit/qa-info.json"
+                    },
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/10-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-webkit/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/10-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-webkit/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/10-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-webkit/request-log.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15599,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:06:54.702Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n4 events so far, the last 4:\n  #0 t=134.0 media=0.000 load-requested {\"uri\":\"/s/3f2ff81d524f/vod-cmaf/hls/master.m3u8\"}\n  #1 t=138.0 media=0.000 buffering-start\n  #2 t=1580.0 media=0.000 buffering-end\n  #3 t=1580.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/3f2ff…",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n4 events so far, the last 4:\n  #0 t=134.0 media=0.000 load-requested {\"uri\":\"/s/3f2ff81d524f/vod-cmaf/hls/master.m3u8\"}\n  #1 t=138.0 media=0.000 buffering-start\n  #2 t=1580.0 media=0.000 buffering-end\n  #3 t=1580.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/3f2ff…\n    at expectStartsAndPlays (/work/playback-proof/tests/e2e/vod-start.spec.ts:24:3)\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:102:5"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "suites": []
+    }
+  ],
+  "errors": [],
+  "stats": { "startTime": "2026-11-04T16:01:48.955Z", "duration": 321640.46499999997 }
+}

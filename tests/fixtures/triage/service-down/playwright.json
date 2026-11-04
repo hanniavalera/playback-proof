@@ -1,0 +1,19 @@
+{
+  "config": {
+    "rootDir": "/work/playback-proof/tests",
+    "projects": [
+      { "name": "chromium", "retries": 1 },
+      { "name": "firefox", "retries": 1 },
+      { "name": "webkit", "retries": 1 },
+      { "name": "chromium-cpu4x", "retries": 1 }
+    ]
+  },
+  "suites": [],
+  "errors": [
+    {
+      "message": "Error: the test data service at http://127.0.0.1:4740 is not answering (GET /health -> no answer ECONNREFUSED): start it with `npm run build:player && npm run serve`",
+      "stack": "Error: the test data service at http://127.0.0.1:4740 is not answering (GET /health -> no answer ECONNREFUSED): start it with `npm run build:player && npm run serve`\n    at /work/playback-proof/tests/e2e/support/global-setup.ts:26:11\n    at globalSetup (/work/playback-proof/tests/e2e/support/global-setup.ts:25:18)"
+    }
+  ],
+  "stats": { "startTime": "2026-11-04T15:56:30.122Z", "duration": 45.466999999999985 }
+}

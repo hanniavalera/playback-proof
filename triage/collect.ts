@@ -176,6 +176,18 @@ function testResultRoots(from: string): string[] {
   return [...roots];
 }
 
+/** `dir`, and each directory above it, up to and including `base`. */
+function ancestorsWithin(dir: string, base: string): string[] {
+  const found: string[] = [];
+  let current = resolve(dir);
+  const top = resolve(base);
+  for (;;) {
+    found.push(current);
+    if (current === top || dirname(current) === current) return found;
+    current = dirname(current);
+  }
+}
+
 /** Where an attachment kept as a file is now: its recorded path (this machine), or the same path below `test-results` in the artifacts. */
 export function resolveAttachmentPath(path: string, roots: readonly string[]): string | null {
   if (existsSync(path)) return path;
@@ -607,7 +619,10 @@ export function collect(from: string, options: CollectOptions = {}): Collection 
       result.problems.push(`${source}: is not a Playwright JSON report (no config and suites), skipped`);
       continue;
     }
-    const reading = readReport(report, { from: base, source, envIds, roots });
+    // The attachments a report names as files are looked for first beside it and in the directories above it (up to what was given): in
+    // downloaded artifacts every job's `reports/` and `test-results/` sit together, and two jobs have directories of the same name.
+    const nearby = ancestorsWithin(dirname(file), base).flatMap(testResultRoots);
+    const reading = readReport(report, { from: base, source, envIds, roots: [...nearby, ...roots] });
     const startTime = reading.summary.startTime;
     for (const failure of reading.failures) {
       const key = executionKey(failure, startTime);

@@ -43,7 +43,14 @@ export interface Reduction {
   files: Record<string, string>;
   /** What was cut, one line each: a person reviewing the fixture reads these. */
   notes: string[];
-  kept: { failed: number; flaky: number; skipped: number; passedDropped: number; attachments: number };
+  kept: {
+    failed: number;
+    flaky: number;
+    skipped: number;
+    runErrors: number;
+    passedDropped: number;
+    attachments: number;
+  };
 }
 
 type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
@@ -317,7 +324,7 @@ export function reduceReport(input: unknown, options: ReduceOptions = {}): Reduc
     roots: options.roots ?? [],
     files: {},
     notes: [],
-    kept: { failed: 0, flaky: 0, skipped: 0, passedDropped: 0, attachments: 0 },
+    kept: { failed: 0, flaky: 0, skipped: 0, runErrors: 0, passedDropped: 0, attachments: 0 },
     directories: new Map(),
   };
   const suites = list(report.suites)
@@ -330,6 +337,7 @@ export function reduceReport(input: unknown, options: ReduceOptions = {}): Reduc
       message: text(error.message) ?? '',
       ...(text(error.stack) ? { stack: text(error.stack) } : {}),
     }));
+  context.kept.runErrors = errors.length;
   const stats = isObject(report.stats) ? report.stats : {};
   const reduced = scrubValue(
     {
@@ -451,7 +459,7 @@ export async function main(argv: readonly string[], io: Io = PROCESS_IO): Promis
     const written = await writeFixture(reduction, out, { force });
     const { kept } = reduction;
     io.stdout(
-      `${out}: ${kept.failed} failed, ${kept.flaky} flaky, ${kept.skipped} skipped kept (${kept.passedDropped} passed left out), ${kept.attachments} attachments, ${written.length} files\n`,
+      `${out}: ${kept.failed} failed, ${kept.flaky} flaky, ${kept.skipped} skipped, ${kept.runErrors} run errors kept (${kept.passedDropped} passed left out), ${kept.attachments} attachments, ${written.length} files\n`,
     );
     for (const note of reduction.notes) io.stdout(`  ${note}\n`);
     return 0;

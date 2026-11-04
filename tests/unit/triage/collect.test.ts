@@ -459,6 +459,35 @@ describe('PB-LAB-005 triage collection: a directory of reports and of downloaded
     ).toBeNull();
     expect(resolveAttachmentPath('/no/test-results-dir/a.json', [scratch])).toBeNull();
   });
+
+  it('looks beside a report first: two reports whose test-results have directories of the same name each read their own (a real fixture directory read as one)', () => {
+    const root = dir();
+    const attach = (name: string): PwAttachment[] => [
+      {
+        name: 'qa-metrics.json',
+        contentType: 'application/json',
+        path: `test-results/${name}/qa-metrics.json`,
+      },
+    ];
+    for (const [experiment, state, startTime] of [
+      ['one', 'error', '2026-11-04T05:00:00.000Z'],
+      ['two', 'playing', '2026-11-04T05:10:00.000Z'],
+    ] as const) {
+      write(`${root}/${experiment}/test-results/01-same-name/qa-metrics.json`, metrics({ state }));
+      write(
+        `${root}/${experiment}/playwright.json`,
+        report([{ title: 'PB-VOD-001 starts', attempts: [failedWith('Error: x', attach('01-same-name'))] }], {
+          startTime,
+        }),
+      );
+    }
+    const failures = collect(join(scratch, root)).failures;
+    expect(failures.map((f) => [f.source, f.diagnostics.metrics.state])).toStrictEqual([
+      ['one/playwright.json', 'error'],
+      ['two/playwright.json', 'playing'],
+    ]);
+    expect(failures.every((f) => f.missing.every((line) => !line.includes('qa-metrics')))).toBe(true);
+  });
 });
 
 describe('PB-LAB-005 triage collection: input that is not what it should be never throws', () => {

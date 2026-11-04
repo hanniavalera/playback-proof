@@ -403,7 +403,7 @@ describe('PB-LAB-005 triage fixtures: the files and the command', () => {
     const done = await call('--from', from, '--out', out, '--max-attachment-bytes', '4000');
     expect(done.code).toBe(0);
     expect(done.out).toMatch(
-      /1 failed, 0 flaky, 0 skipped kept \(0 passed left out\), 6 attachments, 7 files/,
+      /1 failed, 0 flaky, 0 skipped, 0 run errors kept \(0 passed left out\), 6 attachments, 7 files/,
     );
     expect(done.out).toMatch(/request-log\.json shortened from 200 to \d+ entries/);
     expect(collect(out).failures).toHaveLength(1);
