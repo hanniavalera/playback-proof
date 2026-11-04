@@ -385,10 +385,11 @@ describe('the committed evidence of this repository', () => {
 
   it('gives the reasons the skips will print', () => {
     expect(engineGap(real('docker-linux-arm64', 'webkit', 'linux', false))).toMatch(
-      /^documented gap in docker-linux-arm64: no vod stream plays over dash in webkit .*cmaf-vp9-aac intermittent \d\/5/,
+      /^documented gap in docker-linux-arm64: no vod stream plays over dash in webkit .*cmaf-vp9-aac (intermittent|fail) \d\/5/,
     );
+    // Linux WebKit is intermittent on the probe's page: a re-run of the same environment can say 2 of 5 or 0 of 5 for the same case.
     expect(engineGap(real('gha-linux-x64', 'webkit', 'linux', false))).toMatch(
-      /^documented gap in gha-linux-x64: no vod stream plays over dash in webkit .*cmaf-vp9-aac intermittent \d\/5/,
+      /^documented gap in gha-linux-x64: no vod stream plays over dash in webkit .*cmaf-vp9-aac (intermittent|fail) \d\/5/,
     );
     expect(engineGap(real('local-darwin-arm64', 'firefox', 'darwin', true))).toContain(
       'Could not find profile folder',
