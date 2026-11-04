@@ -15,6 +15,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "docs:check": "tsx tools/check-docs.ts",
+    "specs:check": "tsx tools/check-specs.ts",
     "build:player": "tsx tools/build-player.ts",
     "generate:streams": "tsx tools/generate-streams.ts",
     "verify:streams": "tsx tools/verify-streams.ts",
