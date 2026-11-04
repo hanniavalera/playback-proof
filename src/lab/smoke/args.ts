@@ -28,6 +28,12 @@ export interface SmokeOptions {
   mediaSeconds: number;
   /** Safety-net deadline of one wait, ms. Never a measurement. */
   timeoutMs: number;
+  /**
+   * An experiment's condition, not a synchronisation: how long the tool leaves the page alone after navigating, before its first
+   * evaluate. In engines where the automation's own evaluate counts as a user gesture, this decides whether the page's own
+   * unmuted play() starts before or after one.
+   */
+  holdMs: number;
   /** Result file (JSON). */
   out?: string;
   /** Pick the stream flavour from the committed codec matrix of this environment (default), or always use the defaults. */
@@ -57,6 +63,9 @@ Each session runs in its own browser process. Exit code 1 when any session fails
   --config A|B                 the player configuration (default A)
   --media-seconds S            media seconds to play after the first frame (default 3)
   --timeout MS                 safety-net deadline of each wait (default 20000)
+  --hold-ms MS                 experiment: leave the page alone this long after navigating, before the first evaluate (default 0).
+                               With --muted 0 it shows whether the page's own play() is accepted without a gesture: in some
+                               engines the automation's evaluate counts as one
   --origin URL                 use this service (default: start one on PB_PORT, 4640 when unset)
   --out FILE                   write the results as JSON
   --no-capabilities            do not choose streams from the committed codec matrix: always vod-cmaf and live-cmaf (the
@@ -67,6 +76,12 @@ Each session runs in its own browser process. Exit code 1 when any session fails
 function positiveInteger(value: string, flag: string): number {
   if (!/^[1-9][0-9]*$/.test(value))
     throw new SmokeUsageError(`${flag} must be a positive integer, got "${value}"`);
+  return Number(value);
+}
+
+function nonNegativeInteger(value: string, flag: string): number {
+  if (!/^(0|[1-9][0-9]*)$/.test(value))
+    throw new SmokeUsageError(`${flag} must be an integer >= 0, got "${value}"`);
   return Number(value);
 }
 
@@ -92,6 +107,7 @@ export function parseSmokeArgs(argv: readonly string[], platform: string = proce
         config: { type: 'string' },
         'media-seconds': { type: 'string' },
         timeout: { type: 'string' },
+        'hold-ms': { type: 'string' },
         origin: { type: 'string' },
         out: { type: 'string' },
         capabilities: { type: 'boolean' },
@@ -142,6 +158,7 @@ export function parseSmokeArgs(argv: readonly string[], platform: string = proce
     config,
     mediaSeconds,
     timeoutMs: values.timeout === undefined ? 20_000 : positiveInteger(values.timeout, '--timeout'),
+    holdMs: values['hold-ms'] === undefined ? 0 : nonNegativeInteger(values['hold-ms'], '--hold-ms'),
     ...(values.out === undefined ? {} : { out: values.out }),
     useCapabilities: values.capabilities ?? true,
     help: values.help ?? false,

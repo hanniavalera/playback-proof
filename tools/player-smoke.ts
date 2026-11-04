@@ -637,6 +637,7 @@ async function runSession(
 
     stage.set('navigate');
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: options.timeoutMs });
+    if (options.holdMs > 0) await page.waitForTimeout(options.holdMs);
 
     stage.set('boot');
     await page.waitForFunction(() => window.__qa !== undefined, undefined, { timeout: options.timeoutMs });
