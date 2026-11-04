@@ -94,10 +94,39 @@ On 2026-11-04 the `unit` job of pull request 15 failed on a test that has nothin
 
 [`demo-deliberate-flake`](demo-deliberate-flake/README.md): a scratch spec that fails its first attempt in every fourth repetition, run 25 times with the real collector and judged by the real gate. 6 flaky executions (repetitions 4, 8, 12, 16, 20, 24), every build green to a pass/fail run; the gate failed with exit 1 and the decision it drives; one quarantine entry later, exit 0, with the test still listed with its owner and expiry. It shows the mechanism end to end and says nothing about the player.
 
+## 7. The history of real builds on `ci-data`, as of 4 November 2026
+
+Sections 1 to 6 are collections: repetitions of one tier or one test, run on purpose. The history that the gate judges is another record: the run files of every push to `main` and of every nightly, appended to the orphan branch `ci-data` by the `flake-record` jobs ([ADR-170](../../decisions/ci-flake.md), [ADR-172](../../decisions/ci-flake.md)). At 23:26 UTC on 4 November 2026 it held **23 builds** (22 merge-tier builds and one nightly), all of them from that day. The numbers below are what `npm run flake:report` prints for it (`npm run flake:report -- --store git --env gha-linux-x64 --git-identity "Name <email>"`, and `--env gha-macos-arm64`; it reads the branch and writes nothing unless `--record` or `--push` is given). They move with every build of `main`, so the time is part of the result.
+
+| Engine job (environment)              | Builds | Executions, merge tier | Flaky | Failed | Suite flake rate | Budget | Verdict |
+| ------------------------------------- | -----: | ---------------------: | ----: | -----: | ---------------: | -----: | ------- |
+| `chromium` (`gha-linux-x64`)          |     23 |                    345 |     0 |      0 |            0.0 % |  2.0 % | ok      |
+| `chromium-cpu4x` (`gha-linux-x64`)    |     23 |                     69 |     0 |      0 |            0.0 % |  2.0 % | ok      |
+| `firefox` (`gha-linux-x64`)           |     23 |                    345 |     0 |      0 |            0.0 % |  2.0 % | ok      |
+| `webkit`, experimental (`gha-linux-x64`) |  23 |                    345 |     0 |      0 |            0.0 % |  2.0 % | ok      |
+| `webkit` (`gha-macos-arm64`)          |     23 |                    340 |     6 |      1 |            1.8 % |  2.0 % | ok      |
+
+**Linux:** 0 flaky outcomes in 1,104 executions. The only outcome that is not a pass in the 1,170 test outcomes of its history is PB-EME-001 skipped in Linux WebKit, a documented gap (that engine has no Encrypted Media Extensions there).
+
+**macOS WebKit: every flaky and failed outcome is one test, PB-ABR-002** (merge tier). In its window it has 18 executions, 6 flaky and 1 failed (33.3 % flaky), and its verdict is `not-enough-data`, because a test is judged from 20 executions and an invalid run is not an execution; its invalid runs, 5 of 23 scheduled (21.7 %, budget 40 %), are `ok`. By time, with the commit that brought the classifier of PB-ABR-002 ([ADR-106](../../decisions/e2e-abr.md), `ac3c539`) as the divide:
+
+| Builds                                          | Passed clean | Ended as an invalid run | Flaky (first attempt failed, retry passed) | Failed both attempts |
+| ----------------------------------------------- | -----------: | ----------------------: | -----------------------------------------: | -------------------: |
+| 9 first builds of the history, before the classifier |            5 |                       0 |                                          3 |                    1 |
+| the other 14, which contain it                  |            6 |                       5 |                                          3 |                    0 |
+
+What it shows:
+
+- **The classifier labels a cause, and the test still flakes in real CI**: 3 of the 14 builds that contain it were flaky, against 3 flaky and 1 failed in the 9 before it. The collections of section 3 had none in 121 executions. They ran PB-ABR-002 alone, or with PB-ABR-001, in a job of its own; a build runs the whole merge tier (15 tests) in one job on a three-CPU runner. Whether that difference, or the runner of the day, explains it was not tested. Section 3 is true of the collections only.
+- **The suite is close to its budget on that leg, from one test**: 1.8 % against 2.0 %. The gate fails strictly above the budget, so 7 flaky outcomes in 355 executions would still be 1.97 %, and 8 in 370 is 2.16 %: about two more flaky builds make `flake`, a required check, red on macOS WebKit. That is the designed outcome, and the decision it drives is the owner's: fix the test, quarantine it on that leg with an owner and an expiry, or declare a documented gap.
+- **A per-test verdict can stay out of reach of a test that is often skipped.** PB-ABR-002 flakes in a third of its executions and has no verdict, because a fifth of its scheduled attempts end as invalid runs and so do not count as executions. What judged it is the suite rate and the invalid-run budget, which is why both exist.
+
+What it does not show: that any of it holds on another day. All of it is 23 builds from one day, and 23 builds are too few for a rate that someone should plan by (the gate says the same when it has fewer than 20).
+
 ## What this does not say
 
 - **It is a count, not a rate.** 30 or 40 repetitions cannot tell a test that flakes at 1 % from one that never does; the intervals above are the honest way to read them.
-- **One runner type per environment, on one day.** Every number was measured on 2026-11-04, on the runners GitHub gave that day (the CPU models differ between jobs, which the A/A experiments of the performance gate showed matters: [PERF.md](../../PERF.md)). The flake history in CI (the `ci-data` branch) is the long-run record, and on the day of writing it holds a handful of runs.
-- **The classifier labels, it does not repair.** 17.9 % of the attempts of PB-ABR-002 on the macOS runner evaluate nothing, and 21 of 40 of PB-ABR-001 (row 5c). A leg whose invalid runs exceed 40 % of its scheduled executions fails the flake gate (ADR-135a): that is what the history of row 5c does, and it is the designed outcome for PB-ABR-001 on this runner, with the owner's decision still to be made.
+- **One runner type per environment, on one day.** Every number was measured on 2026-11-04, on the runners GitHub gave that day (the CPU models differ between jobs, which the A/A experiments of the performance gate showed matters: [PERF.md](../../PERF.md)). The flake history in CI (the `ci-data` branch) is the long-run record; the first version of this page found a handful of runs in it, and section 7 says what it held at 23:26 UTC on the same day (23 builds), which is still one day.
+- **The classifier labels, it does not repair.** 17.9 % of the attempts of PB-ABR-002 on the macOS runner evaluate nothing, and 21 of 40 of PB-ABR-001 (row 5c). A leg whose invalid runs exceed 40 % of its scheduled executions fails the flake gate (ADR-135a): that is what the history of row 5c does, and it is the designed outcome for PB-ABR-001 on this runner, with the owner's decision still to be made. In the history of real builds (section 7) PB-ABR-002 was still flaky in 3 of the 14 builds that contain its classifier.
 - **The cause of the forced rung changes is a hypothesis.** The timing predicts them; the dropped-frame burst was not observed, and the smallest attempts (2 frames) do not fit the 15 % rule as stated.
 - **Linux WebKit is experimental**; its 450 clean executions are a fact about one image and one day ([ADR-067](../../decisions/player.md)).
