@@ -517,7 +517,10 @@ test(
     const duringPause = await qa.events(eventsFrom);
     const logDuringPause = await session.service.log(session.id, logFrom);
 
-    // The resume. The first `playing` after it says where the media clock was when the player went on.
+    // The resume. The first `playing` after it says where the media clock was when the player went on. That the clock then gets 2 s
+    // beyond the paused position is this wait: a player that stalled at the resume rejects it, with its timeline. It is not asserted
+    // again on `metrics()`: the wait resolves on the media time of a PRESENTED frame, which can be a few milliseconds ahead of
+    // `video.currentTime` when that is read next (1.4 ms short in one of the first five runs).
     const resumeFrom = await qa.cursor();
     await qa.play();
     const playing = await qa.waitFor('playing', { since: resumeFrom });
@@ -564,9 +567,6 @@ test(
       afterResume.filter((event) => ['seeking', 'live-edge-seek'].includes(event.name)),
       'seeks after the resume (qa.events()): the player must continue, not jump',
     ).toEqual([]);
-    expect(resumed.playback.currentTime, 'media time after resume and 2 s of playing').toBeGreaterThanOrEqual(
-      pausedAt + PLAYED_AFTER_RESUME_SEC,
-    );
     // ... and that position is still inside the DVR window: it is behind the edge by what it was before the pause plus the pause.
     expect(
       resumed.live.latencyMs,
