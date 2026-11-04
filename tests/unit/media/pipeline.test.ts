@@ -298,7 +298,7 @@ describe('the media store on real files', () => {
     } catch (e) {
       message = (e as Error).message;
     }
-    expect(message).toMatch(/not ready: .*ClearKey stretch goal is not implemented/);
+    expect(message).toMatch(/not ready: it has no spec in this catalog/);
     expect(message).not.toContain('generate:streams');
     expect(() => store.liveSegment('vod-cmaf-short', 'v240', 1)).toThrow(/not live/);
     expect(() => store.liveSegmentTiming('vod-webm', 'v240', 1)).toThrow(/not live/);

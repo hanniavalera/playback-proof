@@ -22,6 +22,7 @@ import {
   type StreamFile,
 } from './cache.ts';
 import { buildWebmInit, withDefaultDuration } from './ebml.ts';
+import { encryptSamples, protectInit } from './cenc.ts';
 import { ffmpegBinary, ffmpegVersion, run } from './ffmpeg.ts';
 import { inspectRep, type InspectedRep } from './inspect.ts';
 import { checkStreamIndex } from './invariants.ts';
@@ -36,6 +37,7 @@ import {
   readIsobmffPackets,
   readWebmPackets,
   videoSegmentFrameCounts,
+  type Packet,
 } from './segmenter.ts';
 import {
   CATALOG,
@@ -99,12 +101,23 @@ function expectAll(values: number[], expected: number, what: string, from = 0, t
   }
 }
 
-/** Cuts the encoder's output into the init segment and the segments of the 2 s grid. */
+/** Cuts the encoder's output into the init segment and the segments of the 2 s grid. An encrypted stream is encrypted after the cut. */
 export function packageRep(spec: StreamSpec, repId: string, intermediate: Buffer): PackagedRep {
   const isAudio = repId === spec.audio.id;
   const secs = spec.segmentDurationSec;
+  if (spec.drm && spec.packaging !== 'cmaf')
+    throw new Error(`${spec.id}: only fMP4 streams can be encrypted`);
   if (spec.packaging === 'cmaf') {
     const src = readIsobmffPackets(intermediate);
+    // Encryption is done here, on the samples that survive the cut, so that every sample's IV is its index in the segments' own
+    // timeline (the AAC priming sample is gone before the first IV is given out) and the result does not depend on how much of
+    // CENC the ffmpeg build writes (ADR-049).
+    const key = spec.drm ? Buffer.from(spec.drm.key, 'hex') : undefined;
+    const protect = (packets: Packet[]): Packet[] => (key ? encryptSamples(packets, key) : packets);
+    const initSegment = (): Buffer =>
+      spec.drm
+        ? protectInit(normalizeInit(src.init), Buffer.from(spec.drm.keyId, 'hex'))
+        : normalizeInit(src.init);
     if (!isAudio) {
       if (src.track.timescale % spec.frameRate !== 0) {
         throw new Error(
@@ -119,10 +132,10 @@ export function packageRep(spec: StreamSpec, repId: string, intermediate: Buffer
       const segments = buildIsobmffSegments({
         trackId: src.track.trackId,
         ticksPerSample: ticksPerFrame,
-        packets: src.packets,
+        packets: protect(src.packets),
         counts: videoSegmentFrameCounts(spec.segmentCount, secs, spec.frameRate),
       });
-      return { init: normalizeInit(src.init), segments };
+      return { init: initSegment(), segments };
     }
     // AAC: the encoder emits one priming frame (1024 samples of pre-roll) before the first real frame and holds the time line in
     // whole frames. The priming frame is dropped, so frame i covers [i * 1024, (i + 1) * 1024) of the signal and starts at tick i * 1024;
@@ -137,11 +150,11 @@ export function packageRep(spec: StreamSpec, repId: string, intermediate: Buffer
     const segments = buildIsobmffSegments({
       trackId: src.track.trackId,
       ticksPerSample: AAC_GRID.frameSamples,
-      packets: src.packets.slice(1, wanted + 1),
+      packets: protect(src.packets.slice(1, wanted + 1)),
       counts: audioSegmentFrameCounts(spec.segmentCount, secs, AAC_GRID),
       requireSyncStart: false,
     });
-    return { init: normalizeInit(src.init), segments };
+    return { init: initSegment(), segments };
   }
   // WebM
   const src = readWebmPackets(intermediate);
@@ -188,6 +201,32 @@ export function packageRep(spec: StreamSpec, repId: string, intermediate: Buffer
 // ------------------------------------------------------------------------------------------------------------------------------
 // The index of a written stream
 // ------------------------------------------------------------------------------------------------------------------------------
+
+/**
+ * What the files say about encryption must be what the spec asked for: an encrypted stream's every track is protected with the spec's
+ * key id (cenc, 8-byte IVs), and a stream that did not ask for encryption has no protection at all.
+ */
+function checkProtection(spec: StreamSpec, repId: string, inspected: InspectedRep): void {
+  const p = inspected.protection;
+  if (!spec.drm) {
+    if (p)
+      throw new Error(`${spec.id}/${repId}: the files are protected but the spec asks for no encryption`);
+    return;
+  }
+  if (!p)
+    throw new Error(`${spec.id}/${repId}: the spec asks for encryption but the init segment has no sinf`);
+  const original = inspected.kind === 'video' ? 'vp09' : 'mp4a';
+  if (
+    p.scheme !== 'cenc' ||
+    p.defaultKid !== spec.drm.keyId ||
+    p.ivSize !== 8 ||
+    p.originalFormat !== original
+  ) {
+    throw new Error(
+      `${spec.id}/${repId}: protection is ${p.scheme}/${p.originalFormat} with key id ${p.defaultKid} and ${p.ivSize}-byte IVs, the spec says cenc/${original}, ${spec.drm.keyId}, 8`,
+    );
+  }
+}
 
 /** Declared bandwidth: the peak bitrate over any one segment (bytes x 8 / real duration), rounded up. See ADR-043. */
 export function peakBandwidth(rep: InspectedRep, sizes: number[]): number {
@@ -325,6 +364,7 @@ async function generateOne(
     for (const id of repIds(spec)) {
       const pkg = packaged.get(id) as PackagedRep;
       inspected.set(id, inspectRep(spec.packaging, pkg.init, pkg.segments));
+      checkProtection(spec, id, inspected.get(id) as InspectedRep);
     }
     rmSync(work, { recursive: true, force: true });
 
@@ -379,6 +419,7 @@ async function generateOne(
       contentHash: contentHashOf(hash, files),
       ffmpegVersion: version,
     };
+    if (spec.drm) info.drm = { scheme: spec.drm.scheme, keyId: spec.drm.keyId, key: spec.drm.key };
     const index: StreamIndex = { info, reps };
     const problems = checkStreamIndex(index, {
       audioFrameSec: audioGrid(spec).frameSamples / audioGrid(spec).sampleRate,
@@ -437,7 +478,7 @@ export async function generateStreams(options: GenerateOptions = {}): Promise<Ge
     const s = catalog.find((c) => c.id === id);
     if (!s) {
       throw new Error(
-        `stream '${id}' is not in the catalog (available: ${catalog.map((c) => c.id).join(', ')}; vod-cmaf-clearkey is a stretch goal that is not implemented)`,
+        `stream '${id}' is not in the catalog (available: ${catalog.map((c) => c.id).join(', ')})`,
       );
     }
     return s;

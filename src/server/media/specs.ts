@@ -117,6 +117,16 @@ const VIDEO_ENCODER = [
 ];
 
 const AAC_ENCODER = ['-c:a', 'aac', '-aac_coder', 'twoloop', '-profile:a', 'aac_low'];
+
+// The key pair of `vod-cmaf-clearkey`. It is PUBLIC and protects nothing: it is committed, documented, returned by the service in
+// StreamInfo.drm and handed to the player by the tests. Both values are 16 ASCII bytes ("playbackproof-id", "playbackproofkey") so
+// that nobody mistakes them for a secret.
+const CLEARKEY: DrmSpec = {
+  scheme: 'clearkey',
+  keyId: '706c61796261636b70726f6f662d6964',
+  key: '706c61796261636b70726f6f666b6579',
+};
+
 const OPUS_ENCODER = [
   '-c:a',
   'libopus',
@@ -162,13 +172,19 @@ function spec(
 /**
  * Every stream is encoded on its own: a stream is a pure function of its spec, with no dependency on another stream's cache. (They are
  * not slices of each other: the encoders see a different end of stream, so the bytes would differ anyway. ADR-041.)
- * `vod-cmaf-clearkey` (the stretch goal) is not in the catalog: see docs/decisions/media.md.
+ * `vod-cmaf-clearkey` is the same pipeline with the segments encrypted by the lab after the cut (src/server/media/cenc.ts, ADR-049): its
+ * ffmpeg plans are the plans of an unencrypted stream, and the `drm` of its spec is part of the cache key.
  */
 export const CATALOG: StreamSpec[] = [
   spec('vod-cmaf', 'vod', 'cmaf', ['dash', 'hls'], 30),
   spec('vod-cmaf-short', 'vod', 'cmaf', ['dash', 'hls'], 6),
   spec('vod-webm', 'vod', 'webm', ['dash'], 15),
   spec('live-cmaf', 'live', 'cmaf', ['dash', 'hls'], 12),
+  {
+    ...spec('vod-cmaf-clearkey', 'vod', 'cmaf', ['dash'], 6),
+    rungs: LADDER.filter((r) => r.id === 'v360'),
+    drm: CLEARKEY,
+  },
 ];
 
 export function streamSpec(id: StreamId): StreamSpec | undefined {

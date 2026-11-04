@@ -73,12 +73,7 @@ export function createMediaStore(options: MediaStoreOptions = {}): MediaStore {
   for (const id of STREAM_IDS) {
     const spec = specs.find((s) => s.id === id);
     if (!spec) {
-      notReady.set(
-        id,
-        id === 'vod-cmaf-clearkey'
-          ? 'it has no spec: the ClearKey stretch goal is not implemented (docs/decisions/media.md, ADR-049)'
-          : 'it has no spec in this catalog',
-      );
+      notReady.set(id, 'it has no spec in this catalog');
       noSpec.add(id);
       continue;
     }
