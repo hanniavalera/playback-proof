@@ -67,7 +67,8 @@ jobs:
       CI: 'true'
     steps:
       - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup
+      - id: setup
+        uses: ./.github/actions/setup
         with:
           streams: 'true'
           browser: ${{ matrix.browser }}
@@ -77,6 +78,9 @@ jobs:
       # other's report), so one run selects both tags.
       - name: '@merge and @release tests (${{ matrix.project }})'
         run: npm run test:e2e -- --grep "@merge|@release" --project=${{ matrix.project }}
+      - name: Summarise the run
+        if: ${{ always() && steps.setup.outcome == 'success' }}
+        run: npx tsx tools/ci-summary.ts --title "${{ github.job }} (${{ matrix.leg }})" --artifact reports-${{ matrix.leg }}
       - name: Upload the reports and the failure attachments
         if: always()
         uses: actions/upload-artifact@v7

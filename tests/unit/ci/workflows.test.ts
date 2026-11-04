@@ -301,4 +301,17 @@ describe('the reports that later phases read', () => {
       expect(upload?.[1], 'the upload of reports/ and test-results/').toBe('reports-${{ matrix.leg }}');
     }
   });
+
+  it('are summarised on the job page, also when the tests failed, and the summary names the artifact that is uploaded', () => {
+    for (const job of [mergeGate, release]) {
+      const summary =
+        /- name: Summarise the run\n\s+if: \$\{\{ always\(\) && steps\.setup\.outcome == 'success' \}\}\n\s+run: npx tsx tools\/ci-summary\.ts (.+)\n/.exec(
+          job,
+        );
+      expect(summary?.[1], 'the step that writes the summary').toContain(
+        '--artifact reports-${{ matrix.leg }}',
+      );
+      expect(job).toMatch(/^ {6}- id: setup\n {8}uses: \.\/\.github\/actions\/setup$/m);
+    }
+  });
 });

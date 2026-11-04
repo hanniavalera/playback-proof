@@ -92,7 +92,8 @@ jobs:
       CI: 'true'
     steps:
       - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup
+      - id: setup
+        uses: ./.github/actions/setup
         with:
           streams: 'true'
           browser: ${{ matrix.browser }}
@@ -100,6 +101,10 @@ jobs:
         run: npm run build:player
       - name: Merge gate (${{ matrix.project }})
         run: npm run gate:merge -- --project=${{ matrix.project }}
+      # The tests that failed, flaked or were skipped, with their attachments, on the page of this job.
+      - name: Summarise the run
+        if: ${{ always() && steps.setup.outcome == 'success' }}
+        run: npx tsx tools/ci-summary.ts --title "${{ github.job }} (${{ matrix.leg }})" --artifact reports-${{ matrix.leg }}
       # The JSON report and every failure attachment: the flake tracker and the failure triage read them.
       - name: Upload the reports and the failure attachments
         if: always()
