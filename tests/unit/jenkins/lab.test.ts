@@ -73,11 +73,67 @@ describe('the Jenkinsfile', () => {
   });
 
   it('runs no stage that has no script behind it', () => {
-    // Later gates (perf, flake, triage) are added with their scripts; a stage for one that cannot run yet would be a stub.
+    // Later gates (perf, triage) are added with their scripts; a stage for one that cannot run yet would be a stub.
     for (const gate of ['gate:perf', 'gate:flake', 'gate:triage']) {
       const exists = packageJson.scripts[gate] !== undefined;
       expect(jenkinsfile.includes(`npm run ${gate}`) && !exists, gate).toBe(false);
     }
+  });
+
+  const engines = [...jenkinsfile.matchAll(/npm run gate:merge -- --project=([\w-]+)/g)].map(
+    (m) => m[1] ?? '',
+  );
+  const flakeStage = jenkinsfile.slice(jenkinsfile.indexOf("stage('Flake') {"));
+
+  it('stashes the flake run files of each engine, and the Flake stage unstashes the same engines into a directory each', () => {
+    expect([...jenkinsfile.matchAll(/collectResults\('flake-([\w-]+)'\)/g)].map((m) => m[1])).toEqual(
+      engines,
+    );
+    const listed = /for \(engine in \[([^\]]+)\]\)/.exec(flakeStage)?.[1] ?? '';
+    expect((listed.match(/'[\w-]+'/g) ?? []).map((name) => name.slice(1, -1))).toEqual(engines);
+    expect(flakeStage).toContain('dir("reports/flake/${engine}")');
+    expect(flakeStage).toContain('unstash "flake-${engine}"');
+    expect(jenkinsfile).toContain("stash name: flakeStash, includes: 'reports/flake/run*.json'");
+    expect(jenkinsfile.indexOf('stash name: flakeStash')).toBeLessThan(jenkinsfile.indexOf('cleanWs()'));
+  });
+
+  it('runs the Flake stage after the merge gate and when an engine is red, and records only a build of main', () => {
+    expect(jenkinsfile.indexOf("stage('Flake') {")).toBeGreaterThan(
+      jenkinsfile.indexOf("stage('Merge gate') {"),
+    );
+    for (const engine of engines) {
+      expect(jenkinsfile, engine).toMatch(
+        new RegExp(
+          `catchError\\(buildResult: 'FAILURE', stageResult: 'FAILURE'\\) \\{\\s+sh 'npm run gate:merge -- --project=${engine}'`,
+        ),
+      );
+    }
+    const judged = /sh '(npm run gate:flake -- [^']*)'/g;
+    const calls = [...flakeStage.matchAll(judged)].map((m) => m[1] ?? '');
+    expect(calls).toHaveLength(2);
+    const [recorded, forgotten] = calls as [string, string];
+    expect(recorded).toBe('npm run gate:flake -- --store file --runs reports/flake --record');
+    expect(forgotten).toBe('npm run gate:flake -- --store file --runs reports/flake');
+    expect(flakeStage).toMatch(
+      /if \(isMainBranch\(scmVars\.GIT_BRANCH\)\) \{\n\s+sh '[^']*--record'\n\s+\} else \{/,
+    );
+  });
+
+  it('calls a build main by every name the git plugin gives the branch, and no other', () => {
+    const pattern = /def isMainBranch[\s\S]*?==~ '([^']+)'/.exec(jenkinsfile)?.[1] ?? '';
+    expect(pattern).not.toBe('');
+    const isMain = (branch: string): boolean => new RegExp(`^(?:${pattern})$`).test(branch);
+    for (const branch of ['main', 'origin/main', 'refs/heads/main', 'refs/remotes/origin/main'])
+      expect(isMain(branch), branch).toBe(true);
+    for (const branch of [
+      '',
+      'maintenance',
+      'origin/main-2',
+      'origin/feature/main',
+      'refs/tags/main',
+      'origin/negative/x',
+    ])
+      expect(isMain(branch), branch).toBe(false);
   });
 });
 
@@ -114,6 +170,17 @@ describe('the compose project', () => {
     expect(cache).toMatch(/^\/cache\//);
     expect(compose).toMatch(/^\s+- streams-cache:\/cache$/m);
     expect(compose).toMatch(/^ {2}streams-cache:$/m);
+  });
+
+  it('shares one named volume for the flake history, mounted where the Jenkinsfile reads it and owned by the agent’s user', () => {
+    const history = /PB_FLAKE_HISTORY_DIR = '([^']+)'/.exec(jenkinsfile)?.[1] ?? '';
+    expect(history).toBe('/history');
+    expect(compose).toMatch(/^\s+- flake-history:\/history$/m);
+    expect(compose).toMatch(/^ {2}flake-history:$/m);
+    // A new named volume takes the owner of the directory the image has at its mount point.
+    const dockerfile = read('jenkins/agent/Dockerfile');
+    expect(dockerfile).toMatch(/mkdir -p [^\n]*\/history\b/);
+    expect(dockerfile).toMatch(/chown -R jenkins:jenkins [^\n]*\/history\b/);
   });
 });
 

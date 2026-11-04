@@ -86,7 +86,7 @@ In CI the history is the orphan branch **`ci-data`**, which holds `history/<envI
 | A file committed to `main` | A commit per build in the code history, a protected `main` refuses the push, and it races with merges. |
 | **An orphan branch** | Plain text (`git show origin/ci-data:history/gha-linux-x64.jsonl`), survives the job, takes concurrent writers, needs nothing new. Its price: a commit per recorded build. |
 
-The CI workflows call the same commands ([TEST_STRATEGY.md](../TEST_STRATEGY.md) section 6.1, stage `gate:flake`). The jobs that run the browser tests upload `reports/` (the run files are in it); the flake stage downloads them into `reports/flake/<job>/` and runs the gate. A build of `main` needs permission to push (`contents: write`); pull request builds do not, and a fork's could not.
+Both CI systems call the same script ([TEST_STRATEGY.md](../TEST_STRATEGY.md) section 6.1, stage `gate:flake`; the jobs are in [CI.md](CI.md) and the decisions in ADR-170 to ADR-174, [decisions/ci-flake.md](decisions/ci-flake.md)). The jobs that run the browser tests upload `reports/` (the run files are in it); on GitHub the `flake` job downloads each artifact into `reports/flake/<artifact>/` and runs the gate once per environment, and judges every build, and a separate job, `flake-record`, records the builds of `main` (the one job with `contents: write`: a pull request's run has a read token, and a fork's could not have more). The nightly records its runs too. Jenkins stashes the run files of its engines, and its `Flake` stage judges them and records the builds of `main` in a file on a volume.
 
 ## What is excluded from the rates
 
