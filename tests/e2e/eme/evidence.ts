@@ -139,6 +139,20 @@ export function decryptorOf(evidence: EmeEvidence): Decryptor {
   return 'mixed';
 }
 
+/** Who decrypts, in a sentence for the report. */
+export function describeDecryptor(decryptor: Decryptor): string {
+  switch (decryptor) {
+    case 'browser':
+      return "the browser's ClearKey CDM";
+    case 'player':
+      return "the player, in JavaScript (WebCrypto): the browser's CDM is not used";
+    case 'mixed':
+      return 'both the browser and the player (the stream changed halfway)';
+    case 'none':
+      return 'nobody: no init segment reached MSE';
+  }
+}
+
 /**
  * Who decrypts the stream in each engine, as measured (ADR-105): the browser's own ClearKey in Chromium and Firefox, the player's
  * WebCrypto in WebKit, because Shaka 5.3.3 says Apple's ClearKey is not reliable (`AppleBrowser.hasWorkingClearKeySupport()`). A spec

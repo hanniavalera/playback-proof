@@ -1,5 +1,7 @@
+import type { BrowserContext } from '@playwright/test';
 import { initPath } from '../../src/shared/urls.ts';
-import { DOCUMENTED_DECRYPTOR, decryptorOf, watchEme } from './eme/evidence.ts';
+import { newIsolatedContext } from './eme/context.ts';
+import { DOCUMENTED_DECRYPTOR, decryptorOf, describeDecryptor, watchEme } from './eme/evidence.ts';
 import { NO_EME_ERROR, emeGap } from './eme/gaps.ts';
 import {
   CLEARKEY_SYSTEM_ID,
@@ -32,11 +34,20 @@ const otherKey = (key: string): string => `${key.startsWith('0') ? '1' : '0'}${k
 test(
   'PB-EME-001 ClearKey playback: vod-cmaf-clearkey plays with a ClearKey license (first frame, 3 s of media time, no error); a wrong key and no key do not play',
   { tag: ['@release', '@eme', '@dash'] },
-  async ({ environment, newSession, player, context, page }, testInfo) => {
+  async ({ environment, newSession, player, browser, page }, testInfo) => {
     const session = await newSession({ stream: 'vod-cmaf-clearkey', protocol: 'dash' });
     const stream = await streamInfoOf(session);
     const drm = stream.drm;
     if (!drm) throw new Error('the service lists vod-cmaf-clearkey without its test key (StreamInfo.drm)');
+
+    // Each control gets a context of its own: Firefox's ClearKey module shares keys between the pages of a context (ADR-105).
+    // They are closed when the test has passed; after a failure they stay open so that the diagnostics can still read their pages.
+    const controlContexts: BrowserContext[] = [];
+    const controlPage = async () => {
+      const controlContext = await newIsolatedContext(browser, testInfo.project.use);
+      controlContexts.push(controlContext);
+      return controlContext.newPage();
+    };
 
     // A documented gap is confirmed by this run before it skips: the engine must still fail in exactly the documented way. If it
     // plays now (or fails otherwise) the wait below fails with the player's timeline, and the evidence is what has to change.
@@ -111,7 +122,7 @@ test(
       const documented = DOCUMENTED_DECRYPTOR[environment.engine];
       testInfo.annotations.push({
         type: 'eme-decryptor',
-        description: `${environment.engine}: ${decryptor === 'browser' ? "the browser's ClearKey CDM" : decryptor === 'player' ? "the player (WebCrypto): the browser's CDM is not used" : decryptor}`,
+        description: `${environment.engine}: ${describeDecryptor(decryptor)}`,
       });
       expect(
         decryptor,
@@ -133,7 +144,7 @@ test(
 
     await test.step('with the right key id and a different key the same stream reaches the decryption and does not play', async () => {
       const wrong = await newSession({ stream: 'vod-cmaf-clearkey', protocol: 'dash' });
-      const wrongPage = await context.newPage();
+      const wrongPage = await controlPage();
       const eme = await watchEme(wrongPage);
       const qa = await player(wrong, wrongPage).open({
         clearKey: { keyId: drm.keyId, key: otherKey(drm.key) },
@@ -181,7 +192,7 @@ test(
 
     await test.step('without a key the player refuses the encrypted stream with a DRM error', async () => {
       const keyless = await newSession({ stream: 'vod-cmaf-clearkey', protocol: 'dash' });
-      const keylessPage = await context.newPage();
+      const keylessPage = await controlPage();
       const qa = await player(keyless, keylessPage).open();
 
       const error = await qa.waitFor('error', { detail: { category: DRM_CATEGORY, severity: 2 } });
@@ -194,5 +205,7 @@ test(
         description: `${environment.engine}: ${String(error.detail?.codeName)} (${String(error.detail?.code)})`,
       });
     });
+
+    await Promise.all(controlContexts.map((controlContext) => controlContext.close()));
   },
 );
