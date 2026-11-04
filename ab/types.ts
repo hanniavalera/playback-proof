@@ -22,6 +22,19 @@ export interface SessionInfoRecord {
   userAgent: string;
 }
 
+/**
+ * What the service says about the condition of a session, read from its own state and its request log after the observation: the proof
+ * that both arms met the SAME condition, and that the condition was really applied (a rule that never fired is a condition that was not).
+ */
+export interface ConditionEvidence {
+  /** The rules the service held for the session (without the ids it gave them) are exactly the rules of the pre-registration. */
+  rulesMatch: boolean;
+  /** Requests the service logged for the session. */
+  requests: number;
+  /** For each rule of the condition, in order: how many logged requests it fired on. */
+  fired: number[];
+}
+
 /** One session: one fresh browser context, one service session, one player. */
 export interface SessionRecord {
   /** 0-based order of execution within the condition (warm-up included). */
@@ -46,6 +59,8 @@ export interface SessionRecord {
   info: SessionInfoRecord | null;
   /** The id of the session on the test data service (its request log was available while it lived). */
   sessionId: string | null;
+  /** What the service said about the condition of this session (absent for a session that failed before it could be read). */
+  applied?: ConditionEvidence;
   startedAt: string;
   durationMs: number;
 }

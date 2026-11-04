@@ -257,6 +257,61 @@ describe('PB-AB runner: a session that fails is recorded, never dropped, and the
   });
 });
 
+describe('PB-AB runner: the condition is proved from the service, session by session', () => {
+  it('records for every finished session that the service held exactly the rules of the condition, and how many requests each fired on', async () => {
+    const w = world();
+    const prereg = smallPlan();
+    const { result } = await runCondition(prereg, conditionOf(prereg), w.deps);
+    expect(result.sessions).toHaveLength(10);
+    for (const session of result.sessions)
+      expect(session.applied, `session ${session.index}`).toStrictEqual({
+        rulesMatch: true,
+        requests: 12,
+        fired: [12],
+      });
+  });
+
+  it('creates every session of both arms with the same rules: identical conditions, the warm-up included', async () => {
+    const w = world();
+    const prereg = smallPlan();
+    await runCondition(prereg, conditionOf(prereg), w.deps);
+    expect(w.sessions).toHaveLength(10);
+    const registered = canonicalJson(conditionOf(prereg).rules);
+    expect(new Set(w.sessions.map((request) => canonicalJson(request.faults)))).toStrictEqual(
+      new Set([registered]),
+    );
+  });
+
+  it('records a condition that was not applied (no request met the rule) and goes on: the validity of the run is judged at the end', async () => {
+    const w = world((_arm, index) => (index === 3 ? { fail: 'not-applied' } : {}));
+    const prereg = smallPlan();
+    const { result } = await runCondition(prereg, conditionOf(prereg), w.deps);
+    expect(result.sessions[3]?.status).toBe('ok');
+    expect(result.sessions[3]?.applied).toStrictEqual({ rulesMatch: true, requests: 12, fired: [0] });
+    expect(result.sessions[4]?.applied?.fired).toStrictEqual([12]);
+  });
+
+  it('ends the run when the service holds other rules than the ones it was given: the arms would not meet the registered condition', async () => {
+    const w = world((_arm, index) => (index === 2 ? { fail: 'rules-mismatch' } : {}));
+    const prereg = smallPlan();
+    const attempt = runCondition(prereg, conditionOf(prereg), w.deps);
+    await expect(attempt).rejects.toThrow(HarnessError);
+    await expect(attempt).rejects.toThrow(
+      /the service holds other rules for the session than the condition's/,
+    );
+    expect(w.log).toContain('browser closed');
+  });
+
+  it('ends the run when the service cannot say what it holds, instead of recording a session nobody can vouch for', async () => {
+    const w = world((_arm, index) => (index === 1 ? { fail: 'unreadable' } : {}));
+    const prereg = smallPlan();
+    const attempt = runCondition(prereg, conditionOf(prereg), w.deps);
+    await expect(attempt).rejects.toThrow(
+      /could not read what the service holds for the session: the service did not answer/,
+    );
+  });
+});
+
 describe('PB-AB runner: what stops the whole run', () => {
   it('a page that runs another configuration than its arm is a defect of the harness, not a failed session', async () => {
     const w = world((_arm, index) => (index === 2 ? { fail: 'mismatch' } : {}));

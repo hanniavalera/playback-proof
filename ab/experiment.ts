@@ -14,7 +14,9 @@ import type { PerfProfile } from '../src/lab/measure/types.ts';
 import { canonicalJson } from './prereg.ts';
 import type { ConditionPlan, Preregistration } from './prereg.ts';
 import type { ConditionResult } from './results.ts';
-import type { ArmId, ConfigLetter, FailureKind, SessionRecord } from './types.ts';
+import type { ArmId, ConditionEvidence, ConfigLetter, FailureKind, SessionRecord } from './types.ts';
+import type { RequestLogEntry, SessionDetail } from '../src/shared/api.ts';
+import type { FaultRule } from '../src/shared/faults.ts';
 
 // THE RUNNER of an experiment: for each condition of the pre-registration, a block design that interleaves the two arms, one fresh browser
 // context and one service session per session, the warm-up recorded and left out, and every session that fails recorded as a failure
@@ -65,8 +67,14 @@ export type ExperimentProgress =
   | { kind: 'condition'; condition: string; sessions: number; warmup: number }
   | { kind: 'session'; condition: string; record: SessionRecord; total: number };
 
+export interface EvidenceApi {
+  getSession(id: string): Promise<SessionDetail>;
+  log(id: string, since?: number): Promise<RequestLogEntry[]>;
+}
+
 export interface ExperimentDeps {
-  service: { origin: string; client: SessionApi };
+  /** What the runner needs of the service: sessions (as in a performance batch) and, to prove the condition, its state and request log. */
+  service: { origin: string; client: SessionApi & EvidenceApi };
   launch: Launcher;
   environment: Environment;
   /** The page driver of a session. Default: `QaPage` over the session's Playwright page. */
@@ -86,6 +94,49 @@ const messageOf = (error: unknown): string => (error instanceof Error ? error.me
 
 const describeError = (error: QAMetrics['errors'][number]): string =>
   `${error.codeName ?? error.code}/${error.severity}`;
+
+/** A rule without the id the service gave it, so that what it holds can be compared with what the plan wrote. */
+const withoutId = (rule: FaultRule): Omit<FaultRule, 'id'> =>
+  Object.fromEntries(Object.entries(rule).filter(([key]) => key !== 'id')) as Omit<FaultRule, 'id'>;
+
+/**
+ * Reads, from the service, what it holds for the session and what it did to its requests: the rules (they must be the condition's) and,
+ * per rule, the number of logged requests it fired on. A service that cannot say, or that holds other rules than the ones it was given, is
+ * a defect of the harness and ends the run: no number would be about the condition it claims.
+ */
+export async function readEvidence(
+  client: EvidenceApi,
+  sessionId: string,
+  rules: readonly FaultRule[],
+  label: string,
+): Promise<ConditionEvidence> {
+  let detail: SessionDetail;
+  let log: RequestLogEntry[];
+  try {
+    detail = await client.getSession(sessionId);
+    log = await client.log(sessionId);
+  } catch (error) {
+    throw new HarnessError(
+      'run',
+      `${label}: could not read what the service holds for the session: ${messageOf(error)}`,
+      {
+        cause: error,
+      },
+    );
+  }
+  const stored = canonicalJson(detail.faults.map(withoutId));
+  const registered = canonicalJson(rules.map(withoutId));
+  if (stored !== registered)
+    throw new HarnessError(
+      'run',
+      `${label}: the service holds other rules for the session than the condition's (it holds ${stored}, the plan has ${registered}): the arms would not meet the condition that was registered`,
+    );
+  return {
+    rulesMatch: true,
+    requests: log.length,
+    fired: detail.faults.map((fault) => log.filter((entry) => entry.faults.includes(fault.id)).length),
+  };
+}
 
 /**
  * Plays until the media clock reaches `mediaTime`, or fails the moment the player reports a critical error: a player that has given up
@@ -202,6 +253,7 @@ async function runSession(context: SessionContext, spec: ScheduledSession): Prom
       record.rungs = observed.rungs;
       record.errors = observed.errors;
       record.info = observed.info;
+      record.applied = await readEvidence(deps.service.client, sessionId as string, condition.rules, label);
     } catch (error) {
       if (error instanceof HarnessError) throw error;
       const failure = classify(error);

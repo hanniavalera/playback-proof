@@ -1,4 +1,9 @@
-import type { ExperimentDeps, ExperimentProgress, SessionDriver } from '../../../ab/experiment.ts';
+import type {
+  EvidenceApi,
+  ExperimentDeps,
+  ExperimentProgress,
+  SessionDriver,
+} from '../../../ab/experiment.ts';
 import type { Machine } from '../../../ab/execute.ts';
 import { parsePreregistration, validatePreregistration } from '../../../ab/prereg.ts';
 import type { LoadedPreregistration, Preregistration } from '../../../ab/prereg.ts';
@@ -7,7 +12,8 @@ import type { LaunchedBrowser, Launcher, RunPage } from '../../../src/lab/measur
 import type { SessionApi } from '../../../src/lab/measure/runner.ts';
 import type { HostInfo } from '../../../src/lab/probe/host-info.ts';
 import { configFor } from '../../../src/player/configs.ts';
-import type { SessionInfo, SessionRequest } from '../../../src/shared/api.ts';
+import type { RequestLogEntry, SessionDetail, SessionInfo, SessionRequest } from '../../../src/shared/api.ts';
+import type { FaultRule } from '../../../src/shared/faults.ts';
 import type { QAEvent, QAInfo, QAMetrics } from '../../../src/shared/qa.ts';
 import { startupPrereg } from './fixtures.ts';
 import type { Json } from './fixtures.ts';
@@ -64,7 +70,18 @@ export type Script = (
   arm: 'A' | 'B',
   index: number,
 ) => {
-  fail?: 'timeout' | 'critical' | 'page' | 'mismatch' | 'not-mse';
+  fail?:
+    | 'timeout'
+    | 'critical'
+    | 'page'
+    | 'mismatch'
+    | 'not-mse'
+    /** The service holds other rules for the session than the ones it was given. */
+    | 'rules-mismatch'
+    /** The rules are the right ones, but no request of the session met any of them. */
+    | 'not-applied'
+    /** The service cannot say what it holds for the session. */
+    | 'unreadable';
   startupMs?: number;
   rebuffers?: number;
 };
@@ -131,6 +148,9 @@ export function world(
   let contexts = 0;
   let nextSession = 0;
   const runArm = new Map<RunPage, { arm: 'A' | 'B'; index: number }>();
+  /** The rules the fake service holds per session, and what the script said about each session once its page opened. */
+  const held = new Map<string, FaultRule[]>();
+  const scripted = new Map<string, string>();
 
   const browser: LaunchedBrowser = {
     profile: 'chromium',
@@ -160,16 +180,34 @@ export function world(
     return browser;
   };
 
-  const client: SessionApi = {
+  const client: SessionApi & EvidenceApi = {
     async createSession(request): Promise<SessionInfo> {
       if (options.failSession) throw new Error('the service is gone');
       sessions.push(request);
       const id = `s${++nextSession}`;
+      held.set(id, structuredClone(request.faults ?? []));
       log.push(`session ${id} created`);
       return { id, manifestUrl: `/s/${id}/vod-cmaf/dash/manifest.mpd` } as SessionInfo;
     },
     async deleteSession(id) {
       log.push(`session ${id} deleted`);
+    },
+    async getSession(id): Promise<SessionDetail> {
+      const fail = scripted.get(id);
+      if (fail === 'unreadable') throw new Error('the service did not answer');
+      const rules = held.get(id) ?? [];
+      const faults = rules.map((rule, i) => ({ ...rule, id: `r${i + 1}` }));
+      if (fail === 'rules-mismatch' && faults[0] && faults[0].type === 'latency')
+        faults[0] = { ...faults[0], ms: faults[0].ms + 1 };
+      return { id, faults } as unknown as SessionDetail;
+    },
+    async log(id): Promise<RequestLogEntry[]> {
+      const fail = scripted.get(id);
+      const rules = held.get(id) ?? [];
+      return Array.from({ length: 12 }, (_, i) => ({
+        seq: i + 1,
+        faults: fail === 'not-applied' ? [] : rules.map((_rule, r) => `r${r + 1}`),
+      })) as unknown as RequestLogEntry[];
     },
   };
 
@@ -185,6 +223,8 @@ export function world(
         runArm.set(run, { arm: letter, index: sequence });
         opens.push({ manifest, config: params?.config });
         const { fail } = script(letter, sequence);
+        const sessionId = /\/s\/([^/]+)\//.exec(manifest)?.[1];
+        if (sessionId !== undefined && fail !== undefined) scripted.set(sessionId, fail);
         return {
           shakaVersion: '5.3.3',
           userAgent: 'Mozilla/5.0 Chrome/156',
