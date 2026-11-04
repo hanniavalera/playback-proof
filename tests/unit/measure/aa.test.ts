@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { allowanceUsed, renderAaMarkdown, summarizeAa } from '../../../src/lab/measure/aa.ts';
-import type { BaselineMachine } from '../../../src/lab/measure/baseline.ts';
+import type { BaselineMachine, PerfHost } from '../../../src/lab/measure/baseline.ts';
 import { runGate } from '../../../src/lab/measure/gate.ts';
 import type { Attempt } from '../../../src/lab/measure/gate.ts';
 import { buildGateReport } from '../../../src/lab/measure/report.ts';
@@ -31,6 +31,10 @@ async function pass(
     warnings?: string[];
     baseline?: boolean;
     profile?: 'chromium' | 'webkit';
+    /** The machine the pass ran on, when it is not the fixture's (which names no CPU model). */
+    host?: PerfHost;
+    /** The baseline the pass was compared with, when it is not the fixture's (which was recorded without a CPU model). */
+    against?: typeof BASELINE;
   } = {},
 ): Promise<GateReport> {
   const script: Record<string, Script> = {
@@ -55,8 +59,8 @@ async function pass(
     baseline:
       options.baseline === false
         ? null
-        : { file: 'perf/baselines/local-darwin-arm64/chromium.json', baseline: BASELINE },
-    host: HOST,
+        : { file: 'perf/baselines/local-darwin-arm64/chromium.json', baseline: options.against ?? BASELINE },
+    host: options.host ?? HOST,
     ...(options.machine ? { machine: options.machine } : {}),
     browser: { name: 'chromium', version: '156.0.0.0', userAgent: 'UA', cpuThrottleRate: null },
     ffmpeg: '9.0',
@@ -306,5 +310,170 @@ describe('PB-PERF A/A: the Markdown', () => {
     const markdown = renderAaMarkdown(summarizeAa(named([await pass({ first: startupBatch(QUIET) })])));
     expect(markdown).not.toContain('could not be trusted');
     expect(markdown).not.toContain('> Problem');
+  });
+});
+
+describe('PB-PERF A/A: the machines the passes ran on (the passes of several jobs)', () => {
+  const XEON_8370 = 'Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz';
+  const XEON_8573 = 'Intel(R) Xeon(R) Platinum 8573C';
+  const EPYC = 'AMD EPYC 9V74 80-Core Processor';
+  const on = (cpuModel: string): PerfHost => ({ ...HOST, cpuModel });
+  const recordedOn = (cpuModel: string): typeof BASELINE =>
+    baselineOf(
+      [
+        { spec: STARTUP, batch: startupBatch(QUIET) },
+        { spec: REBUFFERING, batch: rebufferBatch(constant(0)) },
+      ],
+      { host: on(cpuModel) },
+    );
+  /** The pass as measured at minute `minute` of the hour: jobs finish in an order of their own, and the summary reads them by time. */
+  const at = (report: GateReport, minute: number): GateReport => {
+    report.generatedAt = `2026-11-04T10:${String(minute).padStart(2, '0')}:00.000Z`;
+    return report;
+  };
+
+  async function severalJobs(): Promise<GateReport[]> {
+    const against = recordedOn(XEON_8370);
+    return [
+      at(await pass({ first: startupBatch(QUIET) }, { host: on(EPYC), against }), 3),
+      at(await pass({ first: startupBatch(shifted(5)) }, { host: on(XEON_8370), against }), 1),
+      at(await pass({ first: startupBatch(shifted(-3)) }, { host: on(EPYC), against }), 2),
+      at(await pass({ first: startupBatch(shifted(8)) }, { host: on(XEON_8573), against }), 4),
+      at(await pass({ first: startupBatch(QUIET) }, { host: on(EPYC), against }), 5),
+    ];
+  }
+
+  it('accepts the passes of several jobs, lists the CPU model of every pass and counts the distinct models', async () => {
+    const summary = summarizeAa(named(await severalJobs()));
+    expect(summary.passes).toBe(5);
+    expect(summary.runs.map((run) => run.cpuModel)).toStrictEqual([XEON_8370, EPYC, EPYC, XEON_8573, EPYC]);
+    expect(summary.baseline.cpuModel).toBe(XEON_8370);
+    // Most passes first; models with as many passes as another by name.
+    expect(summary.machines).toStrictEqual({
+      cpuModels: [
+        { model: EPYC, passes: 3 },
+        { model: XEON_8370, passes: 1 },
+        { model: XEON_8573, passes: 1 },
+      ],
+      passesWithoutCpuModel: 0,
+    });
+  });
+
+  it('says in the Markdown that the passes ran on several CPU models, and what that does to the spread', async () => {
+    const markdown = renderAaMarkdown(summarizeAa(named(await severalJobs())));
+    expect(markdown).toContain(
+      `- CPU models: the baseline was recorded on ${XEON_8370}. The passes ran on 3 distinct CPU models: ${EPYC} (3 passes), ${XEON_8370} (1 pass), ${XEON_8573} (1 pass). The passes did not all run on the same machine, so the spread between them includes the difference between machines.`,
+    );
+  });
+
+  it('prints one row per pass, in the order measured: verdict, CPU model, startup median against the baseline median, deviation', async () => {
+    const against = recordedOn(EPYC);
+    const failed = at(await pass({ first: startupBatch(QUIET) }, { host: on(EPYC), against }), 6);
+    failed.exitCode = 2;
+    failed.verdict = 'problem';
+    failed.scenarios = [];
+    const reports = [
+      failed,
+      at(await pass({ first: startupBatch(QUIET) }, { host: on(EPYC), against }), 1),
+      at(await pass({ first: startupBatch(shifted(5)) }, { host: on(XEON_8370), against }), 2),
+      at(await pass({ first: startupBatch(shifted(-3)) }, { host: on('Fake | CPU'), against }), 3),
+      at(
+        await pass(
+          { first: startupBatch(constant(300)), remeasure: startupBatch(QUIET) },
+          { host: on(EPYC), against },
+        ),
+        4,
+      ),
+      at(
+        await pass(
+          { first: startupBatch(constant(300)), remeasure: startupBatch(constant(280)) },
+          { host: on(XEON_8573), against },
+        ),
+        5,
+      ),
+    ];
+    const summary = summarizeAa(named(reports));
+    expect(summary.runs.map((run) => run.startup)).toStrictEqual([
+      { scenario: 'PB-PERF-001', baselineMedian: 100, median: 100, deviation: 0 },
+      { scenario: 'PB-PERF-001', baselineMedian: 100, median: 105, deviation: 0.05 },
+      { scenario: 'PB-PERF-001', baselineMedian: 100, median: 97, deviation: -0.03 },
+      { scenario: 'PB-PERF-001', baselineMedian: 100, median: 300, deviation: 2 },
+      { scenario: 'PB-PERF-001', baselineMedian: 100, median: 300, deviation: 2 },
+      null,
+    ]);
+
+    const markdown = renderAaMarkdown(summary);
+    const table = markdown.split('\n').filter((line) => /^\| \d+ \|/.test(line));
+    expect(markdown).toContain(
+      'Every pass, in the order it was measured (startup is PB-PERF-001 startupMs: the median of the first batch of the pass against the median of the baseline):',
+    );
+    expect(markdown).toContain(
+      '| pass | verdict | CPU model | startup median vs baseline median | deviation |',
+    );
+    expect(table).toStrictEqual([
+      `| 1 | pass | ${EPYC} | 100 ms vs 100 ms | +0.0 % |`,
+      `| 2 | pass | ${XEON_8370} | 105 ms vs 100 ms | +5.0 % |`,
+      '| 3 | pass | Fake \\| CPU | 97 ms vs 100 ms | -3.0 % |',
+      `| 4 | pass (first batch alarmed in PB-PERF-001, not reproduced) | ${EPYC} | 300 ms vs 100 ms | +200.0 % |`,
+      `| 5 | REGRESSION (false positive) | ${XEON_8573} | 300 ms vs 100 ms | +200.0 % |`,
+      `| 6 | problem (exit code 2) | ${EPYC} | - | - |`,
+    ]);
+  });
+
+  it('says so when no pass measured startup, and keeps a row for each pass', async () => {
+    const failed = await pass({ first: startupBatch(QUIET) }, { host: on(EPYC) });
+    failed.exitCode = 2;
+    failed.verdict = 'problem';
+    failed.scenarios = [];
+    const markdown = renderAaMarkdown(summarizeAa(named([failed])));
+    expect(markdown).toContain('Every pass, in the order it was measured (no pass measured startup):');
+    expect(markdown).toContain(`| 1 | problem (exit code 2) | ${EPYC} | - | - |`);
+  });
+
+  it('says "1 CPU model" and does not claim a difference between machines when every pass reported the same one', async () => {
+    const against = recordedOn(XEON_8370);
+    const summary = summarizeAa(
+      named([
+        at(await pass({ first: startupBatch(QUIET) }, { host: on(EPYC), against }), 1),
+        at(await pass({ first: startupBatch(QUIET) }, { host: on(EPYC), against }), 2),
+      ]),
+    );
+    expect(summary.machines.cpuModels).toStrictEqual([{ model: EPYC, passes: 2 }]);
+    const markdown = renderAaMarkdown(summary);
+    expect(markdown).toContain(
+      `- CPU models: the baseline was recorded on ${XEON_8370}. The passes ran on 1 CPU model: ${EPYC} (2 passes).`,
+    );
+    expect(markdown).not.toContain('did not all run on the same machine');
+  });
+
+  it('counts the passes that did not record a CPU model (reports written before it was), and says so', async () => {
+    const legacy = await pass({ first: startupBatch(QUIET) });
+    delete legacy.cpuModels;
+    const mixed = summarizeAa(
+      named([at(legacy, 1), at(await pass({ first: startupBatch(QUIET) }, { host: on(EPYC) }), 2)]),
+    );
+    expect(mixed.runs.map((run) => run.cpuModel)).toStrictEqual([null, EPYC]);
+    expect(mixed.machines).toStrictEqual({
+      cpuModels: [{ model: EPYC, passes: 1 }],
+      passesWithoutCpuModel: 1,
+    });
+    expect(mixed.baseline.cpuModel).toBeNull();
+    expect(renderAaMarkdown(mixed)).toContain(
+      `- CPU models: the baseline was recorded on not recorded. The passes ran on 1 CPU model: ${EPYC} (1 pass). 1 pass did not record theirs.`,
+    );
+
+    const none = summarizeAa(
+      named([await pass({ first: startupBatch(QUIET) }), await pass({ first: startupBatch(QUIET) })]),
+    );
+    expect(none.machines).toStrictEqual({ cpuModels: [], passesWithoutCpuModel: 2 });
+    expect(renderAaMarkdown(none)).toContain(
+      '- CPU models: the passes did not record theirs (the baseline was recorded on: not recorded).',
+    );
+    expect(renderAaMarkdown(none)).toContain('| 1 | pass | not recorded | 100 ms vs 100 ms | +0.0 % |');
+  });
+
+  it('survives JSON unchanged, with the machines in it', async () => {
+    const summary = summarizeAa(named(await severalJobs()));
+    expect(JSON.parse(JSON.stringify(summary))).toStrictEqual(summary);
   });
 });

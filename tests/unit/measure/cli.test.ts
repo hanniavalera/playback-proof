@@ -78,14 +78,14 @@ describe('PB-PERF perf/aa.ts: summarizing the gate reports of an A/A check', () 
     { spec: STARTUP, batch: startupBatch([90, 92, 95, 98, 100, 100, 102, 105, 110, 110]) },
     { spec: REBUFFERING, batch: rebufferBatch([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) },
   ]);
-  const report = (generatedAt: string) =>
+  const report = (generatedAt: string, cpuModel?: string) =>
     buildGateReport({
       envId: 'local-darwin-arm64',
       profile: 'chromium',
       generatedAt,
       result: { scenarios: [], problems: [], exitCode: 0 },
       baseline: { file: 'perf/baselines/local-darwin-arm64/chromium.json', baseline },
-      host: HOST,
+      host: cpuModel === undefined ? HOST : { ...HOST, cpuModel },
       browser: null,
       ffmpeg: '9.0',
       warnings: [],
@@ -102,6 +102,7 @@ describe('PB-PERF perf/aa.ts: summarizing the gate reports of an A/A check', () 
     const result = tsx('perf/aa.ts', ['--out-dir', out, ...files]);
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('A/A chromium in local-darwin-arm64: 2 passes, 0 false positives');
+    expect(result.stdout).toContain('CPU models of the passes: not recorded');
     const summary = JSON.parse(readFileSync(join(out, 'local-darwin-arm64', 'chromium-aa.json'), 'utf8')) as {
       passes: number;
       kind: string;
@@ -110,6 +111,30 @@ describe('PB-PERF perf/aa.ts: summarizing the gate reports of an A/A check', () 
     expect(readFileSync(join(out, 'local-darwin-arm64', 'chromium-aa.md'), 'utf8')).toContain(
       '**False positives (exit code 1): 0 of 2.**',
     );
+  });
+
+  it('takes the passes of several jobs, on several CPU models, and says how many models and which', () => {
+    const models = ['AMD EPYC 9V74 80-Core Processor', 'Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz'];
+    const files = models.map((model, index) => {
+      // Two jobs: each wrote its report to the same relative place in a directory of its own.
+      const dir = join(SCRATCH, 'aa-jobs', `job-${index + 1}`, 'local-darwin-arm64');
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(
+        join(dir, 'chromium.json'),
+        serializeReport(report(`2026-11-04T10:0${index}:00.000Z`, model)),
+      );
+      return join(dir, 'chromium.json');
+    });
+    const out = join(SCRATCH, 'aa-jobs-out');
+    const result = tsx('perf/aa.ts', ['--out-dir', out, ...files]);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain(
+      `CPU models of the passes: 2 distinct (${models[0]} x 1, ${models[1]} x 1)`,
+    );
+    const markdown = readFileSync(join(out, 'local-darwin-arm64', 'chromium-aa.md'), 'utf8');
+    expect(markdown).toContain('The passes ran on 2 distinct CPU models');
+    expect(markdown).toContain(`| 1 | pass | ${models[0]} | - | - |`);
+    expect(markdown).toContain(`| 2 | pass | ${models[1]} | - | - |`);
   });
 
   it('reports a report that is not there (a pass that died before it wrote one) and exits with 2, writing nothing', () => {
