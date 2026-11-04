@@ -20,6 +20,8 @@ import type {
 export interface Script {
   /** `startupMs` of each join in the order the world makes them; 15,000 or more is a join that never presents a frame. */
   startupMs?: number[];
+  /** `startupMs` of the warm-up join that the start check makes first and leaves out; default 900. */
+  warmupStartupMs?: number;
   baseLatencyMs?: number;
   /** The player stays as far behind as the outage made it, unless live sync was configured. */
   neverRunsDry?: boolean;
@@ -103,8 +105,12 @@ export function fakeWorld(script: Script = {}): {
       model: undefined as unknown as FakeModel,
     };
     observed.runs.push(record);
-    const startupMs = script.startupMs?.[joinIndex] ?? script.startupMs?.at(-1) ?? 900;
-    joinIndex += 1;
+    // The warm-up join is the lab's convention (ADR-120) and is not one of the joins of the script: it has a startup of its own.
+    const warmup = request.label.includes('warm-up');
+    const startupMs = warmup
+      ? (script.warmupStartupMs ?? 900)
+      : (script.startupMs?.[joinIndex] ?? script.startupMs?.at(-1) ?? 900);
+    if (!warmup) joinIndex += 1;
 
     let events = 0;
     let media = 0;

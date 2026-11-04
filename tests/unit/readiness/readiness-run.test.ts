@@ -48,10 +48,10 @@ describe('evaluateConfigurations', () => {
     expect(results.map((result) => result.id)).toEqual(['A', 'live-sync']);
     expect(results[0]?.patch).toBeNull();
     expect(results[1]?.patch).toEqual({ streaming: { liveSync: { enabled: true } } });
-    // A ran without a configure call, the candidate's runs with exactly one.
+    // A ran without a configure call, the candidate's runs with exactly one (each configuration's start check makes a warm-up join first).
     const configured = observed.runs.map((run) => run.configured.length);
-    expect(configured.slice(0, 6)).toEqual([0, 0, 0, 0, 0, 0]);
-    expect(configured.slice(6)).toEqual([1, 1, 1, 1, 1, 1]);
+    expect(configured.slice(0, 7)).toEqual([0, 0, 0, 0, 0, 0, 0]);
+    expect(configured.slice(7)).toEqual([1, 1, 1, 1, 1, 1, 1]);
     expect(results[0]?.verdict).toBe('NO-GO');
     expect(results[1]?.verdict).toBe('GO');
     expect(results[1]?.hypothesis).toContain('Rejected if');

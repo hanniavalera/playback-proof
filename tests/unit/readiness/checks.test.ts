@@ -43,8 +43,9 @@ describe('PB-RDY-001 stream start', () => {
     const result = await runStartCheck(world, { joins: 5 });
     expect(result.verdict).toBe('GO');
     expect(get(result, 'start.worst').value).toBe(1280);
-    expect(observed.runs).toHaveLength(5);
-    expect(observed.runs.map((run) => run.request.live?.startOffsetSec)).toEqual([
+    // The warm-up join comes first and is not one of the five.
+    expect(observed.runs).toHaveLength(6);
+    expect(observed.runs.slice(1).map((run) => run.request.live?.startOffsetSec)).toEqual([
       30, 30.4, 30.8, 31.2, 31.6,
     ]);
     expect(observed.runs.every((run) => run.closed)).toBe(true);
@@ -62,13 +63,53 @@ describe('PB-RDY-001 stream start', () => {
     expect(result.verdict).toBe('NO-GO');
     expect(get(result, 'start.worst').sentence).toContain('join 3');
     expect(get(result, 'start.worst').sentence).toContain('timed out');
-    expect(observed.runs).toHaveLength(5);
+    expect(observed.runs).toHaveLength(6);
     expect(observed.runs.every((run) => run.closed)).toBe(true);
   });
 
   it('cannot judge fewer joins than the criterion asks for', async () => {
     const { world } = fakeWorld();
     expect((await runStartCheck(world, { joins: 3 })).verdict).toBe('INCONCLUSIVE');
+  });
+
+  it('makes a warm-up join first, records it and leaves it out of the verdict: the first page of a browser process is not the player', async () => {
+    const { world, observed } = fakeWorld({ startupMs: [640, 700, 655, 600, 702], warmupStartupMs: 4200 });
+    const lines: string[] = [];
+    const result = await runStartCheck(world, { joins: 5, log: (line) => lines.push(line) });
+    expect(observed.runs[0]?.label).toContain('warm-up');
+    expect(observed.runs.slice(1).every((run) => !run.label.includes('warm-up'))).toBe(true);
+    // A cold 4.2 s is in the file, and is not the worst of the five joins.
+    expect(result.samples.warmup).toEqual({ startupMs: 4200 });
+    expect(get(result, 'start.worst').value).toBe(702);
+    expect(result.verdict).toBe('GO');
+    expect(result.notes.join(' ')).toContain(
+      'warm-up join was made first and left out (first frame after 4200 ms)',
+    );
+    expect(lines[0]).toBe('  warm-up join (left out): first frame after 4200 ms');
+    expect(observed.runs.every((run) => run.closed)).toBe(true);
+  });
+
+  it('records a warm-up that presented no frame, and still judges the five joins by themselves', async () => {
+    const { world } = fakeWorld({ warmupStartupMs: JOIN_TIMEOUT_MS });
+    const result = await runStartCheck(world, { joins: 5 });
+    expect(result.samples.warmup).toMatchObject({ startupMs: null });
+    expect((result.samples.warmup as { failure: string }).failure).toContain('timed out');
+    expect(result.verdict).toBe('GO');
+    expect(result.notes.join(' ')).toContain('it had no first frame');
+  });
+
+  it('makes no warm-up join when it is told not to', async () => {
+    const { world, observed } = fakeWorld();
+    const result = await runStartCheck(world, { joins: 5, warmup: false });
+    expect(observed.runs).toHaveLength(5);
+    expect(result.samples.warmup).toBeUndefined();
+  });
+
+  it('warms up with the configuration under test, so that a candidate is measured as warm as the defaults', async () => {
+    const { world, observed } = fakeWorld();
+    await runStartCheck(world, { joins: 5, patch: candidateById('live-sync')?.patch ?? null });
+    expect(observed.runs.every((run) => run.calls.join() === 'openIdle,configure,load,play')).toBe(true);
+    expect(observed.runs).toHaveLength(6);
   });
 
   it('applies the configuration under test BEFORE the player loads, and the result says it did', async () => {

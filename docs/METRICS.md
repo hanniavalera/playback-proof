@@ -43,7 +43,7 @@ The live-event readiness checks (TEST_STRATEGY.md section 8, [decisions/readines
 
 | Measure | Definition |
 | --- | --- |
-| **Start time of a join** | `startupMs` of a fresh live session in a fresh browser context; the worst of the sampled joins is judged. |
+| **Start time of a join** | `startupMs` of a fresh live session in a fresh browser context; the worst of the sampled joins is judged. A warm-up join is made first, with the same configuration, and is recorded and left out (the first page of a browser process pays for the browser, not for the player: ADR-120). |
 | **Latency over a window** | `live.latencyMs` read once per second of media time from the first frame, and the player's own `latencyMaxMs`; the p95 (type 7, as in Summaries) and the largest are judged. |
 | **Stall recovery, as judged** | `buffering-start` to the next `playing`, on the page's clock, for the stall that an injected origin outage causes (the origin's own `live.stalled` is read true when the player runs dry); the worst of the repeated runs is judged. A run in which the outage never stalled the player is `INCONCLUSIVE`. |
 | **Latency restored** | Wall-clock time from that `playing` until `latencyMs` is within the maximum and **stays** there for 5 s. A player that never gets there is censored: the value is the length of the observation, flagged as a lower bound. The same time is also read **relative to the session's own level** (the median of three reads, one per media second, before the outage): until `latencyMs` is within one segment of that level and stays there for 5 s. That second reading decides nothing; the first is the criterion. |

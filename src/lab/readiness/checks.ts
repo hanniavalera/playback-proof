@@ -161,6 +161,18 @@ async function firstFrame(run: ReadinessRun): Promise<{ event: QAEvent } | { fai
 
 export interface StartOptions extends CheckOptions {
   joins: number;
+  /**
+   * Make one join first and leave it out (default true). The first page of a browser process pays for the browser (its first renderer, its
+   * media pipeline), not for the player, so it is an outlier by construction, and it would be the "worst of N" of the first configuration
+   * that runs and of no other: the lab records that run and discards it (ADR-120, docs/decisions/perf.md).
+   */
+  warmup?: boolean;
+}
+
+/** The join that is recorded and left out: its first-frame time, or why it had none. */
+export interface WarmupSample {
+  startupMs: number | null;
+  failure?: string;
 }
 
 /** Where inside the segment interval a request reached the origin, ms after the last segment was published. */
@@ -171,17 +183,41 @@ function phaseOf(session: ReadinessSession, entry: RequestLogEntry): number | nu
   return Number.isFinite(sinceAst) ? ((sinceAst % segmentMs) + segmentMs) % segmentMs : null;
 }
 
+/** One join as the measured ones are made, with the configuration under test (a candidate's idle path is warmed as well), and nothing judged. */
+async function warmUpJoin(world: ReadinessWorld, options: StartOptions): Promise<WarmupSample> {
+  const run = await world.newRun({
+    label: 'PB-RDY-001 warm-up join',
+    live: { startOffsetSec: BASE_OFFSET_SEC },
+  });
+  try {
+    await bootPlayer(run, options.patch);
+    const frame = await firstFrame(run);
+    if ('failure' in frame) return { startupMs: null, failure: frame.failure };
+    return { startupMs: (await run.player.metrics()).startupMs };
+  } finally {
+    await run.close();
+  }
+}
+
 /**
  * N fresh joins, one after another, each in a session of its own and a browser context of its own, at different places in the segment
  * interval: the session is created with the stream already on air for a DVR window plus the join's share of a segment (`startOffsetSec`),
  * so the first request of every join reaches the origin at a different phase of its publication clock. The phase is read back from the
- * request log (it also contains the page's own start), so the claim "different positions" is in the result file and not assumed.
+ * request log (it also contains the page's own start), so the claim "different positions" is in the result file and not assumed. A warm-up
+ * join comes first and is left out of the verdict (`StartOptions.warmup`); it is in the result.
  */
 export async function runStartCheck(world: ReadinessWorld, options: StartOptions): Promise<CheckResult> {
   const began = world.now();
   const limits = options.limits ?? LIVE_LIMITS;
   const joins: JoinSample[] = [];
   let player: PlayerEvidence | null = null;
+  const warmup = options.warmup === false ? null : await warmUpJoin(world, options);
+  if (warmup)
+    options.log?.(
+      warmup.startupMs === null
+        ? `  warm-up join (left out): no first frame (${warmup.failure})`
+        : `  warm-up join (left out): first frame after ${Math.round(warmup.startupMs)} ms`,
+    );
   for (let index = 0; index < options.joins; index++) {
     const join = index + 1;
     const phaseSec = (index * LIVE_FACTS.segmentSec) / options.joins;
@@ -222,10 +258,19 @@ export async function runStartCheck(world: ReadinessWorld, options: StartOptions
   }
   return finish('PB-RDY-001', world, began, {
     evaluations: evaluateStart(joins, limits),
-    samples: { joins },
+    samples: { joins, ...(warmup ? { warmup } : {}) },
     player,
     notes: [
       `${options.joins} fresh sessions in fresh browser contexts, started ${(LIVE_FACTS.segmentSec / options.joins).toFixed(2)} s apart inside the ${LIVE_FACTS.segmentSec} s segment interval`,
+      ...(warmup
+        ? [
+            `a warm-up join was made first and left out (${
+              warmup.startupMs === null
+                ? `it had no first frame: ${warmup.failure}`
+                : `first frame after ${Math.round(warmup.startupMs)} ms`
+            }): the first page of a browser process pays for the browser, not for the player`,
+          ]
+        : []),
     ],
   });
 }
