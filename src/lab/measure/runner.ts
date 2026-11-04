@@ -61,6 +61,8 @@ export interface BatchRequest {
   runTimeoutMs?: number;
   /** Fault rules added to the scenario's own on every session: a regression injected on purpose. Recorded in the batch. */
   extraFaults?: readonly FaultRule[];
+  /** A CPU throttle rate that replaces the profile's own (Chromium only): a page that does more main-thread work, injected on purpose. Recorded in the batch. */
+  cpuThrottleRate?: number;
   onProgress?: (event: BatchProgress) => void;
   /** The page driver of a run. Default: `QaPage` over the run's Playwright page. */
   driverFor?: (run: RunPage, origin: string) => Driver;
@@ -106,7 +108,10 @@ export async function runBatch(request: BatchRequest): Promise<BatchMeasurement>
   const loadBefore = load();
   let browser: LaunchedBrowser;
   try {
-    browser = await request.launch(profile);
+    browser = await request.launch(
+      profile,
+      request.cpuThrottleRate === undefined ? undefined : { cpuThrottleRate: request.cpuThrottleRate },
+    );
   } catch (error) {
     throw new HarnessError('launch', `the browser of ${profile} did not start: ${messageOf(error)}`, {
       cause: error,
@@ -182,6 +187,7 @@ export async function runBatch(request: BatchRequest): Promise<BatchMeasurement>
     runs: records.slice(request.warmupRuns),
     loadAverage: { before: loadBefore, after: load() },
     ...(extraFaults.length > 0 ? { injectedFaults: extraFaults.map((rule) => structuredClone(rule)) } : {}),
+    ...(request.cpuThrottleRate === undefined ? {} : { injectedCpuThrottle: request.cpuThrottleRate }),
     startedAt,
     finishedAt: now().toISOString(),
   };

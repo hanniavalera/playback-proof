@@ -11,6 +11,7 @@ import {
   summarizeBatch,
   textTable,
 } from '../../../src/lab/measure/report.ts';
+import type { BaselineMachine } from '../../../src/lab/measure/baseline.ts';
 import type { PerfLimits } from '../../../src/lab/measure/rules.ts';
 import type { BatchMeasurement, ScenarioSpec } from '../../../src/lab/measure/types.ts';
 import { PERF_LIMITS } from '../../../src/shared/criteria.ts';
@@ -43,7 +44,11 @@ async function gated(
 
 const report = (
   result: GateResult,
-  extra: { setupProblems?: { scenario: string; message: string }[]; baseline?: boolean } = {},
+  extra: {
+    setupProblems?: { scenario: string; message: string }[];
+    baseline?: boolean;
+    machine?: BaselineMachine;
+  } = {},
 ) =>
   buildGateReport({
     envId: 'local-darwin-arm64',
@@ -55,6 +60,7 @@ const report = (
         ? null
         : { file: 'perf/baselines/local-darwin-arm64/chromium.json', baseline: BASELINE },
     host: HOST,
+    ...(extra.machine ? { machine: extra.machine } : {}),
     browser: { name: 'chromium', version: '156.0.0.0', userAgent: 'UA', cpuThrottleRate: null },
     ffmpeg: '9.0',
     warnings: [],
@@ -163,6 +169,9 @@ describe('PB-PERF report: the gate table', () => {
     });
     const text = renderGateText(report(result), result.scenarios);
     expect(text).toMatch(/startupMs\s+.*\s+not reproduced/);
+    expect(text).toContain(
+      'startupMs: not reproduced: the fresh batch passed, within the limits (median +20 %, p90 +50 %, and more than 10 ms); the first measurement is discarded and the build passes',
+    );
     expect(text).toContain('verdict: PASS (exit code 0)');
   });
 
@@ -215,6 +224,19 @@ describe('PB-PERF report: the Markdown summary and the JSON report', () => {
     expect(markdown.endsWith('\n')).toBe(true);
   });
 
+  it('says in the Markdown too that a failure that did not reproduce was discarded', async () => {
+    const result = await gated({
+      'PB-PERF-001': { first: startupBatch(constant(300)), remeasure: startupBatch(QUIET) },
+      'PB-PERF-003': { first: rebufferBatch(constant(0)) },
+    });
+    const markdown = renderGateMarkdown(report(result));
+    expect(markdown).toContain('## Performance gate: chromium in `local-darwin-arm64`: PASS');
+    expect(markdown).toContain('### PB-PERF-001 startup: pass (re-measured)');
+    expect(markdown).toMatch(
+      /- `startupMs`: median 100 ms -> 300 ms[^\n]*\n {2}- fresh batch passed, within the limits[^\n]*: not reproduced, so the first measurement is discarded and the build passes/,
+    );
+  });
+
   it('quotes a problem, a setup problem and a warning', async () => {
     const result = await gated({
       'PB-PERF-001': { first: startupBatch(constant(100), 360) },
@@ -244,6 +266,22 @@ describe('PB-PERF report: the Markdown summary and the JSON report', () => {
     expect(parsed.policy.limits.startupMedianRel).toBe(0.2);
     expect(parsed.policy.rules.startup).toMatchObject({ kind: 'relative', medianShare: 0.2 });
     expect(parsed.scenarios[0]!.first!.summaries.startupMs).toMatchObject({ n: 10, median: 100 });
+  });
+
+  it('keeps how the profile was started and the load around it in the JSON, null when it is not known', async () => {
+    const result = await gated({
+      'PB-PERF-001': { first: startupBatch(QUIET) },
+      'PB-PERF-003': { first: rebufferBatch(constant(0)) },
+    });
+    const machine: BaselineMachine = {
+      invokedVia: 'docker:pw',
+      dockerCpus: 4,
+      quiet: { maxLoad: 3, hostLoad: 1.1, waitedMs: 0 },
+      loadBeforeProfile: 1.1,
+      loadAfterProfile: 1.9,
+    };
+    expect(report(result, { machine }).current.machine).toStrictEqual(machine);
+    expect(report(result).current.machine).toBeNull();
   });
 
   it('turns a setup problem into exit code 2 unless a regression reproduced', async () => {

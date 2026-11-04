@@ -1,0 +1,1294 @@
+{
+  "schemaVersion": 1,
+  "kind": "perf-gate-report",
+  "envId": "local-darwin-arm64",
+  "profile": "chromium",
+  "generatedAt": "2026-11-04T07:42:56.886Z",
+  "verdict": "regression",
+  "exitCode": 1,
+  "baseline": {
+    "file": "/Users/hannia/repos/_worktrees/pb-perf/perf/baselines/local-darwin-arm64/chromium.json",
+    "generatedAt": "2026-11-04T06:36:11.733Z",
+    "commit": "7389861",
+    "browserVersion": "156.0.8078.4",
+    "runsPerScenario": 10
+  },
+  "current": {
+    "host": {
+      "os": {
+        "platform": "darwin",
+        "arch": "arm64",
+        "release": "27.2.0",
+        "name": "macOS 27.2"
+      },
+      "cpus": 12,
+      "memoryGiB": 16,
+      "node": "v22.11.0",
+      "playwright": "1.64.1",
+      "git": {
+        "commit": "a28a6fe",
+        "dirty": false
+      }
+    },
+    "machine": {
+      "invokedVia": "direct",
+      "dockerCpus": null,
+      "quiet": {
+        "maxLoad": 3,
+        "hostLoad": 2.59,
+        "waitedMs": 0
+      },
+      "loadBeforeProfile": 3.3798828125,
+      "loadAfterProfile": 3.0576171875
+    },
+    "browser": {
+      "name": "chromium",
+      "version": "156.0.8078.4",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+      "cpuThrottleRate": null
+    },
+    "ffmpeg": "9.0.2"
+  },
+  "policy": {
+    "limits": {
+      "runs": 10,
+      "warmupRuns": 1,
+      "maxBaselineCv": 0.15,
+      "startupMedianRel": 0.3,
+      "startupTailRel": 0.3,
+      "startupFloorMs": 5,
+      "lowEndStartupMedianRel": 0.3,
+      "lowEndStartupTailRel": 0.3,
+      "lowEndStartupFloorMs": 20,
+      "fpsMedianRel": 0.05,
+      "fpsTailRel": 0.1,
+      "fpsFloor": 1,
+      "frameDroppedMedianBudget": 0.01,
+      "frameDroppedTailBudget": 0.03,
+      "lowEndDroppedMedianBudget": 0.02,
+      "lowEndDroppedTailBudget": 0.05,
+      "rebufferCountMedianBudget": 0,
+      "rebufferCountTailBudget": 1,
+      "rebufferMsMedianBudget": 250,
+      "rebufferMsTailBudget": 1000,
+      "rebufferRatioMedianBudget": 0.01,
+      "rebufferRatioTailBudget": 0.05
+    },
+    "rules": {
+      "startup": {
+        "kind": "relative",
+        "worse": "higher",
+        "medianShare": 0.3,
+        "tailShare": 0.3,
+        "floor": 5
+      },
+      "lowEndStartup": {
+        "kind": "relative",
+        "worse": "higher",
+        "medianShare": 0.3,
+        "tailShare": 0.3,
+        "floor": 20
+      },
+      "fps": {
+        "kind": "relative",
+        "worse": "lower",
+        "medianShare": 0.05,
+        "tailShare": 0.1,
+        "floor": 1
+      },
+      "frameDropped": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 0.01,
+        "tailBudget": 0.03
+      },
+      "lowEndDropped": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 0.02,
+        "tailBudget": 0.05
+      },
+      "rebufferCount": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 0,
+        "tailBudget": 1
+      },
+      "rebufferMs": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 250,
+        "tailBudget": 1000
+      },
+      "rebufferRatio": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 0.01,
+        "tailBudget": 0.05
+      }
+    }
+  },
+  "warnings": [
+    "FAULTS WERE INJECTED ON PURPOSE into every session ([{\"type\":\"latency\",\"ms\":8000,\"times\":1,\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":4}}]): this is a sensitivity check of the gate, not a measurement of the build"
+  ],
+  "problems": [],
+  "scenarios": [
+    {
+      "id": "PB-PERF-003",
+      "name": "rebuffering",
+      "title": "Rebuffering on a changing network (bandwidth-drop): count, duration and ratio over 18 s of media",
+      "status": "regression",
+      "remeasured": true,
+      "stream": "vod-cmaf",
+      "metrics": [
+        {
+          "metric": "rebufferCount",
+          "verdict": "regression",
+          "first": {
+            "metric": "rebufferCount",
+            "label": "Rebuffers",
+            "unit": "count",
+            "rule": {
+              "kind": "budget",
+              "worse": "higher",
+              "medianBudget": 0,
+              "tailBudget": 1
+            },
+            "baselineRuns": 10,
+            "currentRuns": 5,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 3,
+              "change": 3,
+              "changeShare": null,
+              "worseBy": 3,
+              "allowed": 0,
+              "exceeded": true
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 4,
+              "change": 4,
+              "changeShare": null,
+              "worseBy": 4,
+              "allowed": 1,
+              "exceeded": true
+            },
+            "verdict": "fail",
+            "reason": "median 0 -> 3: worse by 3, more than the 0 allowed; p90 0 -> 4: worse by 4, more than the 1 allowed"
+          },
+          "remeasure": {
+            "metric": "rebufferCount",
+            "label": "Rebuffers",
+            "unit": "count",
+            "rule": {
+              "kind": "budget",
+              "worse": "higher",
+              "medianBudget": 0,
+              "tailBudget": 1
+            },
+            "baselineRuns": 10,
+            "currentRuns": 5,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 3,
+              "change": 3,
+              "changeShare": null,
+              "worseBy": 3,
+              "allowed": 0,
+              "exceeded": true
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 3,
+              "change": 3,
+              "changeShare": null,
+              "worseBy": 3,
+              "allowed": 1,
+              "exceeded": true
+            },
+            "verdict": "fail",
+            "reason": "median 0 -> 3: worse by 3, more than the 0 allowed; p90 0 -> 3: worse by 3, more than the 1 allowed"
+          }
+        },
+        {
+          "metric": "rebufferMs",
+          "verdict": "regression",
+          "first": {
+            "metric": "rebufferMs",
+            "label": "Rebuffer time",
+            "unit": "ms",
+            "rule": {
+              "kind": "budget",
+              "worse": "higher",
+              "medianBudget": 250,
+              "tailBudget": 1000
+            },
+            "baselineRuns": 10,
+            "currentRuns": 5,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 7989.599999964237,
+              "change": 7989.599999964237,
+              "changeShare": null,
+              "worseBy": 7989.599999964237,
+              "allowed": 250,
+              "exceeded": true
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 11178.600000035764,
+              "change": 11178.600000035764,
+              "changeShare": null,
+              "worseBy": 11178.600000035764,
+              "allowed": 1000,
+              "exceeded": true
+            },
+            "verdict": "fail",
+            "reason": "median 0 ms -> 7990 ms: worse by 7990 ms, more than the 250 ms allowed; p90 0 ms -> 11180 ms: worse by 11180 ms, more than the 1000 ms allowed"
+          },
+          "remeasure": {
+            "metric": "rebufferMs",
+            "label": "Rebuffer time",
+            "unit": "ms",
+            "rule": {
+              "kind": "budget",
+              "worse": "higher",
+              "medianBudget": 250,
+              "tailBudget": 1000
+            },
+            "baselineRuns": 10,
+            "currentRuns": 5,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 7988.299999892712,
+              "change": 7988.299999892712,
+              "changeShare": null,
+              "worseBy": 7988.299999892712,
+              "allowed": 250,
+              "exceeded": true
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 8131.380000007152,
+              "change": 8131.380000007152,
+              "changeShare": null,
+              "worseBy": 8131.380000007152,
+              "allowed": 1000,
+              "exceeded": true
+            },
+            "verdict": "fail",
+            "reason": "median 0 ms -> 7988 ms: worse by 7988 ms, more than the 250 ms allowed; p90 0 ms -> 8131 ms: worse by 8131 ms, more than the 1000 ms allowed"
+          }
+        },
+        {
+          "metric": "rebufferRatio",
+          "verdict": "regression",
+          "first": {
+            "metric": "rebufferRatio",
+            "label": "Rebuffer ratio",
+            "unit": "ratio",
+            "rule": {
+              "kind": "budget",
+              "worse": "higher",
+              "medianBudget": 0.01,
+              "tailBudget": 0.05
+            },
+            "baselineRuns": 10,
+            "currentRuns": 5,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 0.3061020416747547,
+              "change": 0.3061020416747547,
+              "changeShare": null,
+              "worseBy": 0.3061020416747547,
+              "allowed": 0.01,
+              "exceeded": true
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 0.38060749298503277,
+              "change": 0.38060749298503277,
+              "changeShare": null,
+              "worseBy": 0.38060749298503277,
+              "allowed": 0.05,
+              "exceeded": true
+            },
+            "verdict": "fail",
+            "reason": "median 0 -> 0.3061: worse by 0.3061, more than the 0.01 allowed; p90 0 -> 0.3806: worse by 0.3806, more than the 0.05 allowed"
+          },
+          "remeasure": {
+            "metric": "rebufferRatio",
+            "label": "Rebuffer ratio",
+            "unit": "ratio",
+            "rule": {
+              "kind": "budget",
+              "worse": "higher",
+              "medianBudget": 0.01,
+              "tailBudget": 0.05
+            },
+            "baselineRuns": 10,
+            "currentRuns": 5,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 0.30588465043231217,
+              "change": 0.30588465043231217,
+              "changeShare": null,
+              "worseBy": 0.30588465043231217,
+              "allowed": 0.01,
+              "exceeded": true
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 0.30939194077171234,
+              "change": 0.30939194077171234,
+              "changeShare": null,
+              "worseBy": 0.30939194077171234,
+              "allowed": 0.05,
+              "exceeded": true
+            },
+            "verdict": "fail",
+            "reason": "median 0 -> 0.3059: worse by 0.3059, more than the 0.01 allowed; p90 0 -> 0.3094: worse by 0.3094, more than the 0.05 allowed"
+          }
+        },
+        {
+          "metric": "switches",
+          "verdict": "tracked",
+          "first": {
+            "metric": "switches",
+            "label": "Rung switches",
+            "unit": "count",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 5,
+            "baselineCv": 0,
+            "median": {
+              "statistic": "median",
+              "baseline": 1,
+              "current": 3,
+              "change": 2,
+              "changeShare": 2,
+              "worseBy": 2,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 1,
+              "current": 3,
+              "change": 2,
+              "changeShare": 2,
+              "worseBy": 2,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          },
+          "remeasure": null
+        }
+      ],
+      "problems": [],
+      "first": {
+        "startedAt": "2026-11-04T07:42:56.889Z",
+        "finishedAt": "2026-11-04T07:45:41.643Z",
+        "loadAverage": {
+          "before": 3.3798828125,
+          "after": 4.56884765625
+        },
+        "startRungHeight": 720,
+        "warmup": {
+          "values": {
+            "rebufferCount": 3,
+            "rebufferMs": 8122,
+            "rebufferRatio": 0.3087743309002433,
+            "switches": 3
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 89.59999996423721,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 8106.199999988079,
+              "from": 2,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            },
+            {
+              "t": 10095.699999988079,
+              "from": 0,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 16100.599999964237,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 26552
+        },
+        "runs": [
+          {
+            "values": {
+              "rebufferCount": 4,
+              "rebufferMs": 11095.200000107288,
+              "rebufferRatio": 0.3780409687525314,
+              "switches": 3
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 82.89999997615814,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              },
+              {
+                "t": 8101,
+                "from": 2,
+                "to": 0,
+                "height": 240,
+                "reason": "abr"
+              },
+              {
+                "t": 10092.600000023842,
+                "from": 0,
+                "to": 1,
+                "height": 360,
+                "reason": "abr"
+              },
+              {
+                "t": 16098.5,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 29495
+          },
+          {
+            "values": {
+              "rebufferCount": 3,
+              "rebufferMs": 7985.700000047684,
+              "rebufferRatio": 0.3059092580691688,
+              "switches": 3
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 83.90000003576279,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              },
+              {
+                "t": 8101.199999988079,
+                "from": 2,
+                "to": 0,
+                "height": 240,
+                "reason": "abr"
+              },
+              {
+                "t": 10093.400000035763,
+                "from": 0,
+                "to": 1,
+                "height": 360,
+                "reason": "abr"
+              },
+              {
+                "t": 16097.600000023842,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 26264
+          },
+          {
+            "values": {
+              "rebufferCount": 3,
+              "rebufferMs": 7977.900000035763,
+              "rebufferRatio": 0.3054408043106868,
+              "switches": 3
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 85.90000003576279,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              },
+              {
+                "t": 8107.900000035763,
+                "from": 2,
+                "to": 0,
+                "height": 240,
+                "reason": "abr"
+              },
+              {
+                "t": 10093.5,
+                "from": 0,
+                "to": 1,
+                "height": 360,
+                "reason": "abr"
+              },
+              {
+                "t": 16098.199999988079,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 26278
+          },
+          {
+            "values": {
+              "rebufferCount": 4,
+              "rebufferMs": 11234.199999988079,
+              "rebufferRatio": 0.3823185091400337,
+              "switches": 3
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 84.70000004768372,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              },
+              {
+                "t": 8104.100000023842,
+                "from": 2,
+                "to": 0,
+                "height": 240,
+                "reason": "abr"
+              },
+              {
+                "t": 10092.5,
+                "from": 0,
+                "to": 1,
+                "height": 360,
+                "reason": "abr"
+              },
+              {
+                "t": 16099.200000047684,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 29541
+          },
+          {
+            "values": {
+              "rebufferCount": 3,
+              "rebufferMs": 7989.599999964237,
+              "rebufferRatio": 0.3061020416747547,
+              "switches": 3
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 84,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              },
+              {
+                "t": 8100.899999976158,
+                "from": 2,
+                "to": 0,
+                "height": 240,
+                "reason": "abr"
+              },
+              {
+                "t": 10093.199999988079,
+                "from": 0,
+                "to": 1,
+                "height": 360,
+                "reason": "abr"
+              },
+              {
+                "t": 16099.799999952316,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 26263
+          }
+        ],
+        "summaries": {
+          "rebufferCount": {
+            "n": 5,
+            "median": 3,
+            "p10": 3,
+            "p90": 4,
+            "min": 3,
+            "max": 4,
+            "mad": 0,
+            "cv": 0.16109486985446062
+          },
+          "rebufferMs": {
+            "n": 5,
+            "median": 7989.599999964237,
+            "p10": 7981.020000040531,
+            "p90": 11178.600000035764,
+            "min": 7977.900000035763,
+            "max": 11234.199999988079,
+            "mad": 11.699999928474426,
+            "cv": 0.18825868024958875
+          },
+          "rebufferRatio": {
+            "n": 5,
+            "median": 0.3061020416747547,
+            "p10": 0.30562818581407963,
+            "p90": 0.38060749298503277,
+            "min": 0.3054408043106868,
+            "max": 0.3823185091400337,
+            "mad": 0.0006612373640678681,
+            "cv": 0.12146395133174702
+          },
+          "switches": {
+            "n": 5,
+            "median": 3,
+            "p10": 3,
+            "p90": 3,
+            "min": 3,
+            "max": 3,
+            "mad": 0,
+            "cv": 0
+          }
+        },
+        "comparisons": [
+          {
+            "metric": "rebufferCount",
+            "label": "Rebuffers",
+            "unit": "count",
+            "rule": {
+              "kind": "budget",
+              "worse": "higher",
+              "medianBudget": 0,
+              "tailBudget": 1
+            },
+            "baselineRuns": 10,
+            "currentRuns": 5,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 3,
+              "change": 3,
+              "changeShare": null,
+              "worseBy": 3,
+              "allowed": 0,
+              "exceeded": true
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 4,
+              "change": 4,
+              "changeShare": null,
+              "worseBy": 4,
+              "allowed": 1,
+              "exceeded": true
+            },
+            "verdict": "fail",
+            "reason": "median 0 -> 3: worse by 3, more than the 0 allowed; p90 0 -> 4: worse by 4, more than the 1 allowed"
+          },
+          {
+            "metric": "rebufferMs",
+            "label": "Rebuffer time",
+            "unit": "ms",
+            "rule": {
+              "kind": "budget",
+              "worse": "higher",
+              "medianBudget": 250,
+              "tailBudget": 1000
+            },
+            "baselineRuns": 10,
+            "currentRuns": 5,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 7989.599999964237,
+              "change": 7989.599999964237,
+              "changeShare": null,
+              "worseBy": 7989.599999964237,
+              "allowed": 250,
+              "exceeded": true
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 11178.600000035764,
+              "change": 11178.600000035764,
+              "changeShare": null,
+              "worseBy": 11178.600000035764,
+              "allowed": 1000,
+              "exceeded": true
+            },
+            "verdict": "fail",
+            "reason": "median 0 ms -> 7990 ms: worse by 7990 ms, more than the 250 ms allowed; p90 0 ms -> 11180 ms: worse by 11180 ms, more than the 1000 ms allowed"
+          },
+          {
+            "metric": "rebufferRatio",
+            "label": "Rebuffer ratio",
+            "unit": "ratio",
+            "rule": {
+              "kind": "budget",
+              "worse": "higher",
+              "medianBudget": 0.01,
+              "tailBudget": 0.05
+            },
+            "baselineRuns": 10,
+            "currentRuns": 5,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 0.3061020416747547,
+              "change": 0.3061020416747547,
+              "changeShare": null,
+              "worseBy": 0.3061020416747547,
+              "allowed": 0.01,
+              "exceeded": true
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 0.38060749298503277,
+              "change": 0.38060749298503277,
+              "changeShare": null,
+              "worseBy": 0.38060749298503277,
+              "allowed": 0.05,
+              "exceeded": true
+            },
+            "verdict": "fail",
+            "reason": "median 0 -> 0.3061: worse by 0.3061, more than the 0.01 allowed; p90 0 -> 0.3806: worse by 0.3806, more than the 0.05 allowed"
+          },
+          {
+            "metric": "switches",
+            "label": "Rung switches",
+            "unit": "count",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 5,
+            "baselineCv": 0,
+            "median": {
+              "statistic": "median",
+              "baseline": 1,
+              "current": 3,
+              "change": 2,
+              "changeShare": 2,
+              "worseBy": 2,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 1,
+              "current": 3,
+              "change": 2,
+              "changeShare": 2,
+              "worseBy": 2,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          }
+        ],
+        "problems": []
+      },
+      "remeasure": {
+        "startedAt": "2026-11-04T07:45:41.644Z",
+        "finishedAt": "2026-11-04T07:48:14.687Z",
+        "loadAverage": {
+          "before": 4.56884765625,
+          "after": 3.0576171875
+        },
+        "startRungHeight": 720,
+        "warmup": {
+          "values": {
+            "rebufferCount": 3,
+            "rebufferMs": 8129.099999964237,
+            "rebufferRatio": 0.3089749485917159,
+            "switches": 3
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 86.89999997615814,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 8102.300000011921,
+              "from": 2,
+              "to": 0,
+              "height": 240,
+              "reason": "abr"
+            },
+            {
+              "t": 10093.199999988079,
+              "from": 0,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 16096.199999988079,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 26565
+        },
+        "runs": [
+          {
+            "values": {
+              "rebufferCount": 3,
+              "rebufferMs": 8223.099999964237,
+              "rebufferRatio": 0.31148106060470593,
+              "switches": 3
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 83.29999995231628,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              },
+              {
+                "t": 8100.699999988079,
+                "from": 2,
+                "to": 0,
+                "height": 240,
+                "reason": "abr"
+              },
+              {
+                "t": 10091.899999976158,
+                "from": 0,
+                "to": 1,
+                "height": 360,
+                "reason": "abr"
+              },
+              {
+                "t": 16095.5,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 26559
+          },
+          {
+            "values": {
+              "rebufferCount": 3,
+              "rebufferMs": 7983.000000059605,
+              "rebufferRatio": 0.3058116861994368,
+              "switches": 3
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 82.80000001192093,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              },
+              {
+                "t": 8101.199999988079,
+                "from": 2,
+                "to": 0,
+                "height": 240,
+                "reason": "abr"
+              },
+              {
+                "t": 10092.199999988079,
+                "from": 0,
+                "to": 1,
+                "height": 360,
+                "reason": "abr"
+              },
+              {
+                "t": 16096.300000011921,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 26264
+          },
+          {
+            "values": {
+              "rebufferCount": 2,
+              "rebufferMs": 2774.5,
+              "rebufferRatio": 0.13291909397501298,
+              "switches": 3
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 83.09999996423721,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              },
+              {
+                "t": 8098.699999988079,
+                "from": 2,
+                "to": 0,
+                "height": 240,
+                "reason": "abr"
+              },
+              {
+                "t": 10093.5,
+                "from": 0,
+                "to": 1,
+                "height": 360,
+                "reason": "abr"
+              },
+              {
+                "t": 18099.80000001192,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 21008
+          },
+          {
+            "values": {
+              "rebufferCount": 3,
+              "rebufferMs": 7988.299999892712,
+              "rebufferRatio": 0.30588465043231217,
+              "switches": 3
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 88.30000001192093,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              },
+              {
+                "t": 8103.600000023842,
+                "from": 2,
+                "to": 0,
+                "height": 240,
+                "reason": "abr"
+              },
+              {
+                "t": 10094.100000023842,
+                "from": 0,
+                "to": 1,
+                "height": 360,
+                "reason": "abr"
+              },
+              {
+                "t": 16100.300000011921,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 26277
+          },
+          {
+            "values": {
+              "rebufferCount": 3,
+              "rebufferMs": 7993.800000071526,
+              "rebufferRatio": 0.3062582610222219,
+              "switches": 3
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 82.30000001192093,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              },
+              {
+                "t": 8100.400000035763,
+                "from": 2,
+                "to": 0,
+                "height": 240,
+                "reason": "abr"
+              },
+              {
+                "t": 10090.800000011921,
+                "from": 0,
+                "to": 1,
+                "height": 360,
+                "reason": "abr"
+              },
+              {
+                "t": 16094.699999988079,
+                "from": 1,
+                "to": 2,
+                "height": 720,
+                "reason": "abr"
+              }
+            ],
+            "errors": [],
+            "durationMs": 26246
+          }
+        ],
+        "summaries": {
+          "rebufferCount": {
+            "n": 5,
+            "median": 3,
+            "p10": 2.4,
+            "p90": 3,
+            "min": 2,
+            "max": 3,
+            "mad": 0,
+            "cv": 0.15971914124998496
+          },
+          "rebufferMs": {
+            "n": 5,
+            "median": 7988.299999892712,
+            "p10": 4857.900000023842,
+            "p90": 8131.380000007152,
+            "min": 2774.5,
+            "max": 8223.099999964237,
+            "mad": 5.500000178813934,
+            "cv": 0.33752382202319653
+          },
+          "rebufferRatio": {
+            "n": 5,
+            "median": 0.30588465043231217,
+            "p10": 0.20207613086478252,
+            "p90": 0.30939194077171234,
+            "min": 0.13291909397501298,
+            "max": 0.31148106060470593,
+            "mad": 0.0003736105899097564,
+            "cv": 0.2864464522982678
+          },
+          "switches": {
+            "n": 5,
+            "median": 3,
+            "p10": 3,
+            "p90": 3,
+            "min": 3,
+            "max": 3,
+            "mad": 0,
+            "cv": 0
+          }
+        },
+        "comparisons": [
+          {
+            "metric": "rebufferCount",
+            "label": "Rebuffers",
+            "unit": "count",
+            "rule": {
+              "kind": "budget",
+              "worse": "higher",
+              "medianBudget": 0,
+              "tailBudget": 1
+            },
+            "baselineRuns": 10,
+            "currentRuns": 5,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 3,
+              "change": 3,
+              "changeShare": null,
+              "worseBy": 3,
+              "allowed": 0,
+              "exceeded": true
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 3,
+              "change": 3,
+              "changeShare": null,
+              "worseBy": 3,
+              "allowed": 1,
+              "exceeded": true
+            },
+            "verdict": "fail",
+            "reason": "median 0 -> 3: worse by 3, more than the 0 allowed; p90 0 -> 3: worse by 3, more than the 1 allowed"
+          },
+          {
+            "metric": "rebufferMs",
+            "label": "Rebuffer time",
+            "unit": "ms",
+            "rule": {
+              "kind": "budget",
+              "worse": "higher",
+              "medianBudget": 250,
+              "tailBudget": 1000
+            },
+            "baselineRuns": 10,
+            "currentRuns": 5,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 7988.299999892712,
+              "change": 7988.299999892712,
+              "changeShare": null,
+              "worseBy": 7988.299999892712,
+              "allowed": 250,
+              "exceeded": true
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 8131.380000007152,
+              "change": 8131.380000007152,
+              "changeShare": null,
+              "worseBy": 8131.380000007152,
+              "allowed": 1000,
+              "exceeded": true
+            },
+            "verdict": "fail",
+            "reason": "median 0 ms -> 7988 ms: worse by 7988 ms, more than the 250 ms allowed; p90 0 ms -> 8131 ms: worse by 8131 ms, more than the 1000 ms allowed"
+          },
+          {
+            "metric": "rebufferRatio",
+            "label": "Rebuffer ratio",
+            "unit": "ratio",
+            "rule": {
+              "kind": "budget",
+              "worse": "higher",
+              "medianBudget": 0.01,
+              "tailBudget": 0.05
+            },
+            "baselineRuns": 10,
+            "currentRuns": 5,
+            "baselineCv": null,
+            "median": {
+              "statistic": "median",
+              "baseline": 0,
+              "current": 0.30588465043231217,
+              "change": 0.30588465043231217,
+              "changeShare": null,
+              "worseBy": 0.30588465043231217,
+              "allowed": 0.01,
+              "exceeded": true
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 0,
+              "current": 0.30939194077171234,
+              "change": 0.30939194077171234,
+              "changeShare": null,
+              "worseBy": 0.30939194077171234,
+              "allowed": 0.05,
+              "exceeded": true
+            },
+            "verdict": "fail",
+            "reason": "median 0 -> 0.3059: worse by 0.3059, more than the 0.01 allowed; p90 0 -> 0.3094: worse by 0.3094, more than the 0.05 allowed"
+          },
+          {
+            "metric": "switches",
+            "label": "Rung switches",
+            "unit": "count",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 5,
+            "baselineCv": 0,
+            "median": {
+              "statistic": "median",
+              "baseline": 1,
+              "current": 3,
+              "change": 2,
+              "changeShare": 2,
+              "worseBy": 2,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 1,
+              "current": 3,
+              "change": 2,
+              "changeShare": 2,
+              "worseBy": 2,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          }
+        ],
+        "problems": []
+      }
+    }
+  ]
+}

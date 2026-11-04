@@ -1,0 +1,1006 @@
+{
+  "schemaVersion": 1,
+  "kind": "perf-gate-report",
+  "envId": "local-darwin-arm64",
+  "profile": "chromium",
+  "generatedAt": "2026-11-04T07:37:26.847Z",
+  "verdict": "regression",
+  "exitCode": 1,
+  "baseline": {
+    "file": "/Users/hannia/repos/_worktrees/pb-perf/perf/baselines/local-darwin-arm64/chromium.json",
+    "generatedAt": "2026-11-04T06:36:11.733Z",
+    "commit": "7389861",
+    "browserVersion": "156.0.8078.4",
+    "runsPerScenario": 10
+  },
+  "current": {
+    "host": {
+      "os": {
+        "platform": "darwin",
+        "arch": "arm64",
+        "release": "27.2.0",
+        "name": "macOS 27.2"
+      },
+      "cpus": 12,
+      "memoryGiB": 16,
+      "node": "v22.11.0",
+      "playwright": "1.64.1",
+      "git": {
+        "commit": "a28a6fe",
+        "dirty": false
+      }
+    },
+    "machine": {
+      "invokedVia": "direct",
+      "dockerCpus": null,
+      "quiet": {
+        "maxLoad": 3,
+        "hostLoad": 2.98,
+        "waitedMs": 0
+      },
+      "loadBeforeProfile": 3.00146484375,
+      "loadAfterProfile": 2.9208984375
+    },
+    "browser": {
+      "name": "chromium",
+      "version": "156.0.8078.4",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+      "cpuThrottleRate": null
+    },
+    "ffmpeg": "9.0.2"
+  },
+  "policy": {
+    "limits": {
+      "runs": 10,
+      "warmupRuns": 1,
+      "maxBaselineCv": 0.15,
+      "startupMedianRel": 0.3,
+      "startupTailRel": 0.3,
+      "startupFloorMs": 5,
+      "lowEndStartupMedianRel": 0.3,
+      "lowEndStartupTailRel": 0.3,
+      "lowEndStartupFloorMs": 20,
+      "fpsMedianRel": 0.05,
+      "fpsTailRel": 0.1,
+      "fpsFloor": 1,
+      "frameDroppedMedianBudget": 0.01,
+      "frameDroppedTailBudget": 0.03,
+      "lowEndDroppedMedianBudget": 0.02,
+      "lowEndDroppedTailBudget": 0.05,
+      "rebufferCountMedianBudget": 0,
+      "rebufferCountTailBudget": 1,
+      "rebufferMsMedianBudget": 250,
+      "rebufferMsTailBudget": 1000,
+      "rebufferRatioMedianBudget": 0.01,
+      "rebufferRatioTailBudget": 0.05
+    },
+    "rules": {
+      "startup": {
+        "kind": "relative",
+        "worse": "higher",
+        "medianShare": 0.3,
+        "tailShare": 0.3,
+        "floor": 5
+      },
+      "lowEndStartup": {
+        "kind": "relative",
+        "worse": "higher",
+        "medianShare": 0.3,
+        "tailShare": 0.3,
+        "floor": 20
+      },
+      "fps": {
+        "kind": "relative",
+        "worse": "lower",
+        "medianShare": 0.05,
+        "tailShare": 0.1,
+        "floor": 1
+      },
+      "frameDropped": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 0.01,
+        "tailBudget": 0.03
+      },
+      "lowEndDropped": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 0.02,
+        "tailBudget": 0.05
+      },
+      "rebufferCount": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 0,
+        "tailBudget": 1
+      },
+      "rebufferMs": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 250,
+        "tailBudget": 1000
+      },
+      "rebufferRatio": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 0.01,
+        "tailBudget": 0.05
+      }
+    }
+  },
+  "warnings": [
+    "FAULTS WERE INJECTED ON PURPOSE into every session ([{\"type\":\"latency\",\"ms\":8,\"match\":{\"kind\":\"manifest\"}},{\"type\":\"latency\",\"ms\":8,\"match\":{\"kind\":\"init\"}}]): this is a sensitivity check of the gate, not a measurement of the build"
+  ],
+  "problems": [],
+  "scenarios": [
+    {
+      "id": "PB-PERF-001",
+      "name": "startup",
+      "title": "Startup baseline (vod-cmaf, clean): load-requested to the first frame presented",
+      "status": "regression",
+      "remeasured": true,
+      "stream": "vod-cmaf",
+      "metrics": [
+        {
+          "metric": "startupMs",
+          "verdict": "regression",
+          "first": {
+            "metric": "startupMs",
+            "label": "Startup time",
+            "unit": "ms",
+            "rule": {
+              "kind": "relative",
+              "worse": "higher",
+              "medianShare": 0.3,
+              "tailShare": 0.3,
+              "floor": 5
+            },
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.03999669045900356,
+            "median": {
+              "statistic": "median",
+              "baseline": 37.04999998211861,
+              "current": 52.35000002384186,
+              "change": 15.300000041723251,
+              "changeShare": 0.41295546691248236,
+              "worseBy": 15.300000041723251,
+              "allowed": 11.114999994635582,
+              "exceeded": true
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 39.029999977350236,
+              "current": 54.52000003457069,
+              "change": 15.490000057220456,
+              "changeShare": 0.396874201030222,
+              "worseBy": 15.490000057220456,
+              "allowed": 11.70899999320507,
+              "exceeded": true
+            },
+            "verdict": "fail",
+            "reason": "median 37.05 ms -> 52.35 ms (+41.3 %): worse by 15.3 ms, more than the 11.11 ms allowed; p90 39.03 ms -> 54.52 ms (+39.7 %): worse by 15.49 ms, more than the 11.71 ms allowed"
+          },
+          "remeasure": {
+            "metric": "startupMs",
+            "label": "Startup time",
+            "unit": "ms",
+            "rule": {
+              "kind": "relative",
+              "worse": "higher",
+              "medianShare": 0.3,
+              "tailShare": 0.3,
+              "floor": 5
+            },
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.03999669045900356,
+            "median": {
+              "statistic": "median",
+              "baseline": 37.04999998211861,
+              "current": 46.20000001788139,
+              "change": 9.150000035762787,
+              "changeShare": 0.24696356383748555,
+              "worseBy": 9.150000035762787,
+              "allowed": 11.114999994635582,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 39.029999977350236,
+              "current": 55.06999999880791,
+              "change": 16.040000021457672,
+              "changeShare": 0.4109659244367398,
+              "worseBy": 16.040000021457672,
+              "allowed": 11.70899999320507,
+              "exceeded": true
+            },
+            "verdict": "fail",
+            "reason": "p90 39.03 ms -> 55.07 ms (+41.1 %): worse by 16.04 ms, more than the 11.71 ms allowed"
+          }
+        },
+        {
+          "metric": "manifestMs",
+          "verdict": "tracked",
+          "first": {
+            "metric": "manifestMs",
+            "label": "Manifest time",
+            "unit": "ms",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.03193700326913747,
+            "median": {
+              "statistic": "median",
+              "baseline": 11.049999982118607,
+              "current": 16.5,
+              "change": 5.450000017881393,
+              "changeShare": 0.49321267209961295,
+              "worseBy": 5.450000017881393,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 11.530000001192093,
+              "current": 16.69999998807907,
+              "change": 5.169999986886978,
+              "changeShare": 0.4483954888423633,
+              "worseBy": 5.169999986886978,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          },
+          "remeasure": null
+        },
+        {
+          "metric": "loadedMs",
+          "verdict": "tracked",
+          "first": {
+            "metric": "loadedMs",
+            "label": "Load time",
+            "unit": "ms",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.026231339094042648,
+            "median": {
+              "statistic": "median",
+              "baseline": 15.650000005960464,
+              "current": 20.850000023841858,
+              "change": 5.200000017881393,
+              "changeShare": 0.33226837162306194,
+              "worseBy": 5.200000017881393,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 16.039999997615816,
+              "current": 20.930000030994414,
+              "change": 4.890000033378598,
+              "changeShare": 0.30486284501904287,
+              "worseBy": 4.890000033378598,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          },
+          "remeasure": null
+        }
+      ],
+      "problems": [],
+      "first": {
+        "startedAt": "2026-11-04T07:37:26.851Z",
+        "finishedAt": "2026-11-04T07:37:29.058Z",
+        "loadAverage": {
+          "before": 3.00146484375,
+          "after": 3.00146484375
+        },
+        "startRungHeight": 720,
+        "warmup": {
+          "values": {
+            "startupMs": 137.9000000357628,
+            "manifestMs": 18.100000023841858,
+            "loadedMs": 22.30000001192093
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 91.5,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 251
+        },
+        "runs": [
+          {
+            "values": {
+              "startupMs": 37.19999998807907,
+              "manifestMs": 16.5,
+              "loadedMs": 20.80000001192093
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 86.80000001192093,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 145
+          },
+          {
+            "values": {
+              "startupMs": 39.90000003576279,
+              "manifestMs": 16.600000023841858,
+              "loadedMs": 20.900000035762787
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 86.69999998807907,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 147
+          },
+          {
+            "values": {
+              "startupMs": 38.700000047683716,
+              "manifestMs": 15.700000047683716,
+              "loadedMs": 20
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 85,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 143
+          },
+          {
+            "values": {
+              "startupMs": 55.60000002384186,
+              "manifestMs": 16.30000001192093,
+              "loadedMs": 20.5
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 86.80000001192093,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 163
+          },
+          {
+            "values": {
+              "startupMs": 53.5,
+              "manifestMs": 16.5,
+              "loadedMs": 20.69999998807907
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 89,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 163
+          },
+          {
+            "values": {
+              "startupMs": 53.10000002384186,
+              "manifestMs": 16.5,
+              "loadedMs": 20.900000035762787
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 89,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 163
+          },
+          {
+            "values": {
+              "startupMs": 54.40000003576279,
+              "manifestMs": 16.600000023841858,
+              "loadedMs": 20.900000035762787
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 88.10000002384186,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 164
+          },
+          {
+            "values": {
+              "startupMs": 51.60000002384186,
+              "manifestMs": 16.69999998807907,
+              "loadedMs": 20.900000035762787
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 89.69999998807907,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 161
+          },
+          {
+            "values": {
+              "startupMs": 53.5,
+              "manifestMs": 16.69999998807907,
+              "loadedMs": 21.19999998807907
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 89.5,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 162
+          },
+          {
+            "values": {
+              "startupMs": 51.5,
+              "manifestMs": 14.599999964237213,
+              "loadedMs": 18.899999976158142
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 88.10000002384186,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 165
+          }
+        ],
+        "summaries": {
+          "startupMs": {
+            "n": 10,
+            "median": 52.35000002384186,
+            "p10": 38.55000004172325,
+            "p90": 54.52000003457069,
+            "min": 37.19999998807907,
+            "max": 55.60000002384186,
+            "mad": 1.5999999940395355,
+            "cv": 0.1479507663525359
+          },
+          "manifestMs": {
+            "n": 10,
+            "median": 16.5,
+            "p10": 15.590000039339065,
+            "p90": 16.69999998807907,
+            "min": 14.599999964237213,
+            "max": 16.69999998807907,
+            "mad": 0.15000000596046448,
+            "cv": 0.04025697123984385
+          },
+          "loadedMs": {
+            "n": 10,
+            "median": 20.850000023841858,
+            "p10": 19.889999997615813,
+            "p90": 20.930000030994414,
+            "min": 18.899999976158142,
+            "max": 21.19999998807907,
+            "mad": 0.10000002384185791,
+            "cv": 0.03249462269655978
+          }
+        },
+        "comparisons": [
+          {
+            "metric": "startupMs",
+            "label": "Startup time",
+            "unit": "ms",
+            "rule": {
+              "kind": "relative",
+              "worse": "higher",
+              "medianShare": 0.3,
+              "tailShare": 0.3,
+              "floor": 5
+            },
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.03999669045900356,
+            "median": {
+              "statistic": "median",
+              "baseline": 37.04999998211861,
+              "current": 52.35000002384186,
+              "change": 15.300000041723251,
+              "changeShare": 0.41295546691248236,
+              "worseBy": 15.300000041723251,
+              "allowed": 11.114999994635582,
+              "exceeded": true
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 39.029999977350236,
+              "current": 54.52000003457069,
+              "change": 15.490000057220456,
+              "changeShare": 0.396874201030222,
+              "worseBy": 15.490000057220456,
+              "allowed": 11.70899999320507,
+              "exceeded": true
+            },
+            "verdict": "fail",
+            "reason": "median 37.05 ms -> 52.35 ms (+41.3 %): worse by 15.3 ms, more than the 11.11 ms allowed; p90 39.03 ms -> 54.52 ms (+39.7 %): worse by 15.49 ms, more than the 11.71 ms allowed"
+          },
+          {
+            "metric": "manifestMs",
+            "label": "Manifest time",
+            "unit": "ms",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.03193700326913747,
+            "median": {
+              "statistic": "median",
+              "baseline": 11.049999982118607,
+              "current": 16.5,
+              "change": 5.450000017881393,
+              "changeShare": 0.49321267209961295,
+              "worseBy": 5.450000017881393,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 11.530000001192093,
+              "current": 16.69999998807907,
+              "change": 5.169999986886978,
+              "changeShare": 0.4483954888423633,
+              "worseBy": 5.169999986886978,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          },
+          {
+            "metric": "loadedMs",
+            "label": "Load time",
+            "unit": "ms",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.026231339094042648,
+            "median": {
+              "statistic": "median",
+              "baseline": 15.650000005960464,
+              "current": 20.850000023841858,
+              "change": 5.200000017881393,
+              "changeShare": 0.33226837162306194,
+              "worseBy": 5.200000017881393,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 16.039999997615816,
+              "current": 20.930000030994414,
+              "change": 4.890000033378598,
+              "changeShare": 0.30486284501904287,
+              "worseBy": 4.890000033378598,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          }
+        ],
+        "problems": []
+      },
+      "remeasure": {
+        "startedAt": "2026-11-04T07:37:29.059Z",
+        "finishedAt": "2026-11-04T07:37:30.952Z",
+        "loadAverage": {
+          "before": 3.00146484375,
+          "after": 2.9208984375
+        },
+        "startRungHeight": 720,
+        "warmup": {
+          "values": {
+            "startupMs": 138.5,
+            "manifestMs": 15.100000023841858,
+            "loadedMs": 19.400000035762787
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 85.90000003576279,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 246
+        },
+        "runs": [
+          {
+            "values": {
+              "startupMs": 40.10000002384186,
+              "manifestMs": 16.100000023841858,
+              "loadedMs": 20.19999998807907
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 84.5,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 144
+          },
+          {
+            "values": {
+              "startupMs": 55.69999998807907,
+              "manifestMs": 16.30000001192093,
+              "loadedMs": 20.5
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 86.5,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 161
+          },
+          {
+            "values": {
+              "startupMs": 37.5,
+              "manifestMs": 16.400000035762787,
+              "loadedMs": 20.600000023841858
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 87.5,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 146
+          },
+          {
+            "values": {
+              "startupMs": 53.5,
+              "manifestMs": 16.600000023841858,
+              "loadedMs": 21.100000023841858
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 89.30000001192093,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 162
+          },
+          {
+            "values": {
+              "startupMs": 53.30000001192093,
+              "manifestMs": 16.69999998807907,
+              "loadedMs": 21.19999998807907
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 90.19999998807907,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 163
+          },
+          {
+            "values": {
+              "startupMs": 52.19999998807907,
+              "manifestMs": 16.5,
+              "loadedMs": 20.69999998807907
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 89,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 161
+          },
+          {
+            "values": {
+              "startupMs": 55,
+              "manifestMs": 16.30000001192093,
+              "loadedMs": 20.5
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 87.19999998807907,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 163
+          },
+          {
+            "values": {
+              "startupMs": 40.200000047683716,
+              "manifestMs": 16.400000035762787,
+              "loadedMs": 20.600000023841858
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 85.40000003576279,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 145
+          },
+          {
+            "values": {
+              "startupMs": 40.19999998807907,
+              "manifestMs": 16.19999998807907,
+              "loadedMs": 20.299999952316284
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 85.80000001192093,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 146
+          },
+          {
+            "values": {
+              "startupMs": 39.799999952316284,
+              "manifestMs": 16.599999964237213,
+              "loadedMs": 20.799999952316284
+            },
+            "startRungHeight": 720,
+            "rungs": [
+              {
+                "t": 85.59999996423721,
+                "from": null,
+                "to": 2,
+                "height": 720,
+                "reason": "start"
+              }
+            ],
+            "errors": [],
+            "durationMs": 145
+          }
+        ],
+        "summaries": {
+          "startupMs": {
+            "n": 10,
+            "median": 46.20000001788139,
+            "p10": 39.569999957084654,
+            "p90": 55.06999999880791,
+            "min": 37.5,
+            "max": 55.69999998807907,
+            "mad": 6.750000029802322,
+            "cv": 0.16418263835236635
+          },
+          "manifestMs": {
+            "n": 10,
+            "median": 16.400000035762787,
+            "p10": 16.18999999165535,
+            "p90": 16.61000002026558,
+            "min": 16.100000023841858,
+            "max": 16.69999998807907,
+            "mad": 0.1499999761581421,
+            "cv": 0.011651131248832018
+          },
+          "loadedMs": {
+            "n": 10,
+            "median": 20.600000023841858,
+            "p10": 20.28999995589256,
+            "p90": 21.11000002026558,
+            "min": 20.19999998807907,
+            "max": 21.19999998807907,
+            "mad": 0.1499999761581421,
+            "cv": 0.015356172666884075
+          }
+        },
+        "comparisons": [
+          {
+            "metric": "startupMs",
+            "label": "Startup time",
+            "unit": "ms",
+            "rule": {
+              "kind": "relative",
+              "worse": "higher",
+              "medianShare": 0.3,
+              "tailShare": 0.3,
+              "floor": 5
+            },
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.03999669045900356,
+            "median": {
+              "statistic": "median",
+              "baseline": 37.04999998211861,
+              "current": 46.20000001788139,
+              "change": 9.150000035762787,
+              "changeShare": 0.24696356383748555,
+              "worseBy": 9.150000035762787,
+              "allowed": 11.114999994635582,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 39.029999977350236,
+              "current": 55.06999999880791,
+              "change": 16.040000021457672,
+              "changeShare": 0.4109659244367398,
+              "worseBy": 16.040000021457672,
+              "allowed": 11.70899999320507,
+              "exceeded": true
+            },
+            "verdict": "fail",
+            "reason": "p90 39.03 ms -> 55.07 ms (+41.1 %): worse by 16.04 ms, more than the 11.71 ms allowed"
+          },
+          {
+            "metric": "manifestMs",
+            "label": "Manifest time",
+            "unit": "ms",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.03193700326913747,
+            "median": {
+              "statistic": "median",
+              "baseline": 11.049999982118607,
+              "current": 16.400000035762787,
+              "change": 5.35000005364418,
+              "changeShare": 0.4841629015657636,
+              "worseBy": 5.35000005364418,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 11.530000001192093,
+              "current": 16.61000002026558,
+              "change": 5.080000019073488,
+              "changeShare": 0.44058976743697,
+              "worseBy": 5.080000019073488,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          },
+          {
+            "metric": "loadedMs",
+            "label": "Load time",
+            "unit": "ms",
+            "rule": null,
+            "baselineRuns": 10,
+            "currentRuns": 10,
+            "baselineCv": 0.026231339094042648,
+            "median": {
+              "statistic": "median",
+              "baseline": 15.650000005960464,
+              "current": 20.600000023841858,
+              "change": 4.950000017881393,
+              "changeShare": 0.3162939307345773,
+              "worseBy": 4.950000017881393,
+              "allowed": null,
+              "exceeded": false
+            },
+            "tail": {
+              "statistic": "p90",
+              "baseline": 16.039999997615816,
+              "current": 21.11000002026558,
+              "change": 5.070000022649765,
+              "changeShare": 0.3160847894889881,
+              "worseBy": 5.070000022649765,
+              "allowed": null,
+              "exceeded": false
+            },
+            "verdict": "tracked",
+            "reason": "tracked, not gated: this metric has no rule"
+          }
+        ],
+        "problems": []
+      }
+    }
+  ]
+}

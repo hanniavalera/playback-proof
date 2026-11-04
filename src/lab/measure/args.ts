@@ -31,6 +31,10 @@ export interface PerfOptions {
   runTimeoutMs: number;
   /** Fault rules added to every session: the way to inject a regression on purpose (the sensitivity check). Empty in every normal run. */
   injectFaults: FaultRule[];
+  /** A CPU throttle rate that replaces the profile's own (Chromium profiles only): "the page does more main-thread work", injected on purpose. */
+  injectCpuThrottle: number | null;
+  /** Which batches get the injection: every one, or only the FIRST batch of each scenario (a one-off disturbance that the fresh batch must not see). */
+  injectOn: 'all' | 'first';
   /** gate: a missing baseline is not a failure (for local use): the numbers are reported and nothing is judged. */
   allowMissingBaseline: boolean;
   /** run: record the baseline of each profile (`npm run perf:baseline`). */
@@ -60,6 +64,10 @@ stream, a browser that did not start, a run that failed. An environment failure 
   --timeout-ms MS    a run that takes longer fails its batch (default 120000)
   --inject-faults J  JSON array of fault rules added to every session: a regression injected ON PURPOSE to check that the gate sees it.
                      Never with --write-baseline.
+  --inject-cpu-throttle R   replace the CPU slowdown of a Chromium profile by R (>= 1): "the page does R/4 times the main-thread work".
+                     Never with --write-baseline.
+  --inject-on all|first     which batches get the injection (default all). first: only the first batch of each scenario, so that the
+                     fresh batch of the gate is clean: a one-off disturbance that must not reproduce.
   --allow-missing-baseline   (gate) report the numbers and judge nothing when this environment has no baseline
   --write-baseline   (perf) record the baseline of every profile that was measured; refused with --scenario or --inject-faults
   --help
@@ -76,6 +84,13 @@ const list = (value: string): string[] =>
     .split(',')
     .map((item) => item.trim())
     .filter((item) => item !== '');
+
+function parseThrottle(text: string): number {
+  const rate = Number(text);
+  if (text.trim() === '' || !Number.isFinite(rate) || rate < 1)
+    throw new PerfUsageError(`--inject-cpu-throttle must be a number >= 1, got "${text}"`);
+  return rate;
+}
 
 const FAULT_TYPES = ['throttle', 'latency', 'status', 'stall', 'abort', 'live-stall', 'manifest-stale'];
 
@@ -94,6 +109,22 @@ function parseFaults(text: string): FaultRule[] {
       throw new PerfUsageError(`--inject-faults[${index}]: "type" must be one of ${FAULT_TYPES.join(', ')}`);
   }
   return parsed as FaultRule[];
+}
+
+/**
+ * What a batch is given on purpose (the sensitivity check): the fault rules and the replaced CPU throttle, in every batch or, with
+ * `--inject-on first`, only in the first batch of a scenario, so that the fresh batch that confirms a failure is clean (a one-off
+ * disturbance that must not reproduce). Nothing is injected in a normal run: the result is empty.
+ */
+export function injectionFor(
+  options: Pick<PerfOptions, 'injectFaults' | 'injectCpuThrottle' | 'injectOn'>,
+  attempt: 'first' | 'remeasure',
+): { extraFaults?: FaultRule[]; cpuThrottleRate?: number } {
+  if (options.injectOn === 'first' && attempt !== 'first') return {};
+  return {
+    ...(options.injectFaults.length > 0 ? { extraFaults: options.injectFaults } : {}),
+    ...(options.injectCpuThrottle !== null ? { cpuThrottleRate: options.injectCpuThrottle } : {}),
+  };
 }
 
 export function parsePerfArgs(
@@ -116,6 +147,8 @@ export function parsePerfArgs(
         'reports-dir': { type: 'string' },
         'timeout-ms': { type: 'string' },
         'inject-faults': { type: 'string' },
+        'inject-cpu-throttle': { type: 'string' },
+        'inject-on': { type: 'string' },
         'allow-missing-baseline': { type: 'boolean' },
         'write-baseline': { type: 'boolean' },
         help: { type: 'boolean', short: 'h' },
@@ -158,6 +191,10 @@ export function parsePerfArgs(
   if (!/^[1-9][0-9]*$/.test(portText) || Number(portText) > 65_535)
     throw new PerfUsageError(`the port must be an integer from 1 to 65535, got "${portText}"`);
 
+  const injectOn = values['inject-on'] ?? 'all';
+  if (injectOn !== 'all' && injectOn !== 'first')
+    throw new PerfUsageError(`--inject-on must be all or first, got "${injectOn}"`);
+
   const options: PerfOptions = {
     mode,
     profiles,
@@ -170,6 +207,9 @@ export function parsePerfArgs(
     runTimeoutMs:
       values['timeout-ms'] === undefined ? 120_000 : positiveInteger(values['timeout-ms'], '--timeout-ms'),
     injectFaults: values['inject-faults'] === undefined ? [] : parseFaults(values['inject-faults']),
+    injectCpuThrottle:
+      values['inject-cpu-throttle'] === undefined ? null : parseThrottle(values['inject-cpu-throttle']),
+    injectOn: injectOn === 'first' ? 'first' : 'all',
     allowMissingBaseline: values['allow-missing-baseline'] ?? false,
     writeBaseline: values['write-baseline'] ?? false,
     help: values.help ?? false,
@@ -191,5 +231,24 @@ export function parsePerfArgs(
     throw new PerfUsageError(
       '--write-baseline cannot be combined with --inject-faults: a baseline is the condition without the fault',
     );
+  if (options.writeBaseline && options.injectCpuThrottle !== null)
+    throw new PerfUsageError(
+      '--write-baseline cannot be combined with --inject-cpu-throttle: a baseline is the condition without the injection',
+    );
+  if (
+    values['inject-on'] !== undefined &&
+    options.injectFaults.length === 0 &&
+    options.injectCpuThrottle === null
+  )
+    throw new PerfUsageError(
+      '--inject-on says where to inject: it needs --inject-faults or --inject-cpu-throttle',
+    );
+  if (options.injectCpuThrottle !== null) {
+    const cannot = options.profiles.filter((profile) => profile === 'firefox' || profile === 'webkit');
+    if (cannot.length > 0)
+      throw new PerfUsageError(
+        `--inject-cpu-throttle is a Chromium DevTools command: ${cannot.join(' and ')} cannot be given one`,
+      );
+  }
   return options;
 }

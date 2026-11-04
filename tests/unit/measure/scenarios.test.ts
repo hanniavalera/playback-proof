@@ -331,7 +331,7 @@ describe('PB-PERF-002 frame rate: one measurement', () => {
     await run(frameRate, player);
     expect(player.calls).toStrictEqual([
       `open ${SESSION.manifestUrl} {"autoplay":false,"abr":false}`,
-      'load',
+      'waitFor loaded',
       `pin ${PINNED_HEIGHT}`,
       'play',
       'waitFor firstframe',
@@ -339,6 +339,13 @@ describe('PB-PERF-002 frame rate: one measurement', () => {
       `measureFrames ${FRAME_WINDOW_MEDIA_SEC}`,
       'metrics',
     ]);
+  });
+
+  it('waits for the load that the page starts by itself and never requests another: a second load interrupts the first (LOAD_INTERRUPTED)', async () => {
+    const player = new ScriptedPlayer({ metrics: [healthy()], firstMediaTime: 0.5 });
+    await run(frameRate, player);
+    expect(player.calls).not.toContain('load');
+    expect(player.calls.indexOf('waitFor loaded')).toBeLessThan(player.calls.indexOf(`pin ${PINNED_HEIGHT}`));
   });
 
   it('reports the window: effective fps, the dropped ratio of the window and its raw counts', async () => {

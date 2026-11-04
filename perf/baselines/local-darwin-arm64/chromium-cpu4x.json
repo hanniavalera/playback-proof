@@ -1,0 +1,485 @@
+{
+  "schemaVersion": 1,
+  "kind": "perf-baseline",
+  "envId": "local-darwin-arm64",
+  "profile": "chromium-cpu4x",
+  "generatedAt": "2026-11-04T06:44:30.100Z",
+  "runsPerScenario": 10,
+  "warmupRuns": 1,
+  "host": {
+    "os": {
+      "platform": "darwin",
+      "arch": "arm64",
+      "release": "27.2.0",
+      "name": "macOS 27.2"
+    },
+    "cpus": 12,
+    "memoryGiB": 16,
+    "node": "v22.11.0",
+    "playwright": "1.64.1",
+    "git": {
+      "commit": "90df3a0",
+      "dirty": false
+    }
+  },
+  "machine": {
+    "invokedVia": "direct",
+    "dockerCpus": null,
+    "quiet": {
+      "maxLoad": 3,
+      "hostLoad": 2.98,
+      "waitedMs": 10005
+    },
+    "loadBeforeProfile": 2.98193359375,
+    "loadAfterProfile": 3.248046875
+  },
+  "browser": {
+    "name": "chromium",
+    "version": "156.0.8078.4",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+    "cpuThrottleRate": 4
+  },
+  "ffmpeg": "9.0.2",
+  "streams": {
+    "vod-cmaf": "66738540703f45d7ccfb51c91b8ccd40fe53bec59cb7bbef41fde9d03270ec06"
+  },
+  "scenarios": {
+    "PB-PERF-004": {
+      "title": "Low-end device (4x CPU throttle, vod-cmaf, clean): startup, and dropped frames at 720p",
+      "stream": "vod-cmaf",
+      "protocol": "dash",
+      "faultProfile": "clean",
+      "pinnedHeight": 720,
+      "startRungHeight": 720,
+      "loadAverage": {
+        "before": 2.98193359375,
+        "after": 3.248046875
+      },
+      "warmup": {
+        "values": {
+          "startupMs": 253,
+          "manifestMs": 68.5,
+          "loadedMs": 101.20000004768372,
+          "droppedRatio": 0,
+          "fps": 30,
+          "decodedFrames": 150,
+          "droppedFrames": 0
+        },
+        "startRungHeight": 720,
+        "rungs": [
+          {
+            "t": 522.3999999761581,
+            "from": null,
+            "to": 2,
+            "height": 720,
+            "reason": "start"
+          }
+        ],
+        "errors": [],
+        "durationMs": 7813
+      },
+      "runs": [
+        {
+          "values": {
+            "startupMs": 104.5,
+            "manifestMs": 42.19999998807907,
+            "loadedMs": 62.39999997615814,
+            "droppedRatio": 0,
+            "fps": 30,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 296.5,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7485
+        },
+        {
+          "values": {
+            "startupMs": 114.5,
+            "manifestMs": 46,
+            "loadedMs": 66.10000002384186,
+            "droppedRatio": 0,
+            "fps": 30,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 308.60000002384186,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7489
+        },
+        {
+          "values": {
+            "startupMs": 94.59999996423721,
+            "manifestMs": 49,
+            "loadedMs": 66.89999997615814,
+            "droppedRatio": 0,
+            "fps": 30,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 315,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7486
+        },
+        {
+          "values": {
+            "startupMs": 111.19999998807907,
+            "manifestMs": 47.69999998807907,
+            "loadedMs": 68.80000001192093,
+            "droppedRatio": 0,
+            "fps": 30,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 316.30000001192093,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7512
+        },
+        {
+          "values": {
+            "startupMs": 112.69999998807907,
+            "manifestMs": 50.19999998807907,
+            "loadedMs": 72.19999998807907,
+            "droppedRatio": 0,
+            "fps": 30,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 316.9000000357628,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7508
+        },
+        {
+          "values": {
+            "startupMs": 106.90000003576279,
+            "manifestMs": 46.80000001192093,
+            "loadedMs": 67,
+            "droppedRatio": 0,
+            "fps": 30,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 319.4000000357628,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7511
+        },
+        {
+          "values": {
+            "startupMs": 116.60000002384186,
+            "manifestMs": 46.90000003576279,
+            "loadedMs": 69.80000001192093,
+            "droppedRatio": 0,
+            "fps": 30,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 311.9000000357628,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7508
+        },
+        {
+          "values": {
+            "startupMs": 111.70000004768372,
+            "manifestMs": 49.700000047683716,
+            "loadedMs": 70.80000001192093,
+            "droppedRatio": 0,
+            "fps": 30,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 332.19999998807907,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7529
+        },
+        {
+          "values": {
+            "startupMs": 112.19999998807907,
+            "manifestMs": 48.89999997615814,
+            "loadedMs": 70,
+            "droppedRatio": 0,
+            "fps": 30,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 315,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7490
+        },
+        {
+          "values": {
+            "startupMs": 100.30000001192093,
+            "manifestMs": 45.30000001192093,
+            "loadedMs": 66,
+            "droppedRatio": 0,
+            "fps": 30,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 306.4000000357628,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7486
+        }
+      ],
+      "metrics": {
+        "startupMs": {
+          "summary": {
+            "n": 10,
+            "median": 111.4500000178814,
+            "p10": 99.73000000715255,
+            "p90": 114.71000000238419,
+            "min": 94.59999996423721,
+            "max": 116.60000002384186,
+            "mad": 3.7999999821186066,
+            "cv": 0.06365586302365611
+          },
+          "values": [
+            104.5,
+            114.5,
+            94.59999996423721,
+            111.19999998807907,
+            112.69999998807907,
+            106.90000003576279,
+            116.60000002384186,
+            111.70000004768372,
+            112.19999998807907,
+            100.30000001192093
+          ]
+        },
+        "manifestMs": {
+          "summary": {
+            "n": 10,
+            "median": 47.30000001192093,
+            "p10": 44.99000000953674,
+            "p90": 49.750000041723254,
+            "min": 42.19999998807907,
+            "max": 50.19999998807907,
+            "mad": 1.649999976158142,
+            "cv": 0.05079223373810653
+          },
+          "values": [
+            42.19999998807907,
+            46,
+            49,
+            47.69999998807907,
+            50.19999998807907,
+            46.80000001192093,
+            46.90000003576279,
+            49.700000047683716,
+            48.89999997615814,
+            45.30000001192093
+          ]
+        },
+        "loadedMs": {
+          "summary": {
+            "n": 10,
+            "median": 67.90000000596046,
+            "p10": 65.63999999761582,
+            "p90": 70.94000000953675,
+            "min": 62.39999997615814,
+            "max": 72.19999998807907,
+            "mad": 1.9000000059604645,
+            "cv": 0.042321838689077754
+          },
+          "values": [
+            62.39999997615814,
+            66.10000002384186,
+            66.89999997615814,
+            68.80000001192093,
+            72.19999998807907,
+            67,
+            69.80000001192093,
+            70.80000001192093,
+            70,
+            66
+          ]
+        },
+        "droppedRatio": {
+          "summary": {
+            "n": 10,
+            "median": 0,
+            "p10": 0,
+            "p90": 0,
+            "min": 0,
+            "max": 0,
+            "mad": 0,
+            "cv": null
+          },
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "fps": {
+          "summary": {
+            "n": 10,
+            "median": 30,
+            "p10": 30,
+            "p90": 30,
+            "min": 30,
+            "max": 30,
+            "mad": 0,
+            "cv": 0
+          },
+          "values": [
+            30,
+            30,
+            30,
+            30,
+            30,
+            30,
+            30,
+            30,
+            30,
+            30
+          ]
+        },
+        "decodedFrames": {
+          "summary": {
+            "n": 10,
+            "median": 150,
+            "p10": 150,
+            "p90": 150,
+            "min": 150,
+            "max": 150,
+            "mad": 0,
+            "cv": 0
+          },
+          "values": [
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150
+          ]
+        },
+        "droppedFrames": {
+          "summary": {
+            "n": 10,
+            "median": 0,
+            "p10": 0,
+            "p90": 0,
+            "min": 0,
+            "max": 0,
+            "mad": 0,
+            "cv": null
+          },
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    }
+  }
+}

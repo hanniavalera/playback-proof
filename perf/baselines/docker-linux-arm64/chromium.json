@@ -1,0 +1,1037 @@
+{
+  "schemaVersion": 1,
+  "kind": "perf-baseline",
+  "envId": "docker-linux-arm64",
+  "profile": "chromium",
+  "generatedAt": "2026-11-04T06:49:47.171Z",
+  "runsPerScenario": 10,
+  "warmupRuns": 1,
+  "host": {
+    "os": {
+      "platform": "linux",
+      "arch": "arm64",
+      "release": "6.5.11-linuxkit",
+      "name": "Ubuntu 24.04.5 LTS"
+    },
+    "cpus": 12,
+    "memoryGiB": 7.7,
+    "node": "v24.22.1",
+    "playwright": "1.64.1",
+    "git": {
+      "commit": "0dfbed1",
+      "dirty": false
+    }
+  },
+  "machine": {
+    "invokedVia": "docker:pw",
+    "dockerCpus": 4,
+    "quiet": {
+      "maxLoad": 3,
+      "hostLoad": 2.92,
+      "waitedMs": 15007
+    },
+    "loadBeforeProfile": 0,
+    "loadAfterProfile": 0.51
+  },
+  "browser": {
+    "name": "chromium",
+    "version": "156.0.8078.4",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+    "cpuThrottleRate": null
+  },
+  "ffmpeg": "9.0.2",
+  "streams": {
+    "vod-cmaf": "66738540703f45d7ccfb51c91b8ccd40fe53bec59cb7bbef41fde9d03270ec06"
+  },
+  "scenarios": {
+    "PB-PERF-001": {
+      "title": "Startup baseline (vod-cmaf, clean): load-requested to the first frame presented",
+      "stream": "vod-cmaf",
+      "protocol": "dash",
+      "faultProfile": "clean",
+      "pinnedHeight": null,
+      "startRungHeight": 720,
+      "loadAverage": {
+        "before": 0,
+        "after": 0
+      },
+      "warmup": {
+        "values": {
+          "startupMs": 78.90000000000009,
+          "manifestMs": 18.59999999999991,
+          "loadedMs": 27.199999999999818
+        },
+        "startRungHeight": 720,
+        "rungs": [
+          {
+            "t": 133.9000000000001,
+            "from": null,
+            "to": 2,
+            "height": 720,
+            "reason": "start"
+          }
+        ],
+        "errors": [],
+        "durationMs": 217
+      },
+      "runs": [
+        {
+          "values": {
+            "startupMs": 44,
+            "manifestMs": 12.200000000000273,
+            "loadedMs": 19.700000000000273
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 105.40000000000009,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 152
+        },
+        {
+          "values": {
+            "startupMs": 35.40000000000009,
+            "manifestMs": 13.300000000000182,
+            "loadedMs": 18.700000000000273
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 92.19999999999982,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 130
+        },
+        {
+          "values": {
+            "startupMs": 31.300000000000182,
+            "manifestMs": 12.800000000000182,
+            "loadedMs": 19
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 96.69999999999982,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 130
+        },
+        {
+          "values": {
+            "startupMs": 38.5,
+            "manifestMs": 11.699999999999818,
+            "loadedMs": 19
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 91.80000000000018,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 131
+        },
+        {
+          "values": {
+            "startupMs": 40.100000000000364,
+            "manifestMs": 12.800000000000182,
+            "loadedMs": 17.900000000000546
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 98.80000000000018,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 144
+        },
+        {
+          "values": {
+            "startupMs": 30.900000000000546,
+            "manifestMs": 12.600000000000364,
+            "loadedMs": 19
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 92.59999999999945,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 125
+        },
+        {
+          "values": {
+            "startupMs": 39.20000000000073,
+            "manifestMs": 12.800000000000182,
+            "loadedMs": 18
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 90.90000000000055,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 130
+        },
+        {
+          "values": {
+            "startupMs": 41.79999999999927,
+            "manifestMs": 12.699999999999818,
+            "loadedMs": 17.899999999999636
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 86.89999999999964,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 129
+        },
+        {
+          "values": {
+            "startupMs": 45.29999999999927,
+            "manifestMs": 11.5,
+            "loadedMs": 17.5
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 86.40000000000055,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 132
+        },
+        {
+          "values": {
+            "startupMs": 44.5,
+            "manifestMs": 11.699999999999818,
+            "loadedMs": 18.199999999999818
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 86.10000000000036,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 130
+        }
+      ],
+      "metrics": {
+        "startupMs": {
+          "summary": {
+            "n": 10,
+            "median": 39.650000000000546,
+            "p10": 31.26000000000022,
+            "p90": 44.57999999999993,
+            "min": 30.900000000000546,
+            "max": 45.29999999999927,
+            "mad": 4.2999999999999545,
+            "cv": 0.13263115755903424
+          },
+          "values": [
+            44,
+            35.40000000000009,
+            31.300000000000182,
+            38.5,
+            40.100000000000364,
+            30.900000000000546,
+            39.20000000000073,
+            41.79999999999927,
+            45.29999999999927,
+            44.5
+          ]
+        },
+        "manifestMs": {
+          "summary": {
+            "n": 10,
+            "median": 12.650000000000091,
+            "p10": 11.679999999999836,
+            "p90": 12.850000000000183,
+            "min": 11.5,
+            "max": 13.300000000000182,
+            "mad": 0.2999999999999545,
+            "cv": 0.04841520994618031
+          },
+          "values": [
+            12.200000000000273,
+            13.300000000000182,
+            12.800000000000182,
+            11.699999999999818,
+            12.800000000000182,
+            12.600000000000364,
+            12.800000000000182,
+            12.699999999999818,
+            11.5,
+            11.699999999999818
+          ]
+        },
+        "loadedMs": {
+          "summary": {
+            "n": 10,
+            "median": 18.450000000000045,
+            "p10": 17.859999999999673,
+            "p90": 19.07000000000003,
+            "min": 17.5,
+            "max": 19.700000000000273,
+            "mad": 0.5499999999999545,
+            "cv": 0.03733531821483303
+          },
+          "values": [
+            19.700000000000273,
+            18.700000000000273,
+            19,
+            19,
+            17.900000000000546,
+            19,
+            18,
+            17.899999999999636,
+            17.5,
+            18.199999999999818
+          ]
+        }
+      }
+    },
+    "PB-PERF-002": {
+      "title": "Steady-state frame rate and dropped frames (vod-cmaf, clean, pinned 720p, a 5 s window)",
+      "stream": "vod-cmaf",
+      "protocol": "dash",
+      "faultProfile": "clean",
+      "pinnedHeight": 720,
+      "startRungHeight": 720,
+      "loadAverage": {
+        "before": 0,
+        "after": 0.75
+      },
+      "warmup": {
+        "values": {
+          "fps": 30,
+          "droppedRatio": 0,
+          "decodedFrames": 150,
+          "droppedFrames": 0
+        },
+        "startRungHeight": 720,
+        "rungs": [
+          {
+            "t": 99.69999999999982,
+            "from": null,
+            "to": 2,
+            "height": 720,
+            "reason": "start"
+          }
+        ],
+        "errors": [],
+        "durationMs": 7249
+      },
+      "runs": [
+        {
+          "values": {
+            "fps": 30,
+            "droppedRatio": 0,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 112.40000000000146,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7256
+        },
+        {
+          "values": {
+            "fps": 30,
+            "droppedRatio": 0,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 103.5,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7260
+        },
+        {
+          "values": {
+            "fps": 30,
+            "droppedRatio": 0,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 102.5,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7253
+        },
+        {
+          "values": {
+            "fps": 30,
+            "droppedRatio": 0,
+            "decodedFrames": 149,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 108.09999999999854,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7242
+        },
+        {
+          "values": {
+            "fps": 30,
+            "droppedRatio": 0,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 100.70000000000437,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7271
+        },
+        {
+          "values": {
+            "fps": 30,
+            "droppedRatio": 0,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 123.19999999999709,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7278
+        },
+        {
+          "values": {
+            "fps": 30,
+            "droppedRatio": 0,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 101.5,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7270
+        },
+        {
+          "values": {
+            "fps": 30,
+            "droppedRatio": 0,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 104.40000000000146,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7269
+        },
+        {
+          "values": {
+            "fps": 30,
+            "droppedRatio": 0,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 110.30000000000291,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7246
+        },
+        {
+          "values": {
+            "fps": 30,
+            "droppedRatio": 0,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 103.89999999999418,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7255
+        }
+      ],
+      "metrics": {
+        "fps": {
+          "summary": {
+            "n": 10,
+            "median": 30,
+            "p10": 30,
+            "p90": 30,
+            "min": 30,
+            "max": 30,
+            "mad": 0,
+            "cv": 0
+          },
+          "values": [
+            30,
+            30,
+            30,
+            30,
+            30,
+            30,
+            30,
+            30,
+            30,
+            30
+          ]
+        },
+        "droppedRatio": {
+          "summary": {
+            "n": 10,
+            "median": 0,
+            "p10": 0,
+            "p90": 0,
+            "min": 0,
+            "max": 0,
+            "mad": 0,
+            "cv": null
+          },
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "decodedFrames": {
+          "summary": {
+            "n": 10,
+            "median": 150,
+            "p10": 149.9,
+            "p90": 150,
+            "min": 149,
+            "max": 150,
+            "mad": 0,
+            "cv": 0.0021095915011129954
+          },
+          "values": [
+            150,
+            150,
+            150,
+            149,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150
+          ]
+        },
+        "droppedFrames": {
+          "summary": {
+            "n": 10,
+            "median": 0,
+            "p10": 0,
+            "p90": 0,
+            "min": 0,
+            "max": 0,
+            "mad": 0,
+            "cv": null
+          },
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "PB-PERF-003": {
+      "title": "Rebuffering on a changing network (bandwidth-drop): count, duration and ratio over 18 s of media",
+      "stream": "vod-cmaf",
+      "protocol": "dash",
+      "faultProfile": "bandwidth-drop",
+      "pinnedHeight": null,
+      "startRungHeight": 720,
+      "loadAverage": {
+        "before": 0.75,
+        "after": 0.51
+      },
+      "warmup": {
+        "values": {
+          "rebufferCount": 0,
+          "rebufferMs": 0,
+          "rebufferRatio": 0,
+          "switches": 1
+        },
+        "startRungHeight": 720,
+        "rungs": [
+          {
+            "t": 94.30000000000291,
+            "from": null,
+            "to": 2,
+            "height": 720,
+            "reason": "start"
+          },
+          {
+            "t": 17383.5,
+            "from": 2,
+            "to": 1,
+            "height": 360,
+            "reason": "abr"
+          }
+        ],
+        "errors": [],
+        "durationMs": 18211
+      },
+      "runs": [
+        {
+          "values": {
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 1
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 93.5,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16418.09999999999,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 18188
+        },
+        {
+          "values": {
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 1
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 93.40000000000873,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 17364.40000000001,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 18195
+        },
+        {
+          "values": {
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 1
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 100.29999999998836,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            },
+            {
+              "t": 16225.699999999983,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 18229
+        },
+        {
+          "values": {
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 101.29999999998836,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 18206
+        },
+        {
+          "values": {
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 97.19999999998254,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 18186
+        },
+        {
+          "values": {
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 95.10000000000582,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 18193
+        },
+        {
+          "values": {
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 96.60000000000582,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 18214
+        },
+        {
+          "values": {
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 94,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 18192
+        },
+        {
+          "values": {
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 97.69999999998254,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 18224
+        },
+        {
+          "values": {
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 92.70000000001164,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 18177
+        }
+      ],
+      "metrics": {
+        "rebufferCount": {
+          "summary": {
+            "n": 10,
+            "median": 0,
+            "p10": 0,
+            "p90": 0,
+            "min": 0,
+            "max": 0,
+            "mad": 0,
+            "cv": null
+          },
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "rebufferMs": {
+          "summary": {
+            "n": 10,
+            "median": 0,
+            "p10": 0,
+            "p90": 0,
+            "min": 0,
+            "max": 0,
+            "mad": 0,
+            "cv": null
+          },
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "rebufferRatio": {
+          "summary": {
+            "n": 10,
+            "median": 0,
+            "p10": 0,
+            "p90": 0,
+            "min": 0,
+            "max": 0,
+            "mad": 0,
+            "cv": null
+          },
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "switches": {
+          "summary": {
+            "n": 10,
+            "median": 0,
+            "p10": 0,
+            "p90": 1,
+            "min": 0,
+            "max": 1,
+            "mad": 0,
+            "cv": 1.6101529717988263
+          },
+          "values": [
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    }
+  }
+}
