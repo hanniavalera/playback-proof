@@ -11,8 +11,27 @@
 import { FLAKE_LIMITS } from '../src/shared/criteria.ts';
 import { CATALOG_AREAS } from '../tools/catalog.ts';
 import type { AreaCode } from '../tools/catalog.ts';
-import { mergeHistories } from './history.ts';
-import { addDays, assessQuarantine, expiredEntries, findQuarantine, maxAgeDays } from './quarantine.ts';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import {
+  appendStepSummary,
+  EnvironmentProblem,
+  environmentOf,
+  findRunFiles,
+  parseCliArgs,
+  readRunFiles,
+  storeFromArgs,
+} from './cli.ts';
+import { HistoryError, mergeHistories } from './history.ts';
+import {
+  addDays,
+  assessQuarantine,
+  expiredEntries,
+  findQuarantine,
+  loadList,
+  maxAgeDays,
+  utcDay,
+} from './quarantine.ts';
 import type {
   CatalogFacts,
   ExpiredEntry,
@@ -24,6 +43,8 @@ import { isExecuted } from './run.ts';
 import type { FlakeRun } from './run.ts';
 import { flakeStats, percent } from './stats.ts';
 import type { FlakeLimits, SuiteStats, TestStats } from './stats.ts';
+import { StoreError } from './store.ts';
+import type { AppendResult, FlakeStore } from './store.ts';
 
 export type FailureKind =
   'over-trigger' | 'suite-budget' | 'quarantine-expired' | 'merge-quarantine-expired' | 'quarantine-invalid';
@@ -330,4 +351,188 @@ export function renderGate(report: GateReport, limits: FlakeLimits = FLAKE_LIMIT
     });
   }
   return out.join('\n');
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// The command
+
+export const GATE_USAGE = `Usage: tsx flake/gate.ts [--runs <file or directory>]... [--record [--push]] [options]
+
+Judges the runs of this build (default: every run*.json under reports/flake) against the history of their environment and the quarantine
+list. Exit 0: nothing to act on. Exit 1: a failure (printed with the decision it drives). Exit 2: it could not judge.
+
+  --runs <path>        a run file, or a directory searched for run*.json at any depth; repeat for several
+  --record             after judging, append the runs to the history (also when the verdict is a failure: a build that
+                       flaked is data); without it the runs are judged and forgotten, as for a pull request
+  --push               git store: publish what --record recorded (a build of main), never a pull request
+  --store file|git     where the history lives (default file; PB_FLAKE_STORE)
+  --history-dir <dir>  file store: its directory (default flake/history; PB_FLAKE_HISTORY_DIR)
+  --git-remote <r>     git store: a remote name or URL (default origin; PB_FLAKE_GIT_REMOTE)
+  --git-branch <b>     git store: the branch (default ci-data; PB_FLAKE_GIT_BRANCH)
+  --git-repo <dir>     git store: a checkout whose remote and credentials are used (default .)
+  --git-identity "N <e>"  git store: who the commits are made as (PB_FLAKE_GIT_IDENTITY)
+  --env <id>           the environment (default: the one of the run files)
+  --quarantine <file>  the quarantine list (default flake/quarantine.json)
+  --strategy <file>    the strategy document whose catalog is the list of tests (default TEST_STRATEGY.md)
+  --json <file>        where to write the decision as JSON (default reports/flake/gate.json)
+  --today <YYYY-MM-DD> judge as of this day (default: today, UTC)`;
+
+export interface Io {
+  log: (line: string) => void;
+  error: (line: string) => void;
+  env: NodeJS.ProcessEnv;
+  cwd: string;
+  /** Where flake/quarantine.json and TEST_STRATEGY.md live. */
+  root: string;
+  now: () => Date;
+  /** For tests: the history to use instead of the one the arguments name. */
+  store?: FlakeStore;
+}
+
+const ROOT = resolve(new URL('..', import.meta.url).pathname);
+
+export function defaultIo(): Io {
+  return {
+    log: (line) => console.log(line),
+    error: (line) => console.error(line),
+    env: process.env,
+    cwd: process.cwd(),
+    root: ROOT,
+    now: () => new Date(),
+  };
+}
+
+function decisionJson(report: GateReport, recorded: AppendResult | null): unknown {
+  return {
+    decision: report.pass ? 'pass' : 'fail',
+    envId: report.envId,
+    today: report.today,
+    runsJudged: report.runsJudged,
+    currentRuns: report.currentRuns,
+    failures: report.failures,
+    notes: report.notes,
+    suites: report.suites.map((s) => ({
+      project: s.project,
+      builds: s.builds,
+      executions: s.executions,
+      flaky: s.flaky,
+      flakeRate: s.flakeRate,
+      budget: s.budget,
+      verdict: s.verdict,
+      quarantinedExecutions: s.quarantinedExecutions,
+    })),
+    tests: report.tests.map(({ stats: t, quarantine }) => ({
+      id: t.id,
+      project: t.project,
+      executions: t.executions,
+      flaky: t.flaky,
+      failed: t.failed,
+      flakeRate: t.flakeRate,
+      verdict: t.verdict,
+      quarantined: quarantine ? { owner: quarantine.owner, expires: quarantine.expires } : null,
+    })),
+    recorded: recorded
+      ? {
+          added: recorded.added,
+          trimmed: recorded.trimmed,
+          pushed: recorded.pushed,
+          attempts: recorded.attempts,
+        }
+      : null,
+  };
+}
+
+/** The gate as a command. Returns the exit code: 0, 1 (a failure to act on) or 2 (it could not judge). */
+export async function gateCommand(argv: readonly string[], io: Io = defaultIo()): Promise<number> {
+  let report: GateReport | null = null;
+  try {
+    const args = parseCliArgs(argv, io.env);
+    if (args.help) {
+      io.log(GATE_USAGE);
+      return 0;
+    }
+    const files = findRunFiles(
+      args.runs.length > 0 ? args.runs : ['reports/flake'],
+      io.cwd,
+      args.runs.length > 0,
+    );
+    if (files.length === 0) {
+      throw new EnvironmentProblem(
+        `no run file found (${args.runs.length > 0 ? args.runs.join(', ') : 'reports/flake/run*.json'}): the tests did not run with the flake reporter, or this step did not get their files`,
+      );
+    }
+    const current = readRunFiles(files);
+    const envId = environmentOf(current, args.env);
+    const today = args.today ?? utcDay(io.now());
+
+    const store = io.store ?? storeFromArgs(args, io.cwd);
+    let history: FlakeRun[];
+    try {
+      history = await store.load(envId);
+    } catch (error) {
+      if (error instanceof HistoryError || error instanceof StoreError) {
+        throw new EnvironmentProblem(`cannot read the history (${store.description}): ${error.message}`);
+      }
+      throw error;
+    }
+
+    let list;
+    try {
+      list = loadList({
+        quarantineFile: resolve(io.cwd, args.quarantine ?? resolve(io.root, 'flake/quarantine.json')),
+        strategyFile: resolve(io.cwd, args.strategy ?? resolve(io.root, 'TEST_STRATEGY.md')),
+        today,
+      });
+    } catch (error) {
+      throw new EnvironmentProblem(
+        `cannot read the catalog of the strategy document: ${(error as Error).message}`,
+      );
+    }
+
+    report = evaluateGate({ history, current, today, quarantine: list.read, catalog: list.catalog });
+    const text = renderGate(report);
+    io.log(text);
+
+    // A build that failed is recorded all the same: leaving it out would make the history a record of the good builds only.
+    let recorded: AppendResult | null = null;
+    let recordProblem: string | null = null;
+    if (args.record) {
+      try {
+        recorded = await store.append(envId, current, { push: args.push });
+        io.log(
+          `\nrecorded in the history (${store.description}): ${recorded.added} new run${recorded.added === 1 ? '' : 's'}, ${recorded.trimmed} trimmed${args.push ? `, ${recorded.pushed ? `pushed (${recorded.attempts} ${recorded.attempts === 1 ? 'try' : 'tries'})` : 'nothing to push'}` : ''}`,
+        );
+      } catch (error) {
+        recordProblem = `cannot record the runs in the history (${store.description}): ${(error as Error).message}`;
+        io.error(`flake gate: ${recordProblem}`);
+      }
+    }
+
+    const jsonFile = resolve(io.cwd, args.json ?? 'reports/flake/gate.json');
+    mkdirSync(dirname(jsonFile), { recursive: true });
+    writeFileSync(jsonFile, `${JSON.stringify(decisionJson(report, recorded), null, 2)}\n`);
+    appendStepSummary(
+      io.env,
+      `### Flake gate: ${report.pass ? 'pass' : `FAIL (${plural(report.failures.length, 'failure')})`}\n\n\`\`\`text\n${text}\n\`\`\`\n`,
+    );
+
+    if (!report.pass) return exitCode(report);
+    return recordProblem ? 2 : 0;
+  } catch (error) {
+    if (error instanceof EnvironmentProblem || error instanceof HistoryError || error instanceof StoreError) {
+      io.error(`flake gate: ${error.message}`);
+      return report && !report.pass ? 1 : 2;
+    }
+    throw error;
+  }
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.url).pathname)) {
+  gateCommand(process.argv.slice(2)).then(
+    (code) => process.exit(code),
+    (error: unknown) => {
+      console.error(`flake gate: ${(error as Error).stack ?? String(error)}`);
+      process.exit(2);
+    },
+  );
 }

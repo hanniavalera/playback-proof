@@ -1,14 +1,4 @@
-import { spawnSync } from 'node:child_process';
-import {
-  chmodSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  rmSync,
-  utimesSync,
-  writeFileSync,
-} from 'node:fs';
+import { chmodSync, mkdirSync, readFileSync, readdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { HistoryError, parseHistory, serializeHistory } from '../../../flake/history.ts';
@@ -25,6 +15,8 @@ import type { FlakeStore, GitRunner } from '../../../flake/store.ts';
 import type { FlakeRun } from '../../../flake/run.ts';
 import { makeScratch } from '../support/scratch.ts';
 import { record, run } from './fixtures.ts';
+import { git, gitStatus, makeWorld as makeWorldAt } from './git-world.ts';
+import type { World } from './git-world.ts';
 
 const ENV = 'gha-linux-x64';
 const CI = { name: 'playback-proof ci', email: 'ci@example.invalid' };
@@ -47,65 +39,8 @@ const newRun = (name: string, envId = ENV): FlakeRun =>
     runId: `run-${name}`,
   });
 
-/** A bare repository (`…/bare.git`) is addressed with --git-dir: the machine's git may refuse to discover one (safe.bareRepository). */
-function invocation(cwd: string, args: string[]): { cwd: string; args: string[] } {
-  return cwd.endsWith('.git') ? { cwd: dirname(cwd), args: ['--git-dir', cwd, ...args] } : { cwd, args };
-}
-function git(cwd: string, ...args: string[]): string {
-  const call = invocation(cwd, args);
-  const result = spawnSync('git', call.args, { cwd: call.cwd, encoding: 'utf8' });
-  if (result.status !== 0) throw new Error(`git ${args.join(' ')}: ${result.stderr}`);
-  return result.stdout.trim();
-}
-const gitStatus = (cwd: string, ...args: string[]): number | null => {
-  const call = invocation(cwd, args);
-  return spawnSync('git', call.args, { cwd: call.cwd, encoding: 'utf8' }).status;
-};
-
-interface World {
-  root: string;
-  bare: string;
-  /** A fresh repository with `origin` set to the bare one, as a CI checkout that has not fetched anything. */
-  writer(name: string): string;
-}
-
-/** A temporary bare repository with a `main` branch that has history of its own, and writers' repositories that point at it. */
-function makeWorld(): World {
-  const root = scratch('flake-git-');
-  const bare = join(root, 'bare.git');
-  git(root, 'init', '--quiet', '--bare', '-b', 'main', bare);
-  const seed = join(root, 'seed');
-  git(root, 'init', '--quiet', '-b', 'main', seed);
-  writeFileSync(join(seed, 'README.md'), 'the code branch\n');
-  git(seed, 'add', '.');
-  git(
-    seed,
-    '-c',
-    'user.name=Seed',
-    '-c',
-    'user.email=seed@example.invalid',
-    'commit',
-    '--quiet',
-    '-m',
-    'the code',
-  );
-  git(seed, 'remote', 'add', 'origin', bare);
-  git(seed, 'push', '--quiet', 'origin', 'main');
-  return {
-    root,
-    bare,
-    writer(name) {
-      const dir = join(root, name);
-      if (existsSync(dir)) return dir;
-      git(root, 'init', '--quiet', '-b', 'main', dir);
-      git(dir, 'remote', 'add', 'origin', bare);
-      // Not the CI identity: the store must commit as the identity it is given, whatever the checkout says.
-      git(dir, 'config', 'user.name', 'hanniavalera');
-      git(dir, 'config', 'user.email', 'hannia.cpp@gmail.com');
-      return dir;
-    },
-  };
-}
+/** A world of its own: a temporary bare repository and the checkouts that point at it. */
+const makeWorld = (): World => makeWorldAt(scratch('flake-git-'));
 
 const storeOf = (repoDir: string, extra: Partial<ConstructorParameters<typeof GitStore>[0]> = {}) =>
   new GitStore({ repoDir, identity: CI, backoff: async () => {}, ...extra });
