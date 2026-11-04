@@ -1,6 +1,6 @@
 import { profile } from '../../src/shared/profiles.ts';
-import { settleWindowSeconds, throttleOf } from './abr/conditions.ts';
-import { bestRungCarriedBy, ladderOf } from './abr/ladder.ts';
+import { settleWindowSeconds, throttleOf, upshiftBoundSeconds } from './abr/conditions.ts';
+import { bestRungCarriedBy, ladderOf, rungOf } from './abr/ladder.ts';
 import { describeSegments, videoSegmentRequests } from './abr/log.ts';
 import { describeVariantChanges, variantChanges } from './abr/variants.ts';
 import {
@@ -20,11 +20,15 @@ const ABR_TEST_TIMEOUT_MS = 120_000;
 const WAIT_MS = 40_000;
 // 8 s until the link weakens + two decisions 8 s apart + one 720p segment in flight at 600 kbps (6 s) = 30 s, and 15 s of margin.
 const DOWNSHIFT_WAIT_MS = 45_000;
+// The link a recovered connection offers: 3.2 times the top rung's declared 1,845 kbps (video + audio), so it carries every rung with
+// room to spare, and finite, so that a 75 KB segment of the lowest rung takes 100 ms to arrive: far above the 5 ms under which Shaka
+// does not count a download (PB-ABR-003).
+const RECOVERED_LINK_KBPS = 6000;
 
 test(
   'PB-ABR-002 downshifts when bandwidth drops mid-playback (bandwidth-drop): at most one rebuffer, settles on a rung the network can carry',
   { tag: ['@merge', '@dash'] },
-  async ({ newSession, streamFor, player }) => {
+  async ({ newSession, streamFor, player }, testInfo) => {
     test.setTimeout(ABR_TEST_TIMEOUT_MS);
     const rules = profile('bandwidth-drop');
     const session = await newSession({ stream: streamFor('vod', 'dash'), protocol: 'dash', faults: rules });
@@ -64,6 +68,10 @@ test(
       `rung changes in the ${window} s after the step down to ${settle.height}p (qa.events()): none`,
     ).toBe('none');
     const metrics = await qa.metrics();
+    testInfo.annotations.push({
+      type: 'measured',
+      description: `rungs: ${describeVariantChanges(variantChanges(await qa.events()))}; rebuffers ${metrics.rebuffer.count}`,
+    });
     expect(metrics.bitrate.current?.height, 'active rung (metrics.bitrate.current) at the end').toBe(
       settle.height,
     );
@@ -88,6 +96,76 @@ test(
       delivered.slice(-3).map((entry) => entry.rep),
       `rungs of the last three video segments the origin delivered (request log): ${describeSegments(delivered)}`,
     ).toEqual([settle.rep, settle.rep, settle.rep]);
+  },
+);
+
+test(
+  'PB-ABR-003 upshifts after the bandwidth recovers (the throttle is lifted once the downshift has happened)',
+  { tag: ['@release', '@dash'] },
+  async ({ newSession, streamFor, player }, testInfo) => {
+    test.setTimeout(ABR_TEST_TIMEOUT_MS);
+    const rules = profile('bandwidth-drop');
+    const session = await newSession({ stream: streamFor('vod', 'dash'), protocol: 'dash', faults: rules });
+    const stream = await streamInfoOf(session);
+    const ladder = ladderOf(stream);
+    const settle = bestRungCarriedBy(ladder, throttleOf(rules).kbps);
+    expect(
+      bestRungCarriedBy(ladder, RECOVERED_LINK_KBPS).rep,
+      `the recovered link (${RECOVERED_LINK_KBPS} kbps) must carry the whole ladder (the ladder)`,
+    ).toBe(ladder.top.rep);
+
+    const qa = await player(session).open();
+    await qa.waitFor('firstframe');
+    // The downshift first (PB-ABR-002 has the arithmetic of this wait): the recovery is the end of the drop the player answered.
+    await qa.waitFor('variant-changed', {
+      detail: { reason: 'abr', height: settle.height },
+      timeoutMs: DOWNSHIFT_WAIT_MS,
+    });
+
+    // The link recovers to a link of its own: the rule is replaced, in one call, by a finite one. Removing the rule would leave the
+    // player a link on which a segment arrives in under a millisecond, and Shaka (`abr.cacheLoadThreshold`, 5 ms) takes a download
+    // that fast for a cache hit and does not count it: its estimate never hears of the recovery, and Chromium stays on the rung it
+    // stepped down to for as long as the title lasts (28 s measured). A finite link is also what a recovered connection is.
+    const eventsSince = await qa.cursor();
+    const logSince = await requestLogCursor(session);
+    const recoveredAt = (await qa.metrics()).playback.currentTime;
+    await session.service.setFaults(session.id, [{ type: 'throttle', kbps: RECOVERED_LINK_KBPS }]);
+
+    const [up] = variantChanges([
+      await qa.waitFor('variant-changed', { since: eventsSince, timeoutMs: WAIT_MS }),
+    ]);
+    if (!up) throw new Error('the hook recorded no variant change');
+    const elapsed = up.mediaTime - recoveredAt;
+    const bound = upshiftBoundSeconds(stream.segmentDurationSec);
+    testInfo.annotations.push({
+      type: 'measured',
+      description: `first step up to ${up.height}p ${elapsed.toFixed(1)} s of media time after the recovery (bound ${bound} s)`,
+    });
+    expect(
+      `${up.height}p ${up.reason}`,
+      `the first rung change after the link recovered (qa.events()), ${elapsed.toFixed(1)} s of media time after it: a step up from ${settle.height}p by ABR`,
+    ).toMatch(/^\d+p abr$/);
+    expect(
+      up.height,
+      `rung of the first change after the link recovered (qa.events()), ${elapsed.toFixed(1)} s of media time after it`,
+    ).toBeGreaterThan(settle.height);
+    expect(
+      elapsed,
+      `media time from the recovery to the first step up (qa.events()): the bound is the switch interval and three segments`,
+    ).toBeLessThanOrEqual(bound);
+
+    // The origin's account: the higher rung was asked for and delivered after the recovery, not only announced.
+    const upRung = rungOf(ladder, { height: up.height });
+    const delivered = await waitForRequest(
+      session,
+      (entry) =>
+        entry.kind === 'segment' && entry.rep === upRung.rep && !entry.pending && entry.status === 200,
+      { since: logSince, timeoutMs: WAIT_MS },
+    );
+    expect(delivered.rep, 'rung of a segment the origin delivered after the step up (request log)').toBe(
+      upRung.rep,
+    );
+    expectHealthyPlayback(await qa.metrics());
   },
 );
 

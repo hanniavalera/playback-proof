@@ -28,3 +28,14 @@ export const SHAKA_SWITCH_INTERVAL_S = 8;
 export function settleWindowSeconds(segmentDurationSec: number): number {
   return SHAKA_SWITCH_INTERVAL_S + 2 * segmentDurationSec;
 }
+
+/**
+ * The longest, in media seconds, that the first step up may take after the link recovers, when the recovery comes right after the
+ * step down: the switch interval since that decision (the manager cannot decide before), up to one segment until a download completes
+ * and it decides, one more segment of samples for its estimate to cross the threshold of the next rung (each segment of the lowest
+ * rung moves the slow estimate by about 80 kbps: bytes x 8 x ln 2 / its 5 s half-life), and one segment of margin. Measured in the
+ * runs behind this number (Chromium and WebKit, 6000 kbps): 9.6 s.
+ */
+export function upshiftBoundSeconds(segmentDurationSec: number): number {
+  return SHAKA_SWITCH_INTERVAL_S + 3 * segmentDurationSec;
+}
