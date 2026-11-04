@@ -299,3 +299,65 @@ test(
     });
   },
 );
+
+test(
+  'PB-REC-005 truncated segment: the segment is retried, with no decode-error loop and no critical error',
+  { tag: ['@release', '@dash'] },
+  async ({ newSession, streamFor, player }, testInfo) => {
+    const session = await newSession({
+      stream: streamFor('vod', 'dash'),
+      protocol: 'dash',
+      faults: profile('truncated-segment'),
+    });
+    const [rule] = await ruleIdsOf(session);
+    const [cut] = profile('truncated-segment');
+    if (cut?.type !== 'abort' || cut.afterBytes === undefined)
+      throw new Error('the truncated-segment profile is no longer an abort after a number of bytes');
+    const sentBeforeCut = cut.afterBytes;
+    const qa = await player(session).open();
+
+    // The fault fired: the origin sent the response head (a 200) and exactly the rule's bytes of the body, then dropped the connection.
+    const [truncated] = await waitForFault(session, rule as string);
+    const first = truncated as NonNullable<typeof truncated>;
+    expect(first.aborted ?? false, 'truncated request aborted by the origin (request log)').toBe(true);
+    expect(
+      first.bytes,
+      'bytes of the body the origin sent before it dropped the connection (request log)',
+    ).toBe(sentBeforeCut);
+    const number = segmentOf(first);
+
+    // Playback goes on through the damaged segment.
+    const stream = await streamInfoOf(session);
+    await qa.waitForMediaTime(number * stream.segmentDurationSec + 1);
+
+    // The origin's side: the segment was asked for again and delivered whole (more than twice the bytes the cut let through, which
+    // is less than half of the smallest segment), on the same rung or, where the ABR moved the player meanwhile, on another.
+    const attempts = videoAttemptsAt(await session.service.log(session.id), number);
+    const message = `attempts at video segment ${number} (request log): ${describeAttempts(attempts)}`;
+    const whole = attempts.find(
+      (attempt) =>
+        attempt.seq > first.seq &&
+        attempt.status === 200 &&
+        attempt.aborted !== true &&
+        attempt.bytes > 2 * sentBeforeCut,
+    );
+    if (!whole) throw new Error(`the truncated segment was never fetched again, whole, ${message}`);
+    expect(waitedMs(first, whole), `time from the cut to the whole segment, ${message}`).toBeLessThanOrEqual(
+      RETRY_BOUND_MS,
+    );
+
+    // The player's side: nothing critical, and no decode-error loop: a single fault can cost one error of a kind, never a
+    // repeating one. The codes are what differs between engines (the media pipeline is not the same), so they are on record.
+    const metrics = await qa.metrics();
+    expectHealthyPlayback(metrics);
+    const codes = metrics.errors.map((error) => `${error.codeName ?? 'error'} ${error.code}`);
+    expect(
+      codes.filter((code, index) => codes.indexOf(code) !== index),
+      `error kinds that repeat (metrics.errors), ${message}`,
+    ).toEqual([]);
+    testInfo.annotations.push({
+      type: 'recovery',
+      description: `cut after ${first.bytes} bytes of ${whole.bytes}; fetched again ${Math.round(waitedMs(first, whole))} ms later on ${whole.rep}; error codes: ${codes.length === 0 ? 'none' : codes.join(', ')}; ${metrics.rebuffer.count} rebuffers`,
+    });
+  },
+);
