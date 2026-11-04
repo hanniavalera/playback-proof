@@ -1,0 +1,304 @@
+Console log of build 9 of playback-proof, cut down to the stage markers, the tool versions and the summary of each gate.
+The full log stays in Jenkins; 1356 lines of progress output were left out. Credentials are redacted. Times are UTC.
+
+Started by user admin
+Obtained Jenkinsfile from git file:///repo
+[... 11 lines left out ...]
+[Pipeline] { (Checks)
+[2026-11-04T22:11:10.919Z] Running on playwright-1 in /home/jenkins/agent/workspace/playback-proof
+[Pipeline] { (Install)
+[... 15 lines left out ...]
+[2026-11-04T22:11:12.309Z] Checking out Revision 7a51c8aa3aa8f8a4f4e6b5a6cfa4dc9f8d174567 (refs/remotes/origin/negative/false-playlist-expectation)
+[... 6 lines left out ...]
+[2026-11-04T22:11:14.701Z] added 136 packages in 2s
+[... 7 lines left out ...]
+[2026-11-04T22:11:15.005Z] tool-version node v24.22.1
+[2026-11-04T22:11:15.005Z] tool-version npm 11.19.1
+[2026-11-04T22:11:15.005Z] tool-version ffmpeg ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers
+[2026-11-04T22:11:15.005Z] tool-version java openjdk version "21.0.12.1" 2026-08-18
+[2026-11-04T22:11:15.571Z] tool-version playwright Version 1.64.1
+[Pipeline] { (Static)
+[... 11 lines left out ...]
+[2026-11-04T22:11:29.524Z] All matched files use Prettier code style!
+[2026-11-04T22:11:29.781Z] docs:check ok (106 markdown files, 57 catalog rows, generated blocks up to date)
+[... 19 lines left out ...]
+[2026-11-04T22:11:30.598Z] codec matrix ok: docs/CODEC_MATRIX.md is what the committed results render to
+[Pipeline] { (Unit)
+[... 330 lines left out ...]
+[2026-11-04T22:13:26.489Z]  Test Files  166 passed (166)
+[2026-11-04T22:13:26.489Z]       Tests  4007 passed (4007)
+[2026-11-04T22:13:26.489Z]    Start at  22:11:31
+[2026-11-04T22:13:26.489Z]    Duration  107.26s (tests 93%, import 5%, transform 2%)
+[... 5 lines left out ...]
+[Pipeline] { (Streams)
+[... 9 lines left out ...]
+[2026-11-04T22:13:26.876Z] stream             status  files  size      duration  spec          content       time   verified
+[2026-11-04T22:13:26.876Z] vod-cmaf           cached  124    20.23 MB  60 s      5bb53cf6de1c  cac90e8344ae  0.0 s  no
+[2026-11-04T22:13:26.876Z] vod-cmaf-short     cached  28     3.99 MB   12 s      58250e347ebd  0757d6892b9e  0.0 s  no
+[2026-11-04T22:13:26.876Z] vod-webm           cached  64     10.16 MB  30 s      0645ada768c1  637a981739b5  0.0 s  no
+[2026-11-04T22:13:26.876Z] live-cmaf          cached  52     8.04 MB   24 s      def75afe5e30  7baf3de387ba  0.0 s  no
+[2026-11-04T22:13:26.876Z] vod-cmaf-clearkey  cached  14     1.04 MB   12 s      127237f6a6b2  d5fc537f25cd  0.0 s  no
+[2026-11-04T22:13:26.876Z] total: 282 files, 43.45 MB
+[... 6 lines left out ...]
+[2026-11-04T22:13:27.046Z] Archiving artifacts
+[... 17 lines left out ...]
+[Pipeline] { (Merge gate)
+[... 6 lines left out ...]
+[Pipeline] { (chromium)
+[Pipeline] { (firefox)
+[Pipeline] { (chromium-cpu4x)
+[Pipeline] { (webkit)
+[2026-11-04T22:13:27.893Z] Running on playwright-1 in /home/jenkins/agent/workspace/playback-proof
+[2026-11-04T22:13:27.904Z] Running on playwright-1 in /home/jenkins/agent/workspace/playback-proof@2
+[... 21 lines left out ...]
+[2026-11-04T22:13:28.237Z] Checking out Revision 7a51c8aa3aa8f8a4f4e6b5a6cfa4dc9f8d174567 (refs/remotes/origin/negative/false-playlist-expectation)
+[2026-11-04T22:13:28.237Z] Checking out Revision 7a51c8aa3aa8f8a4f4e6b5a6cfa4dc9f8d174567 (refs/remotes/origin/negative/false-playlist-expectation)
+[... 28 lines left out ...]
+[2026-11-04T22:13:31.121Z] added 136 packages in 3s
+[... 5 lines left out ...]
+[2026-11-04T22:13:31.121Z] added 136 packages in 3s
+[... 53 lines left out ...]
+[2026-11-04T22:13:39.637Z]   ✓   1 [chromium] › tests/e2e/env.spec.ts:20:1 › PB-ENV-001 the engine plays the selected flavour through the player, or the engine and OS pair is a documented gap @merge (3.3s)
+[... 4 lines left out ...]
+[2026-11-04T22:13:44.016Z]   ✓   3 [chromium] › tests/e2e/live.spec.ts:71:1 › PB-LIVE-001 joins near the live edge: first frame, and latency at the first frame within the p95 limit @merge @cpu @live @dash (3.6s)
+[2026-11-04T22:13:44.199Z]   ✓   1 [firefox] › tests/e2e/env.spec.ts:20:1 › PB-ENV-001 the engine plays the selected flavour through the player, or the engine and OS pair is a documented gap @merge (6.7s)
+[2026-11-04T22:13:46.765Z]   ✓   3 [firefox] › tests/e2e/live.spec.ts:71:1 › PB-LIVE-001 joins near the live edge: first frame, and latency at the first frame within the p95 limit @merge @cpu @live @dash (3.2s)
+[2026-11-04T22:13:56.218Z]   ✓   2 [chromium] › tests/e2e/abr.spec.ts:151:1 › PB-ABR-002 downshifts when bandwidth drops mid-playback (bandwidth-drop): at most one rebuffer, settles on a rung the network can carry @merge @dash (17.9s)
+[2026-11-04T22:14:04.291Z]   ✓   4 [chromium] › tests/e2e/live.spec.ts:153:1 › PB-LIVE-002 latency stays bounded over a 20 s window: maximum within the limit, no live-edge seek loop, no rebuffer @merge @live @dash (20.8s)
+[2026-11-04T22:14:04.551Z]   ✓   5 [chromium] › tests/e2e/live.spec.ts:214:1 › PB-LIVE-003 manifest refresh keeps the playhead inside the seek range across at least five refreshes @merge @live @dash (10.3s)
+[2026-11-04T22:14:08.659Z]   ✓   4 [firefox] › tests/e2e/live.spec.ts:153:1 › PB-LIVE-002 latency stays bounded over a 20 s window: maximum within the limit, no live-edge seek loop, no rebuffer @merge @live @dash (20.5s)
+[2026-11-04T22:14:16.776Z]   ✓   6 [chromium] › tests/e2e/live.spec.ts:288:1 › PB-LIVE-004 HLS live: joins, plays and stays inside the sliding window across at least five playlist refreshes @merge @live @hls (10.7s)
+[2026-11-04T22:14:18.713Z]   ✓   5 [firefox] › tests/e2e/live.spec.ts:214:1 › PB-LIVE-003 manifest refresh keeps the playhead inside the seek range across at least five refreshes @merge @live @dash (10.6s)
+[2026-11-04T22:14:19.000Z]   ✓   2 [firefox] › tests/e2e/abr.spec.ts:151:1 › PB-ABR-002 downshifts when bandwidth drops mid-playback (bandwidth-drop): at most one rebuffer, settles on a rung the network can carry @merge @dash (41.1s)
+[2026-11-04T22:14:23.323Z]   ✓   8 [chromium] › tests/e2e/recovery.spec.ts:41:1 › PB-REC-001 transient segment 404: the failed request is retried and succeeds, playback continues with no critical error and at most one rebuffer @merge @dash (7.5s)
+[2026-11-04T22:14:23.323Z]   ✓   7 [chromium] › tests/e2e/recovery-live.spec.ts:29:1 › PB-REC-008 live origin stall: the player resumes after the origin returns, with at most one stall episode and no critical error left @merge @live @dash (18.4s)
+[2026-11-04T22:14:28.598Z]   ✓  10 [chromium] › tests/e2e/vod-metrics.spec.ts:23:1 › PB-VOD-012 metrics integrity on a clean network: decoded frames above zero, dropped no more than decoded, presented frames agree with decoded, no rebuffer, startup defined, no error @merge @dash (5.3s)
+[2026-11-04T22:14:29.000Z]   ✓   6 [firefox] › tests/e2e/live.spec.ts:288:1 › PB-LIVE-004 HLS live: joins, plays and stays inside the sliding window across at least five playlist refreshes @merge @live @hls (10.7s)
+[2026-11-04T22:14:29.960Z]   ✓   9 [chromium] › tests/e2e/recovery.spec.ts:107:1 › PB-REC-002 5xx burst on one segment: playback continues by retry or rung switch, with no critical error and at most one rebuffer @merge @dash (7.4s)
+[2026-11-04T22:14:32.469Z]   ✓  11 [chromium] › tests/e2e/vod-seek.spec.ts:23:1 › PB-VOD-006 seek forward inside the buffered range: seeked fires and playback continues from the target with no rebuffer @merge @dash (3.6s)
+[2026-11-04T22:14:33.400Z]   ✓  12 [chromium] › tests/e2e/vod-seek.spec.ts:64:1 › PB-VOD-007 seek to an unbuffered position: seeked, playback from the target, and the request log shows the segment that covers it and no refetch of earlier ones @merge @cpu @dash (3.5s)
+[2026-11-04T22:14:35.909Z]   ✓  13 [chromium] › tests/e2e/vod-seek.spec.ts:142:1 › PB-VOD-009 rapid repeated seeks: five seeks issued back to back, the last target wins, playback resumes, no error @merge @dash (3.4s)
+[2026-11-04T22:14:36.834Z]   ✓  14 [chromium] › tests/e2e/vod-start.spec.ts:78:1 › PB-VOD-001 DASH VOD starts: first frame presented, 3 s of media time reached, no error @merge @cpu @dash (3.4s)
+[2026-11-04T22:14:37.201Z]   ✓   8 [firefox] › tests/e2e/recovery.spec.ts:41:1 › PB-REC-001 transient segment 404: the failed request is retried and succeeds, playback continues with no critical error and at most one rebuffer @merge @dash (7.8s)
+[2026-11-04T22:14:38.125Z]   ✓   7 [firefox] › tests/e2e/recovery-live.spec.ts:29:1 › PB-REC-008 live origin stall: the player resumes after the origin returns, with at most one stall episode and no critical error left @merge @live @dash (19.0s)
+[2026-11-04T22:14:39.366Z]   ✘  15 [chromium] › tests/e2e/vod-start.spec.ts:92:1 › PB-VOD-002 HLS VOD starts: first frame presented, 3 s of media time reached, no error @merge @hls (3.6s)
+[2026-11-04T22:14:43.534Z]   ✘  16 [chromium] › tests/e2e/vod-start.spec.ts:92:1 › PB-VOD-002 HLS VOD starts: first frame presented, 3 s of media time reached, no error @merge @hls (retry #1) (3.6s)
+[2026-11-04T22:14:43.534Z]   1) [chromium] › tests/e2e/vod-start.spec.ts:92:1 › PB-VOD-002 HLS VOD starts: first frame presented, 3 s of media time reached, no error @merge @hls
+[2026-11-04T22:14:43.534Z]     Error: HLS media playlists requested (request log)
+[2026-11-04T22:14:43.534Z]     Expected: 0
+[2026-11-04T22:14:43.534Z]     Received: 2
+[... 12 lines left out ...]
+[2026-11-04T22:14:43.534Z]     Error Context: test-results/e2e-vod-start-PB-VOD-002-H-1c2e7-media-time-reached-no-error-chromium/error-context.md
+[... 6 lines left out ...]
+[2026-11-04T22:14:43.534Z]     Error: HLS media playlists requested (request log)
+[2026-11-04T22:14:43.534Z]     Expected: 0
+[2026-11-04T22:14:43.534Z]     Received: 2
+[... 12 lines left out ...]
+[2026-11-04T22:14:43.534Z]     Error Context: test-results/e2e-vod-start-PB-VOD-002-H-1c2e7-media-time-reached-no-error-chromium-retry1/error-context.md
+[... 5 lines left out ...]
+[2026-11-04T22:14:43.534Z]   1 failed
+[2026-11-04T22:14:43.534Z]   14 passed (1.2m)
+[2026-11-04T22:14:44.165Z] ERROR: script returned exit code 1
+[... 6 lines left out ...]
+[2026-11-04T22:14:44.298Z] Archiving artifacts
+[2026-11-04T22:14:44.703Z]   ✓  10 [firefox] › tests/e2e/vod-metrics.spec.ts:23:1 › PB-VOD-012 metrics integrity on a clean network: decoded frames above zero, dropped no more than decoded, presented frames agree with decoded, no rebuffer, startup defined, no error @merge @dash (5.8s)
+[2026-11-04T22:14:44.703Z]   ✓   9 [firefox] › tests/e2e/recovery.spec.ts:107:1 › PB-REC-002 5xx burst on one segment: playback continues by retry or rung switch, with no critical error and at most one rebuffer @merge @dash (8.0s)
+[... 16 lines left out ...]
+[2026-11-04T22:14:45.870Z] Running on playwright-1 in /home/jenkins/agent/workspace/playback-proof
+[... 13 lines left out ...]
+[2026-11-04T22:14:46.267Z] Checking out Revision 7a51c8aa3aa8f8a4f4e6b5a6cfa4dc9f8d174567 (refs/remotes/origin/negative/false-playlist-expectation)
+[... 15 lines left out ...]
+[2026-11-04T22:14:47.999Z]   ✓  11 [firefox] › tests/e2e/vod-seek.spec.ts:23:1 › PB-VOD-006 seek forward inside the buffered range: seeked fires and playback continues from the target with no rebuffer @merge @dash (3.6s)
+[2026-11-04T22:14:48.299Z]   ✓  12 [firefox] › tests/e2e/vod-seek.spec.ts:64:1 › PB-VOD-007 seek to an unbuffered position: seeked, playback from the target, and the request log shows the segment that covers it and no refetch of earlier ones @merge @cpu @dash (3.8s)
+[2026-11-04T22:14:49.150Z] added 136 packages in 3s
+[... 29 lines left out ...]
+[2026-11-04T22:14:52.509Z]   ✓  13 [firefox] › tests/e2e/vod-seek.spec.ts:142:1 › PB-VOD-009 rapid repeated seeks: five seeks issued back to back, the last target wins, playback resumes, no error @merge @dash (4.3s)
+[2026-11-04T22:14:52.510Z]   ✓  14 [firefox] › tests/e2e/vod-start.spec.ts:78:1 › PB-VOD-001 DASH VOD starts: first frame presented, 3 s of media time reached, no error @merge @cpu @dash (3.9s)
+[2026-11-04T22:14:57.606Z]   ✓  2 [chromium-cpu4x] › tests/e2e/live.spec.ts:71:1 › PB-LIVE-001 joins near the live edge: first frame, and latency at the first frame within the p95 limit @merge @cpu @live @dash (4.7s)
+[2026-11-04T22:14:57.606Z]   ✓  1 [chromium-cpu4x] › tests/e2e/vod-seek.spec.ts:64:1 › PB-VOD-007 seek to an unbuffered position: seeked, playback from the target, and the request log shows the segment that covers it and no refetch of earlier ones @merge @cpu @dash (5.9s)
+[2026-11-04T22:14:57.876Z]   ✘  15 [firefox] › tests/e2e/vod-start.spec.ts:92:1 › PB-VOD-002 HLS VOD starts: first frame presented, 3 s of media time reached, no error @merge @hls (5.3s)
+[2026-11-04T22:15:00.871Z]   ✓  3 [chromium-cpu4x] › tests/e2e/vod-start.spec.ts:78:1 › PB-VOD-001 DASH VOD starts: first frame presented, 3 s of media time reached, no error @merge @cpu @dash (3.9s)
+[2026-11-04T22:15:00.872Z]   3 passed (10.6s)
+[... 6 lines left out ...]
+[2026-11-04T22:15:01.022Z] Archiving artifacts
+[... 16 lines left out ...]
+[2026-11-04T22:15:01.223Z] Running on playwright-1 in /home/jenkins/agent/workspace/playback-proof
+[... 20 lines left out ...]
+[2026-11-04T22:15:01.578Z] Checking out Revision 7a51c8aa3aa8f8a4f4e6b5a6cfa4dc9f8d174567 (refs/remotes/origin/negative/false-playlist-expectation)
+[... 8 lines left out ...]
+[2026-11-04T22:15:03.100Z]   ✘  16 [firefox] › tests/e2e/vod-start.spec.ts:92:1 › PB-VOD-002 HLS VOD starts: first frame presented, 3 s of media time reached, no error @merge @hls (retry #1) (4.1s)
+[2026-11-04T22:15:03.101Z]   1) [firefox] › tests/e2e/vod-start.spec.ts:92:1 › PB-VOD-002 HLS VOD starts: first frame presented, 3 s of media time reached, no error @merge @hls
+[2026-11-04T22:15:03.101Z]     Error: HLS media playlists requested (request log)
+[2026-11-04T22:15:03.101Z]     Expected: 0
+[2026-11-04T22:15:03.101Z]     Received: 3
+[... 12 lines left out ...]
+[2026-11-04T22:15:03.101Z]     Error Context: test-results/e2e-vod-start-PB-VOD-002-H-1c2e7-media-time-reached-no-error-firefox/error-context.md
+[... 6 lines left out ...]
+[2026-11-04T22:15:03.101Z]     Error: HLS media playlists requested (request log)
+[2026-11-04T22:15:03.101Z]     Expected: 0
+[2026-11-04T22:15:03.101Z]     Received: 3
+[... 12 lines left out ...]
+[2026-11-04T22:15:03.101Z]     Error Context: test-results/e2e-vod-start-PB-VOD-002-H-1c2e7-media-time-reached-no-error-firefox-retry1/error-context.md
+[... 5 lines left out ...]
+[2026-11-04T22:15:03.101Z]   1 failed
+[2026-11-04T22:15:03.101Z]   14 passed (1.5m)
+[2026-11-04T22:15:03.365Z] ERROR: script returned exit code 1
+[... 5 lines left out ...]
+[2026-11-04T22:15:03.410Z] Archiving artifacts
+[2026-11-04T22:15:03.813Z] added 136 packages in 2s
+[... 50 lines left out ...]
+[2026-11-04T22:15:09.706Z]   ✓   1 [webkit] › tests/e2e/env.spec.ts:20:1 › PB-ENV-001 the engine plays the selected flavour through the player, or the engine and OS pair is a documented gap @merge (3.0s)
+[2026-11-04T22:15:13.139Z]   ✓   3 [webkit] › tests/e2e/live.spec.ts:71:1 › PB-LIVE-001 joins near the live edge: first frame, and latency at the first frame within the p95 limit @merge @cpu @live @dash (3.4s)
+[2026-11-04T22:15:35.147Z]   ✓   4 [webkit] › tests/e2e/live.spec.ts:153:1 › PB-LIVE-002 latency stays bounded over a 20 s window: maximum within the limit, no live-edge seek loop, no rebuffer @merge @live @dash (20.9s)
+[2026-11-04T22:15:45.103Z]   ✓   2 [webkit] › tests/e2e/abr.spec.ts:151:1 › PB-ABR-002 downshifts when bandwidth drops mid-playback (bandwidth-drop): at most one rebuffer, settles on a rung the network can carry @merge @dash (38.0s)
+[2026-11-04T22:15:45.104Z]   ✓   5 [webkit] › tests/e2e/live.spec.ts:214:1 › PB-LIVE-003 manifest refresh keeps the playhead inside the seek range across at least five refreshes @merge @live @dash (11.0s)
+[2026-11-04T22:15:57.347Z]   ✓   6 [webkit] › tests/e2e/live.spec.ts:288:1 › PB-LIVE-004 HLS live: joins, plays and stays inside the sliding window across at least five playlist refreshes @merge @live @hls (10.9s)
+[2026-11-04T22:16:03.911Z]   ✓   8 [webkit] › tests/e2e/recovery.spec.ts:41:1 › PB-REC-001 transient segment 404: the failed request is retried and succeeds, playback continues with no critical error and at most one rebuffer @merge @dash (7.7s)
+[2026-11-04T22:16:03.912Z]   ✓   7 [webkit] › tests/e2e/recovery-live.spec.ts:29:1 › PB-REC-008 live origin stall: the player resumes after the origin returns, with at most one stall episode and no critical error left @merge @live @dash (19.3s)
+[2026-11-04T22:16:10.500Z]   ✓  10 [webkit] › tests/e2e/vod-metrics.spec.ts:23:1 › PB-VOD-012 metrics integrity on a clean network: decoded frames above zero, dropped no more than decoded, presented frames agree with decoded, no rebuffer, startup defined, no error @merge @dash (6.0s)
+[2026-11-04T22:16:11.500Z]   ✓   9 [webkit] › tests/e2e/recovery.spec.ts:107:1 › PB-REC-002 5xx burst on one segment: playback continues by retry or rung switch, with no critical error and at most one rebuffer @merge @dash (8.1s)
+[2026-11-04T22:16:14.199Z]   ✓  11 [webkit] › tests/e2e/vod-seek.spec.ts:23:1 › PB-VOD-006 seek forward inside the buffered range: seeked fires and playback continues from the target with no rebuffer @merge @dash (4.1s)
+[2026-11-04T22:16:16.163Z]   ✓  12 [webkit] › tests/e2e/vod-seek.spec.ts:64:1 › PB-VOD-007 seek to an unbuffered position: seeked, playback from the target, and the request log shows the segment that covers it and no refetch of earlier ones @merge @cpu @dash (4.6s)
+[2026-11-04T22:16:18.803Z]   ✓  13 [webkit] › tests/e2e/vod-seek.spec.ts:142:1 › PB-VOD-009 rapid repeated seeks: five seeks issued back to back, the last target wins, playback resumes, no error @merge @dash (4.7s)
+[2026-11-04T22:16:20.245Z]   ✓  14 [webkit] › tests/e2e/vod-start.spec.ts:78:1 › PB-VOD-001 DASH VOD starts: first frame presented, 3 s of media time reached, no error @merge @cpu @dash (4.2s)
+[2026-11-04T22:16:23.525Z]   ✘  15 [webkit] › tests/e2e/vod-start.spec.ts:92:1 › PB-VOD-002 HLS VOD starts: first frame presented, 3 s of media time reached, no error @merge @hls (4.1s)
+[2026-11-04T22:16:27.718Z]   ✘  16 [webkit] › tests/e2e/vod-start.spec.ts:92:1 › PB-VOD-002 HLS VOD starts: first frame presented, 3 s of media time reached, no error @merge @hls (retry #1) (3.9s)
+[2026-11-04T22:16:27.718Z]   1) [webkit] › tests/e2e/vod-start.spec.ts:92:1 › PB-VOD-002 HLS VOD starts: first frame presented, 3 s of media time reached, no error @merge @hls
+[2026-11-04T22:16:27.718Z]     Error: HLS media playlists requested (request log)
+[2026-11-04T22:16:27.718Z]     Expected: 0
+[2026-11-04T22:16:27.718Z]     Received: 3
+[... 12 lines left out ...]
+[2026-11-04T22:16:27.718Z]     Error Context: test-results/e2e-vod-start-PB-VOD-002-H-1c2e7-media-time-reached-no-error-webkit/error-context.md
+[... 6 lines left out ...]
+[2026-11-04T22:16:27.718Z]     Error: HLS media playlists requested (request log)
+[2026-11-04T22:16:27.718Z]     Expected: 0
+[2026-11-04T22:16:27.718Z]     Received: 3
+[... 12 lines left out ...]
+[2026-11-04T22:16:27.718Z]     Error Context: test-results/e2e-vod-start-PB-VOD-002-H-1c2e7-media-time-reached-no-error-webkit-retry1/error-context.md
+[... 5 lines left out ...]
+[2026-11-04T22:16:27.718Z]   1 failed
+[2026-11-04T22:16:27.718Z]   14 passed (1.4m)
+[2026-11-04T22:16:28.007Z] ERROR: script returned exit code 1
+[... 5 lines left out ...]
+[2026-11-04T22:16:28.081Z] Archiving artifacts
+[... 24 lines left out ...]
+[Pipeline] { (Perf)
+[2026-11-04T22:16:29.412Z] Running on playwright-1 in /home/jenkins/agent/workspace/playback-proof
+[... 11 lines left out ...]
+[2026-11-04T22:16:29.671Z] Checking out Revision 7a51c8aa3aa8f8a4f4e6b5a6cfa4dc9f8d174567 (refs/remotes/origin/negative/false-playlist-expectation)
+[... 15 lines left out ...]
+[2026-11-04T22:16:31.922Z] added 136 packages in 2s
+[... 24 lines left out ...]
+[2026-11-04T22:16:32.540Z] paired: creating the control checkout of 7a51c8aa3aa8
+[2026-11-04T22:16:32.540Z] paired: the lock files are the same: linking the head's node_modules into the control
+[2026-11-04T22:16:32.540Z] paired: building the control's player page
+[... 9 lines left out ...]
+[2026-11-04T22:16:32.794Z] paired: measuring the control (chromium, chromium-cpu4x)
+[... 14 lines left out ...]
+[2026-11-04T22:16:35.249Z] PB-PERF-001 startup (chromium): 10 runs after a warm-up, stream vod-cmaf, clean, start rung 720p, load average 3.2 -> 3.1
+[2026-11-04T22:16:35.249Z] metric      n   median    p10       p90       min .. max          cv      role
+[2026-11-04T22:16:35.249Z] startupMs   10  40.4 ms   31.07 ms  42.28 ms  30.8 ms .. 43 ms    11.5 %  gates (startup)
+[2026-11-04T22:16:35.249Z] manifestMs  10  12.7 ms   11.97 ms  13.64 ms  11.7 ms .. 14 ms    6.1 %   tracked
+[2026-11-04T22:16:35.249Z] loadedMs    10  18.85 ms  18.39 ms  19.52 ms  18.3 ms .. 20.6 ms  3.5 %   tracked
+[... 12 lines left out ...]
+[2026-11-04T22:17:55.666Z] PB-PERF-002 frame-rate (chromium): 10 runs after a warm-up, stream vod-cmaf, clean, start rung 720p, window pinned at 720p, load average 3.1 -> 1.3
+[2026-11-04T22:17:55.666Z] metric         n   median  p10     p90     min .. max        cv     role
+[2026-11-04T22:17:55.666Z] fps            10  30 fps  30 fps  30 fps  30 fps .. 30 fps  0.0 %  gates (fps)
+[2026-11-04T22:17:55.666Z] droppedRatio   10  0       0       0       0 .. 0            -      gates (frameDropped)
+[2026-11-04T22:17:55.666Z] decodedFrames  10  150     150     150     150 .. 150        0.0 %  tracked
+[2026-11-04T22:17:55.666Z] droppedFrames  10  0       0       0       0 .. 0            -      tracked
+[... 12 lines left out ...]
+[2026-11-04T22:21:16.680Z] PB-PERF-003 rebuffering (chromium): 10 runs after a warm-up, stream vod-cmaf, bandwidth-drop, start rung 720p, load average 1.3 -> 0.8
+[2026-11-04T22:21:16.680Z] metric         n   median  p10   p90   min .. max    cv      role
+[2026-11-04T22:21:16.680Z] rebufferCount  10  0       0     0     0 .. 0        -       gates (rebufferCount)
+[2026-11-04T22:21:16.680Z] rebufferMs     10  0 ms    0 ms  0 ms  0 ms .. 0 ms  -       gates (rebufferMs)
+[2026-11-04T22:21:16.680Z] rebufferRatio  10  0       0     0     0 .. 0        -       gates (rebufferRatio)
+[... 26 lines left out ...]
+[2026-11-04T22:22:39.349Z] PB-PERF-004 low-end (chromium-cpu4x): 10 runs after a warm-up, stream vod-cmaf, clean, start rung 720p, window pinned at 720p, load average 0.8 -> 0.9
+[2026-11-04T22:22:39.349Z] metric         n   median    p10       p90       min .. max            cv      role
+[2026-11-04T22:22:39.349Z] startupMs      10  135.7 ms  124.8 ms  155.3 ms  121.2 ms .. 155.3 ms  9.8 %   gates (lowEndStartup)
+[2026-11-04T22:22:39.349Z] manifestMs     10  56.55 ms  52.04 ms  67.48 ms  51.5 ms .. 73.6 ms    12.1 %  tracked
+[2026-11-04T22:22:39.349Z] loadedMs       10  79.25 ms  74.34 ms  95.38 ms  73.8 ms .. 100.6 ms   11.4 %  tracked
+[2026-11-04T22:22:39.349Z] droppedRatio   10  0         0         0         0 .. 0                -       gates (lowEndDropped)
+[2026-11-04T22:22:39.349Z] fps            10  30 fps    30 fps    30 fps    30 fps .. 30 fps      0.0 %   tracked
+[2026-11-04T22:22:39.349Z] decodedFrames  10  150       150       150       150 .. 150            0.0 %   tracked
+[2026-11-04T22:22:39.349Z] droppedFrames  10  0         0         0         0 .. 0                -       tracked
+[... 51 lines left out ...]
+[2026-11-04T22:27:22.579Z] paired: the baseline was measured on this machine minutes ago from 7a51c8aa3aa8; the committed baselines of this environment were not used (A/A by construction: the control is this very commit)
+[2026-11-04T22:27:22.579Z] performance gate: chromium in jenkins-linux-arm64, baseline of 2026-11-04 (commit 7a51c8a, 10 runs per scenario)
+[2026-11-04T22:27:22.579Z] baseline machine: not recorded; this machine: unknown
+[2026-11-04T22:27:22.579Z] PB-PERF-001 startup (chromium): 10 runs after a warm-up, stream vod-cmaf, clean, start rung 720p, load average 0.9 -> 0.9
+[2026-11-04T22:27:22.579Z] metric      baseline median / tail  current median / tail  change  threshold                                    verdict
+[2026-11-04T22:27:22.579Z] startupMs   40.4 ms / 42.28 ms      42 ms / 43.48 ms       +4.0 %  median +30 %, p90 +30 %, and more than 5 ms  pass
+[2026-11-04T22:27:22.579Z] manifestMs  12.7 ms / 13.64 ms      12.2 ms / 13.34 ms     -3.9 %  -                                            tracked
+[2026-11-04T22:27:22.579Z] loadedMs    18.85 ms / 19.52 ms     18.6 ms / 19.01 ms     -1.3 %  -                                            tracked
+[2026-11-04T22:27:22.580Z] PB-PERF-002 frame-rate (chromium): 10 runs after a warm-up, stream vod-cmaf, clean, start rung 720p, window pinned at 720p, load average 0.9 -> 0.9
+[2026-11-04T22:27:22.580Z] metric         baseline median / tail  current median / tail  change  threshold                                    verdict
+[2026-11-04T22:27:22.580Z] fps            30 fps / 30 fps         30 fps / 30 fps        +0.0 %  median -5 %, p10 -10 %, and more than 1 fps  pass
+[2026-11-04T22:27:22.580Z] droppedRatio   0 / 0                   0 / 0                  +0      median +0.01, p90 +0.03                      pass
+[2026-11-04T22:27:22.580Z] decodedFrames  150 / 150               150 / 150              +0.0 %  -                                            tracked
+[2026-11-04T22:27:22.580Z] droppedFrames  0 / 0                   0 / 0                  +0      -                                            tracked
+[2026-11-04T22:27:22.580Z] PB-PERF-003 rebuffering (chromium): 10 runs after a warm-up, stream vod-cmaf, bandwidth-drop, start rung 720p, load average 0.9 -> 0.7
+[2026-11-04T22:27:22.580Z] metric         baseline median / tail  current median / tail  change  threshold                     verdict
+[2026-11-04T22:27:22.580Z] rebufferCount  0 / 0                   0 / 0                  +0      median +0, p90 +1             pass
+[2026-11-04T22:27:22.580Z] rebufferMs     0 ms / 0 ms             0 ms / 0 ms            +0 ms   median +250 ms, p90 +1000 ms  pass
+[2026-11-04T22:27:22.580Z] rebufferRatio  0 / 0                   0 / 0                  +0      median +0.01, p90 +0.05       pass
+[2026-11-04T22:27:22.580Z] verdict: PASS (exit code 0)
+[... 15 lines left out ...]
+[2026-11-04T22:28:46.777Z] paired: the baseline was measured on this machine minutes ago from 7a51c8aa3aa8; the committed baselines of this environment were not used (A/A by construction: the control is this very commit)
+[2026-11-04T22:28:46.777Z] performance gate: chromium-cpu4x in jenkins-linux-arm64, baseline of 2026-11-04 (commit 7a51c8a, 10 runs per scenario)
+[2026-11-04T22:28:46.777Z] baseline machine: not recorded; this machine: unknown
+[2026-11-04T22:28:46.777Z] PB-PERF-004 low-end (chromium-cpu4x): 10 runs after a warm-up, stream vod-cmaf, clean, start rung 720p, window pinned at 720p, load average 0.7 -> 1.1
+[2026-11-04T22:28:46.777Z] metric         baseline median / tail  current median / tail  change  threshold                                     verdict
+[2026-11-04T22:28:46.778Z] startupMs      135.7 ms / 155.3 ms     132.5 ms / 174.5 ms    -2.4 %  median +30 %, p90 +30 %, and more than 20 ms  pass
+[2026-11-04T22:28:46.778Z] manifestMs     56.55 ms / 67.48 ms     57.6 ms / 76.77 ms     +1.9 %  -                                             tracked
+[2026-11-04T22:28:46.778Z] loadedMs       79.25 ms / 95.38 ms     80.8 ms / 104.9 ms     +2.0 %  -                                             tracked
+[2026-11-04T22:28:46.778Z] droppedRatio   0 / 0                   0 / 0                  +0      median +0.02, p90 +0.05                       pass
+[2026-11-04T22:28:46.778Z] fps            30 fps / 30 fps         30 fps / 30 fps        +0.0 %  -                                             tracked
+[2026-11-04T22:28:46.778Z] decodedFrames  150 / 150               150 / 150              +0.0 %  -                                             tracked
+[2026-11-04T22:28:46.778Z] droppedFrames  0 / 0                   0 / 0                  +0      -                                             tracked
+[2026-11-04T22:28:46.778Z] verdict: PASS (exit code 0)
+[... 11 lines left out ...]
+[2026-11-04T22:28:46.929Z] Archiving artifacts
+[... 16 lines left out ...]
+[Pipeline] { (Flake)
+[2026-11-04T22:28:47.105Z] Running on playwright-1 in /home/jenkins/agent/workspace/playback-proof
+[... 11 lines left out ...]
+[2026-11-04T22:28:47.403Z] Checking out Revision 7a51c8aa3aa8f8a4f4e6b5a6cfa4dc9f8d174567 (refs/remotes/origin/negative/false-playlist-expectation)
+[... 15 lines left out ...]
+[2026-11-04T22:28:49.708Z] added 136 packages in 2s
+[... 35 lines left out ...]
+[2026-11-04T22:28:50.232Z] flake gate: PASS  [jenkins-linux-arm64, 2026-11-04, 4 runs in this build, 8 runs judged]
+[2026-11-04T22:28:50.232Z] | engine job | builds | executions | flaky | rate | budget | verdict | left out (quarantined) |
+[2026-11-04T22:28:50.232Z] | --- | --- | --- | --- | --- | --- | --- | --- |
+[2026-11-04T22:28:50.232Z] | chromium | 2 | 30 | 0 | 0.0% | 2.0% | not-enough-data | 0 |
+[2026-11-04T22:28:50.232Z] | chromium-cpu4x | 2 | 6 | 0 | 0.0% | 2.0% | not-enough-data | 0 |
+[2026-11-04T22:28:50.232Z] | firefox | 2 | 30 | 0 | 0.0% | 2.0% | not-enough-data | 0 |
+[2026-11-04T22:28:50.232Z] | webkit (experimental) | 2 | 30 | 0 | 0.0% | 2.0% | not-enough-data | 0 |
+[2026-11-04T22:28:50.232Z] | test | engine | executions | flaky | failed | rate | verdict | quarantine |
+[2026-11-04T22:28:50.232Z] | --- | --- | --- | --- | --- | --- | --- | --- |
+[... 32 lines left out ...]
+[2026-11-04T22:28:50.232Z] | PB-VOD-002 | chromium | 2 | 0 | 1 | 0.0% | not-enough-data | no |
+[2026-11-04T22:28:50.232Z] | PB-VOD-002 | firefox | 2 | 0 | 1 | 0.0% | not-enough-data | no |
+[2026-11-04T22:28:50.232Z] | PB-VOD-002 | webkit | 2 | 0 | 1 | 0.0% | not-enough-data | no |
+[... 27 lines left out ...]
+[2026-11-04T22:28:50.290Z] Archiving artifacts
+[... 16 lines left out ...]
+[Pipeline] { (Triage)
+[2026-11-04T22:28:50.427Z] Running on playwright-1 in /home/jenkins/agent/workspace/playback-proof
+[... 7 lines left out ...]
+[2026-11-04T22:28:50.738Z] Checking out Revision 7a51c8aa3aa8f8a4f4e6b5a6cfa4dc9f8d174567 (refs/remotes/origin/negative/false-playlist-expectation)
+[... 15 lines left out ...]
+[2026-11-04T22:28:52.459Z] added 136 packages in 1s
+[... 40 lines left out ...]
+[2026-11-04T22:28:53.203Z] failure triage: 3 failed in 4 reports became 1 cluster (clustering is deterministic: no model is involved in it)
+[2026-11-04T22:28:53.203Z] #1  3 failures in chromium, firefox, webkit  ·  PB-VOD-002
+[2026-11-04T22:28:53.203Z]     category  unknown  (rule no-rule-matched)  ·  class Needs a person
+[2026-11-04T22:28:53.203Z]     signature Error: HLS media playlists requested (request log) [toBe]
+[2026-11-04T22:28:53.203Z]     error     Error: HLS media playlists requested (request log)
+[2026-11-04T22:28:53.203Z]     evidence  no rule matched “Error: HLS media playlists requested (request log)”
+[2026-11-04T22:28:53.203Z]     first     The message, the stack and the attachments of the representative failure; if it recurs, add a rule for it (docs/TRIAGE.md).
+[... 5 lines left out ...]
+[2026-11-04T22:28:53.251Z] Archiving artifacts
+[... 22 lines left out ...]
+Finished: FAILURE

@@ -18,6 +18,7 @@ import {
   excerptConsole,
   groupStages,
   parseSkippedStages,
+  parseStageParents,
   parseToolVersions,
   parseWorkspaces,
   redact,
@@ -269,7 +270,13 @@ async function collect(
       })),
     workspaces: parseWorkspaces(consoleText),
     tools: parseToolVersions(consoleText),
-    stages: groupStages(describe.stages, steps, describe.startTimeMillis, parseSkippedStages(consoleText)),
+    stages: groupStages(
+      describe.stages,
+      steps,
+      describe.startTimeMillis,
+      parseSkippedStages(consoleText),
+      parseStageParents(consoleText),
+    ),
     playwright,
     artifacts,
   });
