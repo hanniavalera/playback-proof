@@ -336,9 +336,9 @@ describe('PB-PERF A/A: the machines the passes ran on (the passes of several job
     const against = recordedOn(XEON_8370);
     return [
       at(await pass({ first: startupBatch(QUIET) }, { host: on(EPYC), against }), 3),
-      at(await pass({ first: startupBatch(shifted(5)) }, { host: on(XEON_8370), against }), 1),
+      at(await pass({ first: startupBatch(shifted(5)) }, { host: on(XEON_8370), against }), 4),
       at(await pass({ first: startupBatch(shifted(-3)) }, { host: on(EPYC), against }), 2),
-      at(await pass({ first: startupBatch(shifted(8)) }, { host: on(XEON_8573), against }), 4),
+      at(await pass({ first: startupBatch(shifted(8)) }, { host: on(XEON_8573), against }), 1),
       at(await pass({ first: startupBatch(QUIET) }, { host: on(EPYC), against }), 5),
     ];
   }
@@ -346,7 +346,7 @@ describe('PB-PERF A/A: the machines the passes ran on (the passes of several job
   it('accepts the passes of several jobs, lists the CPU model of every pass and counts the distinct models', async () => {
     const summary = summarizeAa(named(await severalJobs()));
     expect(summary.passes).toBe(5);
-    expect(summary.runs.map((run) => run.cpuModel)).toStrictEqual([XEON_8370, EPYC, EPYC, XEON_8573, EPYC]);
+    expect(summary.runs.map((run) => run.cpuModel)).toStrictEqual([XEON_8573, EPYC, EPYC, XEON_8370, EPYC]);
     expect(summary.baseline.cpuModel).toBe(XEON_8370);
     // Most passes first; models with as many passes as another by name.
     expect(summary.machines).toStrictEqual({
