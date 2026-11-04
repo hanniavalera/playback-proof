@@ -150,7 +150,9 @@ Exact semantics (the service implements them as written and its tests pin them):
 - **Matching.** Every field present in `match` must match, an absent field matches anything. Manifests (DASH MPD, HLS master and media playlists)
   have kind `manifest`; `media` means init + segment. Default `kind`: `media` for throttle, latency, stall and abort; `status` requires it.
 - **throttle** limits the response *body* (headers excluded). One token bucket per rule and session, shared by all the concurrent responses the rule
-  matches; a response matched by several throttle rules is limited by all of them (so by the slowest). Burst allowance: at most one chunk (16 KB).
+  matches; a response matched by several throttle rules is limited by all of them (so by the slowest). Burst allowance: at most one chunk (16 KB)
+  of credit is banked while no response is asking. Time that accrues while a response is waiting for its turn is owed to it and kept, so a stalled
+  event loop is paid back at once and cannot lower the long-run rate ([ADR-052](decisions/server-delivery.md)).
   Contract: measured goodput within +-10 % of `kbps` for transfers of at least 500 KB.
 - **latency** delays the first byte by `ms` plus a repeatable jitter drawn from a PRNG seeded with the session id and the request sequence number.
 - **status** answers with that status and an empty body. **stall** sends `afterBytes`, pauses `ms`, finishes. **abort** sends `afterBytes` (default 0), then destroys the socket.

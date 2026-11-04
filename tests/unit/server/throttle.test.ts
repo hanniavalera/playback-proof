@@ -241,6 +241,19 @@ describe('scheduling (fake timers)', () => {
     }
   });
 
+  it('charges a bucket once when it is listed twice (two rules that share one)', async () => {
+    vi.useFakeTimers();
+    const bucket = createBucket(800, { now: () => Date.now() });
+    const log: { name: string; bytes: number; at: number }[] = [];
+    const c = consumer('x', createPacer([bucket, bucket]), log);
+    await vi.advanceTimersByTimeAsync(2000);
+    await c.stop();
+    const total = log.reduce((n, e) => n + e.bytes, 0);
+    expect(total).toBeGreaterThan(CHUNK_BYTES + 100 * 2000 * 0.97);
+    expect(total).toBeLessThan(CHUNK_BYTES + 100 * 2000 * 1.03);
+    expect(bucketState(bucket).consumers).toBe(0);
+  });
+
   it('hands back what a contended bucket could not grant, so the slower bucket is not charged for it', async () => {
     vi.useFakeTimers();
     const now = () => Date.now();
