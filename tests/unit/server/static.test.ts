@@ -13,6 +13,7 @@ import {
   truncateSync,
   writeFileSync,
 } from 'node:fs';
+import { open, readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import net from 'node:net';
@@ -776,9 +777,14 @@ async function nextTurns(count: number): Promise<void> {
   for (let i = 0; i < count; i++) await new Promise<void>((resolve) => setImmediate(resolve));
 }
 
-/** Whether the process is waiting for the result of a file operation: the `close` of a destroyed stream, for one, runs on the thread pool. */
+/**
+ * Whether the process is waiting for the result of a file operation. The `close` of a FileHandle, which is what the destroyed stream
+ * of a download ends in, runs on the thread pool as a request that Node names `CloseReq` and not `FSReq...`: leave it out, and a count
+ * taken while the pool is slow to run the closes looks settled with the files still open, which inflated the baseline of the
+ * calibration below (three failures of the unit job on 4 Nov 2026, baselines 35, 39 and 49 against a true 10).
+ */
 function fileOperationPending(): boolean {
-  return process.getActiveResourcesInfo().some((name) => name.startsWith('FSReq'));
+  return process.getActiveResourcesInfo().some((name) => name.startsWith('FSReq') || name === 'CloseReq');
 }
 
 /**
@@ -905,6 +911,30 @@ describe.skipIf(!countsDescriptors)('file handles', () => {
     await quiet();
     return held;
   }
+
+  it('sees the file operations that are on the thread pool: a read (FSReq...) and a close, which Node names CloseReq (the calibration below depends on it)', async () => {
+    // A request stays listed in the turn that it resolved in, so every operation starts from a list without file operations.
+    // Bounded in turns of the event loop and never in time.
+    const idle = async (): Promise<void> => {
+      for (let turn = 0; turn < 100 && fileOperationPending(); turn++) await nextTurns(1);
+      expect(fileOperationPending(), 'no file operation in flight').toBe(false);
+    };
+    const handle = await open(join(root, 'big.bin'), 'r');
+    await idle();
+
+    const reading = readFile(join(scratch, 'secret.txt'));
+    const seenWhileReading = fileOperationPending();
+    await reading;
+    await idle();
+
+    const closing = handle.close();
+    const seenWhileClosing = fileOperationPending();
+    await closing;
+    await idle();
+
+    expect(seenWhileReading, 'a readFile that has not completed').toBe(true);
+    expect(seenWhileClosing, 'a FileHandle.close() that has not completed').toBe(true);
+  });
 
   it('releases the file of every download that the client abandons', async () => {
     const downloads = 40;
