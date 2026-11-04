@@ -147,7 +147,7 @@ const frameRate: Scenario = {
     await qa.open(session.manifestUrl, { autoplay: false, abr: false });
     // The page loads the manifest itself (autoplay only decides whether it then plays), so the load is awaited and not requested again:
     // a second load() interrupts one that is still running (LOAD_INTERRUPTED, a critical error) and then no first frame arrives. On
-    // Firefox in the container that happened in about one run in twelve, and the A/A check of the first version of this scenario found it.
+    // Firefox in the container that failed 3 of 40 runs, and the A/A check of the first version of this scenario found it (ADR-127).
     await qa.waitFor('loaded');
     await qa.selectVariantByHeight(PINNED_HEIGHT);
     await qa.play();
