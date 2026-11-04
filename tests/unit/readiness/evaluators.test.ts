@@ -331,13 +331,26 @@ describe('PB-RDY-004: the manifest cadence', () => {
     ).toBe('NO-GO');
   });
 
-  it('leaves out the gaps that overlap an injected fault', () => {
-    const arrivals = [...every(2000, 15), 28_000 + 12_000, ...every(2000, 15, 40_000)];
+  it('leaves out the gaps that overlap an injected fault, also those that it only touches', () => {
+    // Requests every 2 s up to 28 s, then nothing for 12 s (the origin was down), then every 2 s from 40 s.
+    const arrivals = [...every(2000, 15), ...every(2000, 15, 40_000)];
     const withFault = evaluateManifestCadence(arrivals, []);
     expect(byId(withFault, 'cadence.longest').value).toBe(12_000);
     const excluded = evaluateManifestCadence(arrivals, [{ startMs: 29_000, endMs: 39_000 }]);
     expect(byId(excluded, 'cadence.longest').value).toBe(2000);
     expect(gapsOf(arrivals, [{ startMs: 29_000, endMs: 39_000 }])).not.toContain(12_000);
+    // A window that covers only the end of the long gap and the start of the next one takes both gaps out: 12 s and 2 s, 27 left of 29.
+    const touching = gapsOf(arrivals, [{ startMs: 35_000, endMs: 41_000 }]);
+    expect(touching).not.toContain(12_000);
+    expect(touching).toHaveLength(arrivals.length - 1 - 2);
+    // A window in the middle of the regular requests takes out the gap around it and no other.
+    expect(gapsOf(arrivals, [{ startMs: 9_000, endMs: 9_500 }])).toHaveLength(arrivals.length - 1 - 1);
+    // A window that starts where the long gap ends does not take it: only the gaps after it are touched.
+    const after = gapsOf(arrivals, [{ startMs: 40_000, endMs: 46_000 }]);
+    expect(after).toContain(12_000);
+    expect(after).toHaveLength(arrivals.length - 1 - 3);
+    // A window that ends where the long gap starts does not take it either.
+    expect(gapsOf(arrivals, [{ startMs: 20_000, endMs: 28_000 }])).toContain(12_000);
   });
 
   it('computes the gaps from requests in any order, by the time they arrived', () => {
