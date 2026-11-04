@@ -32,6 +32,9 @@ import { describeEntry, requestsFor, waitForRequest } from './support/waiting.ts
  */
 const RETRY_BOUND_MS = 2 * LONGEST_FIRST_RETRY_WAIT_MS;
 
+/** How much media the second load plays to show that it is playing. */
+const MEDIA_SECONDS_AFTER_RETRY = 2;
+
 test(
   'PB-REC-001 transient segment 404: the failed request is retried and succeeds, playback continues with no critical error and at most one rebuffer',
   { tag: ['@merge', '@dash'] },
@@ -358,6 +361,81 @@ test(
     testInfo.annotations.push({
       type: 'recovery',
       description: `cut after ${first.bytes} bytes of ${whole.bytes}; fetched again ${Math.round(waitedMs(first, whole))} ms later on ${whole.rep}; error codes: ${codes.length === 0 ? 'none' : codes.join(', ')}; ${metrics.rebuffer.count} rebuffers`,
+    });
+  },
+);
+
+/**
+ * The longest `load()` can take to give up on a manifest that is refused: one attempt, the wait before the second (at most 1500 ms
+ * with the fuzz at its top: `RETRY_BOUND_MS` is that wait doubled for a loaded runner), and the second attempt, which is the last.
+ */
+const LOAD_FAILURE_BOUND_MS = RETRY_BOUND_MS;
+
+test(
+  'PB-REC-006 manifest failure at load: load() fails with an error in bounded time, and a load after the origin returns plays',
+  { tag: ['@release', '@dash'] },
+  async ({ newSession, streamFor, player }, testInfo) => {
+    const session = await newSession({
+      stream: streamFor('vod', 'dash'),
+      protocol: 'dash',
+      faults: profile('manifest-down'),
+    });
+    const [rule] = await ruleIdsOf(session);
+    // A page without a manifest: it boots idle and the spec decides when the load starts.
+    const qa = await player().open();
+    const since = await qa.cursor();
+    const loading = qa.load(session.manifestUrl).then(
+      () => undefined,
+      (error: Error) => error,
+    );
+
+    // The fault fired: the origin refused every attempt at the manifest, and the player made exactly the attempts its retry policy allows.
+    const fired = await waitForFault(session, rule as string, RETRY.maxAttempts);
+    expect(
+      fired.map((entry) => `${entry.kind} ${entry.status}`),
+      'requests the rule fired on (request log)',
+    ).toEqual(Array.from({ length: RETRY.maxAttempts }, () => 'manifest 503'));
+
+    // load() fails (it does not hang and it does not succeed), with a critical network error, and it did so within the retry policy.
+    const failure = await loading;
+    expect(failure, 'outcome of qa.load() against a manifest that answers 503 (a rejection)').toBeDefined();
+    const events = await qa.events(since);
+    const requested = events.find((event) => event.name === 'load-requested');
+    const error = events.find((event) => event.name === 'error');
+    if (!requested || !error)
+      throw new Error(`the timeline has no load-requested and error pair: ${JSON.stringify(events)}`);
+    const failedAfterMs = error.t - requested.t;
+    expect(failedAfterMs, 'time from load() to its error (page clock)').toBeLessThanOrEqual(
+      LOAD_FAILURE_BOUND_MS,
+    );
+    expect(
+      { code: error.detail?.code, category: error.detail?.category, severity: error.detail?.severity },
+      'the error load() failed with (Shaka: BAD_HTTP_STATUS 1001, NETWORK category 1, critical severity 2)',
+    ).toEqual({ code: 1001, category: 1, severity: 2 });
+    expect((await qa.metrics()).state, 'player state (metrics.state) after the failed load').toBe('error');
+
+    // The origin returns and the same player loads again: the manifest is served, the title plays, and nothing fails this time.
+    await session.service.removeFault(session.id, rule as string);
+    const retry = await qa.cursor();
+    await qa.load(session.manifestUrl);
+    await qa.play();
+    await qa.waitFor('firstframe', { since: retry });
+    await qa.waitForMediaTime(MEDIA_SECONDS_AFTER_RETRY);
+    const metrics = await qa.metrics();
+    expect(metrics.state, 'player state (metrics.state) after the second load').toBe('playing');
+    expect(metrics.startupMs, 'startup time (metrics.startupMs) of the second load').not.toBeNull();
+    expect(
+      (await qa.events(retry)).filter((event) => event.name === 'error').map((event) => event.detail),
+      'errors since the second load started (qa.events)',
+    ).toEqual([]);
+    const manifests = requestsFor(await session.service.log(session.id), { kind: 'manifest' });
+    expect(
+      manifests.map((entry) => entry.status),
+      'manifest requests of the session, in order (request log)',
+    ).toEqual([...Array.from({ length: RETRY.maxAttempts }, () => 503), 200]);
+    testInfo.annotations.push({
+      type: 'recovery',
+      description: `load() failed ${Math.round(failedAfterMs)} ms after it was called (${RETRY.maxAttempts} attempts, ${error.detail?.codeName}); after the origin returned the second load reached its first frame in ${Math.round(metrics.startupMs ?? 0)} ms`,
     });
   },
 );
