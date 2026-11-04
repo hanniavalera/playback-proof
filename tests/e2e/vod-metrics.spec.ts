@@ -3,7 +3,14 @@ import { expectHealthyPlayback, expectNoErrors, expectNoRebuffer } from './suppo
 import { expect, test } from './support/fixtures.ts';
 import { streamInfoOf } from './support/session.ts';
 import { requestsFor } from './support/waiting.ts';
-import { originStartupSpanMs, sinceLoadRequested, videoFrameRate } from './vod/instrument.ts';
+import { failure } from './vod/fail.ts';
+import {
+  framesUnaccountedFor,
+  originStartupSpanMs,
+  sinceLoadRequested,
+  videoFrameRate,
+} from './vod/instrument.ts';
+import { describePlayerTrouble, waitForFirstFrame } from './vod/trouble.ts';
 import { allSegments, distinctAscending, segmentNumbers } from './vod/segments.ts';
 import {
   CLOCK_RESOLUTION_MS,
@@ -27,11 +34,13 @@ test(
 
     const openedAt = performance.now();
     const qa = await player(session).open();
-    await qa.waitFor('firstframe');
+    await waitForFirstFrame(qa);
     const firstFrameWallMs = performance.now() - openedAt;
     await qa.waitForMediaTime(3);
     const windowStartedAt = performance.now();
-    const measured = await qa.measureFrames(FRAME_WINDOW_SEC);
+    const measured = await qa.measureFrames(FRAME_WINDOW_SEC).catch(async (error: unknown) => {
+      throw failure(`${(error as Error).message}${await describePlayerTrouble(qa)}`);
+    });
     const windowWallMs = performance.now() - windowStartedAt;
     const metrics = await qa.metrics();
     const events = await qa.events();
@@ -39,7 +48,7 @@ test(
     const firstFrame = events.find((event) => event.name === 'firstframe');
     testInfo.annotations.push({
       type: 'readings',
-      description: `decoded ${metrics.frames.decoded}, presented ${metrics.frames.presented}, dropped ${metrics.frames.dropped}; the first frame at ${firstFrame?.mediaTime} s of media time; the window: ${measured.presented} presented and ${measured.decoded} decoded frames in ${measured.mediaSeconds} s, ${measured.fps} fps; startup ${metrics.startupMs} ms`,
+      description: `decoded ${metrics.frames.decoded}, presented ${metrics.frames.presented}, dropped ${metrics.frames.dropped}; the first frame at ${firstFrame?.mediaTime} s of media time; the window: ${measured.presented} presented, ${measured.dropped} dropped and ${measured.decoded} decoded frames in ${measured.mediaSeconds} s, ${measured.fps} fps; startup ${metrics.startupMs} ms`,
     });
 
     // Frames. Decoded and dropped are the browser's own counters; presented is counted from the browser's frame callbacks.
@@ -58,13 +67,17 @@ test(
       presented,
       'presented frames (metrics.frames.presented) are null: requestVideoFrameCallback is missing in this engine, so the counter cannot be checked',
     ).not.toBeNull();
-    // The decoded counter counts every frame since the load; the presented one counts from the first frame callback, so the frames the
-    // clock ran through before the first presented frame (a slow first paint: media time 0.35 s at the first frame in a loaded Linux WebKit,
-    // 0.00 to 0.02 s elsewhere) are decoded and never presented. They are the startup's, and are added back before the two are compared.
+    // Every decoded frame is either presented or dropped: `totalVideoFrames` is the frames displayed plus the frames dropped (Media
+    // Playback Quality; METRICS.md: the dropped ratio is dropped over decoded), so the counters agree as `presented + dropped = decoded`
+    // and not as `presented = decoded`. Comparing presented with decoded alone fails a page that dropped frames, and a starved one does:
+    // the 3-CPU macOS runner dropped 12 and 21 frames in a run, and presented was 22 and 24 short of decoded (10 and 3 once the dropped ones
+    // were counted). The presented counter starts at the first frame callback of the load, while the decoded one counts every frame, so a
+    // slow first paint (media time 0.35 s at the first frame in a loaded Linux WebKit, 0.00 to 0.02 s elsewhere) is decoded and never
+    // presented: the frames the clock ran through before the first one are added back. What is left is the decoder running ahead.
     const beforeFirstFrame = Math.round(frameRate * (firstFrame?.mediaTime ?? 0));
     expect(
-      Math.abs((presented as number) + beforeFirstFrame - decoded),
-      `distance in frames between presented (${presented}, plus ${beforeFirstFrame} for the ${firstFrame?.mediaTime} s of media time before the first frame) and decoded (${decoded}) frames since the load, ${dropped} dropped`,
+      framesUnaccountedFor({ decoded, presented: presented as number, dropped, beforeFirstFrame }),
+      `distance in frames between presented (${presented}) plus dropped (${dropped}) plus ${beforeFirstFrame} for the ${firstFrame?.mediaTime} s of media time before the first frame, and decoded (${decoded}) frames since the load`,
     ).toBeLessThanOrEqual(FRAME_AGREEMENT_TOLERANCE);
 
     // The same counters over a window of media time, against what the stream and the clocks say: the stream is `frameRate` fps, and the
@@ -82,8 +95,13 @@ test(
       `effective frame rate (qa.measureFrames) above the stream's ${frameRate} fps: a page cannot present more frames than the stream has`,
     ).toBeLessThanOrEqual(frameRate * FPS_MAX_SHARE);
     expect(
-      Math.abs((measured.presented as number) - measured.decoded),
-      `distance in frames between presented (${measured.presented}) and decoded (${measured.decoded}) frames in the window`,
+      framesUnaccountedFor({
+        decoded: measured.decoded,
+        presented: measured.presented as number,
+        dropped: measured.dropped,
+        beforeFirstFrame: 0,
+      }),
+      `distance in frames between presented (${measured.presented}) plus dropped (${measured.dropped}) and decoded (${measured.decoded}) frames in the window`,
     ).toBeLessThanOrEqual(FRAME_AGREEMENT_TOLERANCE);
     expect(measured.dropped, 'dropped frames of the window against decoded frames').toBeLessThanOrEqual(
       measured.decoded,
@@ -150,7 +168,7 @@ test(
     const session = await newSession({ stream: 'vod-webm', protocol: 'dash', faults: profile('clean') });
     const info = await streamInfoOf(session);
     const qa = await player(session).open();
-    await qa.waitFor('firstframe');
+    await waitForFirstFrame(qa);
     const reached = await qa.waitForMediaTime(3);
     expect(reached, 'media time reached').toBeGreaterThanOrEqual(3);
 

@@ -6,6 +6,21 @@ import { repsOfTrack } from './segments.ts';
 
 // What PB-VOD-012 holds the hook's numbers against: things the browser and the origin say that do not come from the hook.
 
+/**
+ * How many frames the decoded counter holds that the presented counter does not account for. Every decoded frame is either presented or
+ * dropped (`totalVideoFrames` is the frames displayed plus the frames dropped), and the frames the clock ran through before the first
+ * frame callback were decoded and never counted as presented (`beforeFirstFrame`; 0 for a window): what is left is the decoder running
+ * ahead of the presentation. A counter that doubles, repeats or restarts leaves a second of video or more.
+ */
+export function framesUnaccountedFor(counters: {
+  decoded: number;
+  presented: number;
+  dropped: number;
+  beforeFirstFrame: number;
+}): number {
+  return Math.abs(counters.presented + counters.dropped + counters.beforeFirstFrame - counters.decoded);
+}
+
 /** The frame rate of the title's video, from the catalog: the lab's streams are 30 fps on every rung. */
 export function videoFrameRate(info: StreamInfo): number {
   const rates = new Set(

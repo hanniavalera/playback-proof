@@ -6,21 +6,32 @@ import type { PlayerHandle } from '../support/player.ts';
 import type { TestSession } from '../support/session.ts';
 import { describeEntry, requestsFor } from '../support/waiting.ts';
 import { checked, failure } from './fail.ts';
+import { videoFrameRate } from './instrument.ts';
 import { distinctAscending, middleOfSegment, repsOfTrack, segmentNumbers } from './segments.ts';
-import {
-  CLOCK_OVERSHOOT_TOLERANCE_SEC,
-  SEEK_LANDING_TOLERANCE_SEC,
-  UNBUFFERED_FROM_SEC,
-} from './tolerances.ts';
+import { CLOCK_RESOLUTION_MS, UNBUFFERED_FROM_SEC } from './tolerances.ts';
 
 /** How many of the origin's last requests a failure message of a seek lists. */
 const ORIGIN_LINES_IN_MESSAGES = 8;
+
+/**
+ * A stopwatch on the wall clock of THIS process: call it to read the milliseconds since it was created. Start it before the call that
+ * begins a span of the media clock and read it after the reading that ends the span: it brackets whatever the page did in between, however
+ * late the page did it (`expectClockPace`).
+ */
+export function stopwatch(): () => number {
+  const startedAt = performance.now();
+  return () => performance.now() - startedAt;
+}
 
 export interface RecordedSeek {
   /** The cursor taken before the seek: `qa.events(since)` is the timeline of the seek and what followed. */
   since: number;
   seeking: QAEvent;
   seeked: QAEvent;
+  /** Milliseconds of the wall clock of this process from just before `seek()` was called to just after it resolved. */
+  wallMs: number;
+  /** The stopwatch that `wallMs` was read from: read it again after what follows the seek (a wait for the clock) to bracket that too. */
+  elapsed: () => number;
 }
 
 /**
@@ -35,11 +46,13 @@ export async function seekAndRecord(
   origin?: { session: TestSession; logCursor: number },
 ): Promise<RecordedSeek> {
   const since = await qa.cursor();
+  const elapsed = stopwatch();
   try {
     await qa.seek(target);
   } catch (error) {
     throw failure(`${(error as Error).message}${origin ? await describeOriginSince(origin) : ''}`);
   }
+  const wallMs = elapsed();
   const events = await qa.events(since);
   const seeking = events.find((event) => event.name === 'seeking');
   const seeked = seeking && events.find((event) => event.name === 'seeked' && event.index > seeking.index);
@@ -48,42 +61,100 @@ export async function seekAndRecord(
       `seek(${target}) resolved but the timeline has no seeking and seeked pair after index ${since}: ${events.map((event) => event.name).join(', ')}`,
     );
   }
-  return { since, seeking, seeked };
+  return { since, seeking, seeked, wallMs, elapsed };
 }
 
-/** The last requests of the origin's log since a cursor, as lines of a failure message (empty when the log cannot be read). */
-export async function describeOriginSince(origin: {
-  session: TestSession;
-  logCursor: number;
-}): Promise<string> {
+/**
+ * The last requests of the origin's log since a cursor, as lines of a failure message (empty when the log cannot be read). `since` says
+ * what the cursor was taken before, for the sentence: the seek by default.
+ */
+export async function describeOriginSince(
+  origin: {
+    session: TestSession;
+    logCursor: number;
+  },
+  since = 'the seek',
+): Promise<string> {
   try {
     const { after } = await logAround(origin.session, origin.logCursor);
-    if (after.length === 0) return '\nThe origin was not asked for anything since the seek.';
+    if (after.length === 0) return `\nThe origin was not asked for anything since ${since}.`;
     const last = after.slice(-ORIGIN_LINES_IN_MESSAGES).map((entry) => `  ${describeEntry(entry)}`);
-    return `\nThe origin was asked for ${after.length} requests since the seek, the last ${last.length}:\n${last.join('\n')}`;
+    return `\nThe origin was asked for ${after.length} requests since ${since}, the last ${last.length}:\n${last.join('\n')}`;
   } catch {
     return '';
   }
 }
 
-/** The seek finished where it was asked to: the media time of its `seeked` event is within `SEEK_LANDING_TOLERANCE_SEC` of the target. */
-export function expectLanded(seeked: Pick<QAEvent, 'mediaTime'>, target: number): void {
+/** One video frame period and the resolution of the clocks compared, in seconds: the slack of every comparison of two readings of the media clock. */
+function slackSec(info: StreamInfo): number {
+  return 1 / videoFrameRate(info) + CLOCK_RESOLUTION_MS / 1000;
+}
+
+/** Two readings of the media clock of a player at rate 1, and the wall clock of this process around them. */
+export interface ClockSpan {
+  /** Media time where the span began: the target of a seek, where a pause left the clock, the start of the title for a restart. */
+  from: number;
+  /** Media time the span ended at: an event's `mediaTime`, or what a wait for the clock returned. */
+  to: number;
+  /** Milliseconds of the wall clock of this process (`stopwatch`) from before the call that began the span to after the reading that ended it. */
+  wallMs: number;
+}
+
+/**
+ * The media clock moved on like a clock: it did not go back by more than a frame, and it did not run faster than the wall clock did
+ * (plus a frame, and the resolution of the clocks). The page reads the clock when it gets to it and a starved page gets to it seconds
+ * late, so no distance in seconds from a position is a sound bound for a reading (ADR-092); the time the clock had to run is. A landing at
+ * the start of the segment is a second behind its target and a skip to the next segment or GOP is a second or two ahead of a wall clock
+ * that ran for a fraction of one, so both still fail. `subject` says what was read, for the message.
+ */
+export function expectClockPace(span: ClockSpan, info: StreamInfo, subject: string): void {
+  const slack = slackSec(info);
   checked(() => {
     expect(
-      Math.abs(seeked.mediaTime - target),
-      `distance in seconds between the media time of the seeked event (${seeked.mediaTime} s) and the target (${target} s)`,
-    ).toBeLessThanOrEqual(SEEK_LANDING_TOLERANCE_SEC);
+      span.to,
+      `${subject}: it is before the ${span.from} s the clock started from, which it may be by a frame at most (${(slack * 1000).toFixed(1)} ms with the resolution of the clocks)`,
+    ).toBeGreaterThanOrEqual(span.from - slack);
+    expect(
+      span.to,
+      `${subject}: it is past the ${span.from} s the clock started from by more than the ${Math.round(span.wallMs)} ms of wall clock it had to run in (the clock cannot run faster than that), plus a frame`,
+    ).toBeLessThanOrEqual(span.from + span.wallMs / 1000 + slack);
   });
 }
 
-/** The clock moved on continuously: a wait for `waitedFor` seconds of media time returned `reached`, and a jump of the clock would have taken it far beyond. */
-export function expectClockContinued(reached: number, waitedFor: number, explanation: string): void {
+/**
+ * The seek finished where it was asked to, judged by two readings of the clock that cannot be late: the one of the call (`target`, the
+ * position the element takes at once, to the wall clock of this process from the call to the resolution of `seek()`), and the page's own
+ * pair (the `seeking` and the `seeked` event carry the media time and the page time of the same instant, so the clock cannot have moved
+ * between them faster than the page clock did, whenever the page got to record them). The two together are what a seek that skipped
+ * ahead, or fell back to the start of its segment, fails, and what a seek that was merely read late, or that the player's stall
+ * detector nudged forward by 0.1 s for every second it waited, does not.
+ */
+export function expectLanded(
+  seek: Pick<RecordedSeek, 'seeking' | 'seeked' | 'wallMs'>,
+  target: number,
+  info: StreamInfo,
+): void {
+  const { seeking, seeked } = seek;
+  expectClockPace(
+    { from: target, to: seeked.mediaTime, wallMs: seek.wallMs },
+    info,
+    `media time of the seeked event after a seek to ${target} s`,
+  );
+  const pageMs = seeked.t - seeking.t;
   checked(() => {
     expect(
-      reached - waitedFor,
-      `media time reached (${reached} s) beyond the ${waitedFor} s the wait was for: ${explanation}`,
-    ).toBeLessThanOrEqual(CLOCK_OVERSHOOT_TOLERANCE_SEC);
+      seeked.mediaTime,
+      `media time of the seeked event (page clock ${seeked.t.toFixed(0)} ms) against the seeking event (${seeking.mediaTime} s, page clock ${seeking.t.toFixed(0)} ms): the clock cannot have run past it by more than the ${Math.round(pageMs)} ms of the page's own clock between the two, plus a frame`,
+    ).toBeLessThanOrEqual(seeking.mediaTime + pageMs / 1000 + slackSec(info));
   });
+}
+
+/**
+ * The clock moved on after a seek, a resume or a restart: a wait for it (`waitForMediaTime`) returned `span.to`, which is as far from
+ * where it began as the wall clock allows (`expectClockPace`), however late the wait was served. `explanation` says what a failure means.
+ */
+export function expectClockContinued(span: ClockSpan, info: StreamInfo, explanation: string): void {
+  expectClockPace(span, info, `media time reached (${span.to} s) after ${span.from} s, ${explanation}`);
 }
 
 /** The log of a session split at a cursor (`requestLogCursor`): what the origin had been asked for by then, and what it was asked for since. */
