@@ -68,14 +68,17 @@ jobs:
             runner: ubuntu-24.04
             timeout: 30
             limit: 1560000
+          # One worker on the three-CPU macOS runner, as in the merge gate (ci.yml).
           - leg: webkit-macos
             project: webkit
             browser: webkit
             runner: macos-15
+            workers: 1
             timeout: 45
             limit: 2460000
     env:
       CI: 'true'
+      PB_WORKERS: ${{ matrix.workers || 2 }}
     steps:
       - uses: actions/checkout@v7
       - name: Set up Node, the streams and the browser

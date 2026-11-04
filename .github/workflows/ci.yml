@@ -89,15 +89,19 @@ jobs:
             runner: ubuntu-24.04
             timeout: 15
             limit: 660000
+          # Three CPUs: two workers (a WebKit with its helper processes each, and the service) starved each other and the specs saw
+          # event delivery lag by 0.3 to 3 s, which no tolerance measured on a faster machine can absorb (docs/CI.md).
           - leg: webkit-macos
             project: webkit
             browser: webkit
             runner: macos-15
+            workers: 1
             timeout: 30
             limit: 1560000
     env:
-      # GitHub sets it too. The Playwright config reads it: two workers, one retry, no test.only.
+      # GitHub sets it too. The Playwright config reads it: two workers (a leg may say otherwise), one retry, no test.only.
       CI: 'true'
+      PB_WORKERS: ${{ matrix.workers || 2 }}
     steps:
       - uses: actions/checkout@v7
       - name: Set up Node, the streams and the browser

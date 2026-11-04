@@ -197,6 +197,13 @@ describe('the browser matrix', () => {
     expect(withoutTimes(nightlyLegs)).toEqual(withoutTimes(mergeLegs));
   });
 
+  it('gives the three-CPU macOS runner one worker, in the merge gate and in the nightly alike', () => {
+    for (const job of [mergeGate, release]) {
+      expect(job).toMatch(/- leg: webkit-macos\n(?: {12}[a-z]+: .+\n)*? {12}workers: 1\n/);
+      expect(job).toContain('PB_WORKERS: ${{ matrix.workers || 2 }}');
+    }
+  });
+
   it('marks Linux WebKit as the one experimental leg, in its name', () => {
     expect(mergeLegs.filter((l) => l.experimental).map((l) => l.leg)).toEqual(['webkit-linux']);
     for (const job of [mergeGate, release]) {
