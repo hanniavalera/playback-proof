@@ -1,0 +1,387 @@
+{
+  "schemaVersion": 1,
+  "kind": "perf-aa",
+  "envId": "docker-linux-arm64",
+  "profile": "webkit",
+  "passes": 5,
+  "scenarios": [
+    "PB-PERF-001",
+    "PB-PERF-002"
+  ],
+  "baseline": {
+    "file": "/work/perf/baselines/docker-linux-arm64/webkit.json",
+    "generatedAt": "2026-11-04T07:01:02.615Z",
+    "commit": "8661aed",
+    "browserVersion": "27.2",
+    "runsPerScenario": 10
+  },
+  "exitCodes": {
+    "0": 5,
+    "1": 0,
+    "2": 0
+  },
+  "falsePositives": 0,
+  "firstBatchAlarms": 0,
+  "notReproduced": 0,
+  "host": {
+    "cpus": 12,
+    "memoryGiB": 7.7,
+    "node": "v24.22.1",
+    "playwright": "1.64.1",
+    "invokedVia": "docker:pw",
+    "dockerCpus": 4
+  },
+  "runs": [
+    {
+      "file": "reports/aa/docker-webkit/1/docker-linux-arm64/webkit.json",
+      "generatedAt": "2026-11-04T08:15:42.463Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.48,
+        "after": 1.22
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa/docker-webkit/2/docker-linux-arm64/webkit.json",
+      "generatedAt": "2026-11-04T08:17:10.282Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 1.12,
+        "after": 2.7
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa/docker-webkit/3/docker-linux-arm64/webkit.json",
+      "generatedAt": "2026-11-04T08:18:37.559Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 2.7,
+        "after": 2.78
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa/docker-webkit/4/docker-linux-arm64/webkit.json",
+      "generatedAt": "2026-11-04T08:20:04.831Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 2.72,
+        "after": 2.26
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa/docker-webkit/5/docker-linux-arm64/webkit.json",
+      "generatedAt": "2026-11-04T08:21:32.088Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 2.26,
+        "after": 1.07
+      },
+      "problems": []
+    }
+  ],
+  "metrics": [
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "startupMs",
+      "unit": "ms",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 156.5,
+        "tail": 283.7999999999999,
+        "cv": 0.5673626388855998,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 46.949999999999996,
+        "tail": 85.13999999999997
+      },
+      "passes": 5,
+      "medians": [
+        142.5,
+        138,
+        135,
+        138.5,
+        137.5
+      ],
+      "tails": [
+        157.29999999999998,
+        150.2,
+        139.6,
+        144.1,
+        152.5
+      ],
+      "worst": {
+        "median": -14,
+        "tail": -126.49999999999991
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 2.7064737205448717,
+        "relativeSd": 0.01729376179261899
+      }
+    },
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "manifestMs",
+      "unit": "ms",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 16.5,
+        "tail": 19.599999999999998,
+        "cv": 0.18085086751841717,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 5,
+      "medians": [
+        15,
+        15.5,
+        15,
+        14,
+        15
+      ],
+      "tails": [
+        15.2,
+        18.1,
+        17.2,
+        16,
+        16.1
+      ],
+      "worst": {
+        "median": -1,
+        "tail": -1.4999999999999964
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0.5477225575051662,
+        "relativeSd": 0.033195306515464616
+      }
+    },
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "loadedMs",
+      "unit": "ms",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 25,
+        "tail": 29.4,
+        "cv": 0.11813053695775151,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 5,
+      "medians": [
+        22.5,
+        23,
+        22,
+        22,
+        22
+      ],
+      "tails": [
+        24.4,
+        25.1,
+        24.299999999999997,
+        23,
+        24
+      ],
+      "worst": {
+        "median": -2,
+        "tail": -4.299999999999997
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0.4472135954999579,
+        "relativeSd": 0.017888543819998316
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "fps",
+      "unit": "fps",
+      "gated": true,
+      "tailStatistic": "p10",
+      "baseline": {
+        "median": 30,
+        "tail": 30,
+        "cv": 0,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 1.5,
+        "tail": 3
+      },
+      "passes": 5,
+      "medians": [
+        30,
+        30,
+        30,
+        30,
+        30
+      ],
+      "tails": [
+        30,
+        30,
+        30,
+        30,
+        30
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": 0
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "droppedRatio",
+      "unit": "ratio",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 0.01,
+        "tail": 0.03
+      },
+      "passes": 5,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "decodedFrames",
+      "unit": "count",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 150,
+        "tail": 150,
+        "cv": 0,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 5,
+      "medians": [
+        150,
+        150,
+        150,
+        150,
+        150
+      ],
+      "tails": [
+        150,
+        150,
+        150,
+        150,
+        150
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": 0
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "droppedFrames",
+      "unit": "count",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 5,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    }
+  ]
+}

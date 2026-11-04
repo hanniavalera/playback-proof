@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "kind": "perf-gate-report",
+  "envId": "local-darwin-arm64",
+  "profile": "chromium",
+  "generatedAt": "2026-11-04T07:42:38.579Z",
+  "verdict": "problem",
+  "exitCode": 2,
+  "baseline": {
+    "file": "/Users/hannia/repos/_worktrees/pb-perf/perf/baselines/local-darwin-arm64/chromium.json",
+    "generatedAt": "2026-11-04T06:36:11.733Z",
+    "commit": "7389861",
+    "browserVersion": "156.0.8078.4",
+    "runsPerScenario": 10
+  },
+  "current": {
+    "host": {
+      "os": {
+        "platform": "darwin",
+        "arch": "arm64",
+        "release": "27.2.0",
+        "name": "macOS 27.2"
+      },
+      "cpus": 12,
+      "memoryGiB": 16,
+      "node": "v22.11.0",
+      "playwright": "1.64.1",
+      "git": {
+        "commit": "a28a6fe",
+        "dirty": false
+      }
+    },
+    "machine": {
+      "invokedVia": "direct",
+      "dockerCpus": null,
+      "quiet": {
+        "maxLoad": 3,
+        "hostLoad": 2.59,
+        "waitedMs": 0
+      },
+      "loadBeforeProfile": 0,
+      "loadAfterProfile": 0
+    },
+    "browser": {
+      "name": "chromium",
+      "version": "156.0.8078.4",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+      "cpuThrottleRate": null
+    },
+    "ffmpeg": "9.0.2"
+  },
+  "policy": {
+    "limits": {
+      "runs": 10,
+      "warmupRuns": 1,
+      "maxBaselineCv": 0.15,
+      "startupMedianRel": 0.3,
+      "startupTailRel": 0.3,
+      "startupFloorMs": 5,
+      "lowEndStartupMedianRel": 0.3,
+      "lowEndStartupTailRel": 0.3,
+      "lowEndStartupFloorMs": 20,
+      "fpsMedianRel": 0.05,
+      "fpsTailRel": 0.1,
+      "fpsFloor": 1,
+      "frameDroppedMedianBudget": 0.01,
+      "frameDroppedTailBudget": 0.03,
+      "lowEndDroppedMedianBudget": 0.02,
+      "lowEndDroppedTailBudget": 0.05,
+      "rebufferCountMedianBudget": 0,
+      "rebufferCountTailBudget": 1,
+      "rebufferMsMedianBudget": 250,
+      "rebufferMsTailBudget": 1000,
+      "rebufferRatioMedianBudget": 0.01,
+      "rebufferRatioTailBudget": 0.05
+    },
+    "rules": {
+      "startup": {
+        "kind": "relative",
+        "worse": "higher",
+        "medianShare": 0.3,
+        "tailShare": 0.3,
+        "floor": 5
+      },
+      "lowEndStartup": {
+        "kind": "relative",
+        "worse": "higher",
+        "medianShare": 0.3,
+        "tailShare": 0.3,
+        "floor": 20
+      },
+      "fps": {
+        "kind": "relative",
+        "worse": "lower",
+        "medianShare": 0.05,
+        "tailShare": 0.1,
+        "floor": 1
+      },
+      "frameDropped": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 0.01,
+        "tailBudget": 0.03
+      },
+      "lowEndDropped": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 0.02,
+        "tailBudget": 0.05
+      },
+      "rebufferCount": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 0,
+        "tailBudget": 1
+      },
+      "rebufferMs": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 250,
+        "tailBudget": 1000
+      },
+      "rebufferRatio": {
+        "kind": "budget",
+        "worse": "higher",
+        "medianBudget": 0.01,
+        "tailBudget": 0.05
+      }
+    }
+  },
+  "warnings": [
+    "THE CPU THROTTLE WAS REPLACED ON PURPOSE by 20x in every session: this is a sensitivity check of the gate, not a measurement of the build"
+  ],
+  "problems": [
+    {
+      "scenario": "PB-PERF-002",
+      "message": "PB-PERF-002 on chromium, the warm-up run: qa.waitFor('firstframe'): qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n13 events so far, the last 13:\n  #0 t=1374.6 media=0.000 load-requested {\"uri\":\"/s/116b7cd51f12/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=1399.5 media=0.000 buffering-start\n  #2 t=1661.9 media=0.000 manifest-loaded\n  #3 t=1701.4 media=0.000 load-requested {\"uri\":\"/s/116b7cd51f12/vod-cmaf/dash/manifest.mpd\"}\n  #4 t=1728.5 media=0.000 error {\"code\":7000,\"codeName\":\"LOAD_INTERRUPTED\",\"category\":7,\"severity\":2,\"message\":\"PLAYER.LOAD_INTERRUPTED: Shaka Error 7000\",\"source\":\"load\"}\n  #5 t=1741.8 media=0.000 buffering-end\n  #6 t=1747.3 media=0.000 buffering-start\n  #7 t=1817.0 media=0.000 manifest-loaded\n  #8 t=1887.4 media=0.000 buffering-start\n  #9 t=1895.1 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #10 t=1916.7 media=0.000 loaded\n  #11 t=2248.8 media=0.017 playing\n  #12 t=2253.4 media=0.022 buffering-end\nthe last events of the player:\n  #1 +25 ms media 0.00 buffering-start\n  #2 +287 ms media 0.00 manifest-loaded\n  #3 +327 ms media 0.00 load-requested {\"uri\":\"/s/116b7cd51f12/vod-cmaf/dash/manifest.mpd\"}\n  #4 +354 ms media 0.00 error {\"code\":7000,\"codeName\":\"LOAD_INTERRUPTED\",\"category\":7,\"severity\":2,\"message\":\"PLAYER.LOAD_INTERRUPTED: Shaka Error 7000\",\"source\":\"load\"}\n  #5 +367 ms media 0.00 buffering-end\n  #6 +373 ms media 0.00 buffering-start\n  #7 +442 ms media 0.00 manifest-loaded\n  #8 +513 ms media 0.00 buffering-start\n  #9 +521 ms media 0.00 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #10 +542 ms media 0.00 loaded\n  #11 +874 ms media 0.02 playing\n  #12 +879 ms media 0.02 buffering-end"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "PB-PERF-002",
+      "name": "frame-rate",
+      "title": "Steady-state frame rate and dropped frames (vod-cmaf, clean, pinned 720p, a 5 s window)",
+      "status": "problem",
+      "remeasured": false,
+      "stream": null,
+      "metrics": [],
+      "problems": [
+        {
+          "scenario": "PB-PERF-002",
+          "message": "PB-PERF-002 on chromium, the warm-up run: qa.waitFor('firstframe'): qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n13 events so far, the last 13:\n  #0 t=1374.6 media=0.000 load-requested {\"uri\":\"/s/116b7cd51f12/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=1399.5 media=0.000 buffering-start\n  #2 t=1661.9 media=0.000 manifest-loaded\n  #3 t=1701.4 media=0.000 load-requested {\"uri\":\"/s/116b7cd51f12/vod-cmaf/dash/manifest.mpd\"}\n  #4 t=1728.5 media=0.000 error {\"code\":7000,\"codeName\":\"LOAD_INTERRUPTED\",\"category\":7,\"severity\":2,\"message\":\"PLAYER.LOAD_INTERRUPTED: Shaka Error 7000\",\"source\":\"load\"}\n  #5 t=1741.8 media=0.000 buffering-end\n  #6 t=1747.3 media=0.000 buffering-start\n  #7 t=1817.0 media=0.000 manifest-loaded\n  #8 t=1887.4 media=0.000 buffering-start\n  #9 t=1895.1 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #10 t=1916.7 media=0.000 loaded\n  #11 t=2248.8 media=0.017 playing\n  #12 t=2253.4 media=0.022 buffering-end\nthe last events of the player:\n  #1 +25 ms media 0.00 buffering-start\n  #2 +287 ms media 0.00 manifest-loaded\n  #3 +327 ms media 0.00 load-requested {\"uri\":\"/s/116b7cd51f12/vod-cmaf/dash/manifest.mpd\"}\n  #4 +354 ms media 0.00 error {\"code\":7000,\"codeName\":\"LOAD_INTERRUPTED\",\"category\":7,\"severity\":2,\"message\":\"PLAYER.LOAD_INTERRUPTED: Shaka Error 7000\",\"source\":\"load\"}\n  #5 +367 ms media 0.00 buffering-end\n  #6 +373 ms media 0.00 buffering-start\n  #7 +442 ms media 0.00 manifest-loaded\n  #8 +513 ms media 0.00 buffering-start\n  #9 +521 ms media 0.00 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #10 +542 ms media 0.00 loaded\n  #11 +874 ms media 0.02 playing\n  #12 +879 ms media 0.02 buffering-end"
+        }
+      ],
+      "first": null,
+      "remeasure": null
+    }
+  ]
+}

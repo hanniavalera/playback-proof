@@ -1,0 +1,386 @@
+{
+  "schemaVersion": 1,
+  "kind": "perf-aa",
+  "envId": "local-darwin-arm64",
+  "profile": "chromium-cpu4x",
+  "passes": 5,
+  "scenarios": [
+    "PB-PERF-004"
+  ],
+  "baseline": {
+    "file": "/Users/hannia/repos/_worktrees/pb-perf/perf/baselines/local-darwin-arm64/chromium-cpu4x.json",
+    "generatedAt": "2026-11-04T06:44:30.100Z",
+    "commit": "90df3a0",
+    "browserVersion": "156.0.8078.4",
+    "runsPerScenario": 10
+  },
+  "exitCodes": {
+    "0": 5,
+    "1": 0,
+    "2": 0
+  },
+  "falsePositives": 0,
+  "firstBatchAlarms": 0,
+  "notReproduced": 0,
+  "host": {
+    "cpus": 12,
+    "memoryGiB": 16,
+    "node": "v22.11.0",
+    "playwright": "1.64.1",
+    "invokedVia": "direct",
+    "dockerCpus": null
+  },
+  "runs": [
+    {
+      "file": "reports/aa/local-cpu4x/1/local-darwin-arm64/chromium-cpu4x.json",
+      "generatedAt": "2026-11-04T07:48:20.637Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 2.892578125,
+        "after": 2.20947265625
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa/local-cpu4x/2/local-darwin-arm64/chromium-cpu4x.json",
+      "generatedAt": "2026-11-04T07:49:44.123Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 2.20947265625,
+        "after": 4.580078125
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa/local-cpu4x/3/local-darwin-arm64/chromium-cpu4x.json",
+      "generatedAt": "2026-11-04T07:51:07.612Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 4.580078125,
+        "after": 3.07666015625
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa/local-cpu4x/4/local-darwin-arm64/chromium-cpu4x.json",
+      "generatedAt": "2026-11-04T07:52:31.094Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 3.07666015625,
+        "after": 2.1083984375
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa/local-cpu4x/5/local-darwin-arm64/chromium-cpu4x.json",
+      "generatedAt": "2026-11-04T07:53:54.617Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 2.1083984375,
+        "after": 2.224609375
+      },
+      "problems": []
+    }
+  ],
+  "metrics": [
+    {
+      "scenario": "PB-PERF-004",
+      "metric": "startupMs",
+      "unit": "ms",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 111.4500000178814,
+        "tail": 114.71000000238419,
+        "cv": 0.06365586302365611,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 33.435000005364415,
+        "tail": 34.41300000071526
+      },
+      "passes": 5,
+      "medians": [
+        105.94999998807907,
+        107.65000000596046,
+        108.2999999821186,
+        102.85000002384186,
+        102.69999998807907
+      ],
+      "tails": [
+        113.65999999046325,
+        116.42999997735023,
+        113.06000000834464,
+        112.84000000953674,
+        115.11999999880791
+      ],
+      "worst": {
+        "median": -3.150000035762787,
+        "tail": 1.7199999749660435
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 2.6233089722201184,
+        "relativeSd": 0.02353798987706798
+      }
+    },
+    {
+      "scenario": "PB-PERF-004",
+      "metric": "manifestMs",
+      "unit": "ms",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 47.30000001192093,
+        "tail": 49.750000041723254,
+        "cv": 0.05079223373810653,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 5,
+      "medians": [
+        47.69999998807907,
+        47.25,
+        45.849999994039536,
+        49.80000001192093,
+        46.00000002980232
+      ],
+      "tails": [
+        51.440000009536746,
+        49.40999997854233,
+        48.49000000953674,
+        51.51000000834465,
+        47.840000009536745
+      ],
+      "worst": {
+        "median": 2.5,
+        "tail": 1.7599999666213932
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 1.597106758243914,
+        "relativeSd": 0.03376547056747142
+      }
+    },
+    {
+      "scenario": "PB-PERF-004",
+      "metric": "loadedMs",
+      "unit": "ms",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 67.90000000596046,
+        "tail": 70.94000000953675,
+        "cv": 0.042321838689077754,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 5,
+      "medians": [
+        68.94999998807907,
+        68.90000000596046,
+        65.65000000596046,
+        69.55000001192093,
+        66.65000000596046
+      ],
+      "tails": [
+        72.62000002264976,
+        70.20999998450279,
+        69.33000000119209,
+        72.57000002861022,
+        68.07000002861022
+      ],
+      "worst": {
+        "median": 1.6500000059604645,
+        "tail": 1.6800000131130162
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 1.6913012729162331,
+        "relativeSd": 0.02490870799363425
+      }
+    },
+    {
+      "scenario": "PB-PERF-004",
+      "metric": "droppedRatio",
+      "unit": "ratio",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 0.02,
+        "tail": 0.05
+      },
+      "passes": 5,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-004",
+      "metric": "fps",
+      "unit": "fps",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 30,
+        "tail": 30,
+        "cv": 0,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 5,
+      "medians": [
+        30,
+        30,
+        30,
+        30,
+        30
+      ],
+      "tails": [
+        30,
+        30,
+        30,
+        30,
+        30
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": 0
+      }
+    },
+    {
+      "scenario": "PB-PERF-004",
+      "metric": "decodedFrames",
+      "unit": "count",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 150,
+        "tail": 150,
+        "cv": 0,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 5,
+      "medians": [
+        150,
+        150,
+        150,
+        150,
+        150
+      ],
+      "tails": [
+        150,
+        150,
+        150,
+        150,
+        150
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": 0
+      }
+    },
+    {
+      "scenario": "PB-PERF-004",
+      "metric": "droppedFrames",
+      "unit": "count",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 5,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    }
+  ]
+}
