@@ -1,4 +1,5 @@
 import type { RequestLogEntry } from '../../../src/shared/api.ts';
+import type { QAError } from '../../../src/shared/qa.ts';
 import type { TestSession } from '../support/fixtures.ts';
 import { describeEntry, requestsFor, waitForRequests } from '../support/waiting.ts';
 import type { RequestWaitOptions } from '../support/waiting.ts';
@@ -56,4 +57,28 @@ export function describeAttempts(entries: readonly RequestLogEntry[]): string {
   return entries
     .map((entry) => `${describeEntry(entry)} at +${Math.round(entry.msSinceStart)} ms`)
     .join('; ');
+}
+
+/** `v360 503, v360 503, v720 503, v720 200`: the same attempts as the short line of an annotation. */
+export function summariseAttempts(entries: readonly RequestLogEntry[]): string {
+  return entries.map((entry) => `${entry.rep ?? '?'} ${entry.aborted ? 'aborted' : entry.status}`).join(', ');
+}
+
+/** The first attempt that arrived after `after` and delivered the segment (2xx), or undefined when none did. */
+export function deliveryAfter(
+  attempts: readonly RequestLogEntry[],
+  after: RequestLogEntry,
+): RequestLogEntry | undefined {
+  return attempts.find((attempt) => attempt.seq > after.seq && attempt.status >= 200 && attempt.status < 300);
+}
+
+/** Milliseconds between the end of `first`'s response and the arrival of `second`: what the player spent waiting between the two. */
+export function waitedMs(first: RequestLogEntry, second: RequestLogEntry): number {
+  return second.msSinceStart - (first.msSinceStart + first.totalMs);
+}
+
+/** The rung a Shaka network error was about: the first datum of its digest is the URL of the request (`.../seg/v720/3.m4s`). */
+export function rungOfError(error: QAError): string | undefined {
+  const [uri] = error.data ?? [];
+  return typeof uri === 'string' ? /\/seg\/([^/]+)\//.exec(uri)?.[1] : undefined;
 }
