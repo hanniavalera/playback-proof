@@ -51,6 +51,8 @@ Products of integers from 1 to 5 jump from 12 to 15 to 16, so any threshold from
 
 **Defending it.** "Eight minutes is arithmetic I can show: 30 tests of ceiling, 15 used. The performance gate is noisy and I do not pretend otherwise: it has to reproduce before it blocks, and the pairs I cannot measure stably are labelled as tracked, not gating."
 
+**Update (Phase 4, ADR-113 in [ci.md](ci.md)).** Linux WebKit is no longer outside the gate: after the experiment recorded in ADR-072 it runs there as an experimental, required job, so a pull request has five browser jobs, not four (one on a macOS runner). The budgets above stand.
+
 ## ADR-022: Flake policy: record every retry, gate on the rate, quarantine with an owner and an expiry
 
 **Context.** A flaky test is a standing decision to ignore red. CI retries once (`playwright.config.ts`), which keeps a pipeline moving and, left alone, hides the problem. Media tests are timing-sensitive by nature, so some flake is certain.
