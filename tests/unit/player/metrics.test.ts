@@ -3,6 +3,7 @@ import {
   FrameWindow,
   LatencyTracker,
   MAX_FRAME_GAP_SEC,
+  PresentedCounter,
   bitrateMetrics,
   bufferedAheadSec,
   bufferingEpisodes,
@@ -702,6 +703,29 @@ describe('buffered ahead', () => {
   it('treats a playhead a hair before the first buffered frame as inside, as Shaka does', () => {
     expect(bufferedAheadSec(ranges([0.04, 10]), 0)).toBeCloseTo(10, 6);
     expect(bufferedAheadSec(ranges([0.5, 10]), 0)).toBe(0);
+  });
+});
+
+describe('PresentedCounter', () => {
+  it('counts from the first callback of the load, even when the engine counter carries on from an earlier one', () => {
+    const counter = new PresentedCounter();
+    expect(counter.value).toBe(0);
+    counter.observe({ presentedFrames: 4000 });
+    expect(counter.value).toBe(1);
+    counter.observe({ presentedFrames: 4001 });
+    counter.observe({ presentedFrames: 4003 }); // one callback covered two frames
+    expect(counter.value).toBe(4);
+  });
+
+  it('counts callbacks where the engine has no counter, and starts again after a reset', () => {
+    const counter = new PresentedCounter();
+    counter.observe({});
+    counter.observe({});
+    expect(counter.value).toBe(2);
+    counter.reset();
+    expect(counter.value).toBe(0);
+    counter.observe({ presentedFrames: 7 });
+    expect(counter.value).toBe(1);
   });
 });
 

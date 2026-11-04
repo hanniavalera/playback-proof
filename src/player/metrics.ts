@@ -522,3 +522,31 @@ export class FrameWindow {
     };
   }
 }
+
+/**
+ * Frames presented since a load began, for `metrics().frames.presented`: from the engine's running `presentedFrames`
+ * where it has one (counted from the first frame callback of the load, because the engine's counter may carry on across
+ * loads), otherwise one per callback. 0 until a frame has been seen.
+ */
+export class PresentedCounter {
+  private first: number | null = null;
+  private latest: number | null = null;
+  private callbacks = 0;
+
+  observe(metadata: { presentedFrames?: number }): void {
+    this.callbacks += 1;
+    if (metadata.presentedFrames === undefined) return;
+    this.first ??= metadata.presentedFrames;
+    this.latest = metadata.presentedFrames;
+  }
+
+  reset(): void {
+    this.first = null;
+    this.latest = null;
+    this.callbacks = 0;
+  }
+
+  get value(): number {
+    return this.first !== null && this.latest !== null ? this.latest - this.first + 1 : this.callbacks;
+  }
+}

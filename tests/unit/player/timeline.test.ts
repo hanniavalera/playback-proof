@@ -9,6 +9,7 @@ import {
   toJsonSafe,
 } from '../../../src/player/timeline.ts';
 import { FakeClock } from './fake-clock.ts';
+import { settle, track } from './helpers.ts';
 
 function setup() {
   const clock = new FakeClock();
@@ -21,31 +22,6 @@ function setup() {
   });
   return { clock, timeline, listenerErrors };
 }
-
-interface Tracked<T> {
-  state: 'pending' | 'resolved' | 'rejected';
-  value?: T;
-  error?: Error;
-}
-
-/** Follows a promise without awaiting it, so a test can assert that it is still pending. */
-function track<T>(promise: Promise<T>): Tracked<T> {
-  const box: Tracked<T> = { state: 'pending' };
-  promise.then(
-    (value) => {
-      box.state = 'resolved';
-      box.value = value;
-    },
-    (error: Error) => {
-      box.state = 'rejected';
-      box.error = error;
-    },
-  );
-  return box;
-}
-
-/** Lets the promise callbacks that are already queued run. It is not time: no clock moves. */
-const settle = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));
 
 describe('recording', () => {
   it('numbers events from 0 and stamps the page clock and the media clock of that moment', () => {

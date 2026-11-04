@@ -231,7 +231,7 @@ export interface PlayerPageParams {
   manifest?: string;
   /** Player configuration preset. Default 'A'. */
   config?: 'A' | 'B';
-  /** Start playing as soon as the manifest is loaded. Default true. */
+  /** Start playing as soon as the page has loaded the manifest of its `manifest` parameter. Default true. A load started with qa.load() never starts playback by itself: call qa.play(). */
   autoplay?: boolean;
   /** Default true: muted media may autoplay in every engine without a user gesture. */
   muted?: boolean;

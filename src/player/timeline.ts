@@ -38,7 +38,8 @@ export interface Timers {
   clearTimeout(handle: unknown): void;
 }
 
-const REAL_TIMERS: Timers = {
+/** The page's real timers. */
+export const REAL_TIMERS: Timers = {
   setTimeout: (callback, ms) => globalThis.setTimeout(callback, ms),
   clearTimeout: (handle) => globalThis.clearTimeout(handle as ReturnType<typeof setTimeout>),
 };
@@ -197,7 +198,7 @@ export class Timeline {
     if (badTimeout) return Promise.reject(new Error(`${label}: ${badTimeout}`));
 
     // History first, then subscribe: an event that already happened resolves the wait, so there is no window in which it can be missed.
-    for (let i = this.items.length; i < this.items.length; i++) {
+    for (let i = Math.ceil(since); i < this.items.length; i++) {
       const event = this.items[i];
       if (!event || event.name !== name) continue;
       try {
