@@ -2,8 +2,8 @@ name: ci
 
 # The merge gate. Each job is one stage of the pipeline that the Jenkinsfile also runs: the stage names are the
 # `npm run gate:*` scripts, so the two CI systems cannot drift apart (a unit test compares them).
-# This is the first version (static and unit). The browser jobs, the performance gate and the flake and triage stages
-# are added as the lab grows; see TEST_STRATEGY.md section 6.
+# The pipeline as a diagram, the budgets and how to reproduce a job locally: docs/CI.md. The decisions: docs/decisions/ci.md.
+# The performance gate and the flake and triage stages are added as the lab grows; see TEST_STRATEGY.md section 6.
 
 on:
   push:
@@ -14,9 +14,11 @@ on:
 permissions:
   contents: read
 
+# One run per pull request: a new push cancels the one in progress. Every push to main and every manual run keeps its own
+# (the run id makes the group unique), because a verdict on a merged commit is never superseded.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   static:
@@ -25,11 +27,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
+      - uses: ./.github/actions/setup
       - run: npm run gate:static
 
   unit:
@@ -38,11 +36,13 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
       # The media tests run the real ffmpeg (the version Ubuntu ships is the one the pipeline is verified against).
-      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
-      - run: npm ci
+      - uses: ./.github/actions/setup
+        with:
+          ffmpeg: 'true'
       - run: npm run gate:unit
+
+  # Generates the streams once per cache key and publishes them as the `streams` artifact; the browser jobs download it.
+  streams:
+    name: streams
+    uses: ./.github/workflows/streams.yml
