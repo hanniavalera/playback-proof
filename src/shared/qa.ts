@@ -153,7 +153,7 @@ export interface QAInfo {
   userAgent: string;
   /** 'A' | 'B' (see src/player/configs.ts) */
   config: string;
-  /** The exact object the page handed to player.configure() at boot: the preset's overrides (empty for A) plus `abr: { enabled: false }` when abr=0. */
+  /** The exact object the page handed to player.configure() at boot: the preset's overrides (empty for A) plus `abr: { enabled: false }` when abr=0 and `drm: { clearKeys: { <key id>: <key> } }` when a `clearKey` pair was given. */
   configOverrides: Record<string, unknown>;
   /** What Shaka's own defaults held at each key of `configOverrides`, read from the player before the overrides were applied. */
   configDefaults: Record<string, unknown>;
@@ -175,6 +175,8 @@ export interface QAInfo {
     start: number | null;
     abr: boolean;
     hud: boolean;
+    /** Present only when the page was given a ClearKey pair (`clearKey` parameter): a public test key, so it is reported here and in `configOverrides.drm.clearKeys`, and never in an event. */
+    clearKey?: ClearKeyParam;
   };
   /** Page parameters that could not be used (each is also recorded as an error event with code 0). */
   paramProblems: string[];
@@ -231,6 +233,12 @@ declare global {
   }
 }
 
+/** A ClearKey pair, 32 hex digits each (16 bytes): what `StreamInfo.drm` carries for the encrypted test stream. A public, throw-away test key. */
+export interface ClearKeyParam {
+  keyId: string;
+  key: string;
+}
+
 /** Query parameters of the player page (/player/). */
 export interface PlayerPageParams {
   /** Manifest URL (absolute path or URL). Without it the page boots idle (use qa.load). */
@@ -247,4 +255,10 @@ export interface PlayerPageParams {
   abr?: boolean;
   /** Default false. true shows a small overlay (state, startup, rebuffers, rung, live latency); off by default so the page under test carries no extra work. */
   hud?: boolean;
+  /**
+   * The ClearKey pair for `drm.clearKeys` (`clearKey=<key id>:<key>` in the URL), configured before anything loads. Default: none, so an
+   * encrypted stream is played without a key. Hand it `StreamInfo.drm` (extra fields are ignored). It is a public test key; it is not
+   * recorded in any event.
+   */
+  clearKey?: ClearKeyParam;
 }

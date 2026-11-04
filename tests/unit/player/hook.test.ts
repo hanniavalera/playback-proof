@@ -178,6 +178,35 @@ describe('boot', () => {
       hud: true,
     });
   });
+
+  it('reports a ClearKey pair when the page was given one, and nothing otherwise', async () => {
+    const pair = { keyId: '706c61796261636b70726f6f662d6964', key: '706c61796261636b70726f6f666b6579' };
+    const { hook } = await harness({ params: { clearKey: pair } });
+    expect(hook.info().params.clearKey).toEqual(pair);
+    const { hook: plain } = await harness();
+    expect('clearKey' in plain.info().params).toBe(false);
+  });
+
+  it('keeps the key out of the timeline even when Shaka rejects the configuration that carries it', async () => {
+    const pair = { keyId: '706c61796261636b70726f6f662d6964', key: '706c61796261636b70726f6f666b6579' };
+    const clock = new FakeClock();
+    const video = new FakeVideo();
+    const hook = new PlayerHook({
+      video,
+      now: clock.now,
+      params: { ...PARAM_DEFAULTS, clearKey: pair },
+      userAgent: 'ua',
+      timers: clock.timerApi,
+    });
+    const player = new FakePlayer(video);
+    player.rejectConfiguration = true;
+    await hook.boot(async () => environment(player), { drm: { clearKeys: { [pair.keyId]: pair.key } } });
+    await expect(hook.ready).rejects.toThrow(/rejected the boot configuration/);
+    const timeline = JSON.stringify(hook.events());
+    expect(timeline).toContain('rejected the boot configuration');
+    expect(timeline).not.toContain(pair.key);
+    expect(timeline).not.toContain(pair.keyId);
+  });
 });
 
 describe('loading', () => {
