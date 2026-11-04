@@ -562,6 +562,8 @@ export class PlayerHook implements QAHook {
     this.beginLoad(uri);
     this.timeline.record('load-requested', { uri });
     this.armFrameCallback();
+    // DEMO, not for merging: a startup regression of 150 ms in the page's load path, to show the perf gate failing a pull request.
+    await new Promise<void>((resolve) => setTimeout(resolve, 150));
     try {
       await env.player.load(uri, this.params.start);
     } catch (error) {
