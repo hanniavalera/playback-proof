@@ -110,7 +110,7 @@ export interface ClockSpan {
  * a frame, the resolution of the clocks, and the step the clock takes when it restarts). The page reads the clock when it gets to it and a
  * starved page gets to it seconds late, so no distance in seconds from a position is a sound bound for a reading (ADR-092); the time the
  * clock had to run is. But the clock is not wall-synchronous right after a restart: Chromium's read 49 to 60 ms ahead of the paused
- * position at the `playing` event after a resume, 8 to 10 ms of wall clock after the call (first nightly on Linux), so every span that
+ * position at the `playing` event after a resume, 8 to 10 ms of wall clock after the call (nightly run 41793007785), so every span that
  * contains a restart (a resume, a replay, the landing of a seek and what follows it, which is every span this function judges) gets
  * `RESTART_CLOCK_STEP_SEC` once, and no more: it is forward only and far below a real defect. A landing at the start of the segment is a
  * second behind its target and a skip to the next segment or GOP is a second or two ahead of a wall clock that ran for a fraction of

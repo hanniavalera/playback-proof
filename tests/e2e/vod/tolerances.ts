@@ -55,7 +55,7 @@ export const UNBUFFERED_FROM_SEC = 16;
  * after `ended`, the clock starting again at the landing of a seek. The clock is not wall-synchronous there: it steps forward when the
  * player starts ticking again (the audio renderer restarting is the likeliest cause; I did not look into the engines for it) and is
  * wall-synchronous from then on. Measured as the media time of the `playing` event past the paused position: Chromium 60.5 and 49.1 ms in
- * the two failed attempts of PB-VOD-005 in the first nightly on Linux, with 10 and 8 ms of wall clock between the call and the event, and
+ * the two failed attempts of PB-VOD-005 in the Linux nightly of run 41793007785, with 10 and 8 ms of wall clock between the call and the event, and
  * 49.9 to 58.6 ms in five runs on the M2 Pro (a steady 50 to 60 ms, not noise); macOS WebKit 0.2 to 4.2 ms; Firefox 0 in four runs and 101
  * ms in one; Linux WebKit 12 to 79 ms. After a seek the step was not measured: the checks that read the clock after one passed in every
  * leg of the runs I read, but their bracket holds the wall clock of the seek (20 to 45 ms in Chromium, against a step of 50 to 60 ms at a

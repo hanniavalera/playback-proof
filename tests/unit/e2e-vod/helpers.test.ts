@@ -389,7 +389,7 @@ describe('where the clock may be when it is read: the wall clock it had to run i
     });
   });
 
-  // The clock is not wall-synchronous right after a restart: in the first nightly on Linux, PB-VOD-005 failed both attempts in Chromium
+  // The clock is not wall-synchronous right after a restart: in the nightly of run 41793007785 (Linux), PB-VOD-005 failed both attempts in Chromium
   // because the `playing` event after the resume read 60.5 ms and 49.1 ms past the paused position, 10 ms and 8 ms of wall clock after
   // the call, and the first version of the bound did not allow for a step.
   describe('the step the clock takes when it restarts', () => {
