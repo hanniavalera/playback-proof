@@ -1,85 +1,24 @@
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import playwrightConfig from '../../../playwright.config.ts';
 import { defaultCacheDir } from '../../../src/server/media/cache.ts';
+import {
+  ROOT,
+  WORKFLOW_DIR,
+  allFiles,
+  code,
+  jobsOf,
+  legsOf,
+  read,
+  workflowFiles,
+  type Leg,
+} from '../support/ci-files.ts';
 
 // The workflows cannot run here, so these tests check what can be checked without GitHub: the policies the documentation states
 // (docs/CI.md, ADR-110 to ADR-114), and the places where two files must agree and a typo would only show up as a red run
 // (the legs against the Playwright config, the cache key against what the generator imports, the artifact names, the npm scripts).
 // The files are read as text: the repository has no YAML parser, and the formats here are the ones Prettier writes.
-
-const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
-const read = (path: string): string => readFileSync(join(ROOT, path), 'utf8');
-
-const WORKFLOW_DIR = '.github/workflows';
-const workflowFiles = readdirSync(join(ROOT, WORKFLOW_DIR))
-  .filter((name) => name.endsWith('.yml'))
-  .sort();
-const actionFiles = readdirSync(join(ROOT, '.github/actions'))
-  .map((name) => `.github/actions/${name}/action.yml`)
-  .filter((path) => existsSync(join(ROOT, path)));
-const allFiles = [...workflowFiles.map((name) => `${WORKFLOW_DIR}/${name}`), ...actionFiles];
-
-/** The file without its comment lines: a rule must not trip over the sentence that explains it. */
-const code = (text: string): string =>
-  text
-    .split('\n')
-    .filter((line) => !line.trimStart().startsWith('#'))
-    .join('\n');
-
-/** The text of each job under `jobs:`, by job id (a job id is a key indented by two spaces). */
-function jobsOf(workflow: string): Map<string, string> {
-  const marker = '\njobs:\n';
-  const start = workflow.indexOf(marker);
-  if (start < 0) return new Map();
-  const body = workflow.slice(start + marker.length);
-  const heads = [...body.matchAll(/^ {2}([A-Za-z0-9_-]+):[ \t]*$/gm)];
-  const jobs = new Map<string, string>();
-  heads.forEach((head, i) => {
-    jobs.set(head[1] ?? '', body.slice(head.index, heads[i + 1]?.index ?? body.length));
-  });
-  return jobs;
-}
-
-interface Leg {
-  leg: string;
-  project: string;
-  browser: string;
-  runner: string;
-  experimental: boolean;
-  /** Minutes the runner lets the job run. */
-  timeout: number;
-  /** Milliseconds Playwright lets the test run take (`--global-timeout`). */
-  limit: number;
-}
-
-/** The `matrix.include` entries of a job: each starts with `- leg:` and its other keys are indented by twelve spaces. */
-function legsOf(job: string): Leg[] {
-  const include = job.slice(Math.max(job.indexOf('include:'), 0));
-  return include
-    .split(/^ {10}- leg: /m)
-    .slice(1)
-    .map((entry) => {
-      const lines = entry.split('\n');
-      const fields = new Map<string, string>([['leg', (lines[0] ?? '').trim()]]);
-      for (const line of lines.slice(1)) {
-        const field = /^ {12}([a-z]+): (.+)$/.exec(line);
-        if (!field) break;
-        fields.set(field[1] ?? '', (field[2] ?? '').trim());
-      }
-      return {
-        leg: fields.get('leg') ?? '',
-        project: fields.get('project') ?? '',
-        browser: fields.get('browser') ?? '',
-        runner: fields.get('runner') ?? '',
-        experimental: fields.get('experimental') === 'true',
-        timeout: Number(fields.get('timeout')),
-        limit: Number(fields.get('limit')),
-      };
-    });
-}
 
 const ci = read(`${WORKFLOW_DIR}/ci.yml`);
 const nightly = read(`${WORKFLOW_DIR}/nightly.yml`);
@@ -124,11 +63,18 @@ describe('the policies of every workflow', () => {
     }
   });
 
-  it('asks for read access to the contents and nothing else, runs pull requests without secrets, and never as pull_request_target', () => {
+  it('asks for read access to the contents at the top, for write access in no job but flake-record, and never as pull_request_target', () => {
     for (const name of workflowFiles) {
       const text = code(read(`${WORKFLOW_DIR}/${name}`));
       expect(text, `${name}: top-level permissions`).toMatch(/^permissions:\n {2}contents: read\n/m);
-      expect(text, `${name}: a write permission`).not.toMatch(/:\s*write\b/);
+      expect(
+        text.slice(0, text.indexOf('\njobs:\n')),
+        `${name}: a write permission above the jobs`,
+      ).not.toMatch(/:\s*write\b/);
+      for (const [id, job] of jobsOf(text)) {
+        const writes = (job.match(/^\s*[\w-]+:\s*write\b.*$/gm) ?? []).map((line) => line.trim());
+        expect(writes, `${name}: job ${id}`).toEqual(id === 'flake-record' ? ['contents: write'] : []);
+      }
       expect(text, `${name}: pull_request_target runs untrusted code with a token`).not.toContain(
         'pull_request_target',
       );
@@ -159,9 +105,9 @@ describe('the stages', () => {
     expect(called.length).toBeGreaterThan(5);
     for (const { file, script } of called)
       expect(scripts[script], `${file}: npm run ${script}`).toBeDefined();
-    // Only the stages that exist: a stage whose script is not there yet (perf, flake, triage) is not a job yet.
+    // Only the stages that exist: a stage whose script is not there yet (perf, triage) is not a job yet.
     const stages = new Set([...code(ci).matchAll(/npm run (gate:[\w-]+)/g)].map((m) => m[1] ?? ''));
-    expect(stages).toEqual(new Set(['gate:static', 'gate:unit', 'gate:merge']));
+    expect(stages).toEqual(new Set(['gate:static', 'gate:unit', 'gate:merge', 'gate:flake']));
   });
 
   it('call gate:static, gate:unit and gate:merge from the merge gate, with the project of the leg and its time limit', () => {

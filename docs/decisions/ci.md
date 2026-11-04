@@ -16,6 +16,8 @@ Architecture decision records for the pipeline that runs the lab as a merge gate
 
 **Defending it.** "The CI system is a scheduler. The gate is an npm script that I can run on my laptop, in Docker and in Jenkins, so when the gate is red anywhere I can reproduce it with one command and I never have to ask whether the two systems ran the same thing."
 
+**Update (the flake gate, ADR-170 to ADR-172 in [ci-flake.md](ci-flake.md)).** `ci.yml` now has two more jobs after `merge-gate`: `flake` (`npm run gate:flake`, which exists now: `flake/gate.ts` arrived with Phase 5) and `flake-record`. So `ci.yml` calls `gate:static`, `gate:unit`, `gate:merge` and `gate:flake`, and only `gate:perf` and `gate:triage` are still without a job. "The token is `contents: read` and nothing else" has one exception, `flake-record`, the only job with `contents: write`, which runs for a push to `main` only; the tests name it, and fail on a write permission anywhere else.
+
 ## ADR-111: The browser jobs run on the host runner, not inside the Playwright container
 
 **Context.** A Linux leg needs a browser and its system libraries. There are two ways. On the host runner: `npx playwright install --with-deps <browser>` (apt for the libraries, a download for the browser). Or the job runs `container: mcr.microsoft.com/playwright:v1.64.1-noble`, where everything is installed and the image is the one `npm run docker:pw` runs (and the one the Jenkins agent is planned to be built on). The macOS leg cannot be a container either way.
