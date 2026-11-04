@@ -54,9 +54,14 @@ test(
       presented,
       'presented frames (metrics.frames.presented) are null: requestVideoFrameCallback is missing in this engine, so the counter cannot be checked',
     ).not.toBeNull();
+    // The decoded counter counts every frame since the load; the presented one counts from the first frame callback, so the frames the
+    // clock ran through before the first presented frame (a slow first paint: media time 0.35 s at the first frame in a loaded Linux WebKit,
+    // 0.00 to 0.02 s elsewhere) are decoded and never presented. They are the startup's, and are added back before the two are compared.
+    const firstFrame = events.find((event) => event.name === 'firstframe');
+    const beforeFirstFrame = Math.round(frameRate * (firstFrame?.mediaTime ?? 0));
     expect(
-      Math.abs((presented as number) - decoded),
-      `distance in frames between presented (${presented}) and decoded (${decoded}) frames since the load, ${dropped} dropped`,
+      Math.abs((presented as number) + beforeFirstFrame - decoded),
+      `distance in frames between presented (${presented}, plus ${beforeFirstFrame} for the ${firstFrame?.mediaTime} s of media time before the first frame) and decoded (${decoded}) frames since the load, ${dropped} dropped`,
     ).toBeLessThanOrEqual(FRAME_AGREEMENT_TOLERANCE);
 
     // The same counters over a window of media time, against what the stream and the clocks say: the stream is `frameRate` fps, and the
@@ -80,10 +85,13 @@ test(
     expect(measured.dropped, 'dropped frames of the window against decoded frames').toBeLessThanOrEqual(
       measured.decoded,
     );
+    // The window is anchored at frame callbacks, and the first one can report a frame that was presented up to one frame period before
+    // the call was made: so the media time may exceed the wall time of the call by a frame period (and the clocks' resolution), no more.
+    const frameMs = 1000 / frameRate;
     expect(
       measured.mediaSeconds * 1000,
-      `milliseconds of media time the window says it covered, against the ${Math.round(windowWallMs)} ms of wall clock it took`,
-    ).toBeLessThanOrEqual(windowWallMs + CLOCK_RESOLUTION_MS);
+      `milliseconds of media time the window says it covered, against the ${Math.round(windowWallMs)} ms of wall clock it took (plus a ${frameMs.toFixed(1)} ms frame)`,
+    ).toBeLessThanOrEqual(windowWallMs + frameMs + CLOCK_RESOLUTION_MS);
     expect(measured.mediaSeconds, 'media seconds of the window (qa.measureFrames)').toBeGreaterThanOrEqual(
       FRAME_WINDOW_SEC,
     );
