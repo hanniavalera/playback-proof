@@ -13,6 +13,8 @@ import {
 } from '../../../src/lab/measure/report.ts';
 import type { BaselineMachine, PerfHost } from '../../../src/lab/measure/baseline.ts';
 import { CPU_MODEL_DIFFERS_NOTE } from '../../../src/lab/measure/machine.ts';
+import { buildPaired } from '../../../src/lab/measure/paired.ts';
+import type { PairedReport } from '../../../src/lab/measure/paired.ts';
 import type { GateReport } from '../../../src/lab/measure/report.ts';
 import type { PerfLimits } from '../../../src/lab/measure/rules.ts';
 import type { BatchMeasurement, ScenarioSpec } from '../../../src/lab/measure/types.ts';
@@ -54,6 +56,8 @@ const report = (
     host?: PerfHost;
     /** The baseline compared with, when it is not the fixture's (which was recorded without a CPU model). */
     against?: typeof BASELINE;
+    /** The paired gate's facts: the baseline is then a control measured on this machine minutes ago. */
+    paired?: PairedReport;
   } = {},
 ) =>
   buildGateReport({
@@ -66,6 +70,7 @@ const report = (
         ? null
         : { file: 'perf/baselines/local-darwin-arm64/chromium.json', baseline: extra.against ?? BASELINE },
     host: extra.host ?? HOST,
+    ...(extra.paired ? { paired: extra.paired } : {}),
     ...(extra.machine ? { machine: extra.machine } : {}),
     browser: { name: 'chromium', version: '156.0.0.0', userAgent: 'UA', cpuThrottleRate: null },
     ffmpeg: '9.0',
@@ -431,5 +436,135 @@ describe('PB-PERF report: which machine the baseline came from and which one thi
     delete old.cpuModels;
     expect(renderGateText(old, result.scenarios)).not.toContain('baseline machine');
     expect(renderGateMarkdown(old)).not.toContain('baseline machine');
+  });
+});
+
+describe('PB-PERF report: the paired gate', () => {
+  const CONTROL = 'b'.repeat(40);
+  const HEAD_SHA = 'a'.repeat(40);
+  const EPYC = 'AMD EPYC 9V74 80-Core Processor';
+  const XEON = 'Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz';
+  const info = {
+    controlRef: 'origin/main',
+    controlCommit: CONTROL,
+    headCommit: HEAD_SHA,
+    checkout: 'created' as const,
+    controlDir: null,
+    aa: false,
+    nodeModules: 'linked' as const,
+    cpuModelAtControl: EPYC,
+    wallMs: { controlPrepare: 25_000, controlMeasure: 370_000 },
+  };
+  const pairedOn = (control: string, head: string): PairedReport =>
+    buildPaired(info, { recordedByControl: control, head, headMs: 380_000 });
+  const LINE = `paired: the baseline was measured on this machine minutes ago from ${CONTROL.slice(0, 12)}; the committed baselines of this environment were not used`;
+  const passing = () =>
+    gated({
+      'PB-PERF-001': { first: startupBatch(QUIET) },
+      'PB-PERF-003': { first: rebufferBatch(constant(0)) },
+    });
+
+  it('opens the terminal report, the Markdown (so the job summary) and the JSON with the line that says what the baseline is', async () => {
+    const result = await passing();
+    const built = report(result, { paired: pairedOn(EPYC, EPYC), host: { ...HOST, cpuModel: EPYC } });
+    expect(renderGateText(built, result.scenarios).split('\n')[0]).toBe(LINE);
+    expect(renderGateMarkdown(built).split('\n').slice(0, 3)).toStrictEqual([
+      LINE,
+      '',
+      '## Performance gate: chromium in `local-darwin-arm64`: PASS',
+    ]);
+    const parsed = JSON.parse(serializeReport(built)) as GateReport;
+    expect(parsed.paired).toStrictEqual(built.paired);
+    expect(parsed.paired).toMatchObject({
+      controlRef: 'origin/main',
+      controlCommit: CONTROL,
+      headCommit: HEAD_SHA,
+      checkout: 'created',
+      aa: false,
+      line: LINE,
+      wallMs: { controlPrepare: 25_000, controlMeasure: 370_000, head: 380_000 },
+      cpuModels: { control: EPYC, head: EPYC, same: true, warning: null },
+    });
+  });
+
+  it('says that a control that is the head is an A/A by construction', async () => {
+    const result = await passing();
+    const paired = buildPaired(
+      { ...info, aa: true, controlCommit: HEAD_SHA },
+      { recordedByControl: EPYC, head: EPYC, headMs: 1 },
+    );
+    const built = report(result, { paired });
+    expect(renderGateText(built, result.scenarios).split('\n')[0]).toContain(
+      '(A/A by construction: the control is this very commit)',
+    );
+    expect(renderGateMarkdown(built).split('\n')[0]).toContain(
+      '(A/A by construction: the control is this very commit)',
+    );
+    expect(built.paired?.aa).toBe(true);
+  });
+
+  it('prints the finding under the first line when the control and the head did not share a CPU model, and changes no verdict, exit code or number', async () => {
+    for (const result of [
+      await passing(),
+      await gated({
+        'PB-PERF-001': { first: startupBatch(constant(300)), remeasure: startupBatch(constant(300)) },
+        'PB-PERF-003': { first: rebufferBatch(constant(0)) },
+      }),
+    ]) {
+      const same = report(result, { paired: pairedOn(EPYC, EPYC), host: { ...HOST, cpuModel: EPYC } });
+      const apart = report(result, { paired: pairedOn(XEON, EPYC), host: { ...HOST, cpuModel: EPYC } });
+      expect(apart.paired?.cpuModels).toMatchObject({ same: false, control: XEON, head: EPYC });
+      const warning = apart.paired!.cpuModels.warning!;
+      expect(renderGateText(apart, result.scenarios).split('\n').slice(0, 2)).toStrictEqual([
+        LINE,
+        `WARNING: ${warning}`,
+      ]);
+      expect(renderGateMarkdown(apart).split('\n').slice(0, 4)).toStrictEqual([
+        LINE,
+        '',
+        `> **WARNING:** ${warning}`,
+        '',
+      ]);
+      expect(renderGateText(same, result.scenarios)).not.toContain('WARNING');
+      expect(apart.exitCode).toBe(same.exitCode);
+      expect(apart.verdict).toBe(same.verdict);
+      expect({ ...apart, paired: null }).toStrictEqual({ ...same, paired: null });
+    }
+  });
+
+  it('leaves an unpaired report as it was: no paired object, and the heading first', async () => {
+    const result = await passing();
+    const built = report(result);
+    expect(built).not.toHaveProperty('paired');
+    expect(renderGateMarkdown(built).split('\n')[0]).toBe(
+      '## Performance gate: chromium in `local-darwin-arm64`: PASS',
+    );
+    expect(renderGateText(built, result.scenarios).split('\n')[0]).toMatch(/^performance gate: chromium/);
+    expect(JSON.stringify(built)).not.toContain('"paired"');
+  });
+
+  it('reports a control that could not be measured as a problem of the gate (exit code 2), with no scenario and no committed baseline used', () => {
+    const lost = buildPaired(
+      { ...info, controlCommit: null, headCommit: HEAD_SHA, nodeModules: null },
+      { recordedByControl: undefined, head: EPYC, headMs: 0 },
+    );
+    const built = report(
+      { scenarios: [], problems: [], exitCode: 2 },
+      {
+        baseline: false,
+        paired: lost,
+        setupProblems: [
+          { scenario: '*', message: 'measuring the control (chromium) failed (exit code 2)\nPROBLEM: x' },
+        ],
+      },
+    );
+    expect(built).toMatchObject({ exitCode: 2, verdict: 'problem', baseline: null, scenarios: [] });
+    expect(renderGateMarkdown(built).split('\n')[0]).toBe(
+      'paired: no control was measured on this machine; the committed baselines of this environment were not used',
+    );
+    expect(renderGateMarkdown(built)).toContain(
+      '> **Problem:** measuring the control (chromium) failed (exit code 2)',
+    );
+    expect(built.paired?.cpuModels).toMatchObject({ control: EPYC, head: EPYC, warning: null });
   });
 });

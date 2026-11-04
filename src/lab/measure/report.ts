@@ -6,6 +6,7 @@ import type { ExitCode, FinalMetric, MetricComparison, Problem, ScenarioOutcome 
 import type { GateResult, MeasuredBatch, ScenarioResult } from './gate.ts';
 import { compareCpuModels } from './machine.ts';
 import type { CpuModels } from './machine.ts';
+import type { PairedReport } from './paired.ts';
 import { describeRule, rulesFrom, tailStatistic } from './rules.ts';
 import type { MetricRule, PerfLimits, RuleKey } from './rules.ts';
 import { summarize } from './stats.ts';
@@ -201,6 +202,11 @@ export interface GateReport {
    * of different CPUs), never a failure. Absent in a report written before the model was recorded.
    */
   cpuModels?: CpuModels;
+  /**
+   * Present when the gate was PAIRED (ADR-179): the baseline is a control that was measured on this machine minutes before, from the base
+   * build, and the committed baselines were not used. Absent in an unpaired report.
+   */
+  paired?: PairedReport;
   policy: { limits: PerfLimits; rules: Record<RuleKey, MetricRule> };
   /** What differs from the machine of the baseline besides the code: a reader's hint, never a failure. */
   warnings: string[];
@@ -240,6 +246,8 @@ export interface ReportInput {
   warnings: string[];
   /** Problems found before any batch was measured (a changed stream, a missing baseline): they end the gate with exit code 2. */
   setupProblems?: Problem[];
+  /** The paired gate's facts (`buildPaired`); absent when the gate judged against the committed baselines. */
+  paired?: PairedReport;
   limits?: PerfLimits;
 }
 
@@ -272,6 +280,7 @@ export function buildGateReport(input: ReportInput): GateReport {
       ffmpeg: input.ffmpeg,
     },
     cpuModels: compareCpuModels(input.baseline ? input.baseline.baseline.host : null, input.host.cpuModel),
+    ...(input.paired ? { paired: input.paired } : {}),
     policy: { limits, rules: rulesFrom(limits) },
     warnings: input.warnings,
     problems: [...setupProblems, ...input.result.problems],
@@ -383,8 +392,12 @@ export function renderGateText(report: GateReport, results: readonly ScenarioRes
     ? `baseline of ${report.baseline.generatedAt.slice(0, 10)} (commit ${report.baseline.commit ?? 'unknown'}, ${report.baseline.runsPerScenario} runs per scenario)`
     : 'NO BASELINE';
   const cpu = report.cpuModels;
+  const paired = report.paired;
   const parts = [
     [
+      ...(paired
+        ? [paired.line, ...(paired.cpuModels.warning ? [`WARNING: ${paired.cpuModels.warning}`] : [])]
+        : []),
       `performance gate: ${report.profile} in ${report.envId}, ${baseline}`,
       ...(cpu ? [cpu.line, ...(cpu.note ? [`note: ${cpu.note}`] : [])] : []),
     ].join('\n'),
@@ -400,7 +413,15 @@ export function renderGateText(report: GateReport, results: readonly ScenarioRes
 /** The report as Markdown: for the job summary of the CI system and for the file next to the JSON. */
 export function renderGateMarkdown(report: GateReport): string {
   const cpu = report.cpuModels;
+  const paired = report.paired;
   const lines: string[] = [
+    ...(paired
+      ? [
+          paired.line,
+          '',
+          ...(paired.cpuModels.warning ? [`> **WARNING:** ${paired.cpuModels.warning}`, ''] : []),
+        ]
+      : []),
     `## Performance gate: ${report.profile} in \`${report.envId}\`: ${report.verdict.toUpperCase()}`,
     '',
     report.baseline
