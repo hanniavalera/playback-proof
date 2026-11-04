@@ -41,6 +41,21 @@ export interface StreamRecord {
   contentHash: string | null;
 }
 
+/** The machine's load average (the last 1, 5 and 15 minutes) and its CPU count at a moment: a measurement is read with how busy the machine was. */
+export interface LoadReading {
+  at: string;
+  load1: number;
+  load5: number;
+  load15: number;
+  cpus: number;
+}
+
+/** The load before the run started and after it ended. Optional in the file: the older files have none. */
+export interface MachineLoad {
+  before: LoadReading;
+  after: LoadReading;
+}
+
 export interface ReadinessReport {
   schemaVersion: 1;
   kind: 'readiness';
@@ -50,6 +65,7 @@ export interface ReadinessReport {
   durationMs: number;
   commit: { hash: string | null; dirty: boolean | null };
   host: HostInfo;
+  load?: MachineLoad;
   browser: BrowserInfo;
   stream: StreamRecord;
   options: { checks: CheckId[]; joins: number; stallRuns: number; windowSec: number; refreshes: number };
@@ -97,6 +113,7 @@ export interface SoakReport {
   durationMs: number;
   commit: { hash: string | null; dirty: boolean | null };
   host: HostInfo;
+  load?: MachineLoad;
   browser: BrowserInfo;
   stream: StreamRecord;
   configuration: { id: string; label: string; patch: ShakaConfigPatch | null };

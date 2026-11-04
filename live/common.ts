@@ -4,6 +4,7 @@
 // machine, and `realDeps()` is what hands it to them.
 
 import { existsSync } from 'node:fs';
+import { cpus, loadavg } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { currentEnvironment, chooseStream, engineGap } from '../src/lab/gaps.ts';
@@ -13,7 +14,7 @@ import { startService } from '../src/lab/measure/service.ts';
 import type { RunningService } from '../src/lab/measure/service.ts';
 import { collectHostInfo } from '../src/lab/probe/host-info.ts';
 import type { CommandDeps, EnginePlan, LabService } from '../src/lab/readiness/commands.ts';
-import type { BrowserInfo, StreamRecord } from '../src/lab/readiness/report.ts';
+import type { BrowserInfo, LoadReading, StreamRecord } from '../src/lab/readiness/report.ts';
 import type { Engine } from '../src/lab/readiness/soak-evaluators.ts';
 import { detectEnvId } from '../src/shared/env.ts';
 import type { Protocol } from '../src/shared/streams.ts';
@@ -87,6 +88,12 @@ export async function describeRun(
   };
 }
 
+/** The load average of the machine right now: what `uptime` prints, with the time it was read. */
+export function loadNow(): LoadReading {
+  const [load1 = 0, load5 = 0, load15 = 0] = loadavg();
+  return { at: new Date().toISOString(), load1, load5, load15, cpus: cpus().length };
+}
+
 /** The real machine behind the commands: the service as a child process, the browsers Playwright launches, this checkout's results. */
 export function realDeps(): CommandDeps {
   return {
@@ -96,6 +103,7 @@ export function realDeps(): CommandDeps {
     launch: (engine: Engine) => launchProfile(engine),
     plan: planEngine,
     machine,
+    load: loadNow,
     describe: describeRun,
     resultsRoot: DEFAULT_RESULTS_ROOT,
   };

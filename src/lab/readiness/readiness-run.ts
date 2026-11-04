@@ -15,6 +15,7 @@ import {
 import type {
   BrowserInfo,
   ConfigurationResult,
+  MachineLoad,
   ReadinessReport,
   SoakReport,
   StreamRecord,
@@ -69,6 +70,7 @@ export interface ReadinessMeta {
   durationMs: number;
   commit: { hash: string | null; dirty: boolean | null };
   host: HostInfo;
+  load?: MachineLoad;
   browser: BrowserInfo;
   stream: StreamRecord;
   options: ReadinessReport['options'];
@@ -88,6 +90,7 @@ export function buildReadinessReport(
     durationMs: meta.durationMs,
     commit: meta.commit,
     host: meta.host,
+    ...(meta.load ? { load: meta.load } : {}),
     browser: meta.browser,
     stream: meta.stream,
     options: meta.options,

@@ -1,6 +1,6 @@
 import { LIVE_LIMITS } from '../../shared/criteria.ts';
 import type { CheckResult } from './checks.ts';
-import type { ConfigurationResult, ReadinessReport, SoakReport } from './report.ts';
+import type { ConfigurationResult, LoadReading, MachineLoad, ReadinessReport, SoakReport } from './report.ts';
 import type { Engine } from './soak-evaluators.ts';
 import { formatLimit, formatValue } from './verdict.ts';
 import type { CheckId, Evaluation, Verdict } from './verdict.ts';
@@ -98,11 +98,22 @@ const describeBrowser = (report: { browser: { name: string; version: string }; e
 const describeCommit = (commit: { hash: string | null; dirty: boolean | null }): string =>
   `${commit.hash ?? 'unknown commit'}${commit.dirty === null ? '' : commit.dirty ? ', modified' : ', clean'}`;
 
+/** `machine load average (1, 5, 15 min) before 4.89 3.43 2.29, after 5.12 3.9 2.6, on 12 CPUs`, or nothing for a file that has none. */
+function describeLoad(load: MachineLoad | undefined): string[] {
+  if (!load) return [];
+  const averages = (reading: LoadReading): string =>
+    [reading.load1, reading.load5, reading.load15].map((value) => value.toFixed(2)).join(' ');
+  return [
+    `machine load average (1, 5, 15 min): ${averages(load.before)} before, ${averages(load.after)} after, on ${load.after.cpus} CPUs`,
+  ];
+}
+
 /** The whole sheet of a readiness run: where and when it was measured, every configuration, and the comparison when a candidate was evaluated. */
 export function renderReadinessReport(report: ReadinessReport): string {
   const head = [
     `Live-event readiness: ${describeBrowser(report)}`,
     `commit ${describeCommit(report.commit)}, stream ${report.stream.id} over ${report.stream.protocol}, measured ${report.generatedAt}, ${Math.round(report.durationMs / 1000)} s`,
+    ...describeLoad(report.load),
     `limits: LIVE_LIMITS of src/shared/criteria.ts (start ${formatValue(report.limits.startMaxMs ?? LIVE_LIMITS.startMaxMs, 'ms')}, latency p95 ${formatValue(report.limits.latencyP95MaxMs ?? LIVE_LIMITS.latencyP95MaxMs, 'ms')}, maximum ${formatValue(report.limits.latencyMaxMs ?? LIVE_LIMITS.latencyMaxMs, 'ms')})`,
   ];
   const sections = report.configurations.map(renderConfiguration);
@@ -123,6 +134,7 @@ export function renderSoakReport(report: SoakReport): string {
   const out = [
     `Soak (PB-RDY-005): ${describeBrowser(report)}, ${report.configuration.id}`,
     `commit ${describeCommit(report.commit)}, stream ${report.stream.id} over ${report.stream.protocol}, ${Number(report.options.minutes.toFixed(2))} min (${lengthText}), warm-up ${report.options.warmupSec} s, measured ${report.generatedAt}`,
+    ...describeLoad(report.load),
     report.faults.length === 0
       ? 'injected: nothing'
       : `injected: ${report.faults.map((fault) => `${fault.kind} for ${Math.round((fault.endMs - fault.startMs) / 1000)} s at minute ${((fault.startMs - report.firstFrameMs) / 60_000).toFixed(1)}`).join('; ')}`,

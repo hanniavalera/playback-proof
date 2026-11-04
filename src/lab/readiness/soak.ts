@@ -1,6 +1,13 @@
 import { LIVE_LIMITS } from '../../shared/criteria.ts';
 import type { PlayerEvidence } from './checks.ts';
-import type { HarnessSample, RequestDigest, SoakReport, StreamRecord, BrowserInfo } from './report.ts';
+import type {
+  HarnessSample,
+  RequestDigest,
+  SoakReport,
+  StreamRecord,
+  BrowserInfo,
+  MachineLoad,
+} from './report.ts';
 import { limitsSnapshot } from './report.ts';
 import type { HostInfo } from '../probe/host-info.ts';
 import type { ShakaConfigPatch } from '../../player/configs.ts';
@@ -257,6 +264,7 @@ export interface SoakMeta {
   generatedAt: string;
   commit: { hash: string | null; dirty: boolean | null };
   host: HostInfo;
+  load?: MachineLoad;
   browser: BrowserInfo;
   stream: StreamRecord;
   configuration: { id: string; label: string; patch: ShakaConfigPatch | null };
@@ -277,6 +285,7 @@ export function buildSoakReport(run: SoakRun, meta: SoakMeta): SoakReport {
     durationMs: run.wallMs,
     commit: meta.commit,
     host: meta.host,
+    ...(meta.load ? { load: meta.load } : {}),
     browser: meta.browser,
     stream: meta.stream,
     configuration: meta.configuration,

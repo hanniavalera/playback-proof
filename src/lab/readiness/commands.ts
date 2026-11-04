@@ -27,7 +27,7 @@ import {
   writeResult,
 } from './readiness-run.ts';
 import { ResultFileError, readinessFileName, soakFileName } from './report.ts';
-import type { BrowserInfo, ReadinessReport, StreamRecord } from './report.ts';
+import type { BrowserInfo, LoadReading, ReadinessReport, StreamRecord } from './report.ts';
 import { buildSoakReport, runSoak } from './soak.ts';
 import { playwrightSoakDriver } from './soak-driver.ts';
 import type { Engine } from './soak-evaluators.ts';
@@ -60,6 +60,8 @@ export interface CommandDeps {
   /** Whether the engine can play the live stream here, by the committed evidence of this environment: a plan, or the documented reason it cannot. */
   plan(engine: Engine, protocol: Protocol): EnginePlan | { engine: Engine; skipped: string };
   machine(): { envId: string; host: HostInfo };
+  /** The machine's load average and CPU count right now (`os.loadavg()`), read before and after every run so that the file says how busy the machine was. */
+  load(): LoadReading;
   /** The browser and the stream that were used, for the header of a result file. */
   describe(
     browser: LaunchedBrowser,
@@ -153,6 +155,7 @@ export async function runReadinessCommand(argv: string[], deps: CommandDeps): Pr
         deps.err(`PROBLEM: the browser of ${engine} did not start: ${reason(error)}`);
         continue;
       }
+      const loadBefore = deps.load();
       const began = nowOf(deps);
       try {
         const world = playwrightWorld({
@@ -180,6 +183,7 @@ export async function runReadinessCommand(argv: string[], deps: CommandDeps): Pr
             durationMs: nowOf(deps) - began,
             commit: { hash: host.git.commit, dirty: host.git.dirty },
             host,
+            load: { before: loadBefore, after: deps.load() },
             ...described,
             options: {
               checks: options.checks,
@@ -275,6 +279,7 @@ export async function runSoakCommand(argv: string[], deps: CommandDeps): Promise
     deps.err(
       `soak: ${options.minutes} min on ${options.engine} (${envId}), ${plan.stream} over ${plan.protocol}, configuration ${options.candidate?.id ?? 'A'}; outage at ${options.stallAtMinutes ?? 'none'} min, stale manifest at ${options.staleAtMinutes ?? 'none'} min`,
     );
+    const loadBefore = deps.load();
     const run = await runSoak(driver, {
       engine: options.engine,
       minutes: options.minutes,
@@ -291,6 +296,7 @@ export async function runSoakCommand(argv: string[], deps: CommandDeps): Promise
       generatedAt: dateOf(deps),
       commit: { hash: host.git.commit, dirty: host.git.dirty },
       host,
+      load: { before: loadBefore, after: deps.load() },
       ...described,
       configuration: options.candidate
         ? { id: options.candidate.id, label: options.candidate.label, patch: options.candidate.patch }

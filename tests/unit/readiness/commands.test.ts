@@ -57,6 +57,7 @@ function rig(
   const ports: number[] = [];
   const launched: Engine[] = [];
   const stopped = { service: 0, released: 0 };
+  let reads = 0;
   const root = makeScratch('readiness-command-');
   scratches.push(root);
   const deps: CommandDeps = {
@@ -90,6 +91,10 @@ function rig(
         ? { engine, skipped: `${engine} does not run in this environment (CODEC_MATRIX.md)` }
         : { engine, stream: 'live-cmaf', protocol },
     machine: () => ({ envId: 'test-env', host }),
+    load: () => {
+      reads += 1;
+      return { at: `2030-01-01T00:00:0${reads}.000Z`, load1: reads, load5: 1.25, load15: 0.5, cpus: 12 };
+    },
     describe: async (browser, _service, plan) => ({
       browser: { name: browser.engine, version: browser.version, userAgent: 'FakeBrowser/1' },
       stream: { id: plan.stream, protocol: plan.protocol, contentHash: 'deadbeef' },
@@ -162,6 +167,18 @@ describe('npm run readiness', () => {
     expect(code).toBe(0);
     expect(r.ports).toEqual([4745]);
     expect(r.out.join('\n')).toMatch(/Configuration A: the library defaults \(what ships\)\s+GO/);
+  });
+
+  it('records how busy the machine was before and after the run, in the file and on the sheet', async () => {
+    const r = rig();
+    await runReadinessCommand(['--checks', '1', ...SMALL], r.deps);
+    const file = join(r.root, 'readiness', 'test-env-chromium.json');
+    const report = parseReadinessReport(readFileSync(file, 'utf8'), file);
+    expect(report.load?.before).toMatchObject({ load1: 1, load5: 1.25, cpus: 12 });
+    expect(report.load?.after).toMatchObject({ load1: 2, cpus: 12 });
+    expect(r.out.join('\n')).toContain(
+      'machine load average (1, 5, 15 min): 1.00 1.25 0.50 before, 2.00 1.25 0.50 after, on 12 CPUs',
+    );
   });
 
   it('writes nothing for --no-write, and writes to --out-dir when it is given one', async () => {
@@ -260,6 +277,15 @@ describe('npm run soak', () => {
     expect(r.stopped).toEqual({ service: 1, released: 1 });
     expect(r.fp.env.contexts.every((context) => context.closed)).toBe(true);
     expect(r.fp.service.deleted).toHaveLength(1);
+  });
+
+  it('records how busy the machine was around a soak, in the file and on the summary', async () => {
+    const r = rig();
+    await runSoakCommand(['--minutes', 'ci'], r.deps);
+    const file = join(r.root, 'soak', 'test-env-chromium-5m.json');
+    const report = parseSoakReport(readFileSync(file, 'utf8'), file);
+    expect(report.load?.before.load1).toBeLessThan(report.load?.after.load1 ?? 0);
+    expect(r.out.join('\n')).toContain('machine load average (1, 5, 15 min):');
   });
 
   it('reports a run shorter than the CI soak as what it is: written, printed, and not a verdict (exit 2)', async () => {
