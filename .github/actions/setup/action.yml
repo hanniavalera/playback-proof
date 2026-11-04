@@ -24,6 +24,18 @@ inputs:
 runs:
   using: composite
   steps:
+    # The apt mirror of the hosted runners served packages at about 50 kB/s for a quarter of an hour on 4 Nov (the usual rate is 50 MB/s), and
+    # 48.8 MB took the whole 15 minutes of a job's timeout: an ffmpeg install, a browser's libraries. Apt was slow, not stalled, so its timeouts
+    # (they act on silence) did not apply, and a kill from outside is not clean (a wall-clock kill of a wrapper left an apt-get running as
+    # root, holding the dpkg lock). So, before anything uses apt, the speed of the mirror is measured on one real package, and a mirror
+    # below 1 MB/s gives its place to the next one of the list that is not (ADR-180). The settings below cover the other failures of a mirror.
+    - name: Check the apt mirror, and make apt give up on a stalled connection
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        printf '%s\n' 'Acquire::Retries "5";' 'Acquire::http::Timeout "30";' 'Acquire::https::Timeout "30";' 'DPkg::Lock::Timeout "300";' \
+          | sudo tee /etc/apt/apt.conf.d/80-ci-resilience > /dev/null
+        bash "$GITHUB_ACTION_PATH/apt-mirror.sh"
     # The version comes from .nvmrc, the same file a developer's version manager reads.
     - name: Set up Node
       uses: actions/setup-node@v7
@@ -33,7 +45,13 @@ runs:
     - name: Install ffmpeg
       if: inputs.ffmpeg == 'true'
       shell: bash
-      run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      run: |
+        for attempt in 1 2 3; do
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg && exit 0
+          echo "::warning::the install of ffmpeg failed (attempt $attempt of 3)"
+          sleep 10
+        done
+        exit 1
     - name: Install the dependencies
       shell: bash
       run: npm ci --no-audit --no-fund
@@ -66,28 +84,16 @@ runs:
       shell: bash
       env:
         BROWSER: ${{ inputs.browser }}
-      # A browser download that stalls holds the job until its timeout (one did, for the whole 15 minutes, on a Firefox leg): every
-      # attempt gets five minutes, in a process group of its own so that the watchdog stops the download and what it started, and
-      # there are three attempts. A failure that is not a stall (a package that does not exist) fails three times and says so.
+      # The system packages of a browser go through apt, whose mirror list was checked at the top of this action; the install itself gets
+      # three plain attempts, for a mirror that answered with an error.
       run: |
-        install() {
-          if [ "$RUNNER_OS" = "Linux" ]; then
-            npx playwright install --with-deps "$BROWSER"
-          else
-            npx playwright install "$BROWSER"
-          fi
-        }
-        set -m
         for attempt in 1 2 3; do
-          install &
-          pid=$!
-          ( sleep 300; kill -TERM -- "-$pid" 2>/dev/null ) &
-          watchdog=$!
-          if wait "$pid"; then
-            kill -TERM -- "-$watchdog" 2>/dev/null || true
-            exit 0
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            npx playwright install --with-deps "$BROWSER" && exit 0
+          else
+            npx playwright install "$BROWSER" && exit 0
           fi
-          kill -TERM -- "-$watchdog" 2>/dev/null || true
-          echo "::warning::the Playwright install of $BROWSER failed or did not finish in 5 minutes (attempt $attempt of 3)"
+          echo "::warning::the Playwright install of $BROWSER failed (attempt $attempt of 3)"
+          sleep 10
         done
         exit 1

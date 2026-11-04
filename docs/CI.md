@@ -45,7 +45,9 @@ every night 04:41 UTC  |  manual run  |  a pull request that changes nightly.yml
 
   streams ---- the same workflow, the same cache
   |
-  +-- release (<the same five legs>)   npm run test:e2e -- --grep "@merge|@release" --project=<project>
+  +-- release (<the same five legs>)   npm run test:e2e -- --grep "@merge|@release" --grep-invert "@readiness" --project=<project>
+  |                                    (the readiness specs of tests/live take minutes each and are red for configuration A by design,
+  |                                    ADR-153: they run on demand, `npx playwright test tests/live`, and through `npm run readiness`)
   |
   +-- flake (nightly)          the judge of ci.yml, for these runs (it runs on the pull request too)
   +-- flake-record (nightly)   the recorder of ci.yml; schedule and manual runs on main only
@@ -97,6 +99,8 @@ The legs and what each one is for:
 **Required checks.** Branch protection on `main` requires these ten names, exactly as they are printed: `static`, `unit`, `merge-gate (chromium)`, `merge-gate (firefox)`, `merge-gate (chromium-cpu4x)`, `merge-gate (webkit-linux, experimental)`, `merge-gate (webkit-macos)`, `flake`, `perf (chromium)`, `perf (chromium-cpu4x)`. `streams / restore or generate` is implied by the seven that need it. `flake` is more than the flake gate: nothing can skip it, so when no leg ran (`streams` failed and the legs were skipped) it fails for want of run files, and it is the check that notices a merge gate that did not run (ADR-171). The two `perf` legs became required after their false-positive rate was measured: 36 paired A/A passes on twelve runners, none a regression ([results/perf/paired-aa](results/perf/paired-aa/README.md)), and a real regression on a pull request failed both ([results/perf/paired-sensitivity.md](results/perf/paired-sensitivity.md)); the data bounds the rate per pass at about 8 % (95 %) and does not prove it zero, so a red `perf` leg on a change that cannot have slowed anything is read, and re-run once, before it is believed. `flake-record` and `triage` are **not** required: `flake-record` runs only for a push to `main`, where nothing waits for it, and a pull request never has it; `triage` runs only when something is red and decides nothing. The rule is the owner's to set; it is not in the repository. A renamed job stops being required until the rule is updated, so a rename is a change to the rule too.
 
 **What a pull request does not run:** the nightly (`@release` tests; it runs once on a pull request that changes `nightly.yml`), the codec matrix ([`codec-matrix.yml`](../.github/workflows/codec-matrix.yml): on demand, and on pushes to the probe's own files; it installs ffmpeg with brew on macOS because the probe makes its own test clips), the soak, the readiness checks and the A/B runs (TEST_STRATEGY.md section 6.4), and the measurements of [`measure.yml`](../.github/workflows/measure.yml), which only start when somebody dispatches them.
+
+**Apt can be slow, and a slow mirror is not a stalled one.** The Linux jobs install ffmpeg (`unit`, `streams`) or a browser's system libraries (`--with-deps`) from the runner's apt mirror, which on 4 Nov served at about 50 kB/s for a quarter of an hour and used up the 15 minutes of three jobs. No apt timeout sees that, because the connection is not silent. The `setup` action therefore measures the first mirror of the list on one real package before anything uses apt, and puts the next mirror first when it is below 1 MB/s ([`apt-mirror.sh`](../.github/actions/setup/apt-mirror.sh), ADR-180; the limit is `PB_APT_MIN_BYTES_PER_S`). The log of every Linux job says what it measured (`apt mirror: <url> served the probe at <n> B/s`), so a job that spent 15 minutes in apt without that line predates the check, and one with it and a slow install is a mirror that slowed down after the probe.
 
 ## The flake gate
 

@@ -33,6 +33,8 @@ import type { ProjectContext } from './support.ts';
 // They need minutes of real time, so each has an explicit timeout. They judge the build as it ships (configuration A); set
 // PB_READINESS_CANDIDATE=live-sync to judge a candidate configuration instead (docs/decisions/readiness.md, ADR-153). PB-RDY-003 is red for
 // configuration A in every engine that was measured, which is the finding of the phase and not a flaw of the check: see ADR-153.
+// They carry `@readiness` besides the release tier: the nightly leaves that tag out (`--grep-invert "@readiness"`), because each takes minutes and
+// PB-RDY-003 is red for A by design; `npx playwright test tests/live` runs them, and `npm run test:release` includes them.
 
 /** Everything of the project's context that `browser.newContext()` would not inherit: the device the project stands for. */
 type Device = ProjectContext;
@@ -53,7 +55,7 @@ const engineOf = (name: string): Engine => name as Engine;
 
 test(
   'PB-RDY-001 stream start: every sampled fresh live join reaches the first frame within the start limit',
-  { tag: ['@release', '@live', '@dash'] },
+  { tag: ['@release', '@readiness', '@live', '@dash'] },
   async (
     {
       browser,
@@ -92,7 +94,7 @@ test(
 
 test(
   'PB-RDY-002 live-edge latency over a window: p95 and maximum within the limits',
-  { tag: ['@release', '@live', '@dash'] },
+  { tag: ['@release', '@readiness', '@live', '@dash'] },
   async (
     {
       browser,
@@ -131,7 +133,7 @@ test(
 
 test(
   'PB-RDY-003 stall recovery after an injected origin stall: recovery within the limit and latency restored within its limit',
-  { tag: ['@release', '@live', '@dash'] },
+  { tag: ['@release', '@readiness', '@live', '@dash'] },
   async (
     {
       browser,
@@ -173,7 +175,7 @@ test(
 
 test(
   'PB-RDY-004 manifest update cadence: median and longest gap between refreshes within the limits',
-  { tag: ['@release', '@live', '@dash'] },
+  { tag: ['@release', '@readiness', '@live', '@dash'] },
   async (
     {
       browser,
@@ -212,7 +214,7 @@ test(
 
 test(
   'PB-RDY-005 soak: no unrecovered stall, no critical error, rebuffer ratio, latency drift, JS heap growth (Chromium) and dropped frames within the limits',
-  { tag: ['@release', '@live', '@soak', '@dash'] },
+  { tag: ['@release', '@readiness', '@live', '@soak', '@dash'] },
   async (
     { browser, service, environment, streamFor, viewport, userAgent, deviceScaleFactor, isMobile, hasTouch },
     testInfo,
