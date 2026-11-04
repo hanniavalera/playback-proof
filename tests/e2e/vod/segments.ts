@@ -38,3 +38,8 @@ export function allSegments(last: number): number[] {
 export function segmentCovering(info: StreamInfo, mediaTime: number): number {
   return Math.floor(mediaTime / info.segmentDurationSec) + 1;
 }
+
+/** The middle of segment `number`: half a segment (a GOP: every rung starts one on every segment) from any boundary, whatever its duration. */
+export function middleOfSegment(info: StreamInfo, number: number): number {
+  return (number - 0.5) * info.segmentDurationSec;
+}
