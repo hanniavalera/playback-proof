@@ -98,6 +98,9 @@ beforeAll(() => {
   for (const key of Object.keys(process.env)) {
     if (key.startsWith('GIT_')) vi.stubEnv(key, undefined);
   }
+  // The control gets the stream cache the environment names (a Jenkins agent sets PB_CACHE_DIR=/cache/streams; paired.test.ts checks
+  // that), and this test is about the default: the head's own `.cache/streams`.
+  vi.stubEnv('PB_CACHE_DIR', undefined);
   rmSync(SCRATCH, { recursive: true, force: true });
   mkdirSync(HEAD, { recursive: true });
   git('init', '-q', '-b', 'main');
