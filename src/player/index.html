@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <!-- Same-origin scripts and requests only: the page makes no network request of its own. media-src needs blob: for MSE. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; media-src 'self' blob:; img-src 'self' data:"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Playback Proof player</title>
+    <link rel="stylesheet" href="player.css" />
+  </head>
+  <body>
+    <main>
+      <video id="video" muted playsinline controls></video>
+      <pre id="hud" hidden></pre>
+    </main>
+    <script src="shaka.js"></script>
+    <script src="player.js"></script>
+  </body>
+</html>

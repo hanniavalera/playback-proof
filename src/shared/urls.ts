@@ -63,6 +63,7 @@ export function playerUrl(params: PlayerPageParams): string {
   if (params.muted !== undefined) q.set('muted', params.muted ? '1' : '0');
   if (params.start !== undefined) q.set('start', String(params.start));
   if (params.abr !== undefined) q.set('abr', params.abr ? '1' : '0');
+  if (params.hud !== undefined) q.set('hud', params.hud ? '1' : '0');
   const s = q.toString();
   return `/player/${s ? `?${s}` : ''}`;
 }

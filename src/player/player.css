@@ -1,0 +1,41 @@
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  margin: 0;
+  background: #111;
+  color: #ddd;
+  font:
+    13px/1.4 ui-monospace,
+    Menlo,
+    Consolas,
+    monospace;
+}
+
+main {
+  position: relative;
+  width: 640px;
+  margin: 16px;
+}
+
+/* A fixed size: the element's size must not depend on the window, so that no measurement does. */
+video {
+  display: block;
+  width: 640px;
+  height: 360px;
+  background: #000;
+}
+
+#hud {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  margin: 0;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #9f9;
+  white-space: pre;
+  pointer-events: none;
+}
