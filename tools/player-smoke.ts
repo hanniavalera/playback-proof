@@ -21,6 +21,7 @@ import type { SmokeOptions, SmokeSession } from '../src/lab/smoke/args.ts';
 import {
   failedChecks,
   judgeBasic,
+  mediaTargetSec,
   renderTable,
   summarize,
   summarizeMetrics,
@@ -224,7 +225,7 @@ async function actionsScenario(
     );
 
   const first = await page.evaluate((ms) => window.__qa.waitFor('firstframe', { timeoutMs: ms }), timeoutMs);
-  await waitMedia(Math.floor(first.mediaTime) + mediaSeconds);
+  await waitMedia(mediaTargetSec(first.mediaTime, mediaSeconds));
 
   // 1. pause and resume
   let cursor = await page.evaluate(() => window.__qa.cursor());
@@ -364,7 +365,7 @@ async function recoveryScenario(
   const checks = new Checks();
   const first = await page.evaluate((ms) => window.__qa.waitFor('firstframe', { timeoutMs: ms }), timeoutMs);
   // Segment 3 covers 4 to 6 s: playing well past it proves that the player got over the 404.
-  const target = Math.floor(first.mediaTime) + Math.max(8, mediaSeconds + 5);
+  const target = mediaTargetSec(first.mediaTime, Math.max(8, mediaSeconds + 5));
   const reached = await page.evaluate(
     ([s, ms]) => window.__qa.waitForMediaTime(s as number, { timeoutMs: ms as number }),
     [target, timeoutMs],
@@ -529,7 +530,7 @@ async function runSession(
     );
 
     stage.set('playback');
-    const target = Math.floor(first.mediaTime) + options.mediaSeconds;
+    const target = mediaTargetSec(first.mediaTime, options.mediaSeconds);
     mediaTime = await page.evaluate(
       ([seconds, ms]) => window.__qa.waitForMediaTime(seconds as number, { timeoutMs: ms as number }),
       [target, options.timeoutMs],

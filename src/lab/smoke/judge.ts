@@ -48,6 +48,16 @@ const describeErrors = (errors: readonly QAError[]): string =>
     .join('; ');
 
 /**
+ * The media time a session has to reach: `seconds` of media after the whole second the first frame was in. The tool waits for
+ * this value and the judge checks it, so they cannot disagree (the first real run did: the tool waited for 3 s, the judge wanted
+ * 3.02 s because the first frame was at 0.02 s). A VOD session starts near 0, so it needs `seconds`; a live one starts near the
+ * edge (24 s with the lab's defaults), so it needs that plus `seconds`.
+ */
+export function mediaTargetSec(startMediaTime: number | null, seconds: number): number {
+  return Math.floor(startMediaTime ?? 0) + seconds;
+}
+
+/**
  * The pass criteria of a playing session: the browser is supported, the page played through Shaka's MSE path, a first frame
  * was presented, media time advanced by the requested seconds, and not one error event was recorded.
  */
@@ -78,7 +88,7 @@ export function judgeBasic(o: BasicObservation): Check[] {
     o.firstFrameSeen && metrics?.startupMs !== null && metrics?.startupMs !== undefined,
     `startupMs=${String(metrics?.startupMs)}`,
   );
-  const target = (o.startMediaTime ?? 0) + o.mediaSeconds;
+  const target = mediaTargetSec(o.startMediaTime, o.mediaSeconds);
   add(
     `media time advanced ${o.mediaSeconds} s`,
     o.reachedMediaTime !== null && o.reachedMediaTime >= target,

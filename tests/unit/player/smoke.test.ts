@@ -3,6 +3,7 @@ import { SMOKE_SESSIONS, SmokeUsageError, parseSmokeArgs } from '../../../src/la
 import {
   failedChecks,
   judgeBasic,
+  mediaTargetSec,
   noteOf,
   renderTable,
   summarize,
@@ -220,6 +221,17 @@ describe('judgeBasic', () => {
     };
     expect(failedChecks(judgeBasic(live)).map((check) => check.name)).toEqual(['media time advanced 3 s']);
     expect(failedChecks(judgeBasic({ ...live, reachedMediaTime: 27.2 }))).toEqual([]);
+  });
+
+  it('asks for exactly what the tool waits for: a first frame at 0.02 s needs 3 s, not 3.02 s (found by the first real run)', () => {
+    expect(mediaTargetSec(0.02, 3)).toBe(3);
+    expect(mediaTargetSec(null, 3)).toBe(3);
+    expect(mediaTargetSec(24.9, 3)).toBe(27);
+    const justEnough = { ...healthy, startMediaTime: 0.02, reachedMediaTime: 3.0 };
+    expect(failedChecks(judgeBasic(justEnough))).toEqual([]);
+    expect(
+      failedChecks(judgeBasic({ ...justEnough, reachedMediaTime: 2.99 })).map((check) => check.name),
+    ).toEqual(['media time advanced 3 s']);
   });
 
   it('wants a live latency and a presentation delay on a live session', () => {
