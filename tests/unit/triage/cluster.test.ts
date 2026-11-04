@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { cluster, compareFailures } from '../../../triage/cluster.ts';
+import { cluster, compareFailures, rootCauses } from '../../../triage/cluster.ts';
 import type { Cluster, Failure } from '../../../triage/types.ts';
 import {
   diagnosticsOf,
@@ -196,9 +196,9 @@ describe('PB-LAB-005 triage clustering: two different causes never merge', () =>
       symptom(3016, 'VIDEO_ERROR'),
       symptom(1001, 'BAD_HTTP_STATUS'),
     ]);
-    expect(clusters.map((c) => [c.size, c.parts.shakaCode])).toStrictEqual([
-      [2, 1001],
-      [1, 3016],
+    expect(clusters.map((c) => [c.size, c.parts.shaka])).toStrictEqual([
+      [2, '1001'],
+      [1, 'media'],
     ]);
   });
 
@@ -410,5 +410,100 @@ describe('PB-LAB-005 triage clustering: what a cluster says', () => {
     ]);
     expect(one).toMatchObject({ category: 'environment', projects: ['(run)'], size: 1 });
     expect(one?.parts.location).toBeNull();
+  });
+});
+
+describe('PB-LAB-005 triage clusters: root causes, the same cause worded by different tests', () => {
+  // The shape of a real run: an origin that answered 503 to every segment with no fault rule on it. The start specs time out waiting for
+  // the first frame, and the recovery specs, which install a fault of their own, say the fault was never felt: three signatures, one cause.
+  const refused = [
+    requestEntry(1),
+    ...Array.from({ length: 5 }, (_, i) => requestEntry(i + 2, { status: 503 })),
+  ];
+  const originDown = (message: string, project: string, id: string, severity: number) =>
+    failure({
+      id,
+      project,
+      message,
+      diagnostics: diagnosticsOf({
+        events: [
+          event(0, 'load-requested'),
+          event(1, 'error', shakaError(1001, 'BAD_HTTP_STATUS', 1, severity)),
+        ],
+        detail: sessionDetail([]),
+        log: refused,
+        attached: ['qa-events.json', 'request-log.json', 'session-detail.json'],
+      }),
+    });
+  const firstFrame = "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).";
+  const premise = (times: number, status: number) =>
+    `Error: the fault rule f1 {"type":"status","match":{"kind":"segment","number":3},"times":${times},"status":${status},"id":"f1"} named 0 of the ${times} request${times === 1 ? '' : 's'} it was waited for within 15000 ms: the player never asked for what the rule matches`;
+  const down = [
+    originDown(firstFrame, 'chromium', 'PB-VOD-001', 2),
+    originDown(firstFrame, 'webkit', 'PB-VOD-001', 2),
+    originDown(firstFrame, 'chromium', 'PB-VOD-002', 2),
+    originDown(premise(1, 404), 'chromium', 'PB-REC-001', 1),
+    originDown(premise(1, 404), 'webkit', 'PB-REC-001', 1),
+    originDown(premise(3, 503), 'chromium', 'PB-REC-002', 1),
+  ];
+
+  it('is one root cause behind three clusters when the same rule found the same cause, and says which clusters share it', () => {
+    const clusters = cluster(down);
+    expect(clusters).toHaveLength(3);
+    expect(clusters.map((c) => c.rule.rule)).toStrictEqual(Array(3).fill('origin-failed-without-fault'));
+    const causes = rootCauses(clusters);
+    expect(causes).toHaveLength(1);
+    expect(causes[0]).toMatchObject({
+      rank: 1,
+      category: 'origin-error',
+      rule: 'origin-failed-without-fault',
+      cause: 'the origin answered 503 on segment to requests no fault rule named',
+      size: 6,
+      clusterRanks: [1, 2, 3],
+      tests: ['PB-REC-001', 'PB-REC-002', 'PB-VOD-001', 'PB-VOD-002'],
+      projects: ['chromium', 'webkit'],
+    });
+    expect(causes[0]?.clusters).toStrictEqual(clusters.map((c) => c.key));
+    expect(new Set(clusters.map((c) => c.rootCause))).toStrictEqual(new Set([causes[0]?.key]));
+  });
+
+  it('keeps a different cause apart, and a cluster whose rule only describes a symptom is its own root cause', () => {
+    const other = failure({
+      id: 'PB-VOD-009',
+      message: "Error: qa.waitFor('seeked') timed out after 15000 ms (looking from index 0).",
+    });
+    const alsoOther = failure({
+      id: 'PB-VOD-010',
+      message: "Error: qa.waitFor('playing') timed out after 15000 ms (looking from index 0).",
+    });
+    const notFound = failure({
+      id: 'PB-VOD-011',
+      message: firstFrame,
+      diagnostics: diagnosticsOf({
+        events: [event(0, 'load-requested'), event(1, 'error', shakaError(1001, 'BAD_HTTP_STATUS', 1, 1))],
+        detail: sessionDetail([]),
+        log: [requestEntry(1, { status: 404, kind: 'init' })],
+      }),
+    });
+    const clusters = cluster([...down, other, alsoOther, notFound]);
+    const causes = rootCauses(clusters);
+    // 503s on segments; a 404 on an init segment (another cause); two waits that ran out (symptoms, each its own).
+    expect(causes.map((c) => [c.size, c.clusters.length, c.cause])).toStrictEqual([
+      [6, 3, 'the origin answered 503 on segment to requests no fault rule named'],
+      [1, 1, 'the origin answered 404 on init to requests no fault rule named'],
+      [1, 1, null],
+      [1, 1, null],
+    ]);
+    expect(causes.map((c) => c.rank)).toStrictEqual([1, 2, 3, 4]);
+    expect(causes.reduce((sum, c) => sum + c.size, 0)).toBe(down.length + 3);
+  });
+
+  it('is the same for any order of the failures and of the clusters, whatever the ids', () => {
+    const base = rootCauses(cluster(down));
+    for (const seed of [3, 11, 29]) {
+      const again = cluster(shuffled(down, seed));
+      expect(rootCauses(again)).toStrictEqual(base);
+      expect(rootCauses(shuffled(again, seed))).toStrictEqual(base);
+    }
   });
 });

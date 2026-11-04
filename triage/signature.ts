@@ -16,7 +16,9 @@ import type { Failure, SignatureParts } from './types.ts';
 //              a revision). A spec's own body names the test, not the cause, so it is left out: the same cause seen from ten specs is one
 //              signature. When the message has no words of its own (`expect(received).toBe(expected)`, `Test timeout of 45000ms
 //              exceeded.`) the spec file IS added, because without it unrelated failures would be one cluster
-//   shaka      the code of the critical Shaka error the player reported, if any: the same symptom with a 1001 and with a 3016 is two causes
+//   shaka      the critical Shaka error the player reported, if any: its code (the same symptom with a 1001 and with a 4001 is two causes), or
+//              `media` for any error of the media category, because the engines word the same corrupt bytes with different codes (a real
+//              run: 3015 in WebKit, 3016 in Chromium)
 
 /** What the three engines call the same network failure. Chromium's words are the ones the lab has seen; see docs/TRIAGE.md for the rest. */
 const ENGINE_WORDING: ReadonlyArray<readonly [RegExp, string]> = [
@@ -30,11 +32,31 @@ const ENGINE_WORDING: ReadonlyArray<readonly [RegExp, string]> = [
   ],
 ];
 
+/**
+ * The engine a test ran in is not part of its cause, and some lab messages name it (the environment check says `chromium 156 in
+ * local-darwin-arm64 could not play ...`): the same failure in two engines must be one cluster listing both, so the names of Playwright's
+ * projects are `<engine>` and the id of the environment is `<env>`. Seen on a real run: the check failed in two engines for one cause and
+ * made two clusters.
+ */
+const ENGINE_NAME = /\b(?:chromium-cpu4x|chromium|firefox|webkit)\b/gi;
+const ENVIRONMENT_ID = /\b[a-z][a-z0-9]*-(?:darwin|linux|win32)-[a-z0-9]+\b/g;
+
+/**
+ * The lab's fault messages quote the whole rule as JSON before the sentence that says what happened (`the fault rule f1 {"type":"status",
+ * "match":{...},"times":3,...} named 0 of the 3 requests it was waited for within 15000 ms: the player never asked for ...`). The rule is in
+ * the evidence; in the signature it is 150 characters that push the words that tell one cause from another past the cut. A real run merged
+ * two causes there: a fault never felt because the origin was down, and a fault felt and not recovered.
+ */
+const FAULT_RULE_JSON = /(\bthe fault rule \S+ )\{.*\}( named\b)/;
+
 /** The lab's own rung ids (`v240`, `v360`, `v720`): engines start on different rungs, and one cause must not split by the rung it hit. */
 const RUNG = /\bv\d{3,4}\b/g;
 
 /** A fault rule id (`f1`, `f12`): the service numbers the rules of a session in order, so the same rule is `f1` in one test and `f2` in another. */
 const RULE_ID = /\bf\d{1,3}\b/g;
+
+/** Shaka's error category for the media pipeline (`shaka.util.Error.Category.MEDIA`): the browser's own append and decode errors. */
+const MEDIA_CATEGORY = 3;
 
 /** A line that is only an error class (`Error:`, `TypeError:`): the message continues on the next line. */
 const BARE_CLASS = /^\s*[A-Za-z]*Error:?\s*$/;
@@ -78,7 +100,10 @@ export function collapseRepeats(text: string): string {
 export function messageSignature(message: string | null | undefined): string {
   const line = meaningfulFirstLine(message ?? '');
   if (line === '') return NO_MESSAGE_SIGNATURE;
-  const neutral = ENGINE_WORDING.reduce((text, [pattern, phrase]) => text.replace(pattern, phrase), line);
+  const neutral = ENGINE_WORDING.reduce((text, [pattern, phrase]) => text.replace(pattern, phrase), line)
+    .replace(FAULT_RULE_JSON, '$1{…}$2')
+    .replace(ENVIRONMENT_ID, '<env>')
+    .replace(ENGINE_NAME, '<engine>');
   return cutSignature(
     collapseRepeats(normaliseLine(neutral).replace(RUNG, '<rung>').replace(RULE_ID, '<rule>')),
   );
@@ -119,12 +144,13 @@ export function signatureParts(
   const message = messageSignature(failure.error.message);
   const assertion = assertionKind(failure.error.message);
   const generic = isGeneric(message, assertion);
-  const code = failure.diagnostics.primaryError?.code ?? 0;
+  const primary = failure.diagnostics.primaryError;
+  const code = primary?.code ?? 0;
   return {
     message,
     assertion,
     location: failure.scope === 'run' ? null : locationOf(failure, generic),
-    shakaCode: code > 0 ? code : null,
+    shaka: code > 0 ? (primary?.category === MEDIA_CATEGORY ? 'media' : String(code)) : null,
   };
 }
 
@@ -134,7 +160,7 @@ export function formatSignature(parts: SignatureParts): string {
     parts.message,
     `[${parts.assertion}]`,
     ...(parts.location === null ? [] : [`@ ${parts.location}`]),
-    ...(parts.shakaCode === null ? [] : [`{shaka ${parts.shakaCode}}`]),
+    ...(parts.shaka === null ? [] : [`{shaka ${parts.shaka}}`]),
   ].join(' ');
 }
 

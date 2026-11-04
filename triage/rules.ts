@@ -30,6 +30,12 @@ export interface Rule {
   firstCheck: string;
   /** The evidence lines when the rule fires, `null` when it does not. */
   check(input: RuleInput): string[] | null;
+  /**
+   * What exactly is broken, when the rule names a cause and not only a symptom: a phrase, or a function of the failure for a rule whose
+   * cause has a detail (which statuses, which fault types). Failures that fired the same rule for the same cause are one root cause
+   * (docs/TRIAGE.md). A rule that describes a symptom (a wait that ran out, a metric, a premise) has none, and is its own root cause.
+   */
+  cause?: string | ((input: RuleInput) => string);
 }
 
 export const CATEGORY_MEANING: Record<Category, string> = {
@@ -44,7 +50,7 @@ export const CATEGORY_MEANING: Record<Category, string> = {
   'player-error':
     'The player reported a critical error (a manifest it could not parse, a license, the network) that no fault, origin failure or media error explains.',
   'instrument-disagreement':
-    'Two readings of the same thing disagree, or the fault the test installed was never felt.',
+    'Two readings of the same thing disagree, or a premise of the test did not hold (the fault it installed was never felt, the buffer it needs was never there): what the test measured says nothing about the behaviour it is about.',
   'timeout-waiting-for-event':
     'A wait ran out (an event, a media time, a request, the whole test) and nothing underneath explains why.',
   'metric-regression':
@@ -135,6 +141,7 @@ const METRIC_PATH = /\((metrics\.(?:rebuffer|frames|live|startupMs|startup|bitra
 export const RULES: readonly Rule[] = [
   {
     name: 'documented-gap-confirmation-failed',
+    cause: 'a documented gap no longer fails the way it was documented',
     category: 'known-gap',
     failureClass: 'Known gap',
     rationale:
@@ -150,6 +157,7 @@ export const RULES: readonly Rule[] = [
   },
   {
     name: 'documented-gap-in-message',
+    cause: 'a documented gap',
     category: 'known-gap',
     failureClass: 'Known gap',
     rationale:
@@ -163,6 +171,7 @@ export const RULES: readonly Rule[] = [
   },
   {
     name: 'environment-check-failed',
+    cause: 'the engine no longer plays what the committed matrix says it plays',
     category: 'environment',
     failureClass: 'Environment or infrastructure',
     rationale:
@@ -170,6 +179,11 @@ export const RULES: readonly Rule[] = [
     firstCheck:
       'Do not retry the specs. Re-run `npm run codec-matrix` in this environment, read docs/CODEC_MATRIX.md, and compare the engine version with the evidence.',
     check: ({ message, line }) => {
+      // The check wraps what the player said. When the page itself never came up, nothing was learned about the engine: the page is what
+      // failed, and the rules of the page say so (a real run: a Content Security Policy that blocked the scripts failed this check in
+      // every engine, and the check blamed the environment).
+      if (/What the player said: the player page (?:did not boot|could not use its parameters)/.test(message))
+        return null;
       const found = lineMatching(
         message,
         /no documented gap covers it|this is an environment failure, not a playback regression|a failure of the experiment, not a change of the environment/,
@@ -181,6 +195,7 @@ export const RULES: readonly Rule[] = [
   },
   {
     name: 'service-not-reachable',
+    cause: 'the test data service cannot be reached',
     category: 'environment',
     failureClass: 'Environment or infrastructure',
     rationale:
@@ -194,6 +209,7 @@ export const RULES: readonly Rule[] = [
   },
   {
     name: 'service-not-ready',
+    cause: 'the test data service is not ready: a stream or the player build is missing',
     category: 'environment',
     failureClass: 'Environment or infrastructure',
     rationale:
@@ -207,6 +223,7 @@ export const RULES: readonly Rule[] = [
   },
   {
     name: 'stream-files-missing',
+    cause: 'stream files are not where the run looks for them',
     category: 'environment',
     failureClass: 'Environment or infrastructure',
     rationale:
@@ -220,6 +237,7 @@ export const RULES: readonly Rule[] = [
   },
   {
     name: 'browser-unavailable',
+    cause: 'the browser did not launch or crashed',
     category: 'environment',
     failureClass: 'Environment or infrastructure',
     rationale:
@@ -233,6 +251,7 @@ export const RULES: readonly Rule[] = [
   },
   {
     name: 'port-in-use',
+    cause: 'a port is taken by another process',
     category: 'environment',
     failureClass: 'Environment or infrastructure',
     rationale:
@@ -246,6 +265,7 @@ export const RULES: readonly Rule[] = [
   },
   {
     name: 'resources-exhausted',
+    cause: 'the machine ran out of disk, memory or file handles',
     category: 'environment',
     failureClass: 'Environment or infrastructure',
     rationale:
@@ -261,6 +281,7 @@ export const RULES: readonly Rule[] = [
   },
   {
     name: 'player-reports-browser-unsupported',
+    cause: 'the player does not support this browser build',
     category: 'environment',
     failureClass: 'Environment or infrastructure',
     rationale: 'Shaka says this browser cannot run it: the engine build changed, not the player under test.',
@@ -276,17 +297,33 @@ export const RULES: readonly Rule[] = [
   },
   {
     name: 'run-failed-before-any-test',
+    cause: 'the run failed before any test: a global setup threw or the web server did not start',
     category: 'environment',
     failureClass: 'Environment or infrastructure',
     rationale:
       'Playwright itself reported an error of the run (a global setup that threw, a web server that did not start): no test ran.',
     firstCheck:
       'The job log above the first test: the global setup (`tests/e2e/support/global-setup.ts`) and the `webServer` of playwright.config.ts print what is wrong.',
-    check: ({ failure, line }) =>
-      failure.scope === 'run' ? [`an error of the run, with no test to blame: ${quote(line)}`] : null,
+    check: ({ failure, line, message }) =>
+      failure.scope === 'run'
+        ? [
+            `an error of the run, with no test to blame: ${quote(line)}`,
+            ...(/config\.webServer/.test(message)
+              ? [
+                  'the web server of the config is the test data service: it refuses to start when a stream file is missing or damaged (`npm run verify:streams`) or its port is taken, and says which in its own output, which is in the job log and not in this report',
+                ]
+              : []),
+          ]
+        : null,
   },
   {
     name: 'page-did-not-boot',
+    cause: ({ message, failure }) =>
+      [message, ...failure.diagnostics.console.samples].some((text) =>
+        /Content Security Policy|Refused to (?:execute|load|apply|connect)/i.test(text),
+      )
+        ? 'the player page did not boot: a Content Security Policy blocked its scripts'
+        : 'the player page did not boot',
     category: 'page-boot-failure',
     failureClass: 'Functional regression',
     rationale:
@@ -308,6 +345,7 @@ export const RULES: readonly Rule[] = [
   },
   {
     name: 'page-refused-parameters',
+    cause: 'the player page refused the parameters it was given',
     category: 'page-boot-failure',
     failureClass: 'Functional regression',
     rationale:
@@ -327,6 +365,16 @@ export const RULES: readonly Rule[] = [
   },
   {
     name: 'fault-fired-player-failed',
+    cause: ({ failure }) => {
+      const types = [
+        ...new Set(
+          failure.diagnostics.faults
+            .filter((fault) => fault.fired > 0)
+            .map((fault) => fault.type ?? 'unknown'),
+        ),
+      ].sort();
+      return `a fault of type ${types.join(' and ')} fired and the player did not recover`;
+    },
     category: 'network-fault-not-recovered',
     failureClass: 'Functional regression',
     rationale:
@@ -351,6 +399,19 @@ export const RULES: readonly Rule[] = [
   },
   {
     name: 'origin-failed-without-fault',
+    cause: ({ failure }) => {
+      const answers = [
+        ...new Set(
+          (failure.diagnostics.requestLog?.failed ?? [])
+            .filter((request) => request.faults.length === 0)
+            .map(
+              (request) =>
+                `${request.abortReason ? `a cut (${request.abortReason})` : request.status} on ${request.kind}`,
+            ),
+        ),
+      ].sort();
+      return `the origin answered ${answers.join(' and ')} to requests no fault rule named`;
+    },
     category: 'origin-error',
     failureClass: 'Environment or infrastructure',
     rationale:
@@ -373,6 +434,7 @@ export const RULES: readonly Rule[] = [
   },
   {
     name: 'media-error',
+    cause: 'the bytes arrived and the browser could not append or decode them',
     category: 'decode-or-mse-error',
     failureClass: 'Functional regression',
     rationale:
@@ -423,6 +485,19 @@ export const RULES: readonly Rule[] = [
     },
   },
   {
+    name: 'test-premise-not-met',
+    category: 'instrument-disagreement',
+    failureClass: 'Needs a person',
+    rationale:
+      'The test checked a condition it needs before it can judge anything (its own message says "premise of the test, not the behaviour under test") and the condition did not hold: the behaviour was never exercised.',
+    firstCheck:
+      'The premise the message names against the player’s numbers (qa-metrics.json) and the request log: a premise that does not hold means the scenario could not be set up (a slow or failing origin, a loaded host). Compare `ttfbMs` and `totalMs` of the segments in request-log.json with the length of a segment.',
+    check: ({ message, failure }) => {
+      const line = lineMatching(message, /premise of the test, not the behaviour under test/);
+      return line ? [`a premise of the test did not hold: ${quote(line)}`, ...whereItStood(failure)] : null;
+    },
+  },
+  {
     name: 'oracles-disagree',
     category: 'instrument-disagreement',
     failureClass: 'Functional regression',
@@ -440,6 +515,12 @@ export const RULES: readonly Rule[] = [
   },
   {
     name: 'player-critical-error',
+    cause: ({ failure }) => {
+      const error = failure.diagnostics.primaryError;
+      return error
+        ? `the player reported ${error.codeName ?? 'error'} (code ${error.code})`
+        : 'the player ended in the error state';
+    },
     category: 'player-error',
     failureClass: 'Functional regression',
     rationale:
@@ -596,7 +677,12 @@ export function classify(failure: Failure): Classified {
     const evidence = rule.check(input);
     if (evidence !== null) {
       return {
-        verdict: { rule: rule.name, category: rule.category, evidence },
+        verdict: {
+          rule: rule.name,
+          category: rule.category,
+          evidence,
+          cause: typeof rule.cause === 'function' ? rule.cause(input) : (rule.cause ?? null),
+        },
         rationale: rule.rationale,
         firstCheck: rule.firstCheck,
         failureClass: rule.failureClass,
@@ -608,6 +694,7 @@ export function classify(failure: Failure): Classified {
       rule: NO_RULE.name,
       category: NO_RULE.category,
       evidence: [`no rule matched ${quote(input.line)}`],
+      cause: null,
     },
     rationale: NO_RULE.rationale,
     firstCheck: NO_RULE.firstCheck,

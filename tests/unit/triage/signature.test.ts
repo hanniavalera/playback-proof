@@ -283,12 +283,67 @@ describe('PB-LAB-005 triage signatures: the parts', () => {
         .location,
     ).toBeNull();
     const parts = signatureParts(failure({ diagnostics: { primaryError: critical(3016, 'VIDEO_ERROR') } }));
-    expect(parts.shakaCode).toBe(3016);
-    expect(formatSignature({ message: 'm', assertion: 'thrown', location: 'a.ts:f', shakaCode: 1001 })).toBe(
+    expect(parts.shaka).toBe('media');
+    expect(
+      signatureParts(failure({ diagnostics: { primaryError: critical(4001, 'MANIFEST_PARSE') } })).shaka,
+    ).toBe('4001');
+    expect(formatSignature({ message: 'm', assertion: 'thrown', location: 'a.ts:f', shaka: '1001' })).toBe(
       'm [thrown] @ a.ts:f {shaka 1001}',
     );
-    expect(formatSignature({ message: 'm', assertion: 'toBe', location: null, shakaCode: null })).toBe(
+    expect(formatSignature({ message: 'm', assertion: 'thrown', location: null, shaka: 'media' })).toBe(
+      'm [thrown] {shaka media}',
+    );
+    expect(formatSignature({ message: 'm', assertion: 'toBe', location: null, shaka: null })).toBe(
       'm [toBe]',
+    );
+  });
+
+  it('does not let the rule a fault message quotes push its words past the cut (a real run merged two causes there)', () => {
+    const never =
+      'Error: the fault rule f1 {"type":"status","match":{"kind":"segment","track":"video","number":3},"times":3,"status":503,"id":"f1"} named 0 of the 3 requests it was waited for within 15000 ms: the player never asked for what the rule matches';
+    const stopped =
+      'Error: the fault rule f1 {"type":"status","match":{"kind":"segment","track":"video","number":3},"times":3,"status":503,"id":"f1"} named 1 of the 3 requests it was waited for within 15000 ms: the player stopped asking for what the rule matches before the rule was used up';
+    expect(messageSignature(never)).toBe(
+      'Error: the fault rule <rule> {…} named <n> of the <n> requests it was waited for within <n> ms: the player never asked for what the rule matches',
+    );
+    // Two causes that read alike up to the rule and differ after it are two signatures...
+    expect(messageSignature(never)).not.toBe(messageSignature(stopped));
+    // ...and the same cause with another rule in its message is one.
+    expect(messageSignature(never)).toBe(
+      messageSignature(
+        never.replace(
+          /\{.*\}/,
+          '{"type":"abort","match":{"kind":"init","rep":"v360"},"afterBytes":100,"id":"f2"}',
+        ),
+      ),
+    );
+  });
+
+  it('names a media error by its category: the engines word the same corrupt bytes with different codes (a real run: 3015 and 3016)', () => {
+    const media = (code: number, codeName: string) =>
+      sig({ message: 'Error: x', diagnostics: { primaryError: critical(code, codeName) } });
+    expect(media(3015, 'MEDIA_SOURCE_OPERATION_THREW')).toBe(media(3016, 'VIDEO_ERROR'));
+    expect(media(3016, 'VIDEO_ERROR')).toMatch(/\{shaka media\}$/);
+    // Everything else keeps its code: a status and a refused connection are two causes.
+    expect(media(1001, 'BAD_HTTP_STATUS')).not.toBe(media(1002, 'HTTP_ERROR'));
+    expect(media(1001, 'BAD_HTTP_STATUS')).not.toBe(media(3016, 'VIDEO_ERROR'));
+  });
+
+  it('does not let the engine or the environment a message names split a cause (a real run: the environment check in two engines)', () => {
+    const check = (engine: string, version: string) =>
+      `Error: ${engine} ${version} in local-darwin-arm64 could not play vod-cmaf over dash through the player, and no documented gap covers it.`;
+    expect(messageSignature(check('chromium', '156.0.8078.4'))).toBe(
+      messageSignature(check('webkit', '27.2')),
+    );
+    expect(messageSignature(check('chromium', '156.0.8078.4'))).toBe(
+      'Error: <engine> <n> in <env> could not play vod-cmaf over dash through the player, and no documented gap covers it.',
+    );
+    expect(messageSignature('Error: chromium-cpu4x in gha-linux-x64 failed')).toBe(
+      'Error: <engine> in <env> failed',
+    );
+    // A different cause is still a different signature.
+    expect(messageSignature(check('chromium', '1')).replace('vod-cmaf', 'live-cmaf')).not.toBe(
+      messageSignature(check('chromium', '1')),
     );
   });
 

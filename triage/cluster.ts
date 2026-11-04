@@ -1,6 +1,14 @@
 import { classify } from './rules.ts';
-import { failureSignature } from './signature.ts';
-import type { Cluster, ClusterMember, Failure, FailureClass, FailureOutcome } from './types.ts';
+import { failureSignature, signatureKey } from './signature.ts';
+import type {
+  Cluster,
+  ClusterMember,
+  Failure,
+  FailureClass,
+  FailureOutcome,
+  RootCause,
+  RuleVerdict,
+} from './types.ts';
 
 // The deterministic clustering (docs/TRIAGE.md, ADR-160): failures with the same signature are one cluster, the clusters are ordered by what a
 // reader needs first, and each cluster is described by one representative failure that a rule table then reads. Nothing here depends on the
@@ -76,8 +84,13 @@ function build(signature: ReturnType<typeof failureSignature>, failures: Failure
     agreement: { sameRule, of: failures.length, otherRules: [...others].sort(compareText) },
     representative,
     members: failures.map(memberOf).sort(compareMembers),
+    rootCause: rootCauseKey(verdict.verdict, signature.signature),
   };
 }
+
+/** A root cause is the category, the rule and the cause; a rule that only describes a symptom has none, so its cluster stands alone. */
+const rootCauseKey = (verdict: RuleVerdict, signature: string): string =>
+  signatureKey(`${verdict.category}\n${verdict.rule}\n${verdict.cause ?? `symptom ${signature}`}`);
 
 /**
  * The clusters of a list of failures, largest first (then the one seen in more engines, then by signature), ranked from 1. The order of
@@ -97,4 +110,36 @@ export function cluster(failures: readonly Failure[]): Cluster[] {
       b.size - a.size || b.projects.length - a.projects.length || compareText(a.signature, b.signature),
   );
   return clusters.map((one, index) => ({ ...one, rank: index + 1 }));
+}
+
+/**
+ * The root causes of a list of clusters, largest first (then the one seen in more engines, then by key), ranked from 1. Clusters that fired
+ * the same rule for the same cause are one root cause; a cluster whose rule only describes a symptom is its own. Pure: it depends on the
+ * clusters and their ranks, not on the order they are given in.
+ */
+export function rootCauses(clusters: readonly Cluster[]): RootCause[] {
+  const groups = new Map<string, Cluster[]>();
+  for (const one of [...clusters].sort((a, b) => a.rank - b.rank)) {
+    groups.set(one.rootCause, [...(groups.get(one.rootCause) ?? []), one]);
+  }
+  const causes = [...groups.entries()].map(([key, members]): RootCause => {
+    const first = members[0] as Cluster;
+    return {
+      rank: 0,
+      key,
+      category: first.category,
+      rule: first.rule.rule,
+      cause: first.rule.cause,
+      size: members.reduce((sum, one) => sum + one.size, 0),
+      clusters: members.map((one) => one.key),
+      clusterRanks: members.map((one) => one.rank),
+      tests: [...new Set(members.flatMap((one) => one.tests))].sort(compareText),
+      projects: [...new Set(members.flatMap((one) => one.projects))].sort(compareText),
+      failureClass: first.failureClass,
+    };
+  });
+  causes.sort(
+    (a, b) => b.size - a.size || b.projects.length - a.projects.length || compareText(a.key, b.key),
+  );
+  return causes.map((one, index) => ({ ...one, rank: index + 1 }));
 }

@@ -1,12 +1,13 @@
 import { mkdirSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { rootCauses } from './cluster.ts';
 import { readableFirstLine } from './signature.ts';
 import { DEFAULT_BASE_URL } from './summarize.ts';
 import type { SummaryResult } from './summarize.ts';
 import { oneLine, plural, truncate } from './text.ts';
 import { CATEGORY_MEANING } from './rules.ts';
 import { REPORT_SCHEMA_VERSION } from './types.ts';
-import type { Cluster, Collection, SkippedTest, SummaryRecord, TriageReport } from './types.ts';
+import type { Cluster, Collection, RootCause, SkippedTest, SummaryRecord, TriageReport } from './types.ts';
 
 // The writers of a triage report: the console text, `triage-report.md`, `triage-report.json` and the summary of a CI job. They only
 // format what the clustering and the summarizer produced; nothing here decides anything.
@@ -36,6 +37,7 @@ export function buildReport(
 ): TriageReport {
   const failed = collection.failures.filter((failure) => failure.outcome !== 'flaky').length;
   const result = options.summaries ?? null;
+  const causes = rootCauses(clusters);
   return {
     schemaVersion: REPORT_SCHEMA_VERSION,
     generatedAt: (options.now ?? new Date()).toISOString(),
@@ -45,11 +47,13 @@ export function buildReport(
       failures: failed,
       flaky: collection.failures.length - failed,
       clusters: clusters.length,
+      rootCauses: causes.length,
       skipped: collection.skipped.length,
       notRun: collection.sources.reduce((sum, source) => sum + source.notRun, 0),
       interrupted: collection.sources.reduce((sum, source) => sum + source.interrupted, 0),
     },
     clusters: [...clusters],
+    rootCauses: causes,
     skipped: collection.skipped,
     problems: collection.problems,
     summaries: result?.records ?? [],
@@ -151,10 +155,20 @@ function skippedByReason(
 }
 
 function headline(report: TriageReport): string {
-  const { failures, flaky, clusters } = report.totals;
+  const { failures, flaky, clusters, rootCauses: causes } = report.totals;
   const reports = plural(report.sources.length, 'report');
-  return `${failures} failed${flaky > 0 ? `, ${flaky} flaky` : ''} in ${reports} became ${plural(clusters, 'cluster')}`;
+  return `${failures} failed${flaky > 0 ? `, ${flaky} flaky` : ''} in ${reports} became ${plural(clusters, 'cluster')}${causes < clusters ? ` of ${plural(causes, 'root cause')}` : ''}`;
 }
+
+/** The root causes that more than one cluster shares: the others say nothing a cluster does not. */
+const sharedCauses = (report: TriageReport): RootCause[] =>
+  report.rootCauses.filter((cause) => cause.clusters.length > 1);
+
+const ranks = (cause: RootCause): string => cause.clusterRanks.map((rank) => `#${rank}`).join(', ');
+
+/** The root cause of a cluster when other clusters share it, else null. */
+const sharedWith = (report: TriageReport, cluster: Cluster): RootCause | null =>
+  sharedCauses(report).find((cause) => cause.key === cluster.rootCause) ?? null;
 
 // ---------------------------------------------------------------------------------------------------------------------
 // The console
@@ -179,11 +193,26 @@ export function renderText(
       `failure triage: ${headline(report)} (clustering is deterministic: no model is involved in it)`,
       '',
     );
+    for (const cause of sharedCauses(report)) {
+      lines.push(
+        `root cause: ${cause.cause ?? cause.rule} (${plural(cause.size, 'failure')} in the clusters ${ranks(cause)}: one cause, worded differently by each test)`,
+      );
+    }
+    if (sharedCauses(report).length > 0) lines.push('');
     for (const cluster of report.clusters) {
       const rep = cluster.representative;
+      const shared = sharedWith(report, cluster);
       lines.push(
         `#${cluster.rank}  ${plural(cluster.size, 'failure')} in ${cluster.projects.join(', ')}  ·  ${listTests(cluster.tests)}`,
         `    category  ${cluster.category}  (rule ${cluster.rule.rule})  ·  class ${cluster.failureClass}`,
+        ...(shared
+          ? [
+              `    root cause shared with ${shared.clusterRanks
+                .filter((rank) => rank !== cluster.rank)
+                .map((rank) => `#${rank}`)
+                .join(', ')}`,
+            ]
+          : []),
         `    signature ${cluster.signature}`,
         `    error     ${oneLine(readableFirstLine(rep.error.message), 200)}`,
         ...cluster.rule.evidence.slice(0, 4).map((line) => `    evidence  ${oneLine(line, 200)}`),
@@ -223,6 +252,8 @@ export function renderText(
 
 function clusterSection(report: TriageReport, cluster: Cluster): string[] {
   const rep = cluster.representative;
+  const shared = sharedWith(report, cluster);
+  const others = shared?.clusterRanks.filter((rank) => rank !== cluster.rank).map((rank) => `#${rank}`);
   const out: string[] = [
     `## #${cluster.rank} · ${plural(cluster.size, 'failure')} · ${cluster.category}`,
     '',
@@ -230,6 +261,9 @@ function clusterSection(report: TriageReport, cluster: Cluster): string[] {
     `- **Engines** ${cluster.projects.join(', ')} · **tests** ${listTests(cluster.tests, 12)} · **outcomes** failed ${cluster.outcomes.failed}, timed out ${cluster.outcomes.timedOut}, flaky ${cluster.outcomes.flaky}`,
     `- **Category** \`${cluster.category}\`: ${CATEGORY_MEANING[cluster.category]}`,
     `- **Rule** \`${cluster.rule.rule}\`: ${cluster.ruleRationale}`,
+    ...(others
+      ? [`- **Root cause** shared with the clusters ${others.join(', ')}: ${cluster.rule.cause}`]
+      : []),
     `- **Class** ${cluster.failureClass} (TEST_STRATEGY.md section 10)`,
     '- **Evidence** (what the rule found: check it against the attachments, and disagree with it if it is wrong):',
     ...cluster.rule.evidence.map((line) => `  - ${oneLine(line, 400)}`),
@@ -299,6 +333,21 @@ export function renderMarkdown(report: TriageReport): string {
       ),
       '',
     );
+    if (sharedCauses(report).length > 0) {
+      out.push(
+        '## Root causes shared by several clusters',
+        '',
+        'A cluster is one signature, which is the words of one failure. When the same rule found the same cause behind several clusters, the tests worded one cause in several ways; they are listed here as one.',
+        '',
+        '| Root cause | Failures | Clusters | Engines | Tests | Category · rule | What is broken |',
+        '| --- | --- | --- | --- | --- | --- | --- |',
+        ...sharedCauses(report).map(
+          (c) =>
+            `| ${c.rank} | ${c.size} | ${ranks(c)} | ${cell(c.projects.join(', '))} | ${cell(listTests(c.tests, 6))} | \`${c.category}\` · \`${c.rule}\` | ${cell(c.cause ?? '', 200)} |`,
+        ),
+        '',
+      );
+    }
     for (const cluster of report.clusters) out.push(...clusterSection(report, cluster));
   }
   if (report.skipped.length > 0) {

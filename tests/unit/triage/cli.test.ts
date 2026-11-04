@@ -179,16 +179,20 @@ describe('PB-LAB-005 triage CLI: reading a run and printing its clusters', () =>
     expect(readJson(cwd, 'somewhere/else/triage-report.json').totals.clusters).toBe(2);
   });
 
-  it('exits 2 when there is nothing to read or an option is wrong, and says what', async () => {
+  it('exits 0 when there is nothing to read, and says what; 2 only when an option is wrong', async () => {
     const cwd = workspace();
     const missing = await triage(cwd, ['--from', 'nowhere']);
-    expect(missing.code).toBe(2);
+    expect(missing.code).toBe(0);
+    expect(missing.stdout).toContain('no failures to triage');
     expect(missing.stdout).toContain('problem: nowhere: does not exist');
     const bad = await triage(cwd, ['--nonsense']);
     expect(bad.code).toBe(2);
     expect(bad.stderr).toContain('triage: unknown option --nonsense');
     expect(bad.stderr).toContain(USAGE);
+    expect((await triage(cwd, ['--max-clusters', '0'])).code).toBe(2);
+    expect((await triage(cwd, ['--from'])).code).toBe(2);
     expect((await triage(cwd, ['--help'])).stdout).toContain('--from-ci');
+    expect(USAGE).toContain('exit code: 0 whatever it finds and whatever it cannot read');
   });
 });
 
@@ -225,42 +229,36 @@ describe('PB-LAB-005 triage CLI: --from-ci is a stage that explains, and never f
     expect(resolveFrom(options(null), io(workspace())).shown).toBe('reports');
   });
 
-  it('exits 0 with nothing to read, with a bad option and with an error of its own, and says so', async () => {
+  it('exits 0 with nothing to read and with an error of its own, and says so; a bad command line is the only 2, in CI too', async () => {
     const cwd = workspace();
     const nothing = await triage(cwd, ['--from-ci']);
     expect(nothing.code).toBe(0);
     expect(nothing.stdout).toContain('no failures to triage');
     expect(nothing.stdout).toContain('problem: reports: does not exist');
 
+    // A report that is cut off (a job that was killed while it wrote) is named, and is not a reason to fail.
+    write(cwd, 'reports/chromium/playwright.json', '{"config": {"rootDir": "/work/tests"}, "suites": [');
+    const cut = await triage(cwd, ['--from-ci']);
+    expect(cut.code).toBe(0);
+    expect(cut.stdout).toContain('no failures to triage');
+    expect(cut.stdout).toMatch(/problem: chromium\/playwright\.json: could not be read/);
+
     const bad = await triage(cwd, ['--from-ci', '--nonsense']);
-    expect(bad.code).toBe(0);
+    expect(bad.code).toBe(2);
     expect(bad.stderr).toContain('unknown option --nonsense');
 
-    const broken = await triage(
-      cwd,
-      ['--from-ci'],
-      {},
-      {
-        now: () => {
-          throw new Error('the clock broke');
-        },
+    const clockBroke = {
+      now: () => {
+        throw new Error('the clock broke');
       },
-    );
-    expect(broken.code).toBe(0);
-    expect(broken.stderr).toBe(
-      'triage could not run: the clock broke (triage is not a gate: it explains a red build and never decides one: the build is not failed by it)\n',
-    );
-    const notCi = await triage(
-      cwd,
-      [],
-      {},
-      {
-        now: () => {
-          throw new Error('the clock broke');
-        },
-      },
-    );
-    expect(notCi.code).toBe(2);
+    };
+    for (const argv of [['--from-ci'], []]) {
+      const broken = await triage(cwd, argv, {}, clockBroke);
+      expect(broken.code, argv.join(' ')).toBe(0);
+      expect(broken.stderr).toBe(
+        'triage could not run: the clock broke (triage is not a gate: it explains a red build and never decides one: nothing is failed by it)\n',
+      );
+    }
   });
 
   it('appends its summary to the job summary of GitHub Actions when there is one', async () => {

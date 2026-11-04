@@ -23,8 +23,8 @@ import type { TriageReport } from './types.ts';
 export const USAGE = `usage: npm run triage -- [options]
   --from <dir>      the Playwright output to read: a reports directory, or a directory of downloaded CI artifacts
                     (reports-chromium/, reports-firefox/ ...), or one playwright.json (default: reports)
-  --from-ci         the CI stage: read the artifacts of this run (--from, else $PB_TRIAGE_FROM, else ./artifacts, else ./reports),
-                    always exit 0, and say so. Triage explains a red build; it never decides one
+  --from-ci         the CI stage: read the artifacts of this run (--from, else $PB_TRIAGE_FROM, else ./artifacts, else ./reports) and say that
+                    triage is not a gate: it explains a red build and never decides one
   --summarize       ask a language model for a draft of the likely root cause of each cluster, from the redacted evidence.
                     Needs ANTHROPIC_API_KEY (ANTHROPIC_MODEL, default claude-haiku-5-5; ANTHROPIC_BASE_URL; ANTHROPIC_WORKSPACE_ID
                     for a key that is not scoped to one workspace). Without a key: one line, no summary
@@ -33,7 +33,10 @@ export const USAGE = `usage: npm run triage -- [options]
   --out <dir>       where triage-report.md and triage-report.json are written (default reports/triage)
   --json            print the JSON report instead of the text
   --redact          redact the report (keys, hosts, home directories...) before it is printed or written: for a report that is published
-  --help`;
+  --help
+
+exit code: 0 whatever it finds and whatever it cannot read (nothing to read, a report that does not parse): triage is not a gate and never
+fails a build. 2 only for a bad command line.`;
 
 export interface CliOptions {
   from: string | null;
@@ -134,8 +137,9 @@ export function resolveFrom(
 }
 
 /**
- * Runs triage and returns the exit code: 0 whenever it ran (what it found does not matter: it is not a gate), 2 when it could not run
- * (a bad option, nothing to read). With `--from-ci` it is 0 whatever happens.
+ * Runs triage and returns the exit code: 0 whenever the command line was valid, whatever it found and whatever it could not do (nothing to
+ * read, a report that does not parse, a crash of its own: it is printed and the build is not failed), and 2 only for a bad command line.
+ * Triage is not a gate, and a stage that explains a red build must never be the reason a build is red.
  */
 export async function run(argv: readonly string[], io: Io): Promise<number> {
   const parsed = parseArgs(argv);
@@ -143,7 +147,7 @@ export async function run(argv: readonly string[], io: Io): Promise<number> {
   try {
     if ('error' in parsed) {
       io.stderr(`triage: ${parsed.error}\n${USAGE}\n`);
-      return fromCi ? 0 : 2;
+      return 2;
     }
     const { options } = parsed;
     if (options.help) {
@@ -201,13 +205,10 @@ export async function run(argv: readonly string[], io: Io): Promise<number> {
         io.stderr(`triage: could not append to the job summary: ${(error as Error).message}\n`);
       }
     }
-    if (fromCi) return 0;
-    return collection.sources.length === 0 ? 2 : 0;
+    return 0;
   } catch (error) {
-    io.stderr(
-      `triage could not run: ${(error as Error).message}${fromCi ? ` (${NOT_A_GATE}: the build is not failed by it)` : ''}\n`,
-    );
-    return fromCi ? 0 : 2;
+    io.stderr(`triage could not run: ${(error as Error).message} (${NOT_A_GATE}: nothing is failed by it)\n`);
+    return 0;
   }
 }
 

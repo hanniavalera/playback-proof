@@ -11,7 +11,7 @@ import {
 } from '../../../triage/report.ts';
 import { DEFAULT_BASE_URL } from '../../../triage/summarize.ts';
 import type { Collection, Failure, SummaryRecord } from '../../../triage/types.ts';
-import { failure } from './support.ts';
+import { diagnosticsOf, event, failure, requestEntry, sessionDetail, shakaError } from './support.ts';
 
 const source = (path = 'reports/playwright.json') => ({
   path,
@@ -50,6 +50,7 @@ describe('PB-LAB-005 triage report: the numbers', () => {
       failures: 2,
       flaky: 1,
       clusters: 2,
+      rootCauses: 2,
       skipped: 0,
       notRun: 0,
       interrupted: 0,
@@ -68,6 +69,95 @@ describe('PB-LAB-005 triage report: the numbers', () => {
     expect(r.summaryNote).toBe('summaries skipped: ANTHROPIC_API_KEY is not set');
     expect(r.summaryRun).toBeNull();
     expect(r.summaries).toStrictEqual([]);
+  });
+});
+
+describe('PB-LAB-005 triage report: root causes behind several clusters', () => {
+  // An origin that answered 503 to every segment: the start specs wait for the first frame, the recovery spec says its fault was never felt.
+  const origin = (message: string, id: string, project: string) =>
+    failure({
+      id,
+      project,
+      message,
+      diagnostics: diagnosticsOf({
+        events: [event(0, 'load-requested'), event(1, 'error', shakaError(1001, 'BAD_HTTP_STATUS', 1, 2))],
+        detail: sessionDetail([]),
+        log: [requestEntry(1), requestEntry(2, { status: 503 }), requestEntry(3, { status: 503 })],
+        attached: ['qa-events.json', 'request-log.json'],
+      }),
+    });
+  const failures = [
+    origin(
+      "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).",
+      'PB-VOD-001',
+      'chromium',
+    ),
+    origin(
+      "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).",
+      'PB-VOD-001',
+      'webkit',
+    ),
+    origin(
+      'Error: the fault rule f1 {"type":"status"} named 0 of the 1 request it was waited for within 15000 ms: the player never asked for what the rule matches',
+      'PB-REC-001',
+      'chromium',
+    ),
+    failure({
+      id: 'PB-VOD-009',
+      message: "Error: qa.waitFor('seeked') timed out after 15000 ms (looking from index 0).",
+    }),
+  ];
+  const shared = report(failures);
+
+  it('counts them in the headline and the totals, and lists them in the report data', () => {
+    expect(shared.totals).toMatchObject({ failures: 4, clusters: 3, rootCauses: 2 });
+    expect(shared.rootCauses.map((c) => [c.size, c.clusterRanks, c.cause])).toStrictEqual([
+      [3, [1, 3], 'the origin answered 503 on segment to requests no fault rule named'],
+      [1, [2], null],
+    ]);
+    expect(shared.clusters.map((c) => c.rootCause)).toStrictEqual([
+      shared.rootCauses[0]?.key,
+      shared.rootCauses[1]?.key,
+      shared.rootCauses[0]?.key,
+    ]);
+    expect(JSON.parse(renderJson(shared))).toMatchObject({ totals: { clusters: 3, rootCauses: 2 } });
+    expect(renderMarkdown(shared)).toContain('**4 failed in 1 report became 3 clusters of 2 root causes.**');
+    expect(renderStepSummary(shared)).toContain(
+      '**4 failed in 1 report became 3 clusters of 2 root causes.**',
+    );
+  });
+
+  it('says in the console which clusters are one cause, and on each of them which others share it', () => {
+    const text = renderText(shared);
+    expect(text).toContain(
+      'root cause: the origin answered 503 on segment to requests no fault rule named (3 failures in the clusters #1, #3: one cause, worded differently by each test)',
+    );
+    expect(text).toMatch(/#1 {2}2 failures[^\n]*\n[^\n]*category[^\n]*\n {4}root cause shared with #3\n/);
+    expect(text).toMatch(/#3 {2}1 failure[^\n]*\n[^\n]*category[^\n]*\n {4}root cause shared with #1\n/);
+    // The cluster that is its own root cause says nothing about one.
+    expect(text.split('#2 ')[1]?.split('#3 ')[0]).not.toContain('root cause shared');
+  });
+
+  it('has a table of the shared root causes in the markdown, and a line in each cluster that shares one', () => {
+    const markdown = renderMarkdown(shared);
+    expect(markdown).toContain('## Root causes shared by several clusters');
+    expect(markdown).toContain(
+      '| 1 | 3 | #1, #3 | chromium, webkit | PB-REC-001, PB-VOD-001 | `origin-error` · `origin-failed-without-fault` | the origin answered 503 on segment to requests no fault rule named |',
+    );
+    expect(markdown).toContain(
+      '- **Root cause** shared with the clusters #3: the origin answered 503 on segment to requests no fault rule named',
+    );
+    expect(markdown).toContain(
+      '- **Root cause** shared with the clusters #1: the origin answered 503 on segment to requests no fault rule named',
+    );
+    expect(markdown.match(/\*\*Root cause\*\*/g)).toHaveLength(2);
+  });
+
+  it('says nothing about root causes when every cluster is its own', () => {
+    const alone = report([failure({ message: wait })]);
+    expect(renderMarkdown(alone)).not.toContain('Root cause');
+    expect(renderText(alone)).not.toContain('root cause');
+    expect(renderMarkdown(alone)).toContain('became 1 cluster.**');
   });
 });
 

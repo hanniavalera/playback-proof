@@ -313,6 +313,34 @@ describe('PB-LAB-005 triage rules: each rule fires on what it names, and not on 
     expect(category(failure({ message: disagree }))).toBe('instrument-disagreement');
   });
 
+  it('test-premise-not-met: the test says its own condition did not hold (a real run: a slow origin left 2 s buffered where a seek needs more)', () => {
+    // The wording of PB-VOD-006's premise check, as a real run of a slow origin reported it.
+    const message =
+      'Error: premise of the test, not the behaviour under test: seconds buffered ahead of the playhead (2.114762 s) when the seek to 7 s is made (metrics.playback.bufferedAheadSec)\n\nExpected: > 3\nReceived: 2.114762';
+    const verdict = classify(
+      failure({
+        message,
+        diagnostics: diagnosticsOf({ events: [event(0, 'load-requested'), event(1, 'firstframe')] }),
+      }),
+    );
+    expect(verdict.verdict.rule).toBe('test-premise-not-met');
+    expect(verdict.verdict.category).toBe('instrument-disagreement');
+    expect(verdict.failureClass).toBe('Needs a person');
+    expect(verdict.verdict.evidence[0]).toContain('a premise of the test did not hold');
+    expect(verdict.verdict.evidence[0]).toContain('2.114762 s');
+    // A near miss: the same quantity asserted without the premise wording is a metric or nothing, not a premise.
+    expect(
+      rule(
+        failure({
+          message:
+            'Error: seconds buffered ahead of the playhead (2.1 s) (metrics.playback.bufferedAheadSec) expected more than 3',
+        }),
+      ),
+    ).not.toBe('test-premise-not-met');
+    // It describes a symptom: no cause, so each such cluster is its own root cause.
+    expect(verdict.verdict.cause).toBeNull();
+  });
+
   it('player-error: a critical error that nothing else explains, named by its Shaka category', () => {
     const f = failure({
       message: 'Error: startup time (metrics.startupMs) is null: the first frame was never presented',
@@ -396,6 +424,7 @@ describe('PB-LAB-005 triage rules: each rule fires on what it names, and not on 
       rule: 'no-rule-matched',
       category: 'unknown',
       evidence: ['no rule matched “Error: something nobody wrote a rule for”'],
+      cause: null,
     });
     expect(verdict.failureClass).toBe('Needs a person');
     expect(classify(failure({ message: '' })).verdict.rule).toBe('no-rule-matched');
@@ -473,13 +502,33 @@ describe('PB-LAB-005 triage rules: the first rule that finds something wins, and
     expect(rule(f)).toBe('service-not-reachable');
   });
 
-  it('PB-ENV-001 names the environment even when the cause it quotes is the page that did not boot', () => {
-    const f = failure({
-      message: environmentCheckFailure(
-        'the player page did not boot (http://x/player/): Timeout 15000ms exceeded.',
+  it('PB-ENV-001 defers to the page when the cause it quotes is the page that did not boot (a real run: a CSP that blocked the scripts failed the check in every engine)', () => {
+    const quoted = [
+      'the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2F7f8d99d19e31%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.',
+      'The browser console said:',
+      "  error: Loading the script 'http://127.0.0.1:4740/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\".",
+    ].join('\n');
+    const f = failure({ message: environmentCheckFailure(quoted) });
+    const verdict = classify(f);
+    expect(verdict.verdict.rule).toBe('page-did-not-boot');
+    expect(verdict.verdict.category).toBe('page-boot-failure');
+    expect(verdict.verdict.evidence.join('\n')).toContain('Content Security Policy');
+    // The check still names the environment when the page came up and the engine could not play: that is what it is for.
+    expect(
+      rule(
+        failure({ message: environmentCheckFailure("qa.waitFor('firstframe') timed out after 15000 ms") }),
       ),
-    });
-    expect(rule(f)).toBe('environment-check-failed');
+    ).toBe('environment-check-failed');
+    // And when the page did not boot because the service is not there, the service is the cause.
+    expect(
+      rule(
+        failure({
+          message: environmentCheckFailure(
+            'the player page did not boot (http://x/player/): net::ERR_CONNECTION_REFUSED at http://127.0.0.1:4740/player/',
+          ),
+        }),
+      ),
+    ).toBe('service-not-reachable');
   });
 
   it('a gap comes before everything else', async () => {
@@ -510,6 +559,110 @@ describe('PB-LAB-005 triage rules: the first rule that finds something wins, and
     const message = await hookWaitTimeout('firstframe');
     const flaky = classify(failure({ message, outcome: 'flaky', failedAttempts: 1 }));
     expect(flaky.verdict.rule).toBe('hook-wait-timed-out');
+  });
+});
+
+describe('PB-LAB-005 triage rules: the cause behind a rule, which is what makes clusters one root cause', () => {
+  const noticed = (
+    log: ReturnType<typeof requestEntry>[],
+    message = "Error: qa.waitFor('firstframe') timed out after 15000 ms",
+  ) =>
+    failure({
+      message,
+      diagnostics: diagnosticsOf({
+        events: [event(0, 'load-requested'), event(1, 'error', shakaError(1001, 'BAD_HTTP_STATUS', 1, 1))],
+        detail: sessionDetail([]),
+        log,
+      }),
+    });
+  const cause = (f: Failure): string | null => classify(f).verdict.cause;
+
+  it('names an origin that failed by what it answered and to what, not by how many requests or which rung', () => {
+    const many = noticed([
+      requestEntry(1),
+      ...Array.from({ length: 9 }, (_, i) => requestEntry(i + 2, { status: 503 })),
+    ]);
+    const few = noticed(
+      [requestEntry(1, { status: 503, rep: 'v720' }), requestEntry(2, { status: 503, rep: 'a-aac' })],
+      'Error: the fault rule f1 {"type":"status"} named 0 of the 3 requests it was waited for within 15000 ms: the player never asked for what the rule matches',
+    );
+    expect(cause(many)).toBe('the origin answered 503 on segment to requests no fault rule named');
+    expect(cause(few)).toBe(cause(many));
+    const init = noticed([requestEntry(1, { status: 404, kind: 'init', rep: 'v360' })]);
+    expect(cause(init)).toBe('the origin answered 404 on init to requests no fault rule named');
+    expect(cause(init)).not.toBe(cause(many));
+    const cut = noticed([requestEntry(1, { status: 200, aborted: true, abortReason: 'error' })]);
+    expect(cause(cut)).toBe('the origin answered a cut (error) on segment to requests no fault rule named');
+  });
+
+  it('names a recovery that failed by the kinds of fault that fired, not by the test or the rule ids', () => {
+    const ended = playerEnded(1001, 'BAD_HTTP_STATUS', 1);
+    const recovery = (type: string, id = 'f1') =>
+      failure({
+        message: 'Error: qa.waitForMediaTime(7) timed out after 15000 ms: the media clock is at 5.974 s.',
+        diagnostics: diagnosticsOf({
+          ...ended,
+          detail: faultSession({ id, type, status: 404 }),
+          log: refusedLog([id], 1),
+        }),
+      });
+    expect(rule(recovery('status'))).toBe('fault-fired-player-failed');
+    expect(cause(recovery('status'))).toBe('a fault of type status fired and the player did not recover');
+    expect(cause(recovery('status', 'f2'))).toBe(cause(recovery('status')));
+    expect(cause(recovery('abort'))).toBe('a fault of type abort fired and the player did not recover');
+  });
+
+  it('names a page that did not boot by whether a Content Security Policy blocked it', () => {
+    const boot = (console: string[]) =>
+      failure({
+        message: 'Error: the player page did not boot (http://x/player/): Timeout 15000ms exceeded.',
+        diagnostics: diagnosticsOf({
+          console: console.map((text) => ({ type: 'error', text })),
+        }),
+      });
+    expect(
+      cause(
+        boot([
+          "Loading the script 'http://x/player/player.js' violates the following Content Security Policy directive",
+        ]),
+      ),
+    ).toBe('the player page did not boot: a Content Security Policy blocked its scripts');
+    expect(cause(boot([]))).toBe('the player page did not boot');
+  });
+
+  it('names a media error and a critical player error', () => {
+    const media = (code: number, name: string) =>
+      failure({
+        message: 'Error: player state (metrics.state): the player is in the error state',
+        diagnostics: diagnosticsOf(playerEnded(code, name, 3)),
+      });
+    // The engines say the same corrupt bytes with different codes: one cause.
+    expect(cause(media(3015, 'MEDIA_SOURCE_OPERATION_THREW'))).toBe(cause(media(3016, 'VIDEO_ERROR')));
+    const manifest = failure({
+      message: 'Error: startup time (metrics.startupMs) is null: the first frame was never presented',
+      diagnostics: diagnosticsOf(playerEnded(4001, 'DASH_INVALID_XML', 4)),
+    });
+    expect(rule(manifest)).toBe('player-critical-error');
+    expect(cause(manifest)).toBe('the player reported DASH_INVALID_XML (code 4001)');
+  });
+
+  it('gives a cause to every rule that names one, and to no rule that only describes a symptom', () => {
+    const symptoms = RULES.filter((r) => r.cause === undefined).map((r) => r.name);
+    expect(symptoms).toStrictEqual([
+      'fault-premise-not-met',
+      'test-premise-not-met',
+      'oracles-disagree',
+      'hook-wait-timed-out',
+      'media-clock-wait-timed-out',
+      'request-log-wait-timed-out',
+      'page-call-timed-out',
+      'test-timed-out',
+      'metric-assertion-failed',
+    ]);
+    for (const r of RULES.filter((one) => typeof one.cause === 'string')) {
+      expect(r.cause, r.name).toMatch(/^[a-z].{15,}$/);
+    }
+    expect(classify(failure({ message: 'Error: nobody wrote a rule for this' })).verdict.cause).toBeNull();
   });
 });
 

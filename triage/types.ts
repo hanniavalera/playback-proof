@@ -233,6 +233,12 @@ export interface RuleVerdict {
   rule: string;
   category: Category;
   evidence: string[];
+  /**
+   * What exactly is broken, in words, when the rule names a cause and not only a symptom (`503 on segment`, `Content Security Policy
+   * violation`): two failures that fired the same rule for the same cause are one root cause, however their tests word the failure. Null
+   * for a rule that describes a symptom (a wait that ran out, a metric, a premise) and for what no rule recognised.
+   */
+  cause: string | null;
 }
 
 /** The parts a signature is made of (triage/signature.ts); the signature is their one-line form. */
@@ -243,8 +249,11 @@ export interface SignatureParts {
   assertion: string;
   /** `file:function` of a helper that threw (a spec's own body names the test, not the cause), or the spec of a generic message. */
   location: string | null;
-  /** The code of the critical Shaka error, if the player reported one. */
-  shakaCode: number | null;
+  /**
+   * The critical Shaka error the player reported, if any: its code, or `media` for any error of the media category (the engines word the
+   * same corrupt bytes with different codes: 3015 in one, 3016 in another).
+   */
+  shaka: string | null;
 }
 
 export interface ClusterMember {
@@ -279,6 +288,36 @@ export interface Cluster {
   /** The failure the cluster is described by: the one with the most diagnostics, then by engine and test id. */
   representative: Failure;
   members: ClusterMember[];
+  /** The key of the root cause this cluster belongs to (`RootCause.key`): shared with the clusters that have the same cause. */
+  rootCause: string;
+}
+
+/**
+ * Clusters that are one cause seen through different symptoms: the same rule fired, for the same cause (`RuleVerdict.cause`). An origin that
+ * answers 503 to every segment is a first frame that never came in one spec and a fault the player never saw in another, and the signature
+ * of each is its own words; the root cause is what the evidence of the rule says is broken. A cluster whose rule only describes a symptom is
+ * its own root cause.
+ */
+export interface RootCause {
+  /** 1 is the one with the most failures. */
+  rank: number;
+  /** A short hash of the category, the rule and the cause. */
+  key: string;
+  category: Category;
+  rule: string;
+  /** What is broken, in words; null for a cluster whose rule describes a symptom. */
+  cause: string | null;
+  /** Failures in all its clusters. */
+  size: number;
+  /** The keys of its clusters, largest first. */
+  clusters: string[];
+  /** The ranks of those clusters. */
+  clusterRanks: number[];
+  /** Distinct test ids, sorted. */
+  tests: string[];
+  /** Distinct Playwright projects, sorted. */
+  projects: string[];
+  failureClass: FailureClass;
 }
 
 export interface SummaryRecord {
@@ -303,11 +342,14 @@ export interface TriageReport {
     failures: number;
     flaky: number;
     clusters: number;
+    rootCauses: number;
     skipped: number;
     notRun: number;
     interrupted: number;
   };
   clusters: Cluster[];
+  /** The clusters that are one cause, grouped: every cluster belongs to exactly one. */
+  rootCauses: RootCause[];
   skipped: SkippedTest[];
   problems: string[];
   /** The model drafts, one per asked cluster, in the order of the clusters. Empty unless `--summarize` was asked and a key was set. */
