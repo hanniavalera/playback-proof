@@ -1,3 +1,6 @@
+import { execFileSync } from 'node:child_process';
+import { request } from 'node:http';
+import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   CHUNK_BYTES,
@@ -7,6 +10,8 @@ import {
   msUntilTake,
   tryTake,
 } from '../../../src/server/throttle.ts';
+import { deliveryServer, download, gapsMs, goodput, percentile } from '../support/delivery.ts';
+import type { Chunk } from '../support/delivery.ts';
 
 // The arithmetic of the bucket, driven by an injected clock: no timers, no sockets, exact numbers. The accuracy of the whole
 // path (bucket, pacing, socket, a real client) is measured in the second half of this file.
@@ -306,5 +311,188 @@ describe('scheduling (fake timers)', () => {
     expect(await smallWait).toBe(100);
     small.leave();
     expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------------
+// End to end: the bucket, the pacing, deliver(), a real socket and a real client that timestamps every read.
+// ---------------------------------------------------------------------------------------------------------------------------
+
+const BODY_500KB = Buffer.alloc(512_000, 0x2a); // the contract is for transfers of at least 500 KB
+
+/** Bytes the client read in (from, to], as kilobits per second. */
+function rateBetween(chunks: Chunk[], from: number, to: number): number {
+  const bytes = chunks.filter((c) => c.t > from && c.t <= to).reduce((n, c) => n + c.bytes, 0);
+  return (bytes * 8) / (to - from);
+}
+
+async function throttledServer(buckets: ReturnType<typeof createBucket>[], body: Buffer) {
+  return deliveryServer(() => ({ input: { status: 200, headers: {}, body, plan: { buckets } } }));
+}
+
+describe.concurrent(
+  'accuracy: goodput of a real client against the configured rate (contract: +-10 %)',
+  () => {
+    it.each([800, 1500, 3000])('%i kbps over 512000 bytes', async (kbps) => {
+      const srv = await throttledServer([createBucket(kbps)], BODY_500KB);
+      const got = await download(srv.port, '/');
+      await srv.close();
+      expect(got).toMatchObject({ status: 200, complete: true, bytes: BODY_500KB.length });
+
+      const { steadyKbps, naiveKbps, spanMs } = goodput(got.chunks);
+      console.info(
+        `[throttle] ${kbps} kbps over ${got.bytes} bytes: measured ${steadyKbps.toFixed(1)} kbps from the first read to the last without the first read (${(steadyKbps / kbps).toFixed(3)} of configured), ${naiveKbps.toFixed(1)} kbps counting it (${(naiveKbps / kbps).toFixed(3)}); first read ${got.chunks[0]?.bytes} bytes, ${got.chunks.length} reads, ${spanMs.toFixed(0)} ms`,
+      );
+      for (const measured of [steadyKbps, naiveKbps]) {
+        expect(measured).toBeGreaterThan(kbps * 0.9);
+        expect(measured).toBeLessThan(kbps * 1.1);
+      }
+    });
+  },
+);
+
+describe.concurrent('sharing: one bucket is one link', () => {
+  it('two concurrent downloads on one bucket get half each, and together the whole rate', async () => {
+    const srv = await throttledServer([createBucket(1500)], Buffer.alloc(250_000, 2));
+    const [a, b] = await Promise.all([download(srv.port, '/a'), download(srv.port, '/b')]);
+    await srv.close();
+    // Only the stretch in which both were transferring counts: after both had started, until the first one finished.
+    const from = Math.max(a.chunks[0]!.t, b.chunks[0]!.t);
+    const to = Math.min(a.chunks.at(-1)!.t, b.chunks.at(-1)!.t);
+    const [ra, rb] = [rateBetween(a.chunks, from, to), rateBetween(b.chunks, from, to)];
+    console.info(
+      `[throttle] two downloads on one 1500 kbps bucket: ${ra.toFixed(1)} and ${rb.toFixed(1)} kbps (each ${((ra / 1500) * 100).toFixed(1)} % and ${((rb / 1500) * 100).toFixed(1)} % of the rate), together ${(ra + rb).toFixed(1)} kbps, over ${(to - from).toFixed(0)} ms`,
+    );
+    expect(ra).toBeGreaterThan(750 * 0.8);
+    expect(ra).toBeLessThan(750 * 1.2);
+    expect(rb).toBeGreaterThan(750 * 0.8);
+    expect(rb).toBeLessThan(750 * 1.2);
+    expect(ra + rb).toBeGreaterThan(1500 * 0.9);
+    expect(ra + rb).toBeLessThan(1500 * 1.1);
+  });
+
+  it('a short response (audio) is not starved behind a long one (video) on the same bucket', async () => {
+    const bucket = createBucket(1500);
+    const srv = await deliveryServer((req) => ({
+      input: {
+        status: 200,
+        headers: {},
+        body: Buffer.alloc(req.url === '/video' ? 400_000 : 60_000, 3),
+        plan: { buckets: [bucket] },
+      },
+    }));
+    const [video, audio] = await Promise.all([download(srv.port, '/video'), download(srv.port, '/audio')]);
+    await srv.close();
+    const audioDone = audio.chunks.at(-1)!.t;
+    const videoByThen = video.chunks.filter((c) => c.t <= audioDone).reduce((n, c) => n + c.bytes, 0);
+    const audioMs = audioDone - audio.startedAt;
+    console.info(
+      `[throttle] audio 60000 bytes next to video 400000 bytes on 1500 kbps: audio finished after ${audioMs.toFixed(0)} ms (alone it would take ${((60_000 * 8) / 1500).toFixed(0)} ms, behind the whole video ${(((400_000 + 60_000) * 8) / 1500).toFixed(0)} ms), video had ${videoByThen} bytes by then`,
+    );
+    expect(audioMs).toBeLessThan(((60_000 * 2 + CHUNK_BYTES) * 8) / 1500 + 150);
+    expect(Math.abs(videoByThen - 60_000)).toBeLessThan(60_000 * 0.3 + CHUNK_BYTES);
+  });
+
+  it.each([
+    [1500, 6000],
+    [6000, 1500],
+  ])('a response limited by %i and %i kbps runs at the slower one', async (first, second) => {
+    const srv = await throttledServer([createBucket(first), createBucket(second)], Buffer.alloc(300_000, 4));
+    const got = await download(srv.port, '/');
+    await srv.close();
+    const { steadyKbps } = goodput(got.chunks);
+    console.info(
+      `[throttle] one response behind ${first} and ${second} kbps: ${steadyKbps.toFixed(1)} kbps (the slower is 1500)`,
+    );
+    expect(steadyKbps).toBeGreaterThan(1500 * 0.9);
+    expect(steadyKbps).toBeLessThan(1500 * 1.1);
+  });
+
+  it('two responses on two different buckets do not interfere', async () => {
+    const slow = await throttledServer([createBucket(800)], Buffer.alloc(200_000, 5));
+    const fast = await throttledServer([createBucket(3000)], Buffer.alloc(400_000, 6));
+    const [a, b] = await Promise.all([download(slow.port, '/'), download(fast.port, '/')]);
+    await Promise.all([slow.close(), fast.close()]);
+    const [ra, rb] = [goodput(a.chunks).steadyKbps, goodput(b.chunks).steadyKbps];
+    console.info(
+      `[throttle] 800 and 3000 kbps buckets, transferring at the same time: ${ra.toFixed(1)} and ${rb.toFixed(1)} kbps`,
+    );
+    expect(ra).toBeGreaterThan(800 * 0.9);
+    expect(ra).toBeLessThan(800 * 1.1);
+    expect(rb).toBeGreaterThan(3000 * 0.9);
+    expect(rb).toBeLessThan(3000 * 1.1);
+  });
+
+  it('gives the whole link to the one that stays when the other client leaves', async () => {
+    const bucket = createBucket(1500);
+    const srv = await throttledServer([bucket], Buffer.alloc(350_000, 7));
+    const stayer = download(srv.port, '/stay');
+    // the other client starts, reads for a while, then goes away
+    let leftAt = 0;
+    await new Promise<void>((resolve) => {
+      const req = request({ host: '127.0.0.1', port: srv.port, agent: false, path: '/leave' }, (res) => {
+        res.resume();
+        setTimeout(() => {
+          leftAt = performance.now();
+          req.destroy();
+          resolve();
+        }, 400);
+      });
+      req.on('error', () => {});
+      req.end();
+    });
+    const got = await stayer;
+    await srv.close();
+    // Allow one round of the queue for the departure to be noticed, then the remaining client has the link to itself.
+    const alone = rateBetween(got.chunks, leftAt + 100, got.chunks.at(-1)!.t);
+    console.info(
+      `[throttle] after the other client left a 1500 kbps bucket, the one that stayed ran at ${alone.toFixed(1)} kbps`,
+    );
+    expect(alone).toBeGreaterThan(1500 * 0.9);
+    expect(alone).toBeLessThan(1500 * 1.1);
+    expect(bucketState(bucket)).toMatchObject({ waiting: 0, consumers: 0, timerArmed: false });
+  });
+});
+
+// Alone on the event loop: the one measurement that another stream's timers could disturb.
+describe('smoothness: a rate is a steady stream, not bursts', () => {
+  it('1500 kbps: no silence longer than 150 ms between reads, and nothing bigger than the burst allowance goes out at once', async () => {
+    const srv = await throttledServer([createBucket(1500)], Buffer.alloc(400_000, 1));
+    const got = await download(srv.port, '/');
+    await srv.close();
+    const gaps = gapsMs(got.chunks);
+    const largestRead = Math.max(...got.chunks.map((c) => c.bytes));
+    console.info(
+      `[throttle] 1500 kbps smoothness over ${got.chunks.length} reads: first read ${got.chunks[0]?.bytes} bytes (the burst allowance), largest read ${largestRead} bytes, gap between reads p50 ${percentile(gaps, 50).toFixed(1)} ms, p95 ${percentile(gaps, 95).toFixed(1)} ms, max ${Math.max(...gaps).toFixed(1)} ms`,
+    );
+    expect(Math.max(...gaps)).toBeLessThan(150);
+    expect(largestRead).toBeLessThanOrEqual(CHUNK_BYTES);
+    expect(got.chunks[0]?.bytes).toBeLessThanOrEqual(CHUNK_BYTES);
+  });
+});
+
+describe('the process can exit', () => {
+  it('an idle bucket, or a consumer that joined and never asks, keeps nothing alive', () => {
+    const root = fileURLToPath(new URL('../../../', import.meta.url));
+    const program = `
+      import { createBucket, createPacer } from './src/server/throttle.ts';
+      const bucket = createBucket(800);
+      const pacer = createPacer([bucket]);
+      for (let i = 0; i < 3; i++) await pacer.take(16384); // real timers, real waits
+      const silent = createPacer([bucket]); // joined and never asking
+      pacer.leave();
+      console.log('done');
+    `;
+    const started = performance.now();
+    // execFileSync throws when the child is still alive at the timeout: that is the failure
+    const out = execFileSync(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', program], {
+      cwd: root,
+      encoding: 'utf8',
+      timeout: 20_000,
+    });
+    expect(out.trim()).toBe('done');
+    console.info(
+      `[throttle] a process that used and left a bucket exited on its own after ${(performance.now() - started).toFixed(0)} ms (including loading TypeScript)`,
+    );
   });
 });
