@@ -41,6 +41,10 @@ export default defineConfig({
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+    // EXPERIMENT (ADR-106, not for merging): Desktop Safari at a device scale factor of 1 instead of 2, so that the VM composes and the
+    // trace captures a quarter of the pixels. Run next to `webkit` in the same repetitions (`--project webkit-dpr1`), the paired
+    // comparison says whether the frames that Shaka's protection reacts to depend on them.
+    { name: 'webkit-dpr1', use: { ...devices['Desktop Safari'], deviceScaleFactor: 1 } },
     // Chromium with CDP Emulation.setCPUThrottlingRate (a 4x slowdown) to stand in for a low-end TV or set-top box.
     // The throttle is applied by the shared fixture from this metadata (tests/e2e/support). Firefox and WebKit have no equivalent.
     {
