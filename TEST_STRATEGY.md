@@ -230,10 +230,10 @@ A pull request merges when every stage below is green. The stage names are the `
 | `gate:unit` | Vitest. | Every test passes, and there are tests. | |
 | `gate:merge` | The `@merge` Playwright tests, one job per engine (chromium, firefox, webkit) and one for the throttled Chromium project (`@cpu`). | Every test passes after at most one retry. A pass on retry is not a pass: it is recorded as a flake (section 7). | Per engine job, below. |
 | `gate:perf` | The performance scenarios of the catalog against the baselines of this environment. | No gated metric regresses, or a regression does not reproduce on the automatic re-measure (ADR-004). | Per performance job, below. |
-| `gate:flake` | The flake history of the merge-tier tests. | The suite flake rate is within the budget, no test is above the quarantine trigger without being quarantined, and no quarantine has expired. | Seconds. |
+| `gate:flake` | The runs of this build, judged against the history of their environment (the orphan branch `ci-data` on GitHub, a file on a volume in Jenkins) and the quarantine list; a build of `main` is also recorded in the history. It follows the merge gate in both systems, also when an engine is red, and it fails when no engine left a run file. | The suite flake rate is within the budget, no test is above the quarantine trigger without being quarantined, and no quarantine has expired. | Seconds. |
 | `gate:triage` | Clusters the failures of a red build by root cause. | It is not a gate: it never decides a verdict and never turns a red build green. | |
 
-**Entry:** a pull request opened or updated against `main`; CI starts from a clean checkout of the merge commit, restores or generates the streams, and waits for the service's `/health`. **Exit:** every stage above green, which branch protection is set up to require once the CI exists (Phase 4): static, unit, one merge job per engine, the throttled project, performance, flake.
+**Entry:** a pull request opened or updated against `main`; CI starts from a clean checkout of the merge commit, restores or generates the streams, and waits for the service's `/health`. **Exit:** every stage above green. Branch protection on GitHub requires `static`, `unit`, one `merge-gate` job per engine (five: Linux and macOS WebKit are two of them) and `flake`; performance joins when its job exists ([docs/CI.md](docs/CI.md) has the names, and why `flake` is required). The stages run in this order in both CI systems, and a test compares the two ([ADR-173](docs/decisions/ci-flake.md)).
 
 ### 6.2 The release gate
 
