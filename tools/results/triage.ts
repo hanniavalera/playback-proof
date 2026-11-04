@@ -8,6 +8,9 @@ import { code, link, listOf, mdTable, plural } from './format.ts';
 export const TRIAGE_DIR = 'docs/results/triage';
 export const TRIAGE_REPORT = `${TRIAGE_DIR}/triage-report.json`;
 export const TRIAGE_MOCK_REPORT = `${TRIAGE_DIR}/summarize-with-mock/triage-report.json`;
+export const TRIAGE_CI_DEMO = `${TRIAGE_DIR}/ci-demo/triage-report.json`;
+export const TRIAGE_CI_UNMATCHED = `${TRIAGE_DIR}/ci-demo/unmatched-flake-pr16-triage-report.json`;
+const TRIAGE_CI_PAGE = `${TRIAGE_DIR}/ci-demo.md`;
 
 interface Cluster {
   key: string;
@@ -149,9 +152,69 @@ export function renderTriage(files: FileSet): Rendered {
     '',
     perRootCause,
     '',
+    ...ciDemoSection(files),
     ...mockSentence(files),
   ];
   return data(lines.join('\n'));
+}
+
+/** The triage job of GitHub Actions on a red pull request: the report it made over the Playwright reports of the legs. */
+function ciDemoSection(files: FileSet): string[] {
+  if (!files.has(TRIAGE_CI_DEMO)) return [];
+  const report = files.json(TRIAGE_CI_DEMO);
+  if (report.at('schemaVersion').int() !== 1)
+    report.at('schemaVersion').fail('this renderer reads schema version 1');
+  const totals = report.at('totals');
+  const clusters = report.at('clusters').list();
+  const roots = report.at('rootCauses').list();
+  const reports = report.at('sources').list().length;
+  const failures = totals.at('failures').int();
+  const claimed = [
+    ['clusters', totals.at('clusters').int(), clusters.length],
+    ['rootCauses', totals.at('rootCauses').int(), roots.length],
+    ['failures', failures, clusters.reduce((n, c) => n + c.at('size').int(), 0)],
+  ] as const;
+  for (const [name, said, counted] of claimed) {
+    if (said !== counted) totals.at(name).fail(`says ${said} but the report lists ${counted}`);
+  }
+  const table = mdTable(
+    ['Failures', 'Engines', 'Tests', 'Category / rule', 'Class'],
+    clusters.map((c) => [
+      String(c.at('size').int()),
+      listOf(
+        c
+          .at('projects')
+          .list()
+          .map((p) => code(p.str())),
+      ),
+      String(c.at('tests').list().length),
+      label(c.at('category').str(), c.at('rule').at('rule').str()),
+      c.at('failureClass').str(),
+    ]),
+  );
+  const causes = roots.map(
+    (root) =>
+      `${label(root.at('category').str(), root.at('rule').str())}: ${root.opt('cause')?.str() ?? 'no single cause named'} (${plural(root.at('size').int(), 'failure')}, ${plural(root.at('clusters').list().length, 'cluster')})`,
+  );
+  const lines = [
+    `On a red pull request in GitHub Actions, the \`triage\` job read the Playwright reports of the legs (${link('ci-demo.md', TRIAGE_CI_PAGE)}): ${plural(failures, 'failed test')} in ${plural(reports, 'report')} became ${plural(clusters.length, 'cluster')} of ${plural(roots.length, 'root cause')}. Source: ${link('ci-demo/triage-report.json', TRIAGE_CI_DEMO)}.`,
+    '',
+    table,
+    '',
+    `Root ${roots.length === 1 ? 'cause' : 'causes'}: ${causes.join('; ')}.`,
+    '',
+  ];
+  if (files.has(TRIAGE_CI_UNMATCHED)) {
+    const other = files.json(TRIAGE_CI_UNMATCHED);
+    const found = other.at('clusters').list();
+    const flaky = other.at('totals').at('flaky').int();
+    const unmatched = found.filter((c) => c.at('rule').at('rule').str() === 'no-rule-matched');
+    lines.push(
+      `${link('The same tool on another pull request', `${TRIAGE_DIR}/ci-demo/unmatched-flake-pr16-triage-report.md`)} found ${plural(flaky, 'flaky test')} in ${plural(found.length, 'cluster')}; ${plural(unmatched.length, 'cluster')} of them matched no rule (${listOf([...new Set(unmatched.map((c) => label(c.at('category').str(), c.at('rule').at('rule').str())))])}) and the report says so instead of guessing.`,
+      '',
+    );
+  }
+  return lines;
 }
 
 function mockSentence(files: FileSet): string[] {

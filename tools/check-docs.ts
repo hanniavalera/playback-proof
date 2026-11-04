@@ -6,11 +6,14 @@
 //     (the policy tables rendered from src/shared) is up to date, and every test id cited anywhere in the documentation exists;
 //  3. README.md holds the result tables of the lab as generated blocks (tools/results-tables.ts) and `docs:check` fails when one differs
 //     from what the committed result files render to, so that a number in the README cannot drift from the data it quotes;
-//  4. more checks are added by the phases that own the documents (the test catalog against the specs). Each check is a function below
+//  4. the readiness tables of docs/READINESS.md and of the manifest of docs/results/readiness, which another generator writes
+//     (`npm run results:docs`, tools/results-docs.ts), are checked here too, by that generator's own function: one command checks
+//     every generated block of the repository, and `--write` rewrites them all;
+//  5. more checks are added by the phases that own the documents (the test catalog against the specs). Each check is a function below
 //     returning a list of problems.
 //
 //   npm run docs:check                 check everything
-//   npm run docs:check -- --write      rewrite the generated blocks of TEST_STRATEGY.md and README.md first (then check)
+//   npm run docs:check -- --write      rewrite the generated blocks of TEST_STRATEGY.md, README.md and the readiness documents first (then check)
 //   npm run docs:check -- --print      print the generated blocks without writing anything (`--print NAME...` only the named ones)
 import { readdirSync, readFileSync, statSync, existsSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -41,6 +44,7 @@ import {
   printResultBlocks,
   writeResultBlocks,
 } from './results-tables.ts';
+import { resultsDocsProblems } from './results-docs.ts';
 
 export { blockBody, blockMarkers, checkBlockFresh, locateBlock, replaceBlock } from './doc-blocks.ts';
 
@@ -199,6 +203,16 @@ export function checkReadmeFile(
   };
 }
 
+function checkReadinessDocs(root: string, write: boolean): string[] {
+  try {
+    return resultsDocsProblems({ root, write });
+  } catch (error) {
+    return [
+      `docs/READINESS.md: the readiness tables cannot be generated (${error instanceof Error ? error.message : String(error)})`,
+    ];
+  }
+}
+
 function main(): void {
   const args = new Set(process.argv.slice(2));
   const files = walk(ROOT);
@@ -234,6 +248,7 @@ function main(): void {
   const readme = checkReadmeFile(ROOT, args.has('--write'));
   problems.push(...readme.problems);
   if (readme.rewrote) notes.push(`rewrote the generated blocks of ${README_FILE}`);
+  problems.push(...checkReadinessDocs(ROOT, args.has('--write')));
 
   // A test id mentioned in any other document must exist too: ids are a contract.
   if (rows.length > 0) {

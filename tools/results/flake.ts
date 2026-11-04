@@ -1,146 +1,218 @@
-// RESULTS_FLAKE: the flake rate of every engine job, and the tests that flaked, from the committed `flake:report --json` files
-// (docs/results/flake/**/report-*.json: one per history that was collected). The shape is flake/report.ts's FlakeReport: `suites` holds one
-// record per engine job (builds, executions, flaky, failed, rate, budget, verdict), `tests` one per test and engine, and `skips` what was
-// skipped (a documented gap or an invalid run) with the share of runs in which it was.
+// RESULTS_FLAKE: what the flake collections of docs/results/flake measured, counted from their raw histories. A collection is one or
+// more repetitions of a Playwright invocation (one retry, the flake reporter) on a runner; its raw file is the history the collector
+// wrote, one FlakeRun per line (flake/run.ts), parsed by the tracker's own `parseHistory`, which refuses what it does not understand.
+// The counts are the tracker's definitions: an EXECUTION is a test that ran to a verdict; it is FLAKY when it failed its first attempt
+// and passed a retry, FAILED when it never passed, and an INVALID RUN is a skip whose reason starts with the prefix of ADR-106 (the
+// attempt could not evaluate its claim), counted in no rate. The reports and the write-up beside the raw files are not read: the
+// reports' windows can be shorter than the collection, and the prose is the author's.
+import { HistoryError, parseHistory } from '../../flake/history.ts';
+import { isExecuted, isInvalidRun } from '../../flake/run.ts';
+import type { FlakeRun } from '../../flake/run.ts';
 import { ResultsError, data, emptyState } from './files.ts';
-import type { FileSet, Node, Rendered } from './files.ts';
-import { code, link, mdTable, percent, plural, shorten } from './format.ts';
+import type { FileSet, Rendered } from './files.ts';
+import { code, day, link, mdTable, percent, plural } from './format.ts';
 
 export const FLAKE_DIR = 'docs/results/flake';
-export const FLAKE_REPORT_PATTERN = /(?:^|\/)report-[^/]+\.json$/;
+/** The raw histories: `<collection>/raw/[<engine job>/]<environment id>.jsonl`, tested against the whole path. */
+export const FLAKE_RAW_PATTERN = /^docs\/results\/flake\/(?:.+\/)?raw\/(?:[^/]+\/)?[^/]+\.jsonl$/;
+/** The same, against the part of the path under the flake directory. */
+const RAW_UNDER_DIR = /^(?:.+\/)?raw\/(?:[^/]+\/)?[^/]+\.jsonl$/;
 
-interface Report {
+export interface Counts {
+  executions: number;
+  flaky: number;
+  failed: number;
+  /** Skipped, and the reason starts with the invalid-run prefix. */
+  invalid: number;
+  /** Skipped for another reason: a documented gap. */
+  otherSkips: number;
+}
+
+export interface Collection {
+  /** The directory of the collection under docs/results/flake, with the engine job when the collection has one per job. */
+  name: string;
   path: string;
   envId: string;
-  from: string | null;
-  to: string | null;
-  runs: number;
-  limits: string;
-  suites: Node[];
-  tests: Node[];
-  /** null: a report of an older shape, with no `skips` at all. */
-  skips: Node[] | null;
+  /** The Playwright project: `webkit` for both WebKit jobs. */
+  project: string;
+  repetitions: number;
+  commits: string[];
+  from: string;
+  to: string;
+  totals: Counts;
+  perTest: Map<string, Counts>;
 }
 
-function readReport(files: FileSet, path: string): Report {
-  const root = files.json(path);
-  const history = root.at('history');
-  const limits = root.at('limits');
-  return {
-    path,
-    envId: root.at('envId').str(),
-    from: history.opt('from')?.str() ?? null,
-    to: history.opt('to')?.str() ?? null,
-    runs: history.at('runs').int(),
-    limits: `window of ${limits.at('windowRuns').int()}, judged from ${limits.at('minRunsToJudge').int()}, test trigger ${percent(limits.at('quarantineTriggerRate').num())}, suite budget ${percent(limits.at('suiteBudgetRate').num())}`,
-    suites: root.at('suites').list(),
-    tests: root.at('tests').list(),
-    skips: root.opt('skips')?.list() ?? null,
-  };
+const COLLECTION_ORDER = ['collect-1', 'abr-002-macos-40', 'after-fix', 'demo-deliberate-flake'];
+
+const empty = (): Counts => ({ executions: 0, flaky: 0, failed: 0, invalid: 0, otherSkips: 0 });
+
+function add(counts: Counts, test: FlakeRun['tests'][number]): void {
+  if (isExecuted(test.outcome)) {
+    counts.executions += 1;
+    if (test.outcome === 'flaky') counts.flaky += 1;
+    if (test.outcome === 'failed' || test.outcome === 'timedOut') counts.failed += 1;
+  } else if (test.outcome === 'skipped') {
+    if (isInvalidRun(test)) counts.invalid += 1;
+    else counts.otherSkips += 1;
+  }
 }
+
+function readHistory(files: FileSet, path: string): FlakeRun[] {
+  try {
+    return parseHistory(files.text(path), path);
+  } catch (error) {
+    if (error instanceof HistoryError) throw new ResultsError(`${path}: ${error.message}`);
+    throw error;
+  }
+}
+
+interface Accumulator {
+  runs: Set<string>;
+  commits: Set<string>;
+  dates: string[];
+  totals: Counts;
+  perTest: Map<string, Counts>;
+}
+
+/** Every collection and engine project of the raw histories, counted. */
+export function readCollections(files: FileSet): Collection[] {
+  const found: Collection[] = [];
+  for (const path of files.list(FLAKE_DIR, RAW_UNDER_DIR)) {
+    const relative = path.slice(FLAKE_DIR.length + 1);
+    const [, head = '', job = ''] = /^(.+?)\/raw(?:\/([^/]+))?\/[^/]+\.jsonl$/.exec(relative) ?? [];
+    const runs = readHistory(files, path);
+    if (runs.length === 0) throw new ResultsError(`${path}: the history holds no run`);
+    const projects = new Map<string, Accumulator>();
+    for (const run of runs) {
+      for (const test of run.tests) {
+        const mine = projects.get(test.project) ?? {
+          runs: new Set<string>(),
+          commits: new Set<string>(),
+          dates: [],
+          totals: empty(),
+          perTest: new Map<string, Counts>(),
+        };
+        projects.set(test.project, mine);
+        if (!mine.runs.has(run.invocationId)) {
+          mine.runs.add(run.invocationId);
+          mine.commits.add(run.commit);
+          mine.dates.push(run.date);
+        }
+        const own = mine.perTest.get(test.id) ?? empty();
+        mine.perTest.set(test.id, own);
+        add(mine.totals, test);
+        add(own, test);
+      }
+    }
+    for (const [project, mine] of projects) {
+      const dates = [...mine.dates].sort();
+      found.push({
+        name: job === '' ? head : `${head} / ${job}`,
+        path,
+        envId: runs[0]?.envId ?? '',
+        project,
+        repetitions: mine.runs.size,
+        commits: [...mine.commits].sort(),
+        from: dates[0] ?? '',
+        to: dates[dates.length - 1] ?? '',
+        totals: mine.totals,
+        perTest: mine.perTest,
+      });
+    }
+  }
+  const rank = (name: string): number => {
+    const head = name.split(' / ')[0] ?? name;
+    const at = COLLECTION_ORDER.findIndex((prefix) => head === prefix || head.startsWith(`${prefix}/`));
+    return at === -1 ? COLLECTION_ORDER.length : at;
+  };
+  return found.sort(
+    (a, b) =>
+      rank(a.name) - rank(b.name) || a.name.localeCompare(b.name) || a.project.localeCompare(b.project),
+  );
+}
+
+const share = (part: number, whole: number): string => (whole === 0 ? 'n/a' : percent(part / whole));
 
 export function renderFlake(files: FileSet): Rendered {
-  const paths = files.list(FLAKE_DIR, FLAKE_REPORT_PATTERN);
-  if (paths.length === 0) return emptyState('flake reports', FLAKE_DIR);
-  const reports = paths.map((path) => readReport(files, path));
+  if (files.list(FLAKE_DIR, RAW_UNDER_DIR).length === 0) return emptyState('flake collections', FLAKE_DIR);
+  const collections = readCollections(files);
 
-  const suiteRows = reports.flatMap((report) =>
-    report.suites.map((suite) => {
-      const experimental = suite.opt('experimental')?.bool() === true;
-      return [
-        code(report.envId),
-        link(report.path.slice(FLAKE_DIR.length + 1), report.path),
-        `${code(suite.at('project').str())}${experimental ? ' (experimental)' : ''}`,
-        String(suite.at('builds').int()),
-        String(suite.at('executions').int()),
-        String(suite.at('flaky').int()),
-        String(suite.at('failed').int()),
-        percent(suite.at('flakeRate').num()),
-        percent(suite.at('budget').num()),
-        suite.at('verdict').str(),
-      ];
-    }),
+  const commitText = (commits: readonly string[]): string =>
+    commits.length === 1 ? code((commits[0] ?? '').slice(0, 7)) : plural(commits.length, 'commit');
+  const dateText = (c: Collection): string =>
+    day(c.from) === day(c.to) ? day(c.from) : `${day(c.from)} to ${day(c.to)}`;
+  const perCollection = mdTable(
+    [
+      'Collection',
+      'Environment',
+      'Engine project',
+      'Repetitions',
+      'Executions',
+      'Flaky',
+      'Failed (both attempts)',
+      'Skipped as invalid run',
+      'Other skips',
+      'Commit',
+      'Date (UTC)',
+    ],
+    collections.map((c) => [
+      link(c.name, c.path),
+      code(c.envId),
+      code(c.project),
+      String(c.repetitions),
+      String(c.totals.executions),
+      String(c.totals.flaky),
+      String(c.totals.failed),
+      String(c.totals.invalid),
+      String(c.totals.otherSkips),
+      commitText(c.commits),
+      dateText(c),
+    ]),
   );
-  if (suiteRows.length === 0)
-    throw new ResultsError(`${FLAKE_DIR}: the reports hold no engine job (suites is empty in every file)`);
 
-  const notable = reports.flatMap((report) =>
-    report.tests
-      .filter((test) => test.at('flaky').int() > 0 || test.at('failed').int() > 0)
-      .map((test) => [
-        code(report.envId),
-        code(test.at('id').str()),
-        code(test.at('project').str()),
-        String(test.at('executions').int()),
-        String(test.at('flaky').int()),
-        String(test.at('failed').int()),
-        percent(test.at('flakeRate').num()),
-        test.at('verdict').str(),
-        shorten(test.opt('lastFailure')?.opt('signature')?.str() ?? 'none recorded', 110),
+  const notable = collections.flatMap((c) =>
+    [...c.perTest.entries()]
+      .filter(([, n]) => n.flaky > 0 || n.failed > 0 || n.invalid > 0)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([id, n]) => [
+        c.name,
+        code(c.envId),
+        code(id),
+        code(c.project),
+        String(n.executions),
+        `${n.flaky + n.failed} of ${n.executions} (${share(n.flaky + n.failed, n.executions)})`,
+        String(n.flaky),
+        String(n.failed),
+        `${n.invalid} of ${n.executions + n.invalid} (${share(n.invalid, n.executions + n.invalid)})`,
       ]),
   );
 
   const lines = [
-    mdTable(
-      [
-        'Environment',
-        'Report',
-        'Engine job',
-        'Builds',
-        'Executions',
-        'Flaky',
-        'Failed',
-        'Flake rate',
-        'Budget',
-        'Verdict',
-      ],
-      suiteRows,
-    ),
+    `Counted from the raw histories of ${plural(collections.length, 'collection')} under ${link(FLAKE_DIR, FLAKE_DIR)}, one line per repetition (a Playwright invocation with one retry and the flake reporter). An execution is a test that ran to a verdict; it is flaky when it failed its first attempt and passed its retry, and failed when both attempts failed. An invalid run is a skip whose reason starts with \`invalid run:\`: the attempt could not evaluate its claim, and no rate counts it (\`docs/FLAKE.md\`, "Invalid runs").`,
     '',
-    `Merge-tier tests only, quarantined ones left out; a flaky execution is one that failed and then passed on its retry. ${[...new Set(reports.map((r) => r.limits))].map((l) => `Policy: ${l}.`).join(' ')} ${plural(reports.length, 'report')}: ${reports.map((r) => `${code(r.envId)} ${plural(r.runs, 'recorded run')}${r.from && r.to ? ` (${r.from} to ${r.to})` : ''}`).join('; ')}.`,
+    perCollection,
     '',
     notable.length === 0
-      ? 'No test flaked or failed in the committed histories.'
-      : mdTable(
-          [
-            'Environment',
-            'Test',
-            'Engine',
-            'Executions',
-            'Flaky',
-            'Failed',
-            'Rate',
-            'Verdict',
-            'Last failure',
-          ],
-          notable,
-        ),
+      ? 'No test flaked, failed or was skipped as an invalid run in these collections.'
+      : [
+          'The tests that flaked, failed or were skipped as invalid runs:',
+          '',
+          mdTable(
+            [
+              'Collection',
+              'Environment',
+              'Test',
+              'Engine project',
+              'Executions',
+              'First attempt failed',
+              'Flaky',
+              'Failed (both attempts)',
+              'Invalid runs, of the scheduled attempts',
+            ],
+            notable,
+          ),
+        ].join('\n'),
   ];
-  if (reports.some((report) => report.skips !== null)) {
-    const skipped = reports.flatMap((report) =>
-      (report.skips ?? []).map((skip) => {
-        const times = skip.opt('times');
-        const of = skip.opt('of');
-        return [
-          code(report.envId),
-          code(skip.at('id').str()),
-          code(skip.at('project').str()),
-          times && of ? `${times.int()} of ${of.int()} runs` : '-',
-          shorten(skip.opt('reason')?.str() ?? 'NO REASON RECORDED', 110),
-          skip.at('date').str().slice(0, 10),
-        ];
-      }),
-    );
-    lines.push(
-      '',
-      skipped.length === 0
-        ? 'No test was skipped in the committed histories.'
-        : [
-            'A skipped test counts in no rate: a documented gap, or an invalid run that carries its numbers. The report lists each with the share of runs in which it was skipped.',
-            '',
-            mdTable(['Environment', 'Test', 'Engine', 'Skipped in', 'Reason (start)', 'Last seen'], skipped),
-          ].join('\n'),
-    );
-  }
   return data(lines.join('\n'));
 }

@@ -17,6 +17,9 @@ export const PERF_RESULTS_DIR = 'docs/results/perf';
 export const DERIVATION_FILE = `${PERF_RESULTS_DIR}/threshold-derivation.json`;
 export const SENSITIVITY_FILE = `${PERF_RESULTS_DIR}/sensitivity/summary.md`;
 export const CROSS_VM_FILE = `${PERF_RESULTS_DIR}/gha-cross-vm.md`;
+export const PAIRED_AA_README = `${PERF_RESULTS_DIR}/paired-aa/README.md`;
+export const PAIRED_SENSITIVITY_FILE = `${PERF_RESULTS_DIR}/paired-sensitivity.md`;
+const PAIRED_SENSITIVITY_DIR = `${PERF_RESULTS_DIR}/paired-sensitivity`;
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Baselines
@@ -220,9 +223,23 @@ function budgetsTable(derivation: Derivation): string {
 // ---------------------------------------------------------------------------------------------------------------------
 // A/A
 
+/** Where a set of A/A summaries comes from: a directory of `docs/results/perf`, with a name of its own when it is not an environment's. */
+type AaKind = 'committed' | 'paired';
+
+interface AaRun {
+  exitCode: number;
+  /** The CPU model of the pass: the report's own, else the machine record of the job that made it. */
+  cpu: string | null;
+  /** The job of GitHub that made the pass (a directory of `raw/`), when the summary names one. */
+  job: string | null;
+}
+
 interface AaFile {
   path: string;
   set: string;
+  kind: AaKind;
+  /** The GitHub VMs of the set (a job is a machine); the workstation sets are one machine and say nothing here. */
+  onGithub: boolean;
   envId: string;
   profile: string;
   passes: number;
@@ -234,6 +251,40 @@ interface AaFile {
   notReproduced: number;
   firstProblem: string | null;
   problemPasses: number;
+  runs: AaRun[];
+}
+
+const AA_PATH = /^(after-fix\/)?([^/]+)\/[^/]+-aa\.json$/;
+const GITHUB_SETS: Record<string, { set: string; kind: AaKind }> = {
+  'gha-cross-vm': { set: 'committed baseline, GitHub VMs', kind: 'committed' },
+  'paired-aa': { set: 'paired control, GitHub VMs', kind: 'paired' },
+};
+const rawJobOf = (file: string): string | null =>
+  /(?:^|\/)raw\/([^/]+)\/pass-\d+\.json$/.exec(file)?.[1] ?? null;
+
+/** The same CPU model, written the way the runner's `/proc/cpuinfo` happened to write it: Intel(R) Xeon(R) ... and INTEL(R) XEON(R) ... */
+function cpuName(model: string): string {
+  const words = model
+    .replace(/\((?:R|TM)\)/gi, '')
+    .replace(/\s+CPU\b.*$/i, '')
+    .replace(/\s+\d+-Core Processor$/i, '')
+    .trim()
+    .split(/\s+/);
+  const known: Record<string, string> = {
+    AMD: 'AMD',
+    EPYC: 'EPYC',
+    INTEL: 'Intel',
+    XEON: 'Xeon',
+    PLATINUM: 'Platinum',
+  };
+  return words.map((word) => known[word.toUpperCase()] ?? word).join(' ');
+}
+
+function machineCpu(files: FileSet, dir: string, job: string | null): string | null {
+  if (job === null) return null;
+  const path = `${dir}/raw/${job}/machine.txt`;
+  if (!files.has(path)) return null;
+  return /^cpu: (.+)$/m.exec(files.text(path))?.[1]?.trim() ?? null;
 }
 
 function readAa(files: FileSet): AaFile[] {
@@ -246,11 +297,22 @@ function readAa(files: FileSet): AaFile[] {
     if (runs.length !== passes) root.at('runs').fail(`has ${runs.length} passes but "passes" says ${passes}`);
     const withProblems = runs.filter((run) => run.at('problems').list().length > 0);
     const firstLine = withProblems[0]?.at('problems').list()[0]?.str().split('\n')[0] ?? null;
+    const within = path.slice(PERF_RESULTS_DIR.length + 1);
+    const [, afterFix, dirName] = AA_PATH.exec(within) ?? [];
+    const github = GITHUB_SETS[dirName ?? ''];
+    const dir = `${PERF_RESULTS_DIR}/${dirName ?? ''}`;
+    const paired = root.opt('paired') !== undefined;
+    if (github !== undefined && (github.kind === 'paired') !== paired)
+      root
+        .at('paired')
+        .fail(`${github.set}: a ${github.kind} set whose summary ${paired ? 'is' : 'is not'} paired`);
     return {
       path,
-      set: path.slice(PERF_RESULTS_DIR.length + 1).startsWith('after-fix/')
-        ? 'after a harness fix'
-        : 'first run',
+      set:
+        github?.set ??
+        (afterFix ? 'committed baseline, after a harness fix' : 'committed baseline, first run'),
+      kind: paired ? 'paired' : 'committed',
+      onGithub: github !== undefined,
       envId: root.at('envId').str(),
       profile: root.at('profile').str(),
       passes,
@@ -262,18 +324,46 @@ function readAa(files: FileSet): AaFile[] {
       notReproduced: root.at('notReproduced').int(),
       firstProblem: firstLine,
       problemPasses: withProblems.length,
+      runs: runs.map((run) => {
+        const job = rawJobOf(run.at('file').str());
+        const own = run.opt('cpuModel')?.str() ?? null;
+        return {
+          exitCode: run.at('exitCode').int(),
+          cpu: own ?? (github === undefined ? null : machineCpu(files, dir, job)),
+          job,
+        };
+      }),
     };
   });
 }
 
-function aaSection(aa: readonly AaFile[]): string[] {
+const SET_ORDER = [
+  'committed baseline, first run',
+  'committed baseline, after a harness fix',
+  'committed baseline, GitHub VMs',
+  'paired control, GitHub VMs',
+];
+
+/** The CPU model of every VM (job) of a GitHub set, from the machine record each job uploaded next to its passes. */
+function vmCpus(files: FileSet, dirName: string): string[] {
+  const dir = `${PERF_RESULTS_DIR}/${dirName}`;
+  return files.list(`${dir}/raw`, /^[^/]+\/machine\.txt$/).map((path) => {
+    const cpu = /^cpu: (.+)$/m.exec(files.text(path))?.[1]?.trim();
+    if (cpu === undefined) throw new ResultsError(`${path}: the machine record has no "cpu:" line`);
+    return cpuName(cpu);
+  });
+}
+
+function aaSection(aa: readonly AaFile[], vms: ReadonlyMap<string, readonly string[]>): string[] {
   if (aa.length === 0)
     return ['_No A/A summaries are committed (`docs/results/perf/<env>/<profile>-aa.json`)._'];
+  const orderOf = (set: string): number => {
+    const at = SET_ORDER.indexOf(set);
+    return at === -1 ? SET_ORDER.length : at;
+  };
   const ordered = [...aa].sort(
     (a, b) =>
-      Number(a.set !== 'first run') - Number(b.set !== 'first run') ||
-      a.envId.localeCompare(b.envId) ||
-      a.profile.localeCompare(b.profile),
+      orderOf(a.set) - orderOf(b.set) || a.envId.localeCompare(b.envId) || a.profile.localeCompare(b.profile),
   );
   const table = mdTable(
     [
@@ -295,7 +385,52 @@ function aaSection(aa: readonly AaFile[]): string[] {
       `${a.alarms} (${a.notReproduced})`,
     ]),
   );
-  const total = (pick: (a: AaFile) => number): number => aa.reduce((n, a) => n + pick(a), 0);
+
+  const sets = [...new Set(ordered.map((a) => a.set))];
+  const sum = (set: string, pick: (a: AaFile) => number): number =>
+    ordered.filter((a) => a.set === set).reduce((n, a) => n + pick(a), 0);
+  const machinesOf = (set: string): string => {
+    const cpus = vms.get(set);
+    if (cpus === undefined) return 'one machine';
+    return `${plural(cpus.length, 'VM')} on ${plural(new Set(cpus).size, 'CPU model')}`;
+  };
+  const perSet = mdTable(
+    ['Set', 'A/A passes', 'False positives (a pass that exited 1 with nothing changed)', 'Machines'],
+    sets.map((set) => [
+      set,
+      String(sum(set, (a) => a.passes)),
+      String(sum(set, (a) => a.falsePositives)),
+      machinesOf(set),
+    ]),
+  );
+
+  const github = SET_ORDER.filter((set) => vms.has(set) && sets.includes(set));
+  const models = [...new Set(github.flatMap((set) => vms.get(set) ?? []))].sort();
+  const perModel =
+    github.length === 0
+      ? []
+      : [
+          '',
+          'On GitHub-hosted VMs, by the CPU model the job landed on (a runner label is a pool of machines):',
+          '',
+          mdTable(
+            ['CPU model', ...github],
+            models.map((model) => [
+              model,
+              ...github.map((set) => {
+                const jobs = (vms.get(set) ?? []).filter((cpu) => cpu === model).length;
+                const runs = ordered
+                  .filter((a) => a.set === set)
+                  .flatMap((a) => a.runs)
+                  .filter((run) => run.cpu !== null && cpuName(run.cpu) === model);
+                return jobs === 0 && runs.length === 0
+                  ? '-'
+                  : `${plural(jobs, 'VM')}, ${plural(runs.length, 'pass', 'passes')}, ${plural(runs.filter((run) => run.exitCode === 1).length, 'reproduced regression')}`;
+              }),
+            ]),
+          ),
+        ];
+
   const problems = ordered
     .filter((a) => a.problemPasses > 0 && a.firstProblem !== null)
     .map(
@@ -305,14 +440,8 @@ function aaSection(aa: readonly AaFile[]): string[] {
   return [
     table,
     '',
-    `Over all sets: ${plural(
-      total((a) => a.passes),
-      'A/A pass',
-      'A/A passes',
-    )}, ${plural(
-      total((a) => a.falsePositives),
-      'false positive',
-    )} (a pass that exited 1 with nothing changed).`,
+    perSet,
+    ...perModel,
     ...(problems.length > 0 ? ['', ...problems.map((p) => `- ${p}`)] : []),
   ];
 }
@@ -407,11 +536,83 @@ function sensitivitySection(files: FileSet): string[] {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
+/** Four significant digits, as the gate writes its own sentences: 58.95, 200.6, 266.7. */
+const sig4 = (value: number): string => String(Number(value.toPrecision(4)));
+const signed = (share: number): string => `${share < 0 ? '-' : '+'}${Math.abs(share * 100).toFixed(1)} %`;
+
+/** A real regression on a real pull request, as the paired gate reported it: the gate reports of its performance legs. */
+function pairedSensitivitySection(files: FileSet): string[] {
+  const paths = files
+    .list(PAIRED_SENSITIVITY_DIR, /^[^/]+\.json$/)
+    .sort((a, b) => a.replace(/\.json$/, '').localeCompare(b.replace(/\.json$/, '')));
+  if (paths.length === 0) return [];
+  const rows: string[][] = [];
+  let passed = 0;
+  for (const path of paths) {
+    const root = files.json(path);
+    if (root.at('kind').str() !== 'perf-gate-report') root.at('kind').fail('expected "perf-gate-report"');
+    const paired = root.at('paired');
+    if (paired.at('aa').bool())
+      paired.at('aa').fail('a paired sensitivity report that is an A/A by construction');
+    const cpus = paired.at('cpuModels');
+    const same = cpus.at('same').bool();
+    for (const scenario of root.at('scenarios').list()) {
+      for (const metric of scenario.at('metrics').list()) {
+        const verdict = metric.at('verdict').str();
+        const first = metric.at('first');
+        if (verdict === 'pass') passed += 1;
+        if (verdict === 'pass' || verdict === 'tracked') continue;
+        const fresh = metric.opt('remeasure');
+        const median = first.at('median');
+        const tail = first.at('tail');
+        const rule = first.at('rule');
+        const allowed = median.at('allowed').num();
+        const freshMedian = fresh?.at('median');
+        rows.push([
+          code(root.at('profile').str()),
+          `${scenario.at('id').str()} ${code(metric.at('metric').str())}`,
+          `${sig4(median.at('baseline').num())} ms`,
+          `${sig4(median.at('current').num())} ms (${signed(median.at('changeShare').num())}; p90 ${signed(tail.at('changeShare').num())})`,
+          freshMedian === undefined
+            ? 'not needed'
+            : `${sig4(freshMedian.at('current').num())} ms (${signed(freshMedian.at('changeShare').num())}), worse by ${sig4(freshMedian.at('worseBy').num())} ms`,
+          `${sig4(allowed)} ms (${fixed(rule.at('medianShare').num() * 100, 0)} % of the control, floor ${fixed(rule.at('floor').num(), 0)} ms)`,
+          verdict,
+          same
+            ? `${cpuName(cpus.at('head').str())} for both`
+            : `control ${cpuName(cpus.at('control').str())}, head ${cpuName(cpus.at('head').str())}`,
+        ]);
+      }
+    }
+  }
+  return [
+    mdTable(
+      [
+        'Profile',
+        'Scenario and metric',
+        'Control (median)',
+        'Head, first batch',
+        'Fresh batch',
+        'Allowed on the median',
+        'Verdict',
+        'CPU model',
+      ],
+      rows,
+    ),
+    '',
+    `${plural(passed, 'other gated metric')} passed in these reports. They are the gate reports of the two performance legs of a pull request that made startup slower by a known amount (${link('paired-sensitivity.md', PAIRED_SENSITIVITY_FILE)}): the control is the base commit, measured on the same machine as the head.`,
+  ];
+}
+
 export function renderPerf(files: FileSet): Rendered {
   const loaded = readBaselines(files);
   if (loaded.length === 0) return emptyState('performance baselines', BASELINES_DIR);
   const derivation = readDerivation(files, loaded);
   const aa = readAa(files);
+  const vms = new Map<string, string[]>();
+  for (const [dirName, github] of Object.entries(GITHUB_SETS)) {
+    if (aa.some((a) => a.set === github.set)) vms.set(github.set, vmCpus(files, dirName));
+  }
 
   const lines: string[] = [
     '**Baselines** (one file per environment and profile)',
@@ -442,18 +643,31 @@ export function renderPerf(files: FileSet): Rendered {
     '',
     `${link('threshold-derivation.md', 'docs/results/perf/threshold-derivation.md')} has the arithmetic; ${link('docs/PERF.md', 'docs/PERF.md')} says how to read and re-record a baseline.`,
     '',
-    '**A/A checks** (the gate against its own baseline, nothing changed)',
+    '**A/A checks** (the gate against its own baseline, or against a control measured on the same machine, with nothing changed)',
     '',
-    ...aaSection(aa),
+    ...aaSection(aa, vms),
     '',
     '**Sensitivity** (a regression injected on purpose, and what the gate did)',
     '',
     ...sensitivitySection(files),
   ];
-  if (files.has(CROSS_VM_FILE)) {
+  const paired = pairedSensitivitySection(files);
+  if (paired.length > 0) {
+    lines.push('', '**A regression on a pull request** (what the paired gate did with it)', '', ...paired);
+  }
+  const pages = [
+    [
+      CROSS_VM_FILE,
+      'the committed baselines of `gha-linux-x64` against GitHub-hosted VMs',
+      'gha-cross-vm.md',
+    ],
+    [PAIRED_AA_README, 'the paired gate against itself on GitHub-hosted VMs', 'paired-aa/README.md'],
+  ] as const;
+  const present = pages.filter(([path]) => files.has(path));
+  if (present.length > 0) {
     lines.push(
       '',
-      `Machines that are not quiet workstations are a result of their own: ${link('gha-cross-vm.md', CROSS_VM_FILE)}.`,
+      `Written up next to the data: ${listOf(present.map(([path, what, label]) => `${what} (${link(label, path)})`))}.`,
     );
   }
   return data(lines.join('\n'));

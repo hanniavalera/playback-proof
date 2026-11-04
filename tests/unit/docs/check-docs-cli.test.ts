@@ -80,9 +80,46 @@ describe('PB-LAB-006 docs:check as a command, on a copy of the repository', () =
       expect(written.status).toBe(0);
       expect(written.out).toContain('rewrote the generated blocks of README.md');
       expect(docsCheck().status).toBe(0);
-      expect(readFileSync(join(copy, 'README.md'), 'utf8')).toContain('3 false positives');
+      expect(readFileSync(join(copy, 'README.md'), 'utf8')).toContain(
+        '| committed baseline, first run | 35 | 3 | one machine |',
+      );
       writeFileSync(join(copy, 'README.md'), readme);
     });
+  });
+
+  it('checks the generated tables of docs/READINESS.md with the same command, and --write repairs them', () => {
+    const path = 'docs/READINESS.md';
+    const page = readFileSync(join(copy, path), 'utf8');
+    const edited = page.replace(
+      '| webkit 27.2 | A | GO | GO | NO-GO | GO | NO-GO |',
+      '| webkit 27.2 | A | GO | GO | GO | GO | GO |',
+    );
+    expect(edited).not.toBe(page);
+    withFile(path, edited, () => {
+      const run = docsCheck();
+      expect(run.status).toBe(1);
+      expect(run.err).toContain('docs/READINESS.md: block READINESS_VERDICTS is');
+      expect(run.err).toContain('docs:check FAILED (1 problem)');
+      const written = docsCheck('--write');
+      expect(written.status).toBe(0);
+      expect(readFileSync(join(copy, path), 'utf8')).toBe(page);
+    });
+  });
+
+  it('refuses a readiness result that was edited by hand, in the README and in docs/READINESS.md alike', () => {
+    const path = 'docs/results/soak/gha-linux-x64-webkit-5m.json';
+    const original = readFileSync(join(copy, path), 'utf8');
+    const edited = original.replace('"GO"', '"NO-GO"');
+    expect(edited).not.toBe(original);
+    const run = withFile(path, edited, () => docsCheck());
+    expect(run.status).toBe(1);
+    expect(run.err).toMatch(
+      /README\.md: generated block RESULTS_SOAK cannot be rendered: .*is not what the job uploaded/,
+    );
+    expect(run.err).toMatch(
+      /docs\/READINESS\.md: the readiness tables cannot be generated \(.*is not what the job uploaded/,
+    );
+    expect(run.err).not.toMatch(/\n\s+at /);
   });
 
   it('fails with the name of the file, and no stack trace, when a result file is gone or damaged', () => {

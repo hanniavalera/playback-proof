@@ -12,7 +12,7 @@ import {
 } from '../../../tools/results-tables.ts';
 import type { ResultsBlock } from '../../../tools/results-tables.ts';
 import { FileSet, ResultsError, data, emptyState, loadFileSet } from '../../../tools/results/files.ts';
-import { renderFlake } from '../../../tools/results/flake.ts';
+import { readCollections, renderFlake } from '../../../tools/results/flake.ts';
 import {
   cell,
   code,
@@ -25,12 +25,13 @@ import {
 } from '../../../tools/results/format.ts';
 import { describeStages, renderJenkins } from '../../../tools/results/jenkins.ts';
 import { margin, parseSensitivity, renderPerf } from '../../../tools/results/perf.ts';
-import { parseLegs, renderSuites } from '../../../tools/results/suites.ts';
+import { renderReadiness, renderSoak } from '../../../tools/results/readiness.ts';
+import { parseLegs, parsePerfLegs, parseSelection, renderSuites } from '../../../tools/results/suites.ts';
 import { renderTriage } from '../../../tools/results/triage.ts';
 import { waiting } from '../../../tools/results/waiting.ts';
-import type { FlakeReport, ReportTest } from '../../../flake/report.ts';
-import type { SuiteStats } from '../../../flake/stats.ts';
+import { serializeHistory } from '../../../flake/history.ts';
 import { makeScratch } from '../support/scratch.ts';
+import { record, run } from '../flake/fixtures.ts';
 import { changed, expectWellFormedTables } from '../support/results-files.ts';
 import type { Loose } from '../support/results-files.ts';
 
@@ -282,12 +283,18 @@ describe('PB-LAB-006 results tables: every block on the real committed files', (
     expect(markdown('RESULTS_TRIAGE')).toContain(
       `${triage.totals.failures} failures in ${triage.totals.clusters} clusters of ${triage.totals.rootCauses} root causes`,
     );
-    const aa = real
-      .list('docs/results/perf', /-aa\.json$/)
-      .map((path) => JSON.parse(real.text(path)) as Loose);
-    const passes = aa.reduce((n, f) => n + f.passes, 0);
-    const falsePositives = aa.reduce((n, f) => n + f.falsePositives, 0);
-    expect(markdown('RESULTS_PERF')).toContain(`${passes} A/A passes, ${falsePositives} false positives`);
+    const sum = (dir: string, key: 'passes' | 'falsePositives'): number =>
+      real
+        .list(`docs/results/perf/${dir}`, /^[^/]+-aa\.json$/)
+        .map((path) => JSON.parse(real.text(path)) as Loose)
+        .reduce((n, f) => n + f[key], 0);
+    const perf = markdown('RESULTS_PERF');
+    for (const [set, dir] of [
+      ['committed baseline, GitHub VMs', 'gha-cross-vm'],
+      ['paired control, GitHub VMs', 'paired-aa'],
+    ] as const) {
+      expect(perf).toContain(`| ${set} | ${sum(dir, 'passes')} | ${sum(dir, 'falsePositives')} | `);
+    }
   });
 });
 
@@ -304,7 +311,7 @@ describe('PB-LAB-006 results tables: the suites block on invented files', () => 
     '<!-- END:TEST_CATALOG -->',
   ].join('\n');
   const spec = (body: string): string => `import { test } from './support/fixtures.ts';\n${body}\n`;
-  const workflow = (job: string, legs: string): string =>
+  const workflow = (job: string, legs: string, run = 'echo'): string =>
     [
       'name: x',
       '',
@@ -318,8 +325,23 @@ describe('PB-LAB-006 results tables: the suites block on invented files', () => 
       '        include:',
       legs,
       '    steps:',
-      '      - run: echo',
+      `      - run: ${run}`,
     ].join('\n');
+  const perfJob = [
+    '  perf:',
+    '    name: perf (${{ matrix.profile }})',
+    '    runs-on: ubuntu-24.04',
+    '    strategy:',
+    '      matrix:',
+    '        profile: [chromium, chromium-cpu4x]',
+    '    env:',
+    "      CONTROL_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.control_ref || 'HEAD^1' }}",
+    '    steps:',
+    '      - name: Performance gate (${{ matrix.profile }}, paired with its control)',
+    '        run: npm run gate:perf -- --paired --control-ref "$CONTROL_REF" --profile ${{ matrix.profile }}',
+  ].join('\n');
+  const NIGHTLY_RUN =
+    'npm run test:e2e -- --grep "@merge|@release" --grep-invert "@readiness" --project=${{ matrix.project }}';
   const leg = (name: string, project: string, extra = ''): string =>
     [
       `          - leg: ${name}`,
@@ -330,6 +352,7 @@ describe('PB-LAB-006 results tables: the suites block on invented files', () => 
     ].join('\n');
   const files = new FileSet({
     'TEST_STRATEGY.md': catalog,
+    'tools/gate-merge.ts': "export const MERGE_TAG = '@merge';\n",
     'tests/e2e/a.spec.ts': spec(
       [
         "test('PB-VOD-001 plays', { tag: ['@merge', '@cpu'] }, async () => {});",
@@ -337,18 +360,21 @@ describe('PB-LAB-006 results tables: the suites block on invented files', () => 
         "test('PB-VOD-003 seeks', { tag: ['@release'] }, async () => {});",
       ].join('\n'),
     ),
-    'tests/live/r.spec.ts': spec("test('PB-RDY-001 joins', { tag: ['@release', '@live'] }, async () => {});"),
-    '.github/workflows/ci.yml': workflow(
+    'tests/live/r.spec.ts': spec(
+      "test('PB-RDY-001 joins', { tag: ['@release', '@readiness', '@live'] }, async () => {});",
+    ),
+    '.github/workflows/ci.yml': `${workflow(
       'merge-gate',
       [
         leg('chromium', 'chromium'),
         leg('cpu', 'chromium-cpu4x'),
         leg('webkit-linux', 'webkit', 'experimental: true'),
       ].join('\n'),
-    ),
+    )}\n${perfJob}\n`,
     '.github/workflows/nightly.yml': workflow(
       'release',
       [leg('chromium', 'chromium'), leg('webkit-linux', 'webkit', 'experimental: true')].join('\n'),
+      NIGHTLY_RUN,
     ),
   });
 
@@ -378,7 +404,7 @@ describe('PB-LAB-006 results tables: the suites block on invented files', () => 
     expect(row('| `VOD`').slice(1, 7)).toStrictEqual(['`VOD` VOD playback', '`e2e`', '3', '2', '1', '3']);
     expect(row('| `RDY`').slice(2, 7)).toStrictEqual(['`live`', '1', '0', '1', '1']);
     expect(row('| `LAB`').slice(2, 7)).toStrictEqual(['`unit`', '1', '1', '0', '-']);
-    expect(row('| `chromium` |').slice(2, 6)).toStrictEqual(['`chromium`', '`ubuntu-24.04`', '2', '4']);
+    expect(row('| `chromium` |').slice(2, 6)).toStrictEqual(['`chromium`', '`ubuntu-24.04`', '2', '3']);
     expect(row('| `cpu`').slice(4, 6)).toStrictEqual(['1', 'not run']);
     // PB-VOD-003 is a release test of Chromium and Firefox in the catalog, yet WebKit's grep selects it: it is listed and skipped there.
     expect(row('| `webkit-linux`').slice(1, 6)).toStrictEqual([
@@ -386,8 +412,86 @@ describe('PB-LAB-006 results tables: the suites block on invented files', () => 
       '`webkit`',
       '`ubuntu-24.04`',
       '2',
-      '4',
+      '3',
     ]);
+    // The nightly's `--grep-invert "@readiness"` leaves PB-RDY-001 out: 4 tests are tagged @merge or @release, 3 are selected.
+    expect(outcome.markdown).toContain('Nightly: `--grep "@merge\\|@release" --grep-invert "@readiness"`');
+  });
+
+  it('follows the grep of the workflow: a pattern that no longer leaves the readiness tests out counts them', () => {
+    const widened = files.with(
+      '.github/workflows/nightly.yml',
+      files.text('.github/workflows/nightly.yml').replace(' --grep-invert "@readiness"', ''),
+    );
+    const lines = renderSuites(widened).markdown.split('\n');
+    const chromium = (lines.find((l) => l.startsWith('| `chromium` |')) ?? '')
+      .split('|')
+      .map((c) => c.trim());
+    expect(chromium.slice(4, 6)).toStrictEqual(['2', '4']);
+    // The merge gate's tag is the one the script says it selects.
+    const retagged = renderSuites(
+      files.with('tools/gate-merge.ts', "export const MERGE_TAG = '@release';\n"),
+    );
+    const merged = retagged.markdown.split('\n').find((l) => l.startsWith('| `chromium` |')) ?? '';
+    expect(
+      merged
+        .split('|')
+        .map((c) => c.trim())
+        .slice(4, 5),
+    ).toStrictEqual(['2']);
+    expect(() => renderSuites(files.with('tools/gate-merge.ts', '// nothing\n'))).toThrow(
+      /tools\/gate-merge\.ts: no "export const MERGE_TAG = '\.\.\.'"/,
+    );
+  });
+
+  it('reads what a job selects with --grep and --grep-invert, and says when there is no such line', () => {
+    const text = files.text('.github/workflows/nightly.yml');
+    expect(parseSelection(text, 'nightly.yml', 'release')).toStrictEqual({
+      grep: '@merge|@release',
+      invert: '@readiness',
+    });
+    const plain = text.replace(' --grep-invert "@readiness"', '');
+    expect(parseSelection(plain, 'nightly.yml', 'release').invert).toBeNull();
+    expect(() =>
+      parseSelection(text.replace('--grep "@merge|@release"', ''), 'nightly.yml', 'release'),
+    ).toThrow('nightly.yml: job "release" has no line that runs Playwright with --grep "<pattern>"');
+    expect(() =>
+      renderSuites(
+        files.with('.github/workflows/nightly.yml', text.replace('--grep "@merge|@release"', '--grep "("')),
+      ),
+    ).toThrow(/not a regular expression this renderer can read/);
+  });
+
+  it('lists the performance legs of a workflow, one per profile, and notices a job that is not one', () => {
+    const ci = files.text('.github/workflows/ci.yml');
+    expect(parsePerfLegs(ci, 'ci.yml', 'perf')).toStrictEqual([
+      {
+        leg: 'perf (chromium)',
+        profile: 'chromium',
+        runner: 'ubuntu-24.04',
+        control: 'HEAD^1',
+        command: 'npm run gate:perf -- --paired --control-ref "$CONTROL_REF" --profile chromium',
+      },
+      {
+        leg: 'perf (chromium-cpu4x)',
+        profile: 'chromium-cpu4x',
+        runner: 'ubuntu-24.04',
+        control: 'HEAD^1',
+        command: 'npm run gate:perf -- --paired --control-ref "$CONTROL_REF" --profile chromium-cpu4x',
+      },
+    ]);
+    expect(() => parsePerfLegs(ci, 'ci.yml', 'streams')).toThrow(
+      'ci.yml: job "streams" has no "profile: [...]" matrix',
+    );
+    expect(() =>
+      parsePerfLegs(ci.replace('npm run gate:perf', 'npm run something'), 'ci.yml', 'perf'),
+    ).toThrow(/needs a name, a runs-on and a line "run: npm run gate:perf/);
+    const outcome = renderSuites(files).markdown;
+    expect(outcome).toContain('| `perf (chromium-cpu4x)` | `chromium-cpu4x` | `ubuntu-24.04` | `HEAD^1` |');
+    // A workflow without the job has no table of performance legs, which makes the README's block stale and docs:check say so.
+    expect(
+      renderSuites(files.with('.github/workflows/ci.yml', ci.slice(0, ci.indexOf('  perf:')))).markdown,
+    ).not.toContain('Performance leg');
   });
 
   it('refuses to count when a spec and the catalog disagree', () => {
@@ -446,13 +550,68 @@ describe('PB-LAB-006 results tables: the performance block', () => {
     const baselines = real.list('perf/baselines', /\.json$/);
     const aa = real.list('docs/results/perf', /-aa\.json$/);
     expect(lines.filter((l) => /^\| `(local|docker)-/.test(l))).toHaveLength(baselines.length);
-    expect(lines.filter((l) => /^\| (first run|after a harness fix) \|/.test(l))).toHaveLength(aa.length);
+    expect(
+      lines.filter(
+        (l) => /^\| (committed baseline|paired control), /.test(l) && /\| `[a-z0-9-]+` \| `/.test(l),
+      ),
+    ).toHaveLength(aa.length);
   });
 
-  it('links the cross-VM page when it is committed, and says nothing of it when it is not', () => {
-    expect(renderPerf(real).markdown).not.toContain('gha-cross-vm');
-    const linked = renderPerf(real.with('docs/results/perf/gha-cross-vm.md', '# cross-VM\n'));
-    expect(linked.markdown).toContain('[gha-cross-vm.md](docs/results/perf/gha-cross-vm.md)');
+  it('treats the two sets measured on GitHub on their own: passes, false positives and VMs per set, and the CPU model of each pass', () => {
+    const perf = renderPerf(real).markdown;
+    expect(perf).toContain('| committed baseline, GitHub VMs | 39 | 8 | 13 VMs on 5 CPU models |');
+    expect(perf).toContain('| paired control, GitHub VMs | 36 | 0 | 12 VMs on 5 CPU models |');
+    // The CPU model of the committed-baseline passes is in the machine record of each job, not in the summary that pre-dates it.
+    expect(perf).toContain(
+      '| AMD EPYC 7763 | 4 VMs, 12 passes, 8 reproduced regressions | 4 VMs, 12 passes, 0 reproduced regressions |',
+    );
+    expect(perf).toContain(
+      '| Intel Xeon Platinum 8573C | 1 VM, 3 passes, 0 reproduced regressions | 1 VM, 3 passes, 0 reproduced regressions |',
+    );
+  });
+
+  it('refuses a GitHub set whose summary is not of its kind, and a machine record that names no CPU', () => {
+    expect(() =>
+      renderPerf(changed(real, 'docs/results/perf/paired-aa/chromium-aa.json', (r) => (r.paired = null))),
+    ).toThrow(/paired control, GitHub VMs: a paired set whose summary is not paired/);
+    expect(() =>
+      renderPerf(
+        real.with('docs/results/perf/gha-cross-vm/raw/chromium-1/machine.txt', 'measure: perf-aa\nruns: 3\n'),
+      ),
+    ).toThrow(/gha-cross-vm\/raw\/chromium-1\/machine\.txt: the machine record has no "cpu:" line/);
+  });
+
+  it('shows a real regression on a pull request as its two gate reports said it, and notices a number that was changed', () => {
+    const perf = renderPerf(real).markdown;
+    expect(perf).toContain(
+      '| `chromium` | PB-PERF-001 `startupMs` | 58.95 ms | 200.6 ms (+240.3 %; p90 +220.2 %) | 192.3 ms (+226.1 %), worse by 133.3 ms | 17.69 ms (30 % of the control, floor 5 ms) | regression | Intel Xeon 6973P-C for both |',
+    );
+    expect(perf).toContain(
+      '| `chromium-cpu4x` | PB-PERF-004 `startupMs` | 266.7 ms | 354.9 ms (+33.1 %; p90 +32.2 %) | 347.3 ms (+30.2 %), worse by 80.65 ms | 80 ms (30 % of the control, floor 20 ms) | regression | AMD EPYC 7763 for both |',
+    );
+    const path = 'docs/results/perf/paired-sensitivity/chromium.json';
+    const edited = renderPerf(
+      changed(real, path, (r) => {
+        r.scenarios[0].metrics[0].first.median.current = 300;
+      }),
+    ).markdown;
+    expect(edited).not.toBe(perf);
+    expect(edited).toContain('300 ms');
+    expect(() => renderPerf(changed(real, path, (r) => (r.paired.aa = true)))).toThrow(
+      /a paired sensitivity report that is an A\/A by construction/,
+    );
+    expect(() => renderPerf(changed(real, path, (r) => (r.kind = 'other')))).toThrow(
+      /\$\.kind: expected "perf-gate-report"/,
+    );
+  });
+
+  it('links the write-ups that are committed next to the data, and says nothing of one that is not', () => {
+    const perf = renderPerf(real).markdown;
+    expect(perf).toContain('[gha-cross-vm.md](docs/results/perf/gha-cross-vm.md)');
+    expect(perf).toContain('[paired-aa/README.md](docs/results/perf/paired-aa/README.md)');
+    const without = renderPerf(real.without('docs/results/perf/gha-cross-vm.md')).markdown;
+    expect(without).not.toContain('gha-cross-vm.md');
+    expect(without).toContain('paired-aa/README.md');
   });
 
   it('refuses a derivation that is not of the schema it reads, and one that is not a derivation', () => {
@@ -550,164 +709,203 @@ describe('PB-LAB-006 results tables: the triage block', () => {
     expect(renderTriage(unlabelled).markdown).toMatch(/\*\*1 draft of \d+ in .* not labelled as a mock/);
     expect(renderTriage(real.without(mock)).markdown).toContain('No run of the model summaries is committed');
   });
+
+  it('shows the triage job on a red pull request: the failures, the clusters, and the evidence for one root cause', () => {
+    const markdown = renderTriage(real).markdown;
+    expect(markdown).toContain('63 failed tests in 5 reports became 3 clusters of 1 root cause');
+    expect(markdown).toContain(
+      '| 59 | `chromium`, `chromium-cpu4x`, `firefox` and `webkit` | 14 | `page-boot-failure` / `page-did-not-boot` | Functional regression |',
+    );
+    expect(markdown).toContain(
+      'the player page did not boot: a Content Security Policy blocked its scripts (63 failures, 3 clusters)',
+    );
+    expect(markdown).toContain('(`unknown` / `no-rule-matched`) and the report says so instead of guessing');
+    expect(
+      renderTriage(real.without('docs/results/triage/ci-demo/triage-report.json')).markdown,
+    ).not.toContain('On a red pull request in GitHub Actions');
+  });
+
+  it('refuses a CI report whose totals disagree with its lists, and notices a number that was changed', () => {
+    const demo = 'docs/results/triage/ci-demo/triage-report.json';
+    expect(() => renderTriage(changed(real, demo, (r) => (r.totals.failures += 1)))).toThrow(
+      /ci-demo\/triage-report\.json: \$\.totals\.failures: says 64 but the report lists 63/,
+    );
+    expect(() => renderTriage(changed(real, demo, (r) => (r.schemaVersion = 2)))).toThrow(
+      /this renderer reads schema version 1/,
+    );
+    expect(
+      renderTriage(changed(real, demo, (r) => ((r.clusters[0].size = 58), (r.totals.failures = 62))))
+        .markdown,
+    ).toContain('62 failed tests');
+  });
 });
 
-describe('PB-LAB-006 results tables: the flake block on an invented report', () => {
-  const limits = { windowRuns: 30, minRunsToJudge: 20, quarantineTriggerRate: 0.05, suiteBudgetRate: 0.02 };
-  const suite = (over: Partial<SuiteStats> = {}): SuiteStats => ({
-    project: 'chromium',
-    builds: 30,
-    executions: 450,
-    flaky: 3,
-    failed: 0,
-    flakeRate: 3 / 450,
-    budget: 0.02,
-    verdict: 'ok',
-    quarantinedExecutions: 0,
-    quarantinedFlaky: 0,
-    unobserved: 0,
-    contributors: [],
-    experimental: false,
-    ...over,
+describe('PB-LAB-006 results tables: the flake block on invented histories', () => {
+  const INVALID = 'invalid run: forced climb to 360p 5.9 s after the step down, 10 of 974 frames dropped.';
+  /** One repetition of a collection: the outcomes of the tests it ran, in one Playwright invocation. */
+  const repetition = (
+    n: number,
+    tests: Array<Parameters<typeof record>[0]>,
+    options: Parameters<typeof run>[1] = {},
+  ) =>
+    run(
+      tests.map((t) => record(t)),
+      {
+        invocationId: `inv-${n}`,
+        date: `2026-11-04T10:0${n % 10}:00.000Z`,
+        commit: 'abcdef1234567',
+        ...options,
+      },
+    );
+  const raw = (path: string, runs: ReturnType<typeof run>[]): Record<string, string> => ({
+    [`docs/results/flake/${path}`]: serializeHistory(runs),
   });
-  const test = (over: Partial<ReportTest> = {}): ReportTest => ({
-    id: 'PB-VOD-007',
-    project: 'chromium',
-    tier: 'merge',
-    executions: 30,
-    passed: 28,
-    flaky: 2,
-    failed: 0,
-    flakeRate: 2 / 30,
-    failureRate: 0,
-    verdict: 'over-trigger',
-    window: [],
-    quarantinedExecutions: 0,
-    executionsInHistory: 30,
-    unobserved: 0,
-    lastFailure: {
-      outcome: 'flaky',
-      date: '2026-11-04',
-      runId: 'r1',
-      commit: 'abc1234',
-      signature: 'Error: timed out waiting for seeked',
-    },
-    cleanWindow: false,
-    experimental: false,
-    title: 'PB-VOD-007 seek',
-    quarantine: null,
-    ...over,
+  const histories = new FileSet({
+    ...raw('collect-1/raw/chromium/gha-linux-x64.jsonl', [
+      repetition(1, [{ id: 'PB-VOD-001' }, { id: 'PB-VOD-002' }]),
+      repetition(2, [{ id: 'PB-VOD-001' }, { id: 'PB-VOD-002', outcome: 'flaky' }]),
+      repetition(3, [{ id: 'PB-VOD-001', outcome: 'failed' }, { id: 'PB-VOD-002' }]),
+    ]),
+    ...raw('after-fix/series/raw/gha-macos-arm64.jsonl', [
+      repetition(1, [{ id: 'PB-ABR-002', project: 'webkit', outcome: 'skipped', skipReason: INVALID }], {
+        envId: 'gha-macos-arm64',
+      }),
+      repetition(2, [{ id: 'PB-ABR-002', project: 'webkit' }], { envId: 'gha-macos-arm64' }),
+      repetition(
+        3,
+        [
+          {
+            id: 'PB-ABR-002',
+            project: 'webkit',
+            outcome: 'skipped',
+            skipReason: 'documented gap in x: no EME',
+          },
+          { id: 'PB-ABR-002', project: 'webkit-dpr1' },
+        ],
+        { envId: 'gha-macos-arm64' },
+      ),
+    ]),
   });
-  const report = (over: Partial<FlakeReport> = {}): FlakeReport => ({
-    generatedAt: '2026-11-04T12:00:00.000Z',
-    envId: 'gha-linux-x64',
-    today: '2026-11-04',
-    history: { runs: 30, from: '2026-11-01', to: '2026-11-04' },
-    limits,
-    suites: [suite()],
-    tests: [test()],
-    quarantine: [],
-    quarantineProblems: [],
-    skips: [],
-    notes: [],
-    ...over,
-  });
-  const put = (name: string, value: FlakeReport): FileSet =>
-    new FileSet({ [`docs/results/flake/${name}`]: JSON.stringify(value) });
 
-  it('shows the engine jobs and the tests that flaked, with the rate and the last failure', () => {
-    const outcome = renderFlake(put('collect-1/report-chromium.json', report()));
+  it('counts each collection and engine project: repetitions, executions, flaky, failed, invalid runs and other skips', () => {
+    const [first, second, third] = readCollections(histories);
+    expect(readCollections(histories)).toHaveLength(3);
+    // The order is the one of the write-up: the whole tier first, then the series of the fix.
+    expect([first?.name, second?.name, third?.name]).toStrictEqual([
+      'collect-1 / chromium',
+      'after-fix/series',
+      'after-fix/series',
+    ]);
+    expect(first?.totals).toStrictEqual({ executions: 6, flaky: 1, failed: 1, invalid: 0, otherSkips: 0 });
+    expect(first?.repetitions).toBe(3);
+    expect(second?.project).toBe('webkit');
+    expect(second?.totals).toStrictEqual({ executions: 1, flaky: 0, failed: 0, invalid: 1, otherSkips: 1 });
+    expect(second?.repetitions).toBe(3);
+    expect(third?.project).toBe('webkit-dpr1');
+    expect(third?.repetitions).toBe(1);
+  });
+
+  it('shows a row for each collection and one for each test that flaked, failed or was skipped as invalid', () => {
+    const outcome = renderFlake(histories);
     expect(outcome.kind).toBe('data');
     expect(outcome.markdown).toContain(
-      '| `gha-linux-x64` | [collect-1/report-chromium.json](docs/results/flake/collect-1/report-chromium.json) | `chromium` | 30 | 450 | 3 | 0 | 0.7 % | 2.0 % | ok |',
+      '| [collect-1 / chromium](docs/results/flake/collect-1/raw/chromium/gha-linux-x64.jsonl) | `gha-linux-x64` | `chromium` | 3 | 6 | 1 | 1 | 0 | 0 | `abcdef1` | 2026-11-04 |',
     );
     expect(outcome.markdown).toContain(
-      '| `gha-linux-x64` | `PB-VOD-007` | `chromium` | 30 | 2 | 0 | 6.7 % | over-trigger | Error: timed out waiting for seeked |',
+      '| collect-1 / chromium | `gha-linux-x64` | `PB-VOD-001` | `chromium` | 3 | 1 of 3 (33.3 %) | 0 | 1 | 0 of 3 (0.0 %) |',
     );
     expect(outcome.markdown).toContain(
-      'window of 30, judged from 20, test trigger 5.0 %, suite budget 2.0 %',
+      '| after-fix/series | `gha-macos-arm64` | `PB-ABR-002` | `webkit` | 1 | 0 of 1 (0.0 %) | 0 | 0 | 1 of 2 (50.0 %) |',
     );
+    // A test that only ever passed is not listed.
+    expect(outcome.markdown).not.toContain('`webkit-dpr1` | 1 | 0 of 1');
     expectWellFormedTables(outcome.markdown);
   });
 
-  it('marks an experimental engine job, and says so when nothing flaked', () => {
-    const outcome = renderFlake(
-      put(
-        'collect-2/report-webkit.json',
-        report({
-          suites: [suite({ project: 'webkit', experimental: true })],
-          tests: [test({ flaky: 0, flakeRate: 0 })],
-        }),
-      ),
+  it('says so when nothing flaked, failed or was skipped as invalid', () => {
+    const clean = new FileSet(
+      raw('collect-1/raw/chromium/gha-linux-x64.jsonl', [repetition(1, [{ id: 'PB-VOD-001' }])]),
     );
-    expect(outcome.markdown).toContain('`webkit` (experimental)');
-    expect(outcome.markdown).toContain('No test flaked or failed in the committed histories.');
+    expect(renderFlake(clean).markdown).toContain(
+      'No test flaked, failed or was skipped as an invalid run in these collections.',
+    );
   });
 
-  it('lists what was skipped with the share of runs, an invalid run among it', () => {
-    const skips = [
-      {
-        id: 'PB-ABR-002',
-        project: 'webkit',
-        reason: 'invalid run: forced climb to 360p 5.9 s after the step down',
-        date: '2026-11-04T10:00:00.000Z',
-        times: 6,
-        of: 40,
-      },
-      {
-        id: 'PB-EME-001',
-        project: 'webkit',
-        reason: null,
-        date: '2026-11-03T10:00:00.000Z',
-        times: 40,
-        of: 40,
-      },
-    ];
-    const outcome = renderFlake(put('collect-3/report-webkit.json', report({ skips })));
-    expect(outcome.markdown).toContain(
-      '| `gha-linux-x64` | `PB-ABR-002` | `webkit` | 6 of 40 runs | invalid run: forced climb to 360p 5.9 s after the step down | 2026-11-04 |',
-    );
-    expect(outcome.markdown).toContain(
-      '| `PB-EME-001` | `webkit` | 40 of 40 runs | NO REASON RECORDED | 2026-11-03 |',
-    );
-    expectWellFormedTables(outcome.markdown);
+  it('has an empty state, and says what is wrong with a history that is not one', () => {
+    expect(renderFlake(new FileSet())).toStrictEqual(emptyState('flake collections', 'docs/results/flake'));
+    const bad = new FileSet({ 'docs/results/flake/x/raw/a.jsonl': '{"runId":"a"}\n' });
+    expect(() => renderFlake(bad)).toThrow(/docs\/results\/flake\/x\/raw\/a\.jsonl: /);
+    const none = new FileSet({ 'docs/results/flake/x/raw/a.jsonl': '' });
+    expect(() => renderFlake(none)).toThrow(/the history holds no run/);
   });
 
-  it('says that nothing was skipped, says nothing of a report that has no skips, and reads the counts strictly', () => {
-    expect(renderFlake(put('a/report-x.json', report({ skips: [] }))).markdown).toContain(
-      'No test was skipped in the committed histories.',
-    );
+  it('counts the real collections the way the write-up beside them does, and notices a line that was taken out', () => {
+    const collections = readCollections(real);
+    const find = (name: string, project = 'webkit') =>
+      collections.find((c) => c.name === name && c.project === project);
+    expect(find('collect-1 / chromium', 'chromium')?.totals.executions).toBe(450);
+    expect(find('collect-1 / webkit-macos')?.totals).toStrictEqual({
+      executions: 300,
+      flaky: 1,
+      failed: 2,
+      invalid: 0,
+      otherSkips: 0,
+    });
+    const markdown = renderFlake(real).markdown;
+    const path = 'docs/results/flake/after-fix/abr002-fix/raw/gha-macos-arm64.jsonl';
+    const lines = real.text(path).trimEnd().split('\n');
+    const fewer = renderFlake(real.with(path, `${lines.slice(1).join('\n')}\n`)).markdown;
+    expect(fewer).not.toBe(markdown);
+  });
+});
 
-    const older = JSON.parse(JSON.stringify(report())) as Record<string, unknown>;
-    delete older.skips;
-    const unlisted = renderFlake(
-      new FileSet({ 'docs/results/flake/a/report-x.json': JSON.stringify(older) }),
-    );
-    expect(unlisted.markdown).not.toContain('skipped');
-
-    older.skips = [
-      { id: 'PB-ENV-001', project: 'webkit', reason: 'documented gap in x: y', date: '2026-11-04' },
-    ];
-    const noShare = renderFlake(new FileSet({ 'docs/results/flake/a/report-x.json': JSON.stringify(older) }));
-    expect(noShare.markdown).toContain(
-      '| `PB-ENV-001` | `webkit` | - | documented gap in x: y | 2026-11-04 |',
-    );
-
-    older.skips = [
-      { id: 'PB-ENV-001', project: 'webkit', reason: 'x', date: '2026-11-04', times: '6', of: 40 },
-    ];
-    expect(() =>
-      renderFlake(new FileSet({ 'docs/results/flake/a/report-x.json': JSON.stringify(older) })),
-    ).toThrow('$.skips[0].times: expected an integer but found the string "6"');
+describe('PB-LAB-006 results tables: the readiness and soak blocks, through the evidence module', () => {
+  it('shows each engine and configuration with its verdict per check, by batch and protocol', () => {
+    const markdown = renderReadiness(real).markdown;
+    expect(markdown).toContain('**DASH, the first evidence** (4 runs of commit `0d62c1d`)');
+    expect(markdown).toContain('**HLS, the extra runs** (2 runs of commit `e0a5be3`)');
+    expect(markdown).toContain('| webkit 27.2 | A | GO | GO | NO-GO | GO | NO-GO |');
+    expect(markdown).toContain('| webkit 27.2 | live-sync | GO | GO | GO | GO | GO |');
+    expect(markdown).toContain('| chromium 156.0.8078.4 (hls) | A | GO | GO | NO-GO | GO | NO-GO |');
+    expectWellFormedTables(markdown);
   });
 
-  it('has an empty state, and says what is wrong with a report that is not one', () => {
-    expect(renderFlake(new FileSet())).toStrictEqual(emptyState('flake reports', 'docs/results/flake'));
-    const bad = new FileSet({ 'docs/results/flake/x/report-a.json': '{"envId":"a"}' });
-    expect(() => renderFlake(bad)).toThrow(
-      'docs/results/flake/x/report-a.json: $: the field "history" is missing',
+  it('shows the soaks grouped, as measured and judged again by the criteria of today', () => {
+    const markdown = renderSoak(real).markdown;
+    expect(markdown).toContain(
+      '| the first evidence | `gha-linux-x64` | A | 3 | 5 min | `origin-stall` | 3 of 3 | 0 of 3 | 10.62 to 11.13 s |',
     );
-    expect(() => renderFlake(put('x/report-a.json', report({ suites: [] })))).toThrow(/hold no engine job/);
+    expect(markdown).toContain(
+      '| the first evidence | `gha-linux-x64` | live-sync | 3 | 30 min | `origin-stall` and `stale-manifest` | 3 of 3 | 2 of 3 | 6.99 to 12.49 s |',
+    );
+    expect(markdown).toContain('18 soaks in all');
+    expectWellFormedTables(markdown);
+  });
+
+  it('refuses a result file that is not what its job uploaded, before it shows anything', () => {
+    const path = 'docs/results/readiness/gha-linux-x64-webkit.json';
+    const edited = real.with(path, real.text(path).replace('"NO-GO"', '"GO"'));
+    expect(edited.text(path)).not.toBe(real.text(path));
+    expect(() => renderReadiness(edited)).toThrow(
+      /gha-linux-x64-webkit\.json: the file is not what the job uploaded/,
+    );
+    expect(() => renderSoak(edited)).toThrow(/is not what the job uploaded/);
+  });
+
+  it('refuses a result file that no entry of the provenance names, and a provenance that is not there', () => {
+    expect(() => renderSoak(real.with('docs/results/soak/stray.json', '{}'))).toThrow(
+      /docs\/results\/soak\/stray\.json: a result file that no entry of docs\/results\/provenance\/runs\.json names/,
+    );
+    expect(() => renderReadiness(real.without('docs/results/provenance/runs.json'))).toThrow(
+      /runs\.json: the file is missing/,
+    );
+  });
+
+  it('has an empty state while no result is committed', () => {
+    expect(renderReadiness(new FileSet())).toStrictEqual(
+      emptyState('readiness results', 'docs/results/readiness'),
+    );
+    expect(renderSoak(new FileSet())).toStrictEqual(emptyState('soak results', 'docs/results/soak'));
   });
 });
 

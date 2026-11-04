@@ -5,8 +5,10 @@ import { describe, expect, it } from 'vitest';
 import { checkReadmeFile } from '../../../tools/check-docs.ts';
 import { parseCatalog } from '../../../tools/catalog.ts';
 import { RESULT_BLOCKS, loadResultFiles } from '../../../tools/results-tables.ts';
-import { parseLegs } from '../../../tools/results/suites.ts';
+import { readCollections } from '../../../tools/results/flake.ts';
+import { parseLegs, parsePerfLegs } from '../../../tools/results/suites.ts';
 import { parseResultFile } from '../../../src/lab/probe/report.ts';
+import type { Loose } from '../support/results-files.ts';
 
 // README.md is read by people who clone the repository and run what it says. These tests keep it from rotting: its structure, its links
 // and anchors, the repository paths and npm scripts it names, the ADRs it cites, and the sentences of its prose that stand on a result
@@ -40,13 +42,7 @@ const headingsOf = (markdown: string): string[] =>
   [...markdown.replace(/```[\s\S]*?```/g, '').matchAll(/^#{1,6} (.+)$/gm)].map((m) => slug(m[1] ?? ''));
 
 /** Paths that appear in the README for results that are measured by changes that have not landed. Each must still be absent. */
-const PENDING_PATHS = [
-  'docs/results/ab',
-  'docs/results/readiness',
-  'docs/results/soak',
-  'docs/results/flake',
-  'ab',
-];
+const PENDING_PATHS = ['docs/results/ab', 'ab'];
 
 /** Paths that commands create: they exist after the steps of the quick start, not in a clone. */
 const RUNTIME_PATHS = ['dist/player', '.cache/streams', 'reports/html', 'reports/playwright.json', '.cache'];
@@ -234,7 +230,7 @@ describe('PB-LAB-006 README: the prose against the files it stands on', () => {
     expect(read('LICENSE')).toMatch(/^MIT License\n\nCopyright \(c\) 2026 Hannia Valera/);
   });
 
-  it('says Linux WebKit decodes only some attempts of the lab flavours where macOS WebKit decodes all, and that isTypeSupported says yes (Findings)', () => {
+  it('says Linux WebKit does not decode every attempt of the lab flavours where macOS WebKit decodes all, some in the Playwright image and none on the GitHub runner, and that isTypeSupported says yes (Findings)', () => {
     const primary = ['cmaf-vp9-aac', 'webm-vp9-opus'];
     const webkit = matrix.flatMap((file) => {
       const engine = file.engines.webkit;
@@ -248,6 +244,9 @@ describe('PB-LAB-006 README: the prose against the files it stands on', () => {
       for (const id of primary) {
         expect(engine.cases[id]?.reliability, `${file.envId} ${id}`).not.toBe('ok');
         expect(engine.cases[id]?.typeSupportedClaim, `${file.envId} ${id}`).toBe(true);
+        // "some attempts play" in the Playwright image, "none did" on the GitHub runner: the sentence is about these two rows.
+        const expected = file.envId === 'docker-linux-arm64' ? 'intermittent' : 'fail';
+        expect(engine.cases[id]?.reliability, `${file.envId} ${id}`).toBe(expected);
       }
     }
     for (const { file, engine } of mac) {
@@ -314,7 +313,7 @@ describe('PB-LAB-006 README: the prose against the files it stands on', () => {
     expect(slow.size).toBe(2);
   });
 
-  it('says the committed Jenkins builds predate the Flake and Triage stages (What this proves)', () => {
+  it('says the committed Jenkins builds predate the Perf, Flake and Triage stages (What this proves)', () => {
     const ran = real
       .list('docs/results/jenkins', /^build-\d+\.json$/)
       .flatMap((path) =>
@@ -322,10 +321,13 @@ describe('PB-LAB-006 README: the prose against the files it stands on', () => {
           .filter((s) => s.status !== 'NOT_EXECUTED')
           .map((s) => s.name),
       );
-    expect(ran).not.toContain('Flake');
-    expect(ran).not.toContain('Triage');
-    expect(real.text('Jenkinsfile')).toContain("stage('Flake')");
-    expect(real.text('Jenkinsfile')).toContain("stage('Triage')");
+    for (const stage of ['Perf', 'Flake', 'Triage']) {
+      expect(
+        ran,
+        `a committed Jenkins build ran ${stage}: the README says none did (What this proves, Jenkins)`,
+      ).not.toContain(stage);
+      expect(real.text('Jenkinsfile')).toContain(`stage('${stage}')`);
+    }
   });
 
   it('says there are five merge-gate legs and that Linux WebKit is the experimental one (What this proves)', () => {
@@ -340,21 +342,233 @@ describe('PB-LAB-006 README: the prose against the files it stands on', () => {
     expect(eme?.engines).toStrictEqual(['chromium', 'firefox']);
   });
 
-  it('says the performance gate is not run by CI, and that no A/B, readiness, soak or flake result is committed (What this proves)', () => {
+  it('says the performance gate runs in CI as a paired gate on both profiles, and in the Jenkinsfile (What this proves)', () => {
+    const legs = parsePerfLegs(real.text('.github/workflows/ci.yml'), 'ci.yml', 'perf');
+    expect(legs.map((l) => l.profile)).toStrictEqual(['chromium', 'chromium-cpu4x']);
+    for (const leg of legs) expect(leg.command).toContain('--paired');
+    expect(real.text('Jenkinsfile')).toMatch(/stage\('Perf'\)[\s\S]*gate:perf -- --paired/);
+    expect(readme).toContain(
+      'In progress: the runner and its measurements are being finished and are not on `main`',
+    );
+  });
+
+  it('says no A/B result is committed, and that the readiness, soak and flake results are (What this proves)', () => {
     const message = (what: string): string =>
       `${what}: the README says otherwise (What this proves, Real results): update its rows`;
-    expect(real.text('.github/workflows/ci.yml'), message('ci.yml runs gate:perf')).not.toContain(
-      'gate:perf',
-    );
-    expect(real.text('Jenkinsfile'), message('the Jenkinsfile runs gate:perf')).not.toContain('gate:perf');
-    for (const path of [
-      'ab',
-      'docs/results/ab',
-      'docs/results/readiness',
-      'docs/results/soak',
-      'docs/results/flake',
-    ]) {
+    for (const path of ['ab', 'docs/results/ab']) {
       expect(existsSync(resolve(ROOT, path)), message(`${path} exists`)).toBe(false);
     }
+    for (const path of ['docs/results/readiness', 'docs/results/soak', 'docs/results/flake']) {
+      expect(existsSync(resolve(ROOT, path)), message(`${path} is gone`)).toBe(true);
+    }
+  });
+
+  it('says ten checks are required, and they are the jobs of ci.yml (What this proves)', () => {
+    const workflow = real.text('.github/workflows/ci.yml');
+    const merge = parseLegs(workflow, 'ci.yml', 'merge-gate');
+    const perf = parsePerfLegs(workflow, 'ci.yml', 'perf');
+    const names = [
+      'static',
+      'unit',
+      ...merge.map((l) => `merge-gate (${l.leg}${l.experimental ? ', experimental' : ''})`),
+      'flake',
+      ...perf.map((l) => l.leg),
+    ];
+    expect(names).toHaveLength(10);
+    for (const job of ['static', 'unit', 'flake']) expect(workflow).toContain(`name: ${job}\n`);
+    const paragraph = /\*\*Required checks\.\*\*[^\n]*/.exec(read('docs/CI.md'))?.[0] ?? '';
+    expect(paragraph).toContain('requires these ten names');
+    for (const name of names) expect(paragraph, name).toContain(`\`${name}\``);
+    expect(readme).toContain('branch protection on `main` requires ten checks');
+  });
+
+  describe('the numbers it quotes about the performance gate on GitHub (Performance, Findings)', () => {
+    type Summary = {
+      passes: number;
+      falsePositives: number;
+      runs: Array<{ exitCode: number; file: string; cpuModel: string | null }>;
+    };
+    const summaries = (dir: string): Summary[] =>
+      real
+        .list(`docs/results/perf/${dir}`, /^[^/]+-aa\.json$/)
+        .map((p) => JSON.parse(real.text(p)) as Summary);
+    const total = (list: Summary[], key: 'passes' | 'falsePositives'): number =>
+      list.reduce((n, s) => n + s[key], 0);
+
+    it('the paired A/A: 36 passes on twelve machines, none a false positive, and a bound of about 8 % per pass', () => {
+      const paired = summaries('paired-aa');
+      expect(total(paired, 'passes')).toBe(36);
+      expect(total(paired, 'falsePositives')).toBe(0);
+      expect(real.list('docs/results/perf/paired-aa/raw', /^[^/]+\/machine\.txt$/)).toHaveLength(12);
+      expect(1 - Math.pow(0.05, 1 / 36)).toBeCloseTo(0.08, 2);
+      expect(readme).toContain('0 of 36 passes means, at 95 % confidence, a rate per pass below about 8 %');
+      expect(readme).toContain('the independent samples are the twelve machines');
+      expect(readme).toContain('no false positive in 36 passes, the 12 on that CPU model included');
+    });
+
+    it('the committed baselines on 13 VMs: 8 of 39 passes failed, all on one of five CPU models', () => {
+      const cross = summaries('gha-cross-vm');
+      expect(total(cross, 'passes')).toBe(39);
+      expect(total(cross, 'falsePositives')).toBe(8);
+      const cpuOf = (job: string): string =>
+        /^cpu: (.+)$/m.exec(real.text(`docs/results/perf/gha-cross-vm/raw/${job}/machine.txt`))?.[1] ?? '';
+      const jobs = real.list('docs/results/perf/gha-cross-vm/raw', /^[^/]+\/machine\.txt$/);
+      expect(jobs).toHaveLength(13);
+      expect(new Set(jobs.map((p) => cpuOf(p.split('/').slice(-2)[0] ?? '').toLowerCase())).size).toBe(5);
+      const runs = cross
+        .flatMap((s) => s.runs)
+        .map((r) => ({
+          failed: r.exitCode === 1,
+          cpu: cpuOf(/raw\/([^/]+)\/pass-/.exec(r.file)?.[1] ?? ''),
+        }));
+      const epyc = runs.filter((r) => r.cpu.includes('EPYC 7763'));
+      expect([epyc.length, epyc.filter((r) => r.failed).length]).toStrictEqual([12, 8]);
+      expect(runs.filter((r) => !r.cpu.includes('EPYC 7763') && r.failed)).toHaveLength(0);
+      expect(runs.length - epyc.length).toBe(27);
+      expect(readme).toContain('the 13 jobs of one A/A landed on five CPU models');
+      expect(readme).toContain(
+        'an unchanged build failed 8 of 39 passes, all 8 on one CPU model, the AMD EPYC 7763 (8 of its 12 passes; none of the 27 passes on the other four)',
+      );
+    });
+
+    it('the pull request that slowed startup by 150 ms: the numbers of its two gate reports and of its runs', () => {
+      const sig4 = (value: number): string => String(Number(value.toPrecision(4)));
+      const metric = (profile: string): { first: Loose; remeasure: Loose } => {
+        const report = JSON.parse(real.text(`docs/results/perf/paired-sensitivity/${profile}.json`)) as Loose;
+        return report.scenarios[0].metrics.find((m: Loose) => m.metric === 'startupMs');
+      };
+      const low = metric('chromium-cpu4x');
+      expect(sig4(low.remeasure.median.worseBy)).toBe('80.65');
+      expect(sig4(low.remeasure.median.allowed)).toBe('80');
+      expect(readme).toContain('worse by 80.65 ms against 80 ms allowed');
+      const percent = (m: { first: Loose }): number => Math.round(m.first.median.changeShare * 100);
+      expect([percent(metric('chromium')), percent(low)]).toStrictEqual([240, 33]);
+      expect(readme).toContain('+240 % of a Chromium startup and only +33 % of the throttled profile');
+      const page = read('docs/results/perf/paired-sensitivity.md');
+      expect(page).toContain('150 ms');
+      expect(page).toContain('41887534070');
+      expect(readme).toContain('slowed startup by 150 ms');
+      expect(readme).toContain('actions/runs/41887534070');
+      expect(read('docs/results/triage/ci-demo.md')).toContain('41887574166');
+      expect(readme).toContain('actions/runs/41887574166');
+    });
+  });
+
+  describe('the numbers it quotes about the flake collections (Flake tracking, Findings)', () => {
+    const collections = readCollections(real);
+    const find = (name: string, project = 'webkit') =>
+      collections.find((c) => c.name === name && c.project === project);
+    const own = (name: string, id: string) => find(name)?.perTest.get(id);
+
+    it('the whole merge tier: 450 executions in each Linux engine, none flaky or failed', () => {
+      for (const job of ['chromium', 'firefox', 'webkit-linux']) {
+        const c = collections.find((x) => x.name === `collect-1 / ${job}`);
+        expect([c?.repetitions, c?.totals.executions, c?.totals.flaky, c?.totals.failed]).toStrictEqual([
+          30, 450, 0, 0,
+        ]);
+      }
+      expect(find('collect-1 / webkit-macos')?.totals).toStrictEqual({
+        executions: 300,
+        flaky: 1,
+        failed: 2,
+        invalid: 0,
+        otherSkips: 0,
+      });
+      expect(readme).toContain('no flaky and no failed execution in 450');
+    });
+
+    it('PB-ABR-002 on macOS: 7 first attempts failed in 60 before the fix; after it none of 121 failed and 29 of 150 were invalid', () => {
+      const before = [own('collect-1 / webkit-macos', 'PB-ABR-002'), own('abr-002-macos-40', 'PB-ABR-002')];
+      expect(before.reduce((n, c) => n + (c?.flaky ?? 0) + (c?.failed ?? 0), 0)).toBe(7);
+      expect(before.reduce((n, c) => n + (c?.executions ?? 0), 0)).toBe(60);
+      const after = [
+        'after-fix/abr002-fix',
+        'after-fix/abr002-traceoff',
+        'after-fix/dpr1b',
+        'after-fix/abr12-isolated',
+      ].map((name) => own(name, 'PB-ABR-002'));
+      const sum = (key: 'executions' | 'flaky' | 'failed' | 'invalid'): number =>
+        after.reduce((n, c) => n + (c?.[key] ?? 0), 0);
+      expect([sum('executions'), sum('flaky') + sum('failed'), sum('invalid')]).toStrictEqual([121, 0, 29]);
+      expect(sum('executions') + sum('invalid')).toBe(150);
+      expect(readme).toContain('**7 first attempts failed in 60**');
+      expect(readme).toContain(
+        'none of the 121 executions of the series with the default configuration failed or flaked',
+      );
+      expect(readme).toContain('**29 of 150 attempts were skipped as invalid runs**');
+      expect(readme).toContain(
+        '29 of 150 attempts of PB-ABR-002 on the macOS runner were skipped that way after the fix, and none of the 121',
+      );
+    });
+
+    it('PB-ABR-001: both attempts failed in 45 of 70 repetitions, and the 100 failing attempts share one fingerprint', () => {
+      const abr1 = [
+        own('after-fix/abr001-main', 'PB-ABR-001'),
+        own('after-fix/abr12-isolated', 'PB-ABR-001'),
+      ];
+      expect(abr1.reduce((n, c) => n + (c?.failed ?? 0), 0)).toBe(45);
+      expect(abr1.reduce((n, c) => n + (c?.executions ?? 0), 0)).toBe(70);
+      const attempts = read('docs/results/flake/after-fix/abr001-failing-attempts.jsonl')
+        .trim()
+        .split('\n')
+        .map((line) => JSON.parse(line) as { changes: string; dropped: number });
+      expect(attempts).toHaveLength(100);
+      const times = attempts.map((a) => Number(/360p abr at ([0-9.]+) s/.exec(a.changes)?.[1]));
+      expect([Math.min(...times), Math.max(...times)]).toStrictEqual([9.88, 10.02]);
+      expect(attempts.filter((a) => a.dropped === 2)).toHaveLength(7);
+      expect(readme).toContain('failed both attempts in **45 of 70** repetitions');
+      expect(readme).toContain('in all 100 failing attempts');
+      expect(readme).toContain('9.88 to 10.02 s of media time');
+      expect(readme).toContain('seven of the attempts dropped only 2 frames');
+    });
+
+    it('the demonstration is filed under its own environment, and its spec says it is not the player', () => {
+      expect(find('demo-deliberate-flake', 'chromium')?.envId).toBe('demo-deliberate-flake');
+      expect(read('docs/results/flake/demo-deliberate-flake/demo-flaky.spec.ts.txt')).toContain(
+        'A demonstration, not a product test',
+      );
+      expect(readme).toContain('its environment is `demo-deliberate-flake`');
+    });
+  });
+
+  it('quotes the readiness finding from docs/READINESS.md, and counts the soaks it speaks of (Readiness and soak)', () => {
+    const page = read('docs/READINESS.md');
+    for (const quoted of [
+      '10.15 to 11.02 s behind on Linux (10.43 to 11.50 s on macOS)',
+      'Every criterion but one is GO with a wide margin in all 14.',
+      'The check stops the origin for 10 s',
+    ]) {
+      expect(page, quoted).toContain(quoted);
+    }
+    expect(readme).toContain(
+      'stays 10.15 to 11.02 s behind the live edge on Linux (10.43 to 11.50 s on macOS)',
+    );
+    expect(readme).toContain(
+      'in the 14 soaks of the first evidence every criterion but the latency level is GO with a wide margin',
+    );
+    const runs = (
+      JSON.parse(real.text('docs/results/provenance/runs.json')) as {
+        runs: Array<{ task: string; batch?: string }>;
+      }
+    ).runs;
+    expect(runs.filter((r) => r.task === 'soak' && (r.batch ?? 'first') === 'first')).toHaveLength(14);
+  });
+
+  it('names the two unit flakes and the apt mirror check where the repository records them (Limitations)', () => {
+    expect(read('docs/results/flake/README.md')).toContain('tests/unit/probe/media.test.ts');
+    const label = (build: number): string =>
+      (JSON.parse(real.text(`docs/results/jenkins/build-${build}.json`)) as { label: string }).label;
+    expect(label(2)).toContain(
+      'tests/unit/probe/media.test.ts, the probe media generated twice did not come out the same',
+    );
+    expect(label(5)).toContain(
+      'tests/unit/server/static.test.ts (84 open descriptors where 120 were expected while 40 downloads stalled)',
+    );
+    expect(readme).toContain('84 open descriptors where 120 were expected while 40 downloads stalled');
+    expect(existsSync(join(ROOT, '.github/actions/setup/apt-mirror.sh'))).toBe(true);
+    expect(read('docs/decisions/ci.md')).toContain(
+      '## ADR-180: The setup action measures the apt mirror before it uses it',
+    );
+    expect(readme).toContain('is not a limit of the lab');
   });
 });

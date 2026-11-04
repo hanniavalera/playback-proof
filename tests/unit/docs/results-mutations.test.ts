@@ -30,7 +30,11 @@ describe('PB-LAB-006 results tables: the README and the real files', () => {
       'RESULTS_PERF',
       'RESULTS_TRIAGE',
       'RESULTS_JENKINS',
+      'RESULTS_FLAKE',
+      'RESULTS_READINESS',
+      'RESULTS_SOAK',
     ]);
+    expect(RESULT_BLOCKS.filter((b) => !b.required).map((b) => b.name)).toStrictEqual(['RESULTS_AB']);
     for (const name of required) expect(readme).toContain(`<!-- BEGIN:${name} -->`);
     expect(new Set(RESULT_BLOCKS.map((b) => b.name)).size).toBe(RESULT_BLOCKS.length);
   });
@@ -67,7 +71,7 @@ describe('PB-LAB-006 results tables: mutation checks on a copy of the real files
       result.failure = { stage: 'play', error: 'Error: invented', count: 1 };
     });
     expect(failing(edited)).toMatch(/generated block RESULTS_CODEC is out of date/);
-    expect(failing(edited)).not.toMatch(/RESULTS_(PERF|TRIAGE|JENKINS|SUITES)/);
+    expect(failing(edited)).not.toMatch(/RESULTS_(PERF|TRIAGE|JENKINS|SUITES|FLAKE|READINESS|SOAK)/);
   });
 
   it('catches a number of the threshold derivation changed', () => {
@@ -118,8 +122,57 @@ describe('PB-LAB-006 results tables: mutation checks on a copy of the real files
     expect(failing(extra)).toMatch(/RESULTS_SUITES cannot be rendered: the specs and the catalog disagree/);
   });
 
+  it('catches the paired A/A and the pull-request regression edited, and a triage report of GitHub edited', () => {
+    const aa = changed(real, 'docs/results/perf/paired-aa/chromium-aa.json', (r) => {
+      r.falsePositives = 1;
+    });
+    expect(failing(aa)).toMatch(/generated block RESULTS_PERF is out of date/);
+    const gate = changed(real, 'docs/results/perf/paired-sensitivity/chromium-cpu4x.json', (r) => {
+      r.scenarios[0].metrics[0].remeasure.median.current = 340;
+    });
+    expect(failing(gate)).toMatch(/generated block RESULTS_PERF is out of date/);
+    const triage = changed(real, 'docs/results/triage/ci-demo/triage-report.json', (r) => {
+      r.clusters[0].size += 1;
+      r.totals.failures += 1;
+    });
+    expect(failing(triage)).toMatch(/generated block RESULTS_TRIAGE is out of date/);
+  });
+
+  it('catches a nightly that stops leaving the readiness tests out, and a performance leg that is gone', () => {
+    const nightly = '.github/workflows/nightly.yml';
+    const widened = real.with(nightly, real.text(nightly).replace(' --grep-invert "@readiness"', ''));
+    expect(widened.text(nightly)).not.toBe(real.text(nightly));
+    expect(failing(widened)).toMatch(/generated block RESULTS_SUITES is out of date/);
+    const ci = real.text('.github/workflows/ci.yml');
+    const wider = real.with(
+      '.github/workflows/ci.yml',
+      ci.replace('profile: [chromium, chromium-cpu4x]', 'profile: [chromium]'),
+    );
+    expect(wider.text('.github/workflows/ci.yml')).not.toBe(ci);
+    expect(failing(wider)).toMatch(/generated block RESULTS_SUITES is out of date/);
+  });
+
+  it('catches a flake history with a repetition taken out, and a readiness result edited by hand', () => {
+    const path = 'docs/results/flake/after-fix/abr002-fix/raw/gha-macos-arm64.jsonl';
+    const lines = real.text(path).trimEnd().split('\n');
+    const fewer = real.with(path, `${lines.slice(1).join('\n')}\n`);
+    expect(failing(fewer)).toMatch(/generated block RESULTS_FLAKE is out of date/);
+    const result = 'docs/results/soak/gha-linux-x64-webkit-5m.json';
+    const edited = real.with(result, real.text(result).replace('"GO"', '"NO-GO"'));
+    expect(edited.text(result)).not.toBe(real.text(result));
+    expect(failing(edited)).toMatch(
+      /generated block RESULTS_SOAK cannot be rendered: .*is not what the job uploaded/,
+    );
+    expect(failing(edited)).toMatch(
+      /generated block RESULTS_READINESS cannot be rendered: .*is not what the job uploaded/,
+    );
+  });
+
   it.each([
     ['RESULTS_SUITES', 'TEST_STRATEGY.md'],
+    ['RESULTS_SUITES', 'tools/gate-merge.ts'],
+    ['RESULTS_READINESS', 'docs/results/provenance/runs.json'],
+    ['RESULTS_SOAK', 'docs/results/provenance/runs.json'],
     ['RESULTS_PERF', 'docs/results/perf/threshold-derivation.json'],
     ['RESULTS_TRIAGE', 'docs/results/triage/triage-report.json'],
     ['RESULTS_JENKINS', 'Jenkinsfile'],
@@ -146,6 +199,9 @@ describe('PB-LAB-006 results tables: mutation checks on a copy of the real files
     ['RESULTS_PERF', 'perf/baselines/docker-linux-arm64/firefox.json'],
     ['RESULTS_PERF', 'docs/results/perf/threshold-derivation.json'],
     ['RESULTS_TRIAGE', 'docs/results/triage/triage-report.json'],
+    ['RESULTS_TRIAGE', 'docs/results/triage/ci-demo/triage-report.json'],
+    ['RESULTS_PERF', 'docs/results/perf/paired-aa/chromium-aa.json'],
+    ['RESULTS_PERF', 'docs/results/perf/paired-sensitivity/chromium.json'],
     ['RESULTS_JENKINS', 'docs/results/jenkins/build-4.json'],
   ])('says which file is not JSON when %s reads a truncated %s', (name, path) => {
     const message = failing(real.with(path, real.text(path).slice(0, 200)));

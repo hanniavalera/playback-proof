@@ -12,10 +12,11 @@ import { blockMarkers, checkBlockFresh, locateBlock, replaceBlock } from './doc-
 import { renderCodec } from './results/codec.ts';
 import { ResultsError, loadFileSet } from './results/files.ts';
 import type { FileSet, Read, Rendered } from './results/files.ts';
-import { FLAKE_DIR, FLAKE_REPORT_PATTERN, renderFlake } from './results/flake.ts';
+import { FLAKE_DIR, FLAKE_RAW_PATTERN, renderFlake } from './results/flake.ts';
 import { JENKINSFILE, JENKINS_DIR, renderJenkins } from './results/jenkins.ts';
 import { BASELINES_DIR, PERF_RESULTS_DIR, renderPerf } from './results/perf.ts';
-import { MERGE_WORKFLOW, NIGHTLY_WORKFLOW, STRATEGY, renderSuites } from './results/suites.ts';
+import { GATE_MERGE, MERGE_WORKFLOW, NIGHTLY_WORKFLOW, STRATEGY, renderSuites } from './results/suites.ts';
+import { PROVENANCE_DIR, READINESS_DIR, SOAK_DIR, renderReadiness, renderSoak } from './results/readiness.ts';
 import { TRIAGE_DIR, renderTriage } from './results/triage.ts';
 import { waiting } from './results/waiting.ts';
 
@@ -49,6 +50,7 @@ export const RESULT_BLOCKS: readonly ResultsBlock[] = [
       { path: STRATEGY },
       { path: MERGE_WORKFLOW },
       { path: NIGHTLY_WORKFLOW },
+      { path: GATE_MERGE },
       { path: 'tests/e2e', match: /\.spec\.ts$/ },
       { path: 'tests/live', match: /\.spec\.ts$/ },
     ],
@@ -60,7 +62,9 @@ export const RESULT_BLOCKS: readonly ResultsBlock[] = [
     title: 'performance baselines, thresholds, A/A checks and sensitivity checks',
     reads: [
       { path: BASELINES_DIR, match: /\.json$/ },
-      { path: PERF_RESULTS_DIR, match: /\.(json|md)$/ },
+      // The summaries and write-ups, not the raw per-pass reports; of those only the machine record of each job (its CPU model).
+      { path: PERF_RESULTS_DIR, match: /^docs\/results\/perf\/(?!.*\/raw\/).*\.(json|md)$/ },
+      { path: PERF_RESULTS_DIR, match: /\/raw\/[^/]+\/machine\.txt$/ },
     ],
     required: true,
     render: renderPerf,
@@ -79,34 +83,43 @@ export const RESULT_BLOCKS: readonly ResultsBlock[] = [
     required: true,
     render: renderJenkins,
   },
-  // The results below are committed by changes that have not landed: each block is optional, and has an empty state, until its data is.
   {
     name: 'RESULTS_FLAKE',
-    title: 'flake rate per engine job and the tests that flaked',
-    reads: [{ path: FLAKE_DIR, match: FLAKE_REPORT_PATTERN }],
-    required: false,
+    title:
+      'the flake collections: executions, flaky, failed and invalid runs, counted from the raw histories',
+    reads: [{ path: FLAKE_DIR, match: FLAKE_RAW_PATTERN }],
+    required: true,
     render: renderFlake,
   },
+  {
+    name: 'RESULTS_READINESS',
+    title: 'live-event readiness checks, through the readiness evidence module',
+    reads: [
+      { path: READINESS_DIR, match: /\.json$/ },
+      { path: SOAK_DIR, match: /\.json$/ },
+      { path: PROVENANCE_DIR, match: /(?:runs\.json|machines\/[^/]+\.txt)$/ },
+    ],
+    required: true,
+    render: renderReadiness,
+  },
+  {
+    name: 'RESULTS_SOAK',
+    title: 'soak runs, through the readiness evidence module',
+    reads: [
+      { path: READINESS_DIR, match: /\.json$/ },
+      { path: SOAK_DIR, match: /\.json$/ },
+      { path: PROVENANCE_DIR, match: /(?:runs\.json|machines\/[^/]+\.txt)$/ },
+    ],
+    required: true,
+    render: renderSoak,
+  },
+  // The results below are committed by changes that have not landed: each block is optional, and has an empty state, until its data is.
   {
     name: 'RESULTS_AB',
     title: 'A/B comparisons of player configurations',
     reads: [{ path: 'docs/results/ab', match: /\.(json|md)$/ }],
     required: false,
     render: waiting({ what: 'A/B results', dir: 'docs/results/ab', match: /\.(json|md)$/ }),
-  },
-  {
-    name: 'RESULTS_READINESS',
-    title: 'live-event readiness checks',
-    reads: [{ path: 'docs/results/readiness', match: /\.json$/ }],
-    required: false,
-    render: waiting({ what: 'readiness results', dir: 'docs/results/readiness', match: /\.json$/ }),
-  },
-  {
-    name: 'RESULTS_SOAK',
-    title: 'soak runs',
-    reads: [{ path: 'docs/results/soak', match: /\.json$/ }],
-    required: false,
-    render: waiting({ what: 'soak results', dir: 'docs/results/soak', match: /\.json$/ }),
   },
 ];
 
