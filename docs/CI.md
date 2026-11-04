@@ -1,6 +1,6 @@
 # CI: the pipeline on GitHub Actions
 
-Every pull request runs the stages of [TEST_STRATEGY.md section 6](../TEST_STRATEGY.md) as jobs of one workflow, [`ci.yml`](../.github/workflows/ci.yml), and the Jenkinsfile runs the same stages: a stage is the `npm run gate:*` script of the same name, so the two systems cannot drift apart without a test noticing. The decisions behind it are ADR-110 to ADR-114 in [decisions/ci.md](decisions/ci.md). **Status: the workflows are written, linted and unit-tested, and their commands were run locally; none of them has run on GitHub yet, so no time in this page is a measurement** (the last section says what that leaves open).
+Every pull request runs the stages of [TEST_STRATEGY.md section 6](../TEST_STRATEGY.md) as jobs of one workflow, [`ci.yml`](../.github/workflows/ci.yml), and the Jenkinsfile runs the same stages: a stage is the `npm run gate:*` script of the same name, so the two files can be compared by a parity test (the Jenkins phase adds it) and neither can add a stage the other does not run without it being noticed. The decisions behind it are ADR-110 to ADR-114 in [decisions/ci.md](decisions/ci.md). **Status: the workflows are written, linted and unit-tested, and their commands were run locally; none of them has run on GitHub yet, so no time in this page is a measurement** (the last section says what that leaves open).
 
 ## The pipeline
 
@@ -53,11 +53,11 @@ The legs and what each one is for:
 | `firefox` | `firefox` | Firefox | Plays every flavour on Linux; it does not start on the macOS development host, so this leg and Docker are where it runs. |
 | `chromium-cpu4x` | `chromium-cpu4x` | Chromium | The low-end profile: the project's own `grep` (`@cpu`) is combined with the gate's `--grep @merge`, so it runs the throttled subset only. |
 | `webkit-linux` (experimental) | `webkit` | WebKit | Linux WebKit's MSE playback is intermittent on the probe's page and passed 80 of 80 runs of the real player page in Docker on arm64; it runs as a required, flake-tracked experiment (ADR-113). |
-| `webkit-macos` | `webkit` | WebKit | The realistic Apple media stack, the engine the primary stream is proven in. |
+| `webkit-macos` | `webkit` | WebKit | The realistic macOS media stack, the engine the primary stream is proven in. |
 
 **Required checks.** Branch protection on `main` should require these seven names, exactly as they are printed: `static`, `unit`, `merge-gate (chromium)`, `merge-gate (firefox)`, `merge-gate (chromium-cpu4x)`, `merge-gate (webkit-linux, experimental)`, `merge-gate (webkit-macos)`. `streams / restore or generate` is implied by the five that need it. The performance and flake gates join the list when their jobs exist. The rule is the owner's to set; it is not in the repository. A renamed job stops being required until the rule is updated, so a rename is a change to the rule too.
 
-**What a pull request does not run:** the nightly (`@release` tests), the codec matrix ([`codec-matrix.yml`](../.github/workflows/codec-matrix.yml): on demand, and on pushes to the probe's own files; it installs ffmpeg with brew on macOS because the probe makes its own test clips), the soak, the readiness checks and the A/B runs (TEST_STRATEGY.md section 6.4).
+**What a pull request does not run:** the nightly (`@release` tests; it runs once on a pull request that changes `nightly.yml`), the codec matrix ([`codec-matrix.yml`](../.github/workflows/codec-matrix.yml): on demand, and on pushes to the probe's own files; it installs ffmpeg with brew on macOS because the probe makes its own test clips), the soak, the readiness checks and the A/B runs (TEST_STRATEGY.md section 6.4).
 
 ## How the data moves
 
@@ -68,7 +68,7 @@ The legs and what each one is for:
 
 ## Reproducing a job locally
 
-The Linux legs run on the host runner (x64), which a laptop cannot reproduce. The closest thing is the Playwright image, which is what [`tools/docker/pw.sh`](../tools/docker/pw.sh) starts, with these differences: the CPU architecture (arm64 on an Apple machine), the Node (the image's 24 against the pipeline's 22) and the environment id (`docker-linux-arm64`, so the committed evidence of that environment decides which flavours play and which engines are gaps).
+The Linux legs run on the host runner (x64), which a laptop cannot reproduce. The closest thing is the Playwright image, which is what [`tools/docker/pw.sh`](../tools/docker/pw.sh) starts, with these differences: the CPU architecture (arm64 on an Apple-silicon Mac, x64 on the runner), the Node (the image's 24 against the pipeline's 22) and the environment id (`docker-linux-arm64`, so the committed evidence of that environment decides which flavours play and which engines are gaps).
 
 ```
 # the streams of a CI run (or: npm run generate:streams, with ffmpeg installed on the host)
