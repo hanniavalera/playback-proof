@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "id": "pipeline-check",
+  "kind": "pipeline-check",
+  "catalogId": null,
+  "title": "Pipeline check: six sessions that prove the harness runs end to end (it decides nothing)",
+  "registeredOn": "2026-11-04",
+  "hypotheses": [
+    {
+      "metric": "startupMs",
+      "text": "None about the configurations: this run proves that the service, the browser, the page, the runner, the analysis and the report work together. Six sessions cannot say anything about configuration B."
+    }
+  ],
+  "engine": "chromium",
+  "stream": "vod-cmaf",
+  "protocol": "dash",
+  "arms": { "A": "A", "B": "B" },
+  "conditions": [
+    {
+      "id": "high-latency",
+      "profile": "high-latency",
+      "rules": [{ "type": "latency", "ms": 300, "jitterMs": 100, "match": { "kind": "any" } }],
+      "rationale": "The catalog condition of the startup experiment: 300 ms before the first byte of every response makes every download measurable by the player's estimator, for the whole session."
+    }
+  ],
+  "observation": { "mediaSecondsAfterFirstFrame": 6, "sessionTimeoutMs": 60000 },
+  "sessionsPerArm": 2,
+  "warmupSessionsPerArm": 1,
+  "alpha": 0.05,
+  "bootstrapResamples": 1000,
+  "metrics": [
+    {
+      "id": "startupMs",
+      "role": "primary",
+      "direction": "lower-is-better",
+      "practicalThreshold": 100,
+      "thresholdBasis": "A tenth of a second is the smallest startup change a viewer notices on a page load. A pipeline check decides nothing, so the number only has to be there."
+    },
+    { "id": "rebufferShare", "role": "secondary", "direction": "lower-is-better" },
+    { "id": "rebufferRatio", "role": "secondary", "direction": "lower-is-better" }
+  ],
+  "decisionRule": {
+    "id": "pb-ab-v1",
+    "text": "Ship B only if it is better on a primary metric beyond the threshold and not worse on any; do not ship B if it is worse beyond the threshold with an interval that excludes zero; otherwise keep A. A pipeline check applies none of it."
+  },
+  "exclusionRule": {
+    "text": "A session that errors or times out is a failed session: it is reported and never silently dropped; its metrics are left out of the comparison.",
+    "maxFailedShare": 0.1,
+    "abortAfterConsecutiveFailures": 5
+  },
+  "seed": 20261104
+}
