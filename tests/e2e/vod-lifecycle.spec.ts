@@ -4,15 +4,17 @@ import { expect, test } from './support/fixtures.ts';
 import { streamInfoOf } from './support/session.ts';
 import { requestLogCursor, requestsFor } from './support/waiting.ts';
 import { expectEndedAtTheEnd, waitForEnded } from './vod/ending.ts';
-import { expectClockContinued, expectLanded, logAround, seekAndRecord } from './vod/seeking.ts';
-import { allSegments, distinctAscending, middleOfSegment, segmentNumbers } from './vod/segments.ts';
 import {
-  CONTINUE_SEC,
-  MIN_CONTROL_ADVANCE_SEC,
-  OBSERVED_FRAMES,
-  RESTART_TOLERANCE_SEC,
-  RESUME_TOLERANCE_SEC,
-} from './vod/tolerances.ts';
+  expectClockContinued,
+  expectClockPace,
+  expectLanded,
+  logAround,
+  seekAndRecord,
+  stopwatch,
+} from './vod/seeking.ts';
+import { allSegments, distinctAscending, middleOfSegment, segmentNumbers } from './vod/segments.ts';
+import { CONTINUE_SEC, MIN_CONTROL_ADVANCE_SEC, OBSERVED_FRAMES } from './vod/tolerances.ts';
+import { playAfterEnded, waitForFirstFrame } from './vod/trouble.ts';
 
 test(
   'PB-VOD-003 plays a short title to the end (vod-cmaf-short): ended fires near the duration, no rebuffer, no error',
@@ -25,7 +27,7 @@ test(
     });
     const info = await streamInfoOf(session);
     const qa = await player(session).open();
-    await qa.waitFor('firstframe');
+    await waitForFirstFrame(qa);
     const ended = await waitForEnded(qa, session, info);
 
     // The player's side: the clock reached the end of the title (the catalog's duration, not the player's own idea of it).
@@ -56,7 +58,7 @@ test(
       faults: profile('clean'),
     });
     const qa = await player(session).open();
-    await qa.waitFor('firstframe');
+    await waitForFirstFrame(qa);
     await qa.waitForMediaTime(middleOfSegment(await streamInfoOf(session), 2));
 
     // The positive control: the same window of frames moves the clock of a playing player, so "it did not move" below can fail.
@@ -97,26 +99,36 @@ test(
       protocol: 'dash',
       faults: profile('clean'),
     });
+    const info = await streamInfoOf(session);
     const qa = await player(session).open();
-    await qa.waitFor('firstframe');
-    await qa.waitForMediaTime(middleOfSegment(await streamInfoOf(session), 2));
+    await waitForFirstFrame(qa);
+    await qa.waitForMediaTime(middleOfSegment(info, 2));
     const beforePause = await qa.cursor();
     await qa.pause();
     const pausedAt = (await qa.waitFor('paused', { since: beforePause })).mediaTime;
     await qa.observeFrames(OBSERVED_FRAMES);
 
     const since = await qa.cursor();
+    const elapsed = stopwatch();
     await qa.play();
     const resumedAt = (await qa.waitFor('playing', { since })).mediaTime;
+    const resumedAfterMs = elapsed();
     const reached = await qa.waitForMediaTime(pausedAt + CONTINUE_SEC);
+    const reachedAfterMs = elapsed();
     const timeline = await qa.events(since);
 
-    // No jump: the clock restarts where it stopped (the `paused` and `playing` events of qa.events()) and goes on from there.
-    expect(
-      Math.abs(resumedAt - pausedAt),
-      `distance in seconds between the media time of the playing event after the resume (${resumedAt} s) and of the paused event (${pausedAt} s)`,
-    ).toBeLessThanOrEqual(RESUME_TOLERANCE_SEC);
-    expectClockContinued(reached, pausedAt + CONTINUE_SEC, 'the clock jumped forward after the resume');
+    // No jump: the clock restarts where it stopped (the `paused` and `playing` events of qa.events()) and goes on from there. The page reads
+    // the clock when it gets to the event, so the bound is the wall clock of the call, not a distance (ADR-092).
+    expectClockPace(
+      { from: pausedAt, to: resumedAt, wallMs: resumedAfterMs },
+      info,
+      'media time of the playing event after the resume',
+    );
+    expectClockContinued(
+      { from: pausedAt, to: reached, wallMs: reachedAfterMs },
+      info,
+      'the clock jumped forward after the resume',
+    );
     // No seek: the element did not seek to resume.
     expect(
       timeline.filter((event) => event.name === 'seeking' || event.name === 'seeked'),
@@ -137,7 +149,7 @@ test(
     });
     const info = await streamInfoOf(session);
     const qa = await player(session).open();
-    await qa.waitFor('firstframe');
+    await waitForFirstFrame(qa);
     await qa.waitForMediaTime(1);
 
     const target = middleOfSegment(info, info.segmentCount);
@@ -148,7 +160,7 @@ test(
       remainingSec: info.durationSec - target,
     });
 
-    expectLanded(seek.seeked, target);
+    expectLanded(seek, target, info);
     expectEndedAtTheEnd(ended, info);
     expect((await qa.metrics()).state, 'player state (metrics.state) after the end of the title').toBe(
       'ended',
@@ -176,23 +188,32 @@ test(
     });
     const info = await streamInfoOf(session);
     const qa = await player(session).open();
-    await qa.waitFor('firstframe');
+    await waitForFirstFrame(qa);
     await waitForEnded(qa, session, info);
 
     const since = await qa.cursor();
     const logCursor = await requestLogCursor(session);
-    await qa.play();
+    const elapsed = stopwatch();
+    await playAfterEnded(qa, session, { since, logCursor });
     const restartedAt = (await qa.waitFor('playing', { since })).mediaTime;
+    const restartedAfterMs = elapsed();
     const reached = await qa.waitForMediaTime(CONTINUE_SEC);
+    const reachedAfterMs = elapsed();
     const timeline = await qa.events(since);
 
     // From the beginning: the first `playing` after play() is at the start of the title and the clock runs on from there. A player that
-    // stayed at the end would have the clock at 12 s here, which `waitForMediaTime(1)` accepts at once: the distance to 1 s is what shows it.
-    expect(
-      restartedAt,
+    // stayed at the end would have the clock at 12 s here, which `waitForMediaTime(1)` accepts at once: the wall clock of the call is what
+    // shows it (a restart that was read late is at most as far from 0 as the clock could have run, ADR-092).
+    expectClockPace(
+      { from: 0, to: restartedAt, wallMs: restartedAfterMs },
+      info,
       `media time of the playing event after play() (qa.events()); the title had ended at ${info.durationSec} s`,
-    ).toBeLessThanOrEqual(RESTART_TOLERANCE_SEC);
-    expectClockContinued(reached, CONTINUE_SEC, 'the clock did not restart from the beginning');
+    );
+    expectClockContinued(
+      { from: 0, to: reached, wallMs: reachedAfterMs },
+      info,
+      'the clock did not restart from the beginning',
+    );
     const metrics = await qa.metrics();
     expect(metrics.state, 'player state (metrics.state) after play() on an ended title').toBe('playing');
 
