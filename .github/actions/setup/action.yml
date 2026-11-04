@@ -24,15 +24,18 @@ inputs:
 runs:
   using: composite
   steps:
-    # Apt on the hosted runners has stalled for the whole 15 minutes of a job's timeout (an ffmpeg install, a browser's libraries): it is
-    # told first, before anything uses it, to give up on a connection that stalls for 30 s and retry it, and to wait for the dpkg lock.
-    # Nothing here kills a process: a wall-clock kill of a wrapper left an apt-get running as root, holding the lock (docs/decisions/ci.md).
-    - name: Make apt give up on a stalled mirror
+    # The apt mirror of the hosted runners served packages at about 50 kB/s for a quarter of an hour on 4 Nov (the usual rate is 50 MB/s), and
+    # 48.8 MB took the whole 15 minutes of a job's timeout: an ffmpeg install, a browser's libraries. Apt was slow, not stalled, so its timeouts
+    # (they act on silence) did not apply, and a kill from outside is not clean (a wall-clock kill of a wrapper left an apt-get running as
+    # root, holding the dpkg lock). So, before anything uses apt, the speed of the mirror is measured on one real package, and a mirror
+    # below 1 MB/s gives its place to the next one of the list that is not (ADR-180). The settings below cover the other failures of a mirror.
+    - name: Check the apt mirror, and make apt give up on a stalled connection
       if: runner.os == 'Linux'
       shell: bash
       run: |
         printf '%s\n' 'Acquire::Retries "5";' 'Acquire::http::Timeout "30";' 'Acquire::https::Timeout "30";' 'DPkg::Lock::Timeout "300";' \
           | sudo tee /etc/apt/apt.conf.d/80-ci-resilience > /dev/null
+        bash "$GITHUB_ACTION_PATH/apt-mirror.sh"
     # The version comes from .nvmrc, the same file a developer's version manager reads.
     - name: Set up Node
       uses: actions/setup-node@v7
@@ -81,8 +84,8 @@ runs:
       shell: bash
       env:
         BROWSER: ${{ inputs.browser }}
-      # The system packages of a browser go through apt, which was told at the top of this action to give up on a stalled connection and
-      # to wait for the lock; the install itself gets three plain attempts, for a mirror that answered with an error.
+      # The system packages of a browser go through apt, whose mirror list was checked at the top of this action; the install itself gets
+      # three plain attempts, for a mirror that answered with an error.
       run: |
         for attempt in 1 2 3; do
           if [ "$RUNNER_OS" = "Linux" ]; then
