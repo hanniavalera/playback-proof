@@ -27,6 +27,8 @@ export default defineConfig({
     ['list'],
     ['json', { outputFile: 'reports/playwright.json' }],
     ['html', { open: 'never', outputFolder: 'reports/html' }],
+    // Records every attempt of every test in reports/flake/run.json: the source of the flake history (flake/, docs/FLAKE.md).
+    ['./flake/reporter.ts'],
   ],
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,

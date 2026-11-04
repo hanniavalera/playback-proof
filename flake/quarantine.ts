@@ -5,7 +5,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { FLAKE_LIMITS } from '../src/shared/criteria.ts';
 import type { GateTier } from '../src/shared/criteria.ts';
-import { expandEngines } from '../tools/catalog.ts';
+import { expandEngines, parseCatalog } from '../tools/catalog.ts';
 import type { CatalogRow } from '../tools/catalog.ts';
 
 export const QUARANTINE_SCHEMA_VERSION = 1;
@@ -276,6 +276,17 @@ export function isQuarantined(
   return findQuarantine(entries, id, project, today) !== null;
 }
 
+/** The entries in force on `today`: started, and not past their expiry. */
+export function activeEntries(entries: readonly QuarantineEntry[], today: string): QuarantineEntry[] {
+  const now = dayNumber(today);
+  if (now === null) return [];
+  return entries.filter((entry) => {
+    const since = dayNumber(entry.since);
+    const expires = dayNumber(entry.expires);
+    return since !== null && expires !== null && since <= now && now <= expires;
+  });
+}
+
 export interface ExpiredEntry {
   entry: QuarantineEntry;
   tier: GateTier | null;
@@ -327,4 +338,33 @@ export function loadQuarantine(path: string, source = QUARANTINE_FILE): LoadedQu
     };
   }
   return { found: true, ...parseQuarantineText(readFileSync(path, 'utf8'), source) };
+}
+
+export const STRATEGY_FILE = 'TEST_STRATEGY.md';
+
+/** The catalog of the strategy document as the facts a quarantine is judged against. Throws when the catalog does not parse. */
+export function loadCatalogFacts(path: string): CatalogFacts {
+  return catalogFacts(parseCatalog(readFileSync(path, 'utf8')));
+}
+
+export interface LoadListOptions {
+  quarantineFile: string;
+  strategyFile: string;
+  /** `YYYY-MM-DD`, UTC. */
+  today: string;
+}
+
+export interface LoadedList {
+  /** The list as read from the file: the entries of the right shape, and what was wrong with the others. */
+  read: LoadedQuarantine;
+  /** The entries without a problem, and every problem in words. */
+  assessment: QuarantineAssessment;
+  catalog: CatalogFacts;
+}
+
+/** The quarantine list of the repository, read and judged: what the gate, the merge wrapper and the report all start from. */
+export function loadList(options: LoadListOptions): LoadedList {
+  const catalog = loadCatalogFacts(options.strategyFile);
+  const read = loadQuarantine(options.quarantineFile);
+  return { read, assessment: assessQuarantine(read, { catalog, today: options.today }), catalog };
 }
