@@ -1,4 +1,4 @@
-import { LIVE_LIMITS } from '../../shared/criteria.ts';
+import { LIVE_FACTS, LIVE_LIMITS } from '../../shared/criteria.ts';
 import { median, percentile } from '../measure/stats.ts';
 import { evaluation, formatMs, plural } from './verdict.ts';
 import type { Evaluation, Limits } from './verdict.ts';
@@ -190,8 +190,10 @@ export interface StallRun {
   recoveryMs: number | null;
   /** How long the harness waited for the `playing` that never came, ms. */
   waitedMs: number | null;
-  /** Latency just before the outage, ms: the level the player was at. */
+  /** Latency just before the outage, ms: the session's own steady level (the median of the reads taken in the seconds before it). */
   latencyBeforeMs: number | null;
+  /** The reads that level is the median of, ms. */
+  latencyBeforeReadsMs?: readonly number[];
   /** Latency from the recovery on, one read per second of media time. */
   after: readonly RestoreSample[];
   /** How long the player was watched after it resumed, ms. */
@@ -201,22 +203,32 @@ export interface StallRun {
 /** How long latency must stay back within the maximum for it to count as restored: a read that dips under it once is not a player that came back. */
 export const RESTORE_HOLD_MS = 5000;
 
+/**
+ * How far above its own steady level the latency may be for the relative reading to call the player back: one segment. An outage of
+ * `injectedStallMs` leaves an unrestored player `injectedStallMs - presentationDelay` behind where it was (4 s for 10 s and the 6 s delay,
+ * two segments), so one segment is half way between a player that came back and one that did not; the whole spread of healthy latencies
+ * in the live specs was 6.06 to 7.17 s, about a second (ADR-100). It is the evaluator's own number and not a limit of the policy: Phase 7
+ * part 2 chooses it, and whether the relative reading or the absolute limit separates the two better, from the values it measures
+ * (ADR-153).
+ */
+export const RELATIVE_TOLERANCE_MS = LIVE_FACTS.segmentSec * 1000;
+
 export type Restore =
   { restored: true; atMs: number } | { restored: false; observedMs: number; finalLatencyMs: number | null };
 
 /**
- * When latency came back within `latencyMaxMs` for good: the start of the longest tail of the observation in which every read is within
- * it, provided that tail lasts `RESTORE_HOLD_MS`. A series that is within the maximum from the first read is restored at that read;
+ * When latency came back within `ceilingMs` for good: the start of the longest tail of the observation in which every read is within
+ * it, provided that tail lasts `RESTORE_HOLD_MS`. A series that is within the ceiling from the first read is restored at that read;
  * one that never gets there, or that ends too soon after getting there to say it stayed, is not.
  */
-export function restoreFrom(
+export function restoreWithin(
   after: readonly RestoreSample[],
   observedMs: number,
-  limits: Limits = LIVE_LIMITS,
+  ceilingMs: number,
 ): Restore {
   const reads = after.filter((sample) => sample.latencyMs !== null);
   let start = reads.length;
-  while (start > 0 && (reads[start - 1]?.latencyMs as number) <= limits.latencyMaxMs) start -= 1;
+  while (start > 0 && (reads[start - 1]?.latencyMs as number) <= ceilingMs) start -= 1;
   const first = reads[start];
   const last = reads.at(-1);
   const held =
@@ -225,11 +237,34 @@ export function restoreFrom(
   return { restored: false, observedMs, finalLatencyMs: last?.latencyMs ?? null };
 }
 
+/** The absolute reading: back within `latencyMaxMs`, the limit of the policy. */
+export function restoreFrom(
+  after: readonly RestoreSample[],
+  observedMs: number,
+  limits: Limits = LIVE_LIMITS,
+): Restore {
+  return restoreWithin(after, observedMs, limits.latencyMaxMs);
+}
+
 export function restoreOf(run: StallRun, limits: Limits = LIVE_LIMITS): Restore {
   return restoreFrom(run.after, run.observedMs, limits);
 }
 
-export function evaluateStallRecovery(runs: readonly StallRun[], limits: Limits = LIVE_LIMITS): Evaluation[] {
+/** The relative reading: back within `toleranceMs` of the run's own steady level before the outage; null when that level was not measured. */
+export function restoreRelativeOf(
+  run: StallRun,
+  toleranceMs: number = RELATIVE_TOLERANCE_MS,
+): Restore | null {
+  return run.latencyBeforeMs === null
+    ? null
+    : restoreWithin(run.after, run.observedMs, run.latencyBeforeMs + toleranceMs);
+}
+
+export function evaluateStallRecovery(
+  runs: readonly StallRun[],
+  limits: Limits = LIVE_LIMITS,
+  toleranceMs: number = RELATIVE_TOLERANCE_MS,
+): Evaluation[] {
   const judged = runs.filter((run) => run.stalled);
   const unexercised = runs.length - judged.length;
   const none = judged.length === 0;
@@ -344,7 +379,93 @@ export function evaluateStallRecovery(runs: readonly StallRun[], limits: Limits 
       return `Latency was back within ${formatMs(limits.latencyMaxMs)} ${value} after the recovery in the worst of ${plural(judged.length, 'run')}; the limit is ${limit}${maxRate > 1 ? `; the player raised its playback rate to ${maxRate.toFixed(2)} to catch up` : ''}.`;
     },
   });
-  return [recovery, restore];
+  // The same restoration asked relative to each run's own steady level before the outage. An advisory line: the criterion of the strategy
+  // is the absolute limit above, and which of the two separates a player that came back from one that did not is for part 2 to choose.
+  const relatives = judged.map((run) => ({
+    run,
+    levelMs: run.latencyBeforeMs,
+    restore: restoreRelativeOf(run, toleranceMs),
+  }));
+  const unmeasured = relatives.filter((entry) => entry.restore === null);
+  const relativeNever = relatives.flatMap((entry) =>
+    entry.restore !== null && !entry.restore.restored
+      ? [{ ...entry, observedMs: entry.restore.observedMs }]
+      : [],
+  );
+  const relativeTimes = relatives.flatMap((entry) =>
+    entry.restore !== null && entry.restore.restored ? [entry.restore.atMs] : [],
+  );
+  const relativeLongest = Math.max(0, ...relativeNever.map((entry) => entry.observedMs));
+  const cannotJudge = none || unmeasured.length > 0;
+  const relativeWorst = cannotJudge
+    ? null
+    : relativeNever.length > 0
+      ? relativeLongest
+      : Math.max(...relativeTimes);
+  const relativeVerdict = cannotJudge
+    ? ('INCONCLUSIVE' as const)
+    : relativeNever.length > 0
+      ? relativeLongest >= limits.latencyRestoreMaxMs
+        ? ('NO-GO' as const)
+        : ('INCONCLUSIVE' as const)
+      : undefined;
+  const disagreements = relatives.flatMap((entry) => {
+    if (entry.restore === null || entry.levelMs === null) return [];
+    const absolute = restoreOf(entry.run, limits).restored;
+    if (absolute === entry.restore.restored) return [];
+    return [
+      `run ${entry.run.run} was ${absolute ? '' : 'not '}back within the ${formatMs(limits.latencyMaxMs)} of the policy and ${entry.restore.restored ? '' : 'not '}back within ${formatMs(toleranceMs)} of its own level of ${formatMs(entry.levelMs)}`,
+    ];
+  });
+  const relative = evaluation({
+    id: 'stall.restore-relative',
+    check: 'PB-RDY-003',
+    label: `Latency back at its own level after the stall, worst of ${judged.length}`,
+    value: relativeWorst,
+    unit: 'ms',
+    limitKey: 'latencyRestoreMaxMs',
+    bound: 'at-most',
+    limits,
+    scope: 'advisory',
+    ...(relativeNever.length > 0 && !cannotJudge ? { censored: true as const } : {}),
+    ...(relativeVerdict ? { verdict: relativeVerdict } : {}),
+    ...(disagreements.length > 0
+      ? {
+          note: `The absolute limit and the relative reading disagree: ${disagreements.join('; ')}. Which of the two separates a player that came back from one that did not is chosen from the measured values (docs/decisions/readiness.md, ADR-153); the verdict is the absolute one.`,
+        }
+      : {}),
+    detail: {
+      toleranceMs,
+      holdMs: RESTORE_HOLD_MS,
+      maxLatencyMs: limits.latencyMaxMs,
+      runs: relatives.map((entry) => ({
+        run: entry.run.run,
+        levelBeforeMs: entry.levelMs,
+        levelBeforeReadsMs: entry.run.latencyBeforeReadsMs ?? null,
+        ceilingMs: entry.levelMs === null ? null : entry.levelMs + toleranceMs,
+        restoredAtMs: entry.restore !== null && entry.restore.restored ? entry.restore.atMs : null,
+        finalLatencyMs: lastRead(entry.run),
+        sustainedLatencyMs: levelOf(entry.run),
+        observedMs: entry.run.observedMs,
+      })),
+    },
+    sentence: ({ verdict, value, limit }) => {
+      if (none) return noneSentence;
+      if (unmeasured.length > 0)
+        return `The latency before the outage was not read in ${plural(unmeasured.length, 'run')} of ${judged.length}: there is no level of the player's own to hold it to.`;
+      if (relativeNever.length > 0) {
+        const worst = relativeNever[0];
+        const final = worst ? lastRead(worst.run) : null;
+        const where =
+          final === null || worst === undefined || worst.levelMs === null
+            ? ''
+            : ` It stood at ${formatMs(final)} when the observation ended, ${formatMs(final - worst.levelMs)} further behind than before the outage (${formatMs(worst.levelMs)}).`;
+        return `Latency was not back within ${formatMs(toleranceMs)} of its own level before the outage in ${plural(relativeNever.length, 'run')} of ${judged.length}, ${verdict === 'NO-GO' ? 'after' : 'in only'} ${value} of observation; the limit is ${limit}.${where}`;
+      }
+      return `Latency was back within ${formatMs(toleranceMs)} of its own level before the outage ${value} after the recovery in the worst of ${plural(judged.length, 'run')}; the limit is ${limit}.`;
+    },
+  });
+  return [recovery, restore, relative];
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

@@ -3,6 +3,7 @@ import { LIVE_LIMITS } from '../../../src/shared/criteria.ts';
 import {
   MIN_CADENCE_GAPS,
   MIN_LATENCY_SAMPLES,
+  RELATIVE_TOLERANCE_MS,
   RESTORE_HOLD_MS,
   evaluateLatencyWindow,
   evaluateManifestCadence,
@@ -10,6 +11,7 @@ import {
   evaluateStart,
   gapsOf,
   restoreOf,
+  restoreRelativeOf,
 } from '../../../src/lab/readiness/evaluators.ts';
 import type {
   JoinSample,
@@ -293,6 +295,94 @@ describe('PB-RDY-003: stall recovery', () => {
     const shortWatch = run({ after: reads(() => 10_400).slice(0, 21), observedMs: 20_000 });
     const lines = evaluateStallRecovery([shortWatch]);
     expect(byId(lines, 'stall.restore').verdict).toBe('INCONCLUSIVE');
+  });
+
+  describe('the relative reading, next to the absolute one', () => {
+    it('is the same finding for the defaults, as an advisory line that does not decide: 4 s behind where it was, for good', () => {
+      const lines = evaluateStallRecovery([run()]);
+      const relative = byId(lines, 'stall.restore-relative');
+      expect(relative.scope).toBe('advisory');
+      expect(relative.verdict).toBe('NO-GO');
+      expect(relative.censored).toBe(true);
+      expect(relative.value).toBe(OBSERVED_MS);
+      expect(relative.limitKey).toBe('latencyRestoreMaxMs');
+      expect(relative.sentence).toContain('not back within 2.00 s of its own level before the outage');
+      expect(relative.sentence).toContain('3.92 s further behind than before the outage (6.20 s)');
+      expect(relative.note).toBeUndefined();
+      expect(relative.detail).toMatchObject({ toleranceMs: RELATIVE_TOLERANCE_MS, holdMs: RESTORE_HOLD_MS });
+    });
+
+    it('is GO for a candidate that catches up, later than the absolute reading because it asks for more', () => {
+      const catchUp = reads(
+        (t) => Math.max(7000, 10_600 - t / 10),
+        (t) => (10_600 - t / 10 > 7000 ? 1.1 : 1),
+      );
+      const lines = evaluateStallRecovery([run({ after: catchUp, recoveryMs: 4000 })]);
+      expect(byId(lines, 'stall.restore').value).toBe(6000);
+      // From 10.6 s at 0.1 s per second to 8.2 s (6.2 s and one segment): 24 s.
+      const relative = byId(lines, 'stall.restore-relative');
+      expect(relative.verdict).toBe('GO');
+      expect(relative.value).toBe(24_000);
+    });
+
+    it('lets the verdict be the absolute one where the two readings disagree, and says so: 9.5 s is under the maximum and 3.5 s above where it was', () => {
+      const lines = evaluateStallRecovery([run({ latencyBeforeMs: 6000, after: reads(() => 9500) })]);
+      expect(byId(lines, 'stall.restore').verdict).toBe('GO');
+      const relative = byId(lines, 'stall.restore-relative');
+      expect(relative.verdict).toBe('NO-GO');
+      expect(relative.note).toContain(
+        'run 1 was back within the 10.00 s of the policy and not back within 2.00 s of its own level of 6.00 s',
+      );
+      expect(relative.note).toContain('the verdict is the absolute one');
+      expect(aggregate(lines)).toBe('GO');
+    });
+
+    it('says so the other way round too: a session that sat high is within a segment of itself and still above the maximum', () => {
+      const lines = evaluateStallRecovery([run({ latencyBeforeMs: 8500, after: reads(() => 10_400) })]);
+      expect(byId(lines, 'stall.restore').verdict).toBe('NO-GO');
+      const relative = byId(lines, 'stall.restore-relative');
+      expect(relative.verdict).toBe('GO');
+      expect(relative.note).toContain(
+        'not back within the 10.00 s of the policy and back within 2.00 s of its own level of 8.50 s',
+      );
+      expect(aggregate(lines)).toBe('NO-GO');
+    });
+
+    it('holds its tolerance inclusive: exactly a segment above the level is back, a millisecond more is not', () => {
+      const level = 6200;
+      expect(
+        restoreRelativeOf(run({ latencyBeforeMs: level, after: reads(() => level + RELATIVE_TOLERANCE_MS) }))
+          ?.restored,
+      ).toBe(true);
+      expect(
+        restoreRelativeOf(
+          run({ latencyBeforeMs: level, after: reads(() => level + RELATIVE_TOLERANCE_MS + 1) }),
+        )?.restored,
+      ).toBe(false);
+      expect(RELATIVE_TOLERANCE_MS).toBe(2000);
+    });
+
+    it('uses the tolerance it is given, and asks for the same hold as the absolute reading', () => {
+      const lines = evaluateStallRecovery([run({ after: reads(() => 9000) })], LIVE_LIMITS, 3000);
+      expect(byId(lines, 'stall.restore-relative').verdict).toBe('GO');
+      const dipped = run({ after: reads((t) => (t === 20_000 ? 6500 : 10_100)) });
+      expect(restoreRelativeOf(dipped)?.restored).toBe(false);
+    });
+
+    it('cannot hold a player to a level it was not seen at, and says so without touching the criterion', () => {
+      const lines = evaluateStallRecovery([run({ latencyBeforeMs: null, after: reads(() => 7000) })]);
+      const relative = byId(lines, 'stall.restore-relative');
+      expect(relative.verdict).toBe('INCONCLUSIVE');
+      expect(relative.value).toBeNull();
+      expect(relative.sentence).toContain('was not read');
+      expect(byId(lines, 'stall.restore').verdict).toBe('GO');
+      expect(restoreRelativeOf(run({ latencyBeforeMs: null }))).toBeNull();
+    });
+
+    it('judges nothing when the outage never stalled the player, like the lines it sits next to', () => {
+      const lines = evaluateStallRecovery([run({ stalled: false, recoveryMs: null, after: [] })]);
+      expect(byId(lines, 'stall.restore-relative').verdict).toBe('INCONCLUSIVE');
+    });
   });
 });
 

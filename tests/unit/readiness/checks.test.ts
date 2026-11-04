@@ -12,7 +12,7 @@ import {
   runStartCheck,
 } from '../../../src/lab/readiness/checks.ts';
 import { candidateById } from '../../../src/lab/readiness/candidates.ts';
-import { RESTORE_HOLD_MS } from '../../../src/lab/readiness/evaluators.ts';
+import { RELATIVE_TOLERANCE_MS, RESTORE_HOLD_MS } from '../../../src/lab/readiness/evaluators.ts';
 import type { StallRun } from '../../../src/lab/readiness/evaluators.ts';
 import { LIVE_LIMITS } from '../../../src/shared/criteria.ts';
 import type { RequestLogEntry } from '../../../src/shared/api.ts';
@@ -28,9 +28,11 @@ const get = (result: { evaluations: Array<{ id: string }> }, id: string) => {
   return found as unknown as {
     id: string;
     verdict: string;
+    scope: string;
     value: number | null;
     censored?: true;
     sentence: string;
+    note?: string;
     detail?: Record<string, unknown>;
   };
 };
@@ -130,6 +132,24 @@ describe('PB-RDY-003 stall recovery', () => {
     expect(observed.runs.every((run) => run.closed)).toBe(true);
     const runs = result.samples.runs as StallRun[];
     expect(runs.map((run) => run.latencyBeforeMs)).toEqual([6200, 6200, 6200]);
+    // The level before is the median of three reads, one per media second, and they are kept.
+    expect(runs.map((run) => run.latencyBeforeReadsMs)).toEqual(Array(3).fill([6200, 6200, 6200]));
+    expect(result.samples.relativeToleranceMs).toBe(RELATIVE_TOLERANCE_MS);
+  });
+
+  it("asks the same question relative to the session's own level, as an advisory line next to the criterion: the defaults fail it too", async () => {
+    const { world } = fakeWorld();
+    const result = await runStallCheck(world, { runs: 2 });
+    const relative = get(result, 'stall.restore-relative');
+    expect(relative.scope).toBe('advisory');
+    expect(relative.verdict).toBe('NO-GO');
+    expect(relative.censored).toBe(true);
+    expect(relative.sentence).toContain('within 2.00 s of its own level before the outage');
+    expect(relative.sentence).toContain('further behind than before the outage (6.20 s)');
+    const runs = (relative.detail?.runs ?? []) as Array<{ ceilingMs: number; levelBeforeMs: number }>;
+    expect(runs.map((run) => run.ceilingMs)).toEqual([8200, 8200]);
+    // The absolute and the relative reading agree here, so there is nothing to note.
+    expect(relative.note).toBeUndefined();
   });
 
   it('installs the origin outage the contract names, three segments from the edge it read, with the length of the policy', async () => {
@@ -154,9 +174,17 @@ describe('PB-RDY-003 stall recovery', () => {
     expect(restore.sentence).toContain('playback rate to 1.10');
     expect(result.verdict).toBe('GO');
     expect(observed.runs.every((run) => run.configured.length === 1)).toBe(true);
-    // Early exit: once latency has been back within the maximum for the hold, the observation stops: seconds, not the full minute.
+    // The relative reading asks for more of a player than the absolute one (back within a segment of where it was, not under the maximum),
+    // so it is the one that ends the observation: seconds, not the full minute.
+    const relative = get(result, 'stall.restore-relative');
+    expect(relative.verdict).toBe('GO');
+    expect(relative.scope).toBe('advisory');
+    expect(relative.value).toBeGreaterThan(restore.value as number);
     const runs = result.samples.runs as StallRun[];
-    expect(Math.max(...runs.map((run) => run.observedMs))).toBeLessThan(15_000);
+    expect(Math.max(...runs.map((run) => run.observedMs))).toBeLessThan(35_000);
+    expect(Math.max(...runs.map((run) => run.observedMs))).toBeGreaterThan(
+      (relative.value as number) + RESTORE_HOLD_MS - 1,
+    );
 
     // The same player without the knob is the same NO-GO as the defaults: the fake only catches up when it was configured to.
     const without = await runStallCheck(fakeWorld().world, { runs: 1 });

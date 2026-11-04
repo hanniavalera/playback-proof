@@ -3,13 +3,17 @@ import type { RequestLogEntry } from '../../shared/api.ts';
 import { LIVE_FACTS, LIVE_LIMITS } from '../../shared/criteria.ts';
 import { originStall } from '../../shared/profiles.ts';
 import type { QAEvent, QAInfo } from '../../shared/qa.ts';
+import { median } from '../measure/stats.ts';
 import {
+  RELATIVE_TOLERANCE_MS,
   RESTORE_HOLD_MS,
   evaluateLatencyWindow,
   evaluateManifestCadence,
   evaluateStallRecovery,
   evaluateStart,
   restoreFrom,
+  restoreRelativeOf,
+  restoreWithin,
 } from './evaluators.ts';
 import type { JoinSample, LatencyPoint, RestoreSample, StallRun } from './evaluators.ts';
 import { aggregate } from './verdict.ts';
@@ -35,6 +39,8 @@ export const JOIN_TIMEOUT_MS = 15_000;
 export const LATENCY_STEP_SEC = 1;
 /** Media seconds a player plays before the outage is installed, so that the latency "before" is that of a player that is playing. */
 export const SETTLE_SEC = 4;
+/** Reads of the latency, one per media second and the last at the end of the settling, whose median is the session's own steady level (the relative reading of PB-RDY-003). */
+export const STEADY_READS = 3;
 /** The outage starts when the third segment from now is published: four to six seconds ahead, wherever the page's startup put the player (ADR-103). */
 export const STALL_AFTER_SEGMENTS = 3;
 /** The stream has been on air one DVR window when a session is created, so a window exists at once; the joins add their phase to it. */
@@ -329,8 +335,15 @@ async function runStallOnce(
         player,
         outage: null,
       };
-    await run.player.waitForMediaTime(frame.event.mediaTime + SETTLE_SEC);
-    const latencyBeforeMs = (await run.player.metrics()).live.latencyMs;
+    // The session's own steady level: the median of a few reads, one per media second, the last where the settling ends.
+    const steady: number[] = [];
+    for (let back = STEADY_READS - 1; back >= 0; back--) {
+      await run.player.waitForMediaTime(frame.event.mediaTime + SETTLE_SEC - back);
+      const read = (await run.player.metrics()).live.latencyMs;
+      if (read !== null) steady.push(read);
+    }
+    const latencyBeforeMs = steady.length === 0 ? null : median(steady);
+    const before = { latencyBeforeMs, latencyBeforeReadsMs: steady };
 
     const live = (await run.session.service.detail(run.session.id)).live;
     if (!live) throw new Error(`the service reports no live clock for session ${run.session.id}`);
@@ -346,7 +359,7 @@ async function runStallOnce(
         `run ${index}: the player never ran dry within ${DRAIN_WITHIN_MS} ms of the outage being installed (${headline(error)})`,
       );
       return {
-        run: empty({ latencyBeforeMs }),
+        run: empty(before),
         notes,
         player,
         outage: { atNumber, ms: limits.injectedStallMs },
@@ -358,7 +371,7 @@ async function runStallOnce(
         `run ${index}: the player ran dry while the origin was not stalled: a stall of its own, not the outage's`,
       );
       return {
-        run: empty({ latencyBeforeMs }),
+        run: empty(before),
         notes,
         player,
         outage: { atNumber, ms: limits.injectedStallMs },
@@ -372,7 +385,7 @@ async function runStallOnce(
     } catch (error) {
       notes.push(`run ${index}: the player did not resume within ${wait} ms (${headline(error)})`);
       return {
-        run: empty({ stalled: true, waitedMs: wait, latencyBeforeMs }),
+        run: empty({ stalled: true, waitedMs: wait, ...before }),
         notes,
         player,
         outage: { atNumber, ms: limits.injectedStallMs },
@@ -380,7 +393,8 @@ async function runStallOnce(
     }
 
     // From the recovery on: one read per second of media time, stamped with the harness's wall clock since the recovery, until the latency
-    // has been back within the maximum for the hold, or until the limit and the hold are over.
+    // has been back within the maximum for the hold and (the relative reading, an advisory line next to the criterion) back within a
+    // segment of its own level before the outage for the hold, or until the limit and the hold are over.
     const resumedAt = world.now();
     const after: RestoreSample[] = [];
     const read = async (): Promise<void> => {
@@ -391,22 +405,33 @@ async function runStallOnce(
         playbackRate: metrics.playback.playbackRate,
       });
     };
+    const restoredBoth = (): boolean => {
+      const sinceMs = world.now() - resumedAt;
+      const relative =
+        latencyBeforeMs === null
+          ? true
+          : restoreWithin(after, sinceMs, latencyBeforeMs + RELATIVE_TOLERANCE_MS).restored;
+      return restoreFrom(after, sinceMs, limits).restored && relative;
+    };
     await read();
     const budgetMs = limits.latencyRestoreMaxMs + RESTORE_HOLD_MS;
     for (let step = 1; world.now() - resumedAt < budgetMs; step++) {
       // A second stall in the observation makes the media clock wait: the read is taken anyway, it is what the viewer lives through.
       await run.player.waitForMediaTime(resumed.mediaTime + step * LATENCY_STEP_SEC).catch(() => undefined);
       await read();
-      if (restoreFrom(after, world.now() - resumedAt, limits).restored) break;
+      if (restoredBoth()) break;
     }
     const observedMs = world.now() - resumedAt;
     const restore = restoreFrom(after, observedMs, limits);
+    const relativeRestore = restoreRelativeOf({ ...empty(before), after, observedMs });
+    const describeRestore = (found: typeof restore | null): string =>
+      found === null
+        ? 'n/a'
+        : found.restored
+          ? `restored ${Math.round(found.atMs)} ms after the recovery`
+          : `not restored after ${Math.round(observedMs)} ms (last ${found.finalLatencyMs === null ? 'n/a' : Math.round(found.finalLatencyMs)} ms)`;
     options.log?.(
-      `  outage ${index}: stalled ${Math.round(resumed.t - dry.t)} ms, latency ${latencyBeforeMs === null ? 'n/a' : Math.round(latencyBeforeMs)} ms before, ${
-        restore.restored
-          ? `restored ${Math.round(restore.atMs)} ms after the recovery`
-          : `not restored after ${Math.round(observedMs)} ms (last ${restore.finalLatencyMs === null ? 'n/a' : Math.round(restore.finalLatencyMs)} ms)`
-      }`,
+      `  outage ${index}: stalled ${Math.round(resumed.t - dry.t)} ms, latency ${latencyBeforeMs === null ? 'n/a' : Math.round(latencyBeforeMs)} ms before; absolute: ${describeRestore(restore)}; relative to its own level: ${describeRestore(relativeRestore)}`,
     );
     return {
       run: {
@@ -414,7 +439,7 @@ async function runStallOnce(
         stalled: true,
         recoveryMs: resumed.t - dry.t,
         waitedMs: null,
-        latencyBeforeMs,
+        ...before,
         after,
         observedMs,
       },
@@ -446,7 +471,12 @@ export async function runStallCheck(world: ReadinessWorld, options: StallOptions
   }
   return finish('PB-RDY-003', world, began, {
     evaluations: evaluateStallRecovery(runs, limits),
-    samples: { runs, outages, outageMs: limits.injectedStallMs },
+    samples: {
+      runs,
+      outages,
+      outageMs: limits.injectedStallMs,
+      relativeToleranceMs: RELATIVE_TOLERANCE_MS,
+    },
     player,
     failure,
     notes,
