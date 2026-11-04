@@ -272,19 +272,30 @@ test(
     if (slow?.type !== 'latency') throw new Error('the slow-segment profile is no longer a latency rule');
     const qa = await player(session).open();
 
-    // The fault fired: the origin held the first byte of the segment back for the rule's whole delay, and answered it in the end
-    // (the delay is below the 10 s connection timeout, so the player waited instead of giving up on the request).
+    // The fault fired: the origin held the first byte of the segment back for the rule's whole delay, and then either answered it (the
+    // delay is below the 10 s connection timeout, so a player that waits gets the segment) or lost its client first: an engine that
+    // starts on a low rung can climb while the request waits, and Shaka then abandons the pending request and asks for the segment
+    // again on the new rung (the log says `aborted`; the rule fired once, so the second request is not delayed).
     const [request] = await waitForFault(session, rule);
-    expect(request.ttfbMs, 'time to first byte of the delayed request (request log)').toBeGreaterThanOrEqual(
-      slow.ms - 50,
-    );
-    expect(request.status, 'status of the delayed request (request log)').toBe(200);
-    expect(request.aborted ?? false, 'delayed request aborted by the player (request log)').toBe(false);
+    const abandoned = request.aborted === true;
+    expect(
+      abandoned || request.ttfbMs >= slow.ms - 50,
+      `the delayed request was held for ${slow.ms} ms or abandoned by the player (request log: ${describeEntry(request)}, ttfb ${request.ttfbMs} ms)`,
+    ).toBe(true);
+    if (!abandoned) expect(request.status, 'status of the delayed request (request log)').toBe(200);
     const number = segmentOf(request);
 
-    // The playhead gets past the late segment: it stalls at the end of what was buffered and resumes by itself once the segment is in.
+    // The playhead gets past the late segment: it stalls at the end of what was buffered and resumes by itself once the segment is in
+    // (from the new rung, where the request was abandoned: then it does not stall at all).
     const stream = await streamInfoOf(session);
     await qa.waitForMediaTime(number * stream.segmentDurationSec + 1);
+    const attempts = videoAttemptsAt(await session.service.log(session.id), number);
+    const delivered = deliveryAfter(attempts, request);
+    if (abandoned && !delivered) {
+      throw new Error(
+        `the abandoned segment was never fetched again, attempts at video segment ${number} (request log): ${describeAttempts(attempts)}`,
+      );
+    }
 
     const metrics = await qa.metrics();
     expectHealthyPlayback(metrics);
@@ -295,11 +306,14 @@ test(
       'stalls that have not ended (metrics.rebuffer.events)',
     ).toEqual([]);
     const [episode] = metrics.rebuffer.events;
+    const outcome = abandoned
+      ? `the player abandoned it after ${Math.round(request.ttfbMs)} ms and fetched segment ${number} again from ${delivered?.rep}`
+      : `segment ${number} took ${Math.round(request.ttfbMs)} ms to its first byte`;
     testInfo.annotations.push({
       type: 'recovery',
       description: episode
-        ? `segment ${number} took ${Math.round(request.ttfbMs)} ms to its first byte; the player stalled for ${Math.round(episode.durationMs)} ms at media time ${episode.mediaTime.toFixed(2)} s and resumed by itself`
-        : `segment ${number} took ${Math.round(request.ttfbMs)} ms to its first byte; the player did not stall`,
+        ? `${outcome}; the player stalled for ${Math.round(episode.durationMs)} ms at media time ${episode.mediaTime.toFixed(2)} s and resumed by itself`
+        : `${outcome}; the player did not stall`,
     });
   },
 );
