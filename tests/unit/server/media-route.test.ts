@@ -114,6 +114,10 @@ describe('a VOD session', () => {
       ['the init segment of an unknown representation', `/s/${s.id}/${stream}/seg/v999/init.mp4`],
       ['the playlist of an unknown representation', `/s/${s.id}/${stream}/hls/v999.m3u8`],
       ['a segment that is not a number', `/s/${s.id}/${stream}/seg/v360/abc.m4s`],
+      [
+        'a representation id that is percent-encoded: routes never decode',
+        `/s/${s.id}/${stream}/seg/v%33%36%30/1.m4s`,
+      ],
       ['another stream than the one of the session', `/s/${s.id}/${FAKE_LIVE}/dash/manifest.mpd`],
       ['another stream, a segment', segmentPath(s.id, FAKE_LIVE, FAKE_VIDEO, 1, 'm4s')],
       ['garbage under the session', `/s/${s.id}/${stream}/nope`],
@@ -142,6 +146,16 @@ describe('a VOD session', () => {
     expect((await call(h.origin, 'GET', short.manifestUrl)).status).toBe(200);
     h.clock.advance(1000);
     expectNotFound(await call(h.origin, 'GET', short.manifestUrl));
+  });
+
+  it('keeps at most 300 characters of a path in the log: a client that sends kilobytes cannot fill it with them', async () => {
+    const long = `/s/${s.id}/${s.stream}/${'x'.repeat(5000)}`;
+    expectNotFound(await call(h.origin, 'GET', long));
+    const [entry] = await logOf(h, s.id);
+    expect(entry).toMatchObject({ kind: 'other', status: 404 });
+    expect(entry?.path).toHaveLength(303);
+    expect(entry?.path.startsWith(`/s/${s.id}/${s.stream}/xxx`)).toBe(true);
+    expect(entry?.path.endsWith('xxx...')).toBe(true);
   });
 
   it('answers a method other than GET and HEAD with 405 and Allow, and logs it', async () => {

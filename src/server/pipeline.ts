@@ -48,6 +48,8 @@ type Resolution =
 const DASH_TYPE = 'application/dash+xml';
 const HLS_TYPE = 'application/vnd.apple.mpegurl';
 const JSON_TYPE = 'application/json; charset=utf-8';
+/** The longest path an entry keeps. A resource of the lab has a path of about 60 characters; a client that sends kilobytes must not fill the log with them. */
+const MAX_LOGGED_PATH = 300;
 
 const round = (ms: number): number => Math.round(ms * 100) / 100;
 
@@ -229,7 +231,7 @@ export async function serveMedia(
   // Step 2: listed at once, pending. `seq` is assigned here, so the log is in arrival order.
   const entry: RequestLogEntry = session.log.begin({
     method,
-    path: pathname,
+    path: pathname.length > MAX_LOGGED_PATH ? `${pathname.slice(0, MAX_LOGGED_PATH)}...` : pathname,
     kind: parsed.kind === 'media-playlist' ? 'manifest' : parsed.kind,
     ...(parsed.rep === undefined ? {} : { rep: parsed.rep }),
     ...(parsed.number === undefined ? {} : { number: parsed.number }),

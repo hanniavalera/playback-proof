@@ -96,11 +96,12 @@ describe('faults on the VOD pipeline', () => {
       expect(entry?.totalMs).toBeLessThan(1500);
     });
 
-    it('answers a HEAD request with the status too', async () => {
-      const s = await vod([{ type: 'status', status: 410, match: { kind: 'segment' } }]);
+    it('answers a HEAD request with the status too, and a HEAD counts toward `times` like a GET', async () => {
+      const s = await vod([{ type: 'status', status: 410, match: { kind: 'segment' }, times: 1 }]);
       const head = await call(h.origin, 'HEAD', seg(s, 1));
       expect(head.status).toBe(410);
       expect(head.headers.get('content-length')).toBe('0');
+      expect((await call(h.origin, 'GET', seg(s, 1))).status).toBe(200);
     });
   });
 
