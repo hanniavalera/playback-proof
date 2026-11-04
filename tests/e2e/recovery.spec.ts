@@ -3,8 +3,10 @@ import { profile } from '../../src/shared/profiles.ts';
 import {
   deliveryAfter,
   describeAttempts,
+  installRule,
+  lastOf,
+  ruleIdOf,
   rungOfError,
-  ruleIdsOf,
   segmentOf,
   summariseAttempts,
   videoAttemptsAt,
@@ -45,12 +47,12 @@ test(
       protocol: 'dash',
       faults: profile('transient-404'),
     });
-    const [rule] = await ruleIdsOf(session);
+    const rule = await ruleIdOf(session);
     const qa = await player(session).open();
 
     // The fault fired: the origin answered the first request for the segment with the rule's 404.
-    const fired = await waitForFault(session, rule as string);
-    const [refused] = fired as [(typeof fired)[0]];
+    const fired = await waitForFault(session, rule);
+    const [refused] = fired;
     expect(fired.length, 'requests the rule fired on (request log)').toBe(1);
     expect(refused.status, 'status of the faulted request (request log)').toBe(404);
     const number = segmentOf(refused);
@@ -110,18 +112,18 @@ test(
       protocol: 'dash',
       faults: profile('flaky-segments'),
     });
-    const [rule] = await ruleIdsOf(session);
+    const rule = await ruleIdOf(session);
     const qa = await player(session).open();
 
     // The fault fired three times, all on one video segment, all with the rule's 503. The third one exceeds the two attempts of the
     // default retry policy, so the player cannot get through on one rung with a retry alone.
-    const fired = await waitForFault(session, rule as string, 3);
+    const fired = await waitForFault(session, rule, 3);
     expect(
       fired.map((entry) => entry.status),
       'status of the requests the rule fired on (request log)',
     ).toEqual([503, 503, 503]);
-    const [first] = fired as [(typeof fired)[0]];
-    const last = fired[fired.length - 1] as (typeof fired)[0];
+    const [first] = fired;
+    const last = lastOf(fired);
     const number = segmentOf(first);
     expect(fired.map(segmentOf), 'segment numbers of the requests the rule fired on (request log)').toEqual([
       number,
@@ -200,11 +202,10 @@ test(
       (entry) => entry.kind === 'segment' && entry.rep === rung && entry.status === 200 && !entry.pending,
     );
     const since = await qa.cursor();
-    const [rule] = await session.service.addFaults(session.id, outage);
+    const rule = await installRule(session, outage);
 
     // The fault fired: the origin refused the rung's requests with the rule's 503 (a media segment, as the rung's init was served).
-    const fired = await waitForFault(session, (rule as { id: string }).id);
-    const [first] = fired as [(typeof fired)[0]];
+    const [first] = await waitForFault(session, rule);
     expect(first.status, 'status of the first request the rule fired on (request log)').toBe(503);
     expect(first.rep, 'rung of the first request the rule fired on (request log)').toBe(rung);
     const number = segmentOf(first);
@@ -266,15 +267,14 @@ test(
       protocol: 'dash',
       faults: profile('slow-segment'),
     });
-    const [rule] = await ruleIdsOf(session);
+    const rule = await ruleIdOf(session);
     const [slow] = profile('slow-segment');
     if (slow?.type !== 'latency') throw new Error('the slow-segment profile is no longer a latency rule');
     const qa = await player(session).open();
 
     // The fault fired: the origin held the first byte of the segment back for the rule's whole delay, and answered it in the end
     // (the delay is below the 10 s connection timeout, so the player waited instead of giving up on the request).
-    const [late] = await waitForFault(session, rule as string);
-    const request = late as NonNullable<typeof late>;
+    const [request] = await waitForFault(session, rule);
     expect(request.ttfbMs, 'time to first byte of the delayed request (request log)').toBeGreaterThanOrEqual(
       slow.ms - 50,
     );
@@ -313,7 +313,7 @@ test(
       protocol: 'dash',
       faults: profile('truncated-segment'),
     });
-    const [rule] = await ruleIdsOf(session);
+    const rule = await ruleIdOf(session);
     const [cut] = profile('truncated-segment');
     if (cut?.type !== 'abort' || cut.afterBytes === undefined)
       throw new Error('the truncated-segment profile is no longer an abort after a number of bytes');
@@ -321,8 +321,7 @@ test(
     const qa = await player(session).open();
 
     // The fault fired: the origin sent the response head (a 200) and exactly the rule's bytes of the body, then dropped the connection.
-    const [truncated] = await waitForFault(session, rule as string);
-    const first = truncated as NonNullable<typeof truncated>;
+    const [first] = await waitForFault(session, rule);
     expect(first.aborted ?? false, 'truncated request aborted by the origin (request log)').toBe(true);
     expect(
       first.bytes,
@@ -381,7 +380,7 @@ test(
       protocol: 'dash',
       faults: profile('manifest-down'),
     });
-    const [rule] = await ruleIdsOf(session);
+    const rule = await ruleIdOf(session);
     // A page without a manifest: it boots idle and the spec decides when the load starts.
     const qa = await player().open();
     const since = await qa.cursor();
@@ -391,7 +390,7 @@ test(
     );
 
     // The fault fired: the origin refused every attempt at the manifest, and the player made exactly the attempts its retry policy allows.
-    const fired = await waitForFault(session, rule as string, RETRY.maxAttempts);
+    const fired = await waitForFault(session, rule, RETRY.maxAttempts);
     expect(
       fired.map((entry) => `${entry.kind} ${entry.status}`),
       'requests the rule fired on (request log)',
@@ -416,7 +415,7 @@ test(
     expect((await qa.metrics()).state, 'player state (metrics.state) after the failed load').toBe('error');
 
     // The origin returns and the same player loads again: the manifest is served, the title plays, and nothing fails this time.
-    await session.service.removeFault(session.id, rule as string);
+    await session.service.removeFault(session.id, rule);
     const retry = await qa.cursor();
     await qa.load(session.manifestUrl);
     await qa.play();
@@ -457,13 +456,13 @@ test(
       protocol: 'dash',
       faults: profile('segments-down'),
     });
-    const [rule] = await ruleIdsOf(session);
+    const rule = await ruleIdOf(session);
     const stream = await streamInfoOf(session);
     const videoRungs = stream.reps.filter((rep) => rep.track === 'video').map((rep) => rep.id);
     const qa = await player(session).open();
 
     // The fault fired: the origin refused segments, more than once (the first attempt and its retry), and nothing else.
-    const fired = await waitForFault(session, rule as string, RETRY.maxAttempts);
+    const fired = await waitForFault(session, rule, RETRY.maxAttempts);
     expect(
       fired.map((entry) => `${entry.kind} ${entry.status}`),
       'requests the rule fired on (request log)',

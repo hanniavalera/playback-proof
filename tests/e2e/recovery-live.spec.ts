@@ -1,7 +1,6 @@
-import type { RequestLogEntry } from '../../src/shared/api.ts';
 import { LIVE_FACTS, LIVE_LIMITS } from '../../src/shared/criteria.ts';
 import { originStall, staleManifest } from '../../src/shared/profiles.ts';
-import { firedBy, ruleIdsOf, waitForFault } from './rec/faults.ts';
+import { firedBy, ruleIdOf, waitForFault } from './rec/faults.ts';
 import { currentEdge, originStalled, seekRangeLatencyBoundsMs, stallWindow } from './rec/live.ts';
 import { expectAtMostRebuffers, expectHealthyPlayback } from './support/assertions.ts';
 import { expect, test } from './support/fixtures.ts';
@@ -124,24 +123,22 @@ test(
       live: { windowSegments: DVR_SEGMENTS },
       faults: staleManifest(STALE_MS, STALE_AFTER_MS),
     });
-    const [rule] = await ruleIdsOf(session);
+    const rule = await ruleIdOf(session);
     const qa = await player(session).open();
     const firstFrame = await qa.waitFor('firstframe');
 
     // The fault fired: the player polled during the window and the origin answered with the body it had served before the window
     // opened (the same bytes as the first manifest, which no rule touched).
-    const [stale] = (await waitForFault(session, rule as string)) as [RequestLogEntry];
-    const [initial] = requestsFor(await session.service.log(session.id), { kind: 'manifest' }) as [
-      RequestLogEntry,
-    ];
+    const [stale] = await waitForFault(session, rule);
+    const [initial] = requestsFor(await session.service.log(session.id), { kind: 'manifest' });
     expect(stale.kind, 'kind of the request the rule fired on (request log)').toBe('manifest');
     expect(stale.status, 'status of the stale answer (request log)').toBe(200);
     expect(
-      firedBy(initial, rule as string),
+      initial && firedBy(initial, rule),
       'the first manifest answered before the window (request log)',
     ).toBe(false);
     expect(stale.bytes, 'bytes of the stale answer against the first manifest (request log)').toBe(
-      initial.bytes,
+      initial?.bytes,
     );
 
     // The player lives on its buffer: it plays everything the stale manifest lists, to within a second, and only then does it stall.
@@ -151,10 +148,7 @@ test(
     const fresh = await waitForRequest(
       session,
       (entry) =>
-        entry.kind === 'manifest' &&
-        entry.seq > stale.seq &&
-        !entry.pending &&
-        !firedBy(entry, rule as string),
+        entry.kind === 'manifest' && entry.seq > stale.seq && !entry.pending && !firedBy(entry, rule),
       { timeoutMs: STALE_MS + 10_000 },
     );
     expect(fresh.status, 'status of the first manifest after the window (request log)').toBe(200);
@@ -185,10 +179,10 @@ test(
 
     // The origin's side: the player kept polling at the pace of the manifest through the whole window, and it was answered stale.
     const manifests = requestsFor(await session.service.log(session.id), { kind: 'manifest' });
-    const answeredStale = manifests.filter((entry) => firedBy(entry, rule as string));
+    const answeredStale = manifests.filter((entry) => firedBy(entry, rule));
     expect(
       answeredStale.length,
-      `manifest requests answered stale (request log: ${manifests.map((entry) => `+${Math.round(entry.msSinceStart)}${firedBy(entry, rule as string) ? ' stale' : ''}`).join(', ')})`,
+      `manifest requests answered stale (request log: ${manifests.map((entry) => `+${Math.round(entry.msSinceStart)}${firedBy(entry, rule) ? ' stale' : ''}`).join(', ')})`,
     ).toBeGreaterThanOrEqual(MIN_STALE_ANSWERS);
     const gaps = manifests
       .slice(1)

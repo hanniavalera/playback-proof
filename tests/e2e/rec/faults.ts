@@ -1,4 +1,5 @@
 import type { RequestLogEntry } from '../../../src/shared/api.ts';
+import type { FaultRule } from '../../../src/shared/faults.ts';
 import type { QAError } from '../../../src/shared/qa.ts';
 import type { TestSession } from '../support/fixtures.ts';
 import { describeEntry, requestsFor, waitForRequests } from '../support/waiting.ts';
@@ -10,10 +11,22 @@ import type { RequestWaitOptions } from '../support/waiting.ts';
 
 const VIDEO_REP = /^v\d+$/;
 
-/** The ids the service gave the session's fault rules, in the order they were installed (`f1`, `f2`...). */
-export async function ruleIdsOf(session: TestSession): Promise<string[]> {
+/** The requests a fault fired on, at least one (a wait that succeeded guarantees it): the type that spares the specs a cast. */
+export type Fired = [RequestLogEntry, ...RequestLogEntry[]];
+
+/** The id the service gave the rule a session was created with (`f1`). A session made with a profile of one rule has exactly one. */
+export async function ruleIdOf(session: TestSession): Promise<string> {
   const detail = await session.service.detail(session.id);
-  return detail.faults.map((rule) => rule.id);
+  const [rule] = detail.faults;
+  if (!rule) throw new Error(`the session ${session.id} has no fault rule: it was created without faults`);
+  return rule.id;
+}
+
+/** Installs rules on a running session and returns the id of the first one, the one the request log will name. */
+export async function installRule(session: TestSession, rules: FaultRule[]): Promise<string> {
+  const [stored] = await session.service.addFaults(session.id, rules);
+  if (!stored) throw new Error(`the service stored none of the ${rules.length} rules it was sent`);
+  return stored.id;
 }
 
 /** Whether the origin applied the rule to this request (the request log names the rules that fired on it). */
@@ -30,11 +43,17 @@ export async function waitForFault(
   ruleId: string,
   count = 1,
   options: RequestWaitOptions = {},
-): Promise<RequestLogEntry[]> {
-  return waitForRequests(session, (entry) => firedBy(entry, ruleId) && !entry.pending, {
+): Promise<Fired> {
+  const fired = await waitForRequests(session, (entry) => firedBy(entry, ruleId) && !entry.pending, {
     ...options,
     count,
   });
+  return fired as Fired;
+}
+
+/** The last of the requests a fault fired on. */
+export function lastOf(fired: Fired): RequestLogEntry {
+  return fired[fired.length - 1] as RequestLogEntry;
 }
 
 /** The segment number a request was for. A request the fault engine matched by number always has one. */
