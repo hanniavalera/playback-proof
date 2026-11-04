@@ -119,7 +119,7 @@ describe('PB-AB decision rule: two primary metrics', () => {
     const decision = run([clearlyBetter(), unknownShare]);
     expect(decision.outcome).toBe('inconclusive');
     expect(decision.reason).toContain('B is better on startupMs');
-    expect(decision.reason).toContain('does not rule out a harm beyond its 20 % threshold');
+    expect(decision.reason).toContain('does not rule out a harm beyond its 20 pp threshold');
   });
 
   it('B worse than the threshold by its point estimate but with an interval that includes zero: not harmful, so inconclusive', () => {
@@ -319,7 +319,7 @@ describe('PB-AB decision rule: what the report is given to print', () => {
         'Startup time: B minus A is -150 ms (95 % interval -220 ms to -110 ms), threshold 100 ms, adjusted p = 0.0010: better',
       ),
       expect.stringContaining(
-        'Share of sessions with a rebuffer: B minus A is 0 pp (95 % interval -10 pp to +10 pp), threshold 20 %',
+        'Share of sessions with a rebuffer: B minus A is 0 pp (95 % interval -10 pp to +10 pp), threshold 20 pp',
       ),
     ]);
   });

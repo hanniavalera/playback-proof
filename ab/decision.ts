@@ -1,4 +1,4 @@
-import { formatDifference, formatValue } from './metrics.ts';
+import { formatDifference, formatThreshold } from './metrics.ts';
 import type { MetricId, MetricUnit } from './metrics.ts';
 
 // THE DECISION RULE, applied literally (TEST_STRATEGY.md section 12, rule id `pb-ab-v1`; ADR-146 in docs/decisions/ab.md).
@@ -155,7 +155,7 @@ export function readMetric(metric: MetricEvidence, alpha: number): MetricReading
   else status = 'harm cannot be ruled out: the worse end of the interval is beyond the threshold';
   const sentence =
     `${metric.label}: B minus A is ${formatDifference(metric.unit, metric.effect)} (${interval(metric)}), ` +
-    `threshold ${formatValue(metric.unit, d)}, adjusted p = ${metric.pAdjusted.toPrecision(2)}: ${status}`;
+    `threshold ${formatThreshold(metric.unit, d)}, adjusted p = ${metric.pAdjusted.toPrecision(2)}: ${status}`;
   return {
     id: metric.id,
     label: metric.label,
@@ -253,16 +253,16 @@ export function decide(input: DecisionInput): Decision {
     outcome = 'do-not-ship-b';
     const m = first(harmful);
     const also = better.length > 0 ? `, although B is better on ${names(better)}` : '';
-    reason = `Do not ship B: ${m.label} is ${formatDifference(m.unit, m.effect)} for B against A (${interval(m)}), worse than the ${formatValue(m.unit, m.threshold)} threshold, and the interval excludes zero${also}.`;
+    reason = `Do not ship B: ${m.label} is ${formatDifference(m.unit, m.effect)} for B against A (${interval(m)}), worse than the ${formatThreshold(m.unit, m.threshold)} threshold, and the interval excludes zero${also}.`;
   } else if (better.length > 0 && notHarmless.length === 0 && !guard.tripped) {
     outcome = 'ship-b';
     const m = first(better);
-    reason = `Ship B: ${m.label} is ${formatDifference(m.unit, m.effect)} for B against A (${interval(m)}), entirely beyond the ${formatValue(m.unit, m.threshold)} threshold in B's favour with an adjusted p of ${m.pAdjusted.toPrecision(2)}, and no primary metric can be worse than its threshold.`;
+    reason = `Ship B: ${m.label} is ${formatDifference(m.unit, m.effect)} for B against A (${interval(m)}), entirely beyond the ${formatThreshold(m.unit, m.threshold)} threshold in B's favour with an adjusted p of ${m.pAdjusted.toPrecision(2)}, and no primary metric can be worse than its threshold.`;
   } else if (equivalent.length === readings.length && !guard.tripped) {
     outcome = 'no-difference';
     reason = `No difference that matters: every primary interval lies inside its threshold (${equivalent
       .map(evidenceOf)
-      .map((m) => `${m.label} ${range(m)} within ±${formatValue(m.unit, m.threshold)}`)
+      .map((m) => `${m.label} ${range(m)} within ±${formatThreshold(m.unit, m.threshold)}`)
       .join('; ')}).`;
   } else {
     outcome = 'inconclusive';
@@ -270,7 +270,7 @@ export function decide(input: DecisionInput): Decision {
       reason = `Inconclusive: ${guard.why}, so no verdict of safety or of equivalence can rest on the sessions that finished.`;
     } else if (better.length > 0) {
       const m = first(notHarmless);
-      reason = `Inconclusive: B is better on ${names(better)}, but the interval of ${m.label} (${range(m)}) does not rule out a harm beyond its ${formatValue(m.unit, m.threshold)} threshold.`;
+      reason = `Inconclusive: B is better on ${names(better)}, but the interval of ${m.label} (${range(m)}) does not rule out a harm beyond its ${formatThreshold(m.unit, m.threshold)} threshold.`;
     } else {
       const open = readings.filter((r) => !r.equivalent);
       const m = first(open);
@@ -278,7 +278,7 @@ export function decide(input: DecisionInput): Decision {
       reason =
         reading.worst < -reading.threshold && m.pAdjusted >= alpha
           ? `Inconclusive: the interval of ${m.label} (${range(m)}) is beyond the threshold in B's favour, but the adjusted p of ${m.pAdjusted.toPrecision(2)} is not below ${alpha}.`
-          : `Inconclusive: the interval of ${m.label} (${range(m)}) reaches the threshold of ±${formatValue(m.unit, m.threshold)}: it cannot rule out a difference that matters, and does not show one.`;
+          : `Inconclusive: the interval of ${m.label} (${range(m)}) reaches the threshold of ±${formatThreshold(m.unit, m.threshold)}: it cannot rule out a difference that matters, and does not show one.`;
     }
   }
 

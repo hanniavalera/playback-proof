@@ -124,6 +124,11 @@ export function formatValue(unit: MetricUnit, value: number): string {
   }
 }
 
+/** The size of a difference in words, without a sign: `100 ms`, `20 pp` (percentage points of a share or a ratio), `0.5`. For thresholds and minimum detectable effects. */
+export function formatThreshold(unit: MetricUnit, value: number): string {
+  return formatDifference(unit, Math.abs(value)).replace(/^\+/, '');
+}
+
 /** A DIFFERENCE between arms (B minus A), signed: `+142 ms`, `-0.50 pp` (percentage points of a ratio or a share), `+0.4`. */
 export function formatDifference(unit: MetricUnit, value: number): string {
   const sign = value > 0 ? '+' : value < 0 ? '-' : '';

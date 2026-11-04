@@ -3,6 +3,7 @@ import type { MetricPlan } from '../../../ab/prereg.ts';
 import { sha256Hex } from '../../../ab/prereg.ts';
 import { RESULT_SCHEMA_VERSION } from '../../../ab/results.ts';
 import type { RawResult } from '../../../ab/results.ts';
+import { configFor } from '../../../src/player/configs.ts';
 import type { FaultRule } from '../../../src/shared/faults.ts';
 import type { Random } from '../../../ab/stats/random.ts';
 import type { ArmId, SessionRecord } from '../../../ab/types.ts';
@@ -67,11 +68,12 @@ export function makeSession(
   values: Record<string, number | null>,
   extra: Partial<SessionRecord> = {},
 ): SessionRecord {
+  const config = extra.config ?? arm;
   return {
     index,
     block: Math.floor(index / 2),
     arm,
-    config: arm,
+    config,
     condition: 'high-latency',
     warmup: false,
     status: 'ok',
@@ -79,7 +81,13 @@ export function makeSession(
     startRungHeight: arm === 'A' ? 720 : 240,
     rungs: [],
     errors: [],
-    info: null,
+    info: {
+      config,
+      configOverrides: configFor(config) as Record<string, unknown>,
+      configDefaults: config === 'B' ? { abr: { switchInterval: 8 } } : {},
+      loadMode: 'media-source',
+      userAgent: 'Mozilla/5.0 Chrome/156',
+    },
     sessionId: `s${index}`,
     startedAt: '2026-11-05T09:00:00.000Z',
     durationMs: 4000,
