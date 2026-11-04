@@ -217,6 +217,7 @@ export const CATEGORIES = [
   'origin-error',
   'network-fault-not-recovered',
   'decode-or-mse-error',
+  'player-error',
   'instrument-disagreement',
   'timeout-waiting-for-event',
   'metric-regression',

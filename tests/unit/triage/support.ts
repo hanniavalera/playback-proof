@@ -1,10 +1,19 @@
 import type { RequestLogEntry, SessionDetail } from '../../../src/shared/api.ts';
-import type { QAEvent, QAMetrics, QAState } from '../../../src/shared/qa.ts';
+import { explainUndocumentedGap } from '../../../src/lab/gaps.ts';
+import type { Environment } from '../../../src/lab/gaps.ts';
+import { Timeline } from '../../../src/player/timeline.ts';
+import type { QAEvent, QAEventName, QAMetrics, QAState } from '../../../src/shared/qa.ts';
 import type { PlaywrightReport } from '../../../triage/collect.ts';
-import { emptyDiagnostics } from '../../../triage/digest.ts';
+import { digestDiagnostics, emptyDiagnostics } from '../../../triage/digest.ts';
+import type { AttachmentSet } from '../../../triage/digest.ts';
 import type { DiagnosticsDigest, Failure, FailureError } from '../../../triage/types.ts';
+import { expectAtMostRebuffers } from '../../e2e/support/assertions.ts';
 import { attachDiagnostics } from '../../e2e/support/diagnostics.ts';
 import type { DiagnosticSources } from '../../e2e/support/diagnostics.ts';
+import { describeUnreadyService } from '../../e2e/support/global-setup.ts';
+import type { TestSession } from '../../e2e/support/session.ts';
+import { waitForRequest } from '../../e2e/support/waiting.ts';
+import { FakeClock } from '../player/fake-clock.ts';
 
 // Builders for the input of triage: a Playwright JSON report (the shape of `reports/playwright.json`, written by the JSON reporter of
 // @playwright/test) whose tests carry the failure attachments. The attachments are made by the lab's own `attachDiagnostics`, so their
@@ -362,4 +371,144 @@ export function failure(overrides: FailureOverrides = {}): Failure {
     missing: [],
     ...rest,
   };
+}
+
+/** The digest of what a failed test attached, made from the documents themselves the way the collector does. */
+export function diagnosticsOf(documents: {
+  events?: unknown;
+  metrics?: unknown;
+  info?: unknown;
+  console?: unknown;
+  detail?: unknown;
+  log?: unknown;
+  attached?: string[];
+}): DiagnosticsDigest {
+  const one = (value: unknown): unknown[] => (value === undefined ? [] : [value]);
+  const set: AttachmentSet = {
+    events: one(documents.events),
+    metrics: one(documents.metrics),
+    info: one(documents.info),
+    console: one(documents.console),
+    sessionDetail: one(documents.detail),
+    requestLog: one(documents.log),
+    problems: null,
+    attached: documents.attached ?? ['qa-events.json'],
+  };
+  return digestDiagnostics(set);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// The messages the lab itself writes when it fails, made by the lab's own code: a rule of triage is keyed to a sentence the lab says, and
+// a test that makes the sentence with the lab's function fails when someone rewords it.
+
+const quiet = (sentence: string): string => `Error: ${sentence}`;
+
+/** `qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).` and the timeline, from the hook's own `Timeline`. */
+export async function hookWaitTimeout(
+  name: QAEventName,
+  options: {
+    timeoutMs?: number;
+    detail?: Record<string, string | number | boolean | null>;
+    seen?: QAEventName[];
+  } = {},
+): Promise<string> {
+  const clock = new FakeClock();
+  const timeline = new Timeline({ now: clock.now, mediaTime: clock.mediaTime, timers: clock.timerApi });
+  for (const seen of options.seen ?? ['load-requested', 'manifest-loaded', 'loaded', 'buffering-start']) {
+    clock.advance(120);
+    timeline.record(seen);
+  }
+  const timeoutMs = options.timeoutMs ?? 15_000;
+  const waiting = timeline
+    .waitFor(name, { timeoutMs, ...(options.detail ? { detail: options.detail } : {}) })
+    .then(
+      () => 'the wait did not time out',
+      (error: Error) => error.message,
+    );
+  clock.advance(timeoutMs + 1);
+  return quiet(await waiting);
+}
+
+/** `qa.waitForMediaTime(7) timed out after 15000 ms: the media clock is at 5.973 s.` and the timeline. */
+export async function hookMediaTimeTimeout(
+  seconds: number,
+  atSeconds: number,
+  timeoutMs = 15_000,
+): Promise<string> {
+  const clock = new FakeClock();
+  const timeline = new Timeline({ now: clock.now, mediaTime: clock.mediaTime, timers: clock.timerApi });
+  timeline.record('load-requested');
+  clock.media = atSeconds;
+  const waiting = timeline.waitForMediaTime(seconds, { timeoutMs }).then(
+    () => 'the wait did not time out',
+    (error: Error) => error.message,
+  );
+  clock.advance(timeoutMs + 1);
+  return quiet(await waiting);
+}
+
+/** `waited 15000 ms for a request of session ... matching ...` from the real `waitForRequest`. */
+export async function requestWaitTimeout(timeoutMs = 15_000): Promise<string> {
+  const session = {
+    id: '1a2b3c4d5e6f',
+    service: { waitForLog: () => Promise.reject(new Error('the log did not reach the expected state')) },
+  } as unknown as TestSession;
+  try {
+    await waitForRequest(session, (entry) => entry.kind === 'segment' && entry.number === 7, { timeoutMs });
+  } catch (error) {
+    return quiet((error as Error).message);
+  }
+  return 'the wait did not time out';
+}
+
+/** The failure of `expectAtMostRebuffers`: the message names the metric and the value, then Playwright's own matcher lines. */
+export function rebufferAssertion(limit: number, rebuffers: number): string {
+  const events = Array.from({ length: rebuffers }, (_, index) => ({
+    startMs: 11_939 + index * 2000,
+    durationMs: 24 + index * 100,
+    mediaTime: 8.01 + index * 1.96,
+    ongoing: false,
+  }));
+  const state = metrics({ rebuffers });
+  state.rebuffer.events = events;
+  try {
+    expectAtMostRebuffers(state, limit);
+  } catch (error) {
+    return (error as Error).message;
+  }
+  return 'the assertion did not fail';
+}
+
+/** PB-ENV-001's failure text, from `explainUndocumentedGap`. */
+export function environmentCheckFailure(cause = "qa.waitFor('firstframe') timed out after 15000 ms"): string {
+  const environment: Environment = {
+    envId: 'jenkins-linux-arm64',
+    engine: 'chromium',
+    platform: 'linux',
+    capabilities: null,
+    basis:
+      'no committed probe result for jenkins-linux-arm64 (docs/results/codec-matrix/jenkins-linux-arm64.json)',
+    experimental: null,
+  };
+  return quiet(
+    explainUndocumentedGap(environment, {
+      stream: 'vod-cmaf',
+      protocol: 'dash',
+      actualVersion: '156.0.8078.4',
+      cause,
+    }),
+  );
+}
+
+/** The global setup's refusal to run against a service that cannot serve the specs. */
+export function notReadyFailure(): string {
+  const text = describeUnreadyService('http://127.0.0.1:4750', {
+    status: 'ok',
+    version: '1',
+    ffmpeg: 'ffmpeg 6.1',
+    uptimeSec: 3,
+    player: 'missing',
+    streams: { 'vod-cmaf': 'ready', 'vod-webm': 'missing' } as never,
+  });
+  return quiet(text ?? 'the service is ready');
 }
