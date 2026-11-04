@@ -133,7 +133,7 @@ function soakReport(
     episodes: [],
     errors: [],
     consoleProblems: [],
-    requests: { total: 0, byKind: {}, refused: [], repeated: [] },
+    requests: { total: 0, refusedCount: 0, byKind: {}, refused: [], repeated: [] },
     harness: { firstHeapMb: 40, lastHeapMb: 42.5, firstServiceRssMb: 150, lastServiceRssMb: 152 },
   };
 }

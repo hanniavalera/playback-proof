@@ -80,8 +80,9 @@ export interface HarnessSample {
 
 export interface RequestDigest {
   total: number;
+  /** Answers with a status of 400 or more, or responses the origin cut: how many, of which `refused` keeps the first ones. */
+  refusedCount: number;
   byKind: Record<string, number>;
-  /** Answers with a status of 400 or more, or responses the origin cut, by kind and status. */
   refused: Array<{ kind: string; status: number; atMs: number; rep?: string; number?: number }>;
   /** Segments asked for more than once (rep and number), with how many times. */
   repeated: Array<{ rep: string; number: number; times: number }>;
