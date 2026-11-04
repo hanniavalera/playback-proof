@@ -1,0 +1,181 @@
+summary: cluster 1 (c9b6a99f380d), request 1
+summary: cluster 2 (a0957e05ad95), request 2
+summary: cluster 3 (fc2f02c1e869), request 3
+summary: cluster 4 (8cae2e3bcaa6), request 4
+summary: cluster 5 (b8e5edac63ec), request 5
+summary: cluster 6 (011e98b3e6ee), request 6
+summary: cluster 7 (1966266eef5d), request 7
+summary: cluster 8 (30a43b41436d), request 8
+summary: cluster 9 (d5f804cf8b61), request 9
+summary: cluster 10 (ea3ccc131a7d), request 10
+summary: cluster 11 (ec15e8fc1232), request 11
+summary: cluster 12 (6a6f2e7b5f99), request 12
+failure triage: 31 failed in 7 reports became 12 clusters of 8 root causes (clustering is deterministic: no model is involved in it)
+
+root cause: the origin answered 503 on segment to requests no fault rule named (10 failures in the clusters #1, #6, #7: one cause, worded differently by each test)
+root cause: the player page did not boot: a Content Security Policy blocked its scripts (7 failures in the clusters #3, #4: one cause, worded differently by each test)
+root cause: a fault of type status fired and the player did not recover (4 failures in the clusters #5, #8: one cause, worded differently by each test)
+
+#1  6 failures in chromium, webkit  ·  PB-VOD-001, PB-VOD-002, PB-VOD-006
+    category  origin-error  (rule origin-failed-without-fault)  ·  class Environment or infrastructure
+    root cause shared with #6, #7
+    signature Error: qa.waitFor('firstframe') timed out after <n> ms (looking from index <n>). [thrown] {shaka 1001}
+    error     Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).
+    evidence  14 requests failed at the origin with no fault rule on them (14 failed in all, 14 segment requests in the log)
+    evidence  the first failures: 503 on segment a-aac #1 ×3, 503 on segment v720 #1 ×2, 503 on segment v360 #1, 503 on segment a-aac #2 ×2
+    evidence  the player noticed: BAD_HTTP_STATUS (code 1001, network, critical)
+    first     The failed requests in request-log.json: ask the service for the same path (`curl -i <origin><path>`), run `npm run verify:streams`, and read the service log (`PB_LOG=1`).
+    draft     [model draft (claude-haiku-5-5, endpoint http://<host>, NOT the live service): a suggestion for a person, never a verdict]
+              Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 3933 characters of evidence for cluster c9b6a99f380d (category origin-error).
+              First thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.
+              Not sure about: [MOCK] everything: this is a test double of the Messages API.
+
+#2  6 failures in chromium, webkit  ·  PB-VOD-001, PB-VOD-002, PB-VOD-006
+    category  decode-or-mse-error  (rule media-error)  ·  class Functional regression
+    signature Error: qa.waitFor('firstframe') timed out after <n> ms (looking from index <n>). [thrown] {shaka media}
+    error     Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).
+    evidence  the player reported a media error: VIDEO_ERROR (code 3016, media, critical)
+    evidence  the player reported a media error: MEDIA_SOURCE_OPERATION_THREW (code 3015, media, critical)
+    evidence  the origin delivered every request it was asked for (10 requests, none failed): the bytes themselves are suspect
+    first     The error in qa-events.json (code and data), then the segment that was being appended: `npm run verify:streams`, and try the same stream in another engine.
+    draft     [model draft (claude-haiku-5-5, endpoint http://<host>, NOT the live service): a suggestion for a person, never a verdict]
+              Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 3617 characters of evidence for cluster a0957e05ad95 (category decode-or-mse-error).
+              First thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.
+              Not sure about: [MOCK] everything: this is a test double of the Messages API.
+
+#3  5 failures in chromium, chromium-cpu4x, webkit  ·  PB-VOD-001, PB-VOD-002
+    category  page-boot-failure  (rule page-did-not-boot)  ·  class Functional regression
+    root cause shared with #4
+    signature Error: the player page did not boot (<url>): Timeout <n>ms exceeded. [thrown]
+    error     Error: the player page did not boot (http://<host>/player/?<query>): Timeout 15000ms exceeded.
+    evidence  the page did not boot: “Error: the player page did not boot (http://<host>/player/?<query>): Timeout 15000ms exceeded.”
+    evidence  the console names a Content Security Policy violation
+    evidence  console: “Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: "script-src 'none'". Note that 'script-src…”
+    evidence  console: “Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: "script-src 'none'". Note that 'script-sr…”
+    first     The console lines quoted in the message (a blocked script is a Content Security Policy or a missing `dist/player`): `curl -I <origin>/player/`, then `npm run build:player`.
+    draft     [model draft (claude-haiku-5-5, endpoint http://<host>, NOT the live service): a suggestion for a person, never a verdict]
+              Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 2440 characters of evidence for cluster fc2f02c1e869 (category page-boot-failure).
+              First thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.
+              Not sure about: [MOCK] everything: this is a test double of the Messages API.
+
+#4  2 failures in chromium, webkit  ·  PB-ENV-001
+    category  page-boot-failure  (rule page-did-not-boot)  ·  class Functional regression
+    root cause shared with #3
+    signature Error: <engine> <n> in <env> could not play vod-cmaf over dash through the player, and no documented gap covers it. [thrown]
+    error     Error: chromium 156.0.8078.4 in local-darwin-arm64 could not play vod-cmaf over dash through the player, and no documented gap covers it.
+    evidence  the page did not boot: “Error: chromium 156.0.8078.4 in local-darwin-arm64 could not play vod-cmaf over dash through the player, and no documented gap covers it.”
+    evidence  the console names a Content Security Policy violation
+    evidence  console: “Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: "script-src 'none'". Note that 'script-src…”
+    evidence  console: “Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: "script-src 'none'". Note that 'script-sr…”
+    first     The console lines quoted in the message (a blocked script is a Content Security Policy or a missing `dist/player`): `curl -I <origin>/player/`, then `npm run build:player`.
+    draft     [model draft (claude-haiku-5-5, endpoint http://<host>, NOT the live service): a suggestion for a person, never a verdict]
+              Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 2983 characters of evidence for cluster 8cae2e3bcaa6 (category page-boot-failure).
+              First thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.
+              Not sure about: [MOCK] everything: this is a test double of the Messages API.
+
+#5  2 failures in chromium, webkit  ·  PB-REC-001
+    category  network-fault-not-recovered  (rule fault-fired-player-failed)  ·  class Functional regression
+    root cause shared with #8
+    signature Error: qa.waitForMediaTime(<n>) timed out after <n> ms: the media clock is at <n> s. [thrown] {shaka 1001}
+    error     Error: qa.waitForMediaTime(7) timed out after 15000 ms: the media clock is at 5.974 s.
+    evidence  fault f1 (status 404 on segment video #3 first 1) fired on 1 request
+    evidence  the player reported a critical error: BAD_HTTP_STATUS (code 1001, network, critical)
+    evidence  player state at the end: error
+    first     In request-log.json, the first request the fault hit; then in qa-events.json what the player did next: retry, fail over to another rung, or give up. `session-detail.json` has the rule to reproduce it.
+    draft     [model draft (claude-haiku-5-5, endpoint http://<host>, NOT the live service): a suggestion for a person, never a verdict]
+              Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 2922 characters of evidence for cluster b8e5edac63ec (category network-fault-not-recovered).
+              First thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.
+              Not sure about: [MOCK] everything: this is a test double of the Messages API.
+
+#6  2 failures in chromium, webkit  ·  PB-REC-001
+    category  origin-error  (rule origin-failed-without-fault)  ·  class Environment or infrastructure
+    root cause shared with #1, #7
+    signature Error: the fault rule <rule> {…} named <n> of the <n> request it was waited for within <n> ms: the player never asked for what the rule matches, so nothing after this line says how the player copes w… [thrown] {shaka 1001}
+    error     Error: the fault rule f1 {"type":"status","match":{"kind":"segment","track":"video","number":3},"times":1,"status":404,"id":"f1"} named 0 of the 1 request it was waited for within 15000 ms: the playe…
+    evidence  14 requests failed at the origin with no fault rule on them (14 failed in all, 14 segment requests in the log)
+    evidence  the first failures: 503 on segment a-aac #1 ×4, 503 on segment v720 #1 ×2, 503 on segment v360 #1, 503 on segment a-aac #2
+    evidence  the player noticed: BAD_HTTP_STATUS (code 1001, network, recoverable)
+    first     The failed requests in request-log.json: ask the service for the same path (`curl -i <origin><path>`), run `npm run verify:streams`, and read the service log (`PB_LOG=1`).
+    draft     [model draft (claude-haiku-5-5, endpoint http://<host>, NOT the live service): a suggestion for a person, never a verdict]
+              Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 3796 characters of evidence for cluster 011e98b3e6ee (category origin-error).
+              First thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.
+              Not sure about: [MOCK] everything: this is a test double of the Messages API.
+
+#7  2 failures in chromium, webkit  ·  PB-REC-002
+    category  origin-error  (rule origin-failed-without-fault)  ·  class Environment or infrastructure
+    root cause shared with #1, #6
+    signature Error: the fault rule <rule> {…} named <n> of the <n> requests it was waited for within <n> ms: the player never asked for what the rule matches, so nothing after this line says how the player copes … [thrown] {shaka 1001}
+    error     Error: the fault rule f1 {"type":"status","match":{"kind":"segment","track":"video","number":3},"times":3,"status":503,"id":"f1"} named 0 of the 3 requests it was waited for within 15000 ms: the play…
+    evidence  14 requests failed at the origin with no fault rule on them (14 failed in all, 14 segment requests in the log)
+    evidence  the first failures: 503 on segment a-aac #1 ×3, 503 on segment v720 #1 ×2, 503 on segment v360 #1 ×2, 503 on segment a-aac #2
+    evidence  the player noticed: BAD_HTTP_STATUS (code 1001, network, recoverable)
+    first     The failed requests in request-log.json: ask the service for the same path (`curl -i <origin><path>`), run `npm run verify:streams`, and read the service log (`PB_LOG=1`).
+    draft     [model draft (claude-haiku-5-5, endpoint http://<host>, NOT the live service): a suggestion for a person, never a verdict]
+              Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 3799 characters of evidence for cluster 1966266eef5d (category origin-error).
+              First thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.
+              Not sure about: [MOCK] everything: this is a test double of the Messages API.
+
+#8  2 failures in chromium, webkit  ·  PB-REC-002
+    category  network-fault-not-recovered  (rule fault-fired-player-failed)  ·  class Functional regression
+    root cause shared with #5
+    signature Error: the fault rule <rule> {…} named <n> of the <n> requests it was waited for within <n> ms: the player stopped asking for what the rule matches before the rule was used up, so nothing after this … [thrown] {shaka 1001}
+    error     Error: the fault rule f1 {"type":"status","match":{"kind":"segment","track":"video","number":3},"times":3,"status":503,"id":"f1"} named 1 of the 3 requests it was waited for within 15000 ms: the play…
+    evidence  fault f1 (status 503 on segment video #3 first 3) fired on 1 request
+    evidence  the player reported a critical error: BAD_HTTP_STATUS (code 1001, network, critical)
+    evidence  player state at the end: error
+    first     In request-log.json, the first request the fault hit; then in qa-events.json what the player did next: retry, fail over to another rung, or give up. `session-detail.json` has the rule to reproduce it.
+    draft     [model draft (claude-haiku-5-5, endpoint http://<host>, NOT the live service): a suggestion for a person, never a verdict]
+              Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 2917 characters of evidence for cluster 30a43b41436d (category network-fault-not-recovered).
+              First thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.
+              Not sure about: [MOCK] everything: this is a test double of the Messages API.
+
+#9  1 failure in (run)  ·  (run)
+    category  environment  (rule run-failed-before-any-test)  ·  class Environment or infrastructure
+    signature Error: Process from config.webServer was not able to start. Exit code: <n> [thrown]
+    error     Error: Process from config.webServer was not able to start. Exit code: 1
+    evidence  an error of the run, with no test to blame: “Error: Process from config.webServer was not able to start. Exit code: 1”
+    evidence  the web server of the config is the test data service: it refuses to start when a stream file is missing or damaged (`npm run verify:streams`) or its port is taken, and says which in its own output, …
+    first     The job log above the first test: the global setup (`tests/e2e/support/global-setup.ts`) and the `webServer` of playwright.config.ts print what is wrong.
+    draft     [model draft (claude-haiku-5-5, endpoint http://<host>, NOT the live service): a suggestion for a person, never a verdict]
+              Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 1231 characters of evidence for cluster d5f804cf8b61 (category environment).
+              First thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.
+              Not sure about: [MOCK] everything: this is a test double of the Messages API.
+
+#10  1 failure in chromium  ·  PB-VOD-006
+    category  instrument-disagreement  (rule test-premise-not-met)  ·  class Needs a person
+    signature Error: premise of the test, not the behaviour under test: seconds buffered ahead of the playhead (<n> s) when the seek to <n> s is made (metrics.playback.bufferedAheadSec) [toBeGreaterThan]
+    error     Error: premise of the test, not the behaviour under test: seconds buffered ahead of the playhead (2.114762 s) when the seek to 7 s is made (metrics.playback.bufferedAheadSec)
+    evidence  a premise of the test did not hold: “Error: premise of the test, not the behaviour under test: seconds buffered ahead of the playhead (2.114762 s) when the seek to 7 s is made (metrics.playback.buffe…
+    evidence  the timeline has 10 events and ends with “#9 t=5105.2 media=0.005 firstframe {"source":"requestVideoFrameCallback"}”
+    evidence  player state at the end: playing
+    first     The premise the message names against the player’s numbers (qa-metrics.json) and the request log: a premise that does not hold means the scenario could not be set up (a slow or failing origin, a loaded host). Compare `ttfbMs` and `totalMs` of the segments in …
+    draft     [model draft (claude-haiku-5-5, endpoint http://<host>, NOT the live service): a suggestion for a person, never a verdict]
+              Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 2461 characters of evidence for cluster ea3ccc131a7d (category instrument-disagreement).
+              First thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.
+              Not sure about: [MOCK] everything: this is a test double of the Messages API.
+
+#11  1 failure in chromium  ·  PB-VOD-012
+    category  metric-regression  (rule metric-assertion-failed)  ·  class Performance regression
+    signature Error: rebuffers (metrics.rebuffer.count): expected none, saw <n> totalling <n> ms: at media time <n> s for <n> ms; … [toBe]
+    error     Error: rebuffers (metrics.rebuffer.count): expected none, saw 2 totalling 3994 ms: at media time 1.96 s for 3003 ms; at media time 3.97 s for 991 ms
+    evidence  the assertion is on metrics.rebuffer.count: “Error: rebuffers (metrics.rebuffer.count): expected none, saw 2 totalling 3994 ms: at media time 1.96 s for 3003 ms; at media time 3.97 s for 991 ms”
+    evidence  the player’s own numbers: 2 rebuffers totalling 3994 ms, 2 of 158 frames dropped, startup 2553 ms
+    first     The metric against METRICS.md and its tolerance in the spec; then the same run’s qa-metrics.json and the timeline around the value. Compare with the performance baseline before blaming the player.
+    draft     [model draft (claude-haiku-5-5, endpoint http://<host>, NOT the live service): a suggestion for a person, never a verdict]
+              Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 2056 characters of evidence for cluster ec15e8fc1232 (category metric-regression).
+              First thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.
+              Not sure about: [MOCK] everything: this is a test double of the Messages API.
+
+#12  1 failure in (run)  ·  (run)
+    category  environment  (rule service-not-reachable)  ·  class Environment or infrastructure
+    signature Error: the test data service at <url> is not answering (GET /health -> no answer ECONNREFUSED): start it with `npm run build:player && npm run serve` [thrown]
+    error     Error: the test data service at http://<host> is not answering (GET /health -> no answer ECONNREFUSED): start it with `npm run build:player && npm run serve`
+    evidence  the service could not be reached: “Error: the test data service at http://<host> is not answering (GET /health -> no answer ECONNREFUSED): start it with `npm run build:player && npm run serve`”
+    first     Is the service running on the port the run used (`curl <origin>/health`)? Start it with `npm run build:player && npm run serve`, and read its own log.
+    draft     [model draft (claude-haiku-5-5, endpoint http://<host>, NOT the live service): a suggestion for a person, never a verdict]
+              Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 1311 characters of evidence for cluster 6a6f2e7b5f99 (category environment).
+              First thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.
+              Not sure about: [MOCK] everything: this is a test double of the Messages API.
+
+skipped: 3 tests with a reason (documented gaps), listed in triage-report.md
+wrote docs/results/triage/summarize-with-mock/triage-report.md and docs/results/triage/summarize-with-mock/triage-report.json

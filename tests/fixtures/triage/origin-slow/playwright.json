@@ -1,0 +1,184 @@
+{
+  "config": {
+    "rootDir": "/work/playback-proof/tests",
+    "projects": [
+      { "name": "chromium", "retries": 1 },
+      { "name": "firefox", "retries": 1 },
+      { "name": "webkit", "retries": 1 },
+      { "name": "chromium-cpu4x", "retries": 1 }
+    ]
+  },
+  "suites": [
+    {
+      "title": "e2e/vod-metrics.spec.ts",
+      "specs": [
+        {
+          "title": "PB-VOD-012 metrics integrity on a clean network: decoded frames above zero, dropped no more than decoded, presented frames agree with decoded, no rebuffer, startup defined, no error",
+          "tags": ["merge", "dash"],
+          "file": "e2e/vod-metrics.spec.ts",
+          "line": 16,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [
+                {
+                  "type": "readings",
+                  "description": "decoded 155, presented 138, dropped 14; the first frame at 0.000568 s of media time; the window: 60 presented and 59 decoded frames in 2 s, 30 fps; startup 5028.5 ms"
+                }
+              ],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 12176,
+                  "retry": 0,
+                  "startTime": "2026-11-04T16:14:59.514Z",
+                  "error": {
+                    "message": "Error: rebuffers (metrics.rebuffer.count): expected none, saw 2 totalling 3994 ms: at media time 1.96 s for 3003 ms; at media time 3.97 s for 991 ms\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m0\u001b[39m\nReceived: \u001b[31m2\u001b[39m",
+                    "stack": "Error: rebuffers (metrics.rebuffer.count): expected none, saw 2 totalling 3994 ms: at media time 1.96 s for 3003 ms; at media time 3.97 s for 991 ms\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m0\u001b[39m\nReceived: \u001b[31m2\u001b[39m\n    at /work/playback-proof/tests/e2e/vod-metrics.spec.ts:141:5"
+                  },
+                  "annotations": [
+                    {
+                      "type": "readings",
+                      "description": "decoded 156, presented 151, dropped 2; the first frame at 0.004121 s of media time; the window: 60 presented and 59 decoded frames in 2 s, 30 fps; startup 2552.5 ms"
+                    }
+                  ],
+                  "attachments": [
+                    {
+                      "name": "qa-events.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-VOD-012-metrics-integrity-on-a-clean-network-decoded-fra-chromium/qa-events.json"
+                    },
+                    {
+                      "name": "qa-metrics.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-VOD-012-metrics-integrity-on-a-clean-network-decoded-fra-chromium/qa-metrics.json"
+                    },
+                    {
+                      "name": "qa-info.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-VOD-012-metrics-integrity-on-a-clean-network-decoded-fra-chromium/qa-info.json"
+                    },
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-VOD-012-metrics-integrity-on-a-clean-network-decoded-fra-chromium/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-VOD-012-metrics-integrity-on-a-clean-network-decoded-fra-chromium/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-VOD-012-metrics-integrity-on-a-clean-network-decoded-fra-chromium/request-log.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 11888,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:15:12.389Z",
+                  "error": {
+                    "message": "Error: distance in frames between presented (138, plus 0 for the 0.000568 s of media time before the first frame) and decoded (155) frames since the load, 14 dropped\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m10\u001b[39m\nReceived:    \u001b[31m17\u001b[39m",
+                    "stack": "Error: distance in frames between presented (138, plus 0 for the 0.000568 s of media time before the first frame) and decoded (155) frames since the load, 14 dropped\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeLessThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: <= \u001b[32m10\u001b[39m\nReceived:    \u001b[31m17\u001b[39m\n    at /work/playback-proof/tests/e2e/vod-metrics.spec.ts:68:7"
+                  },
+                  "annotations": [
+                    {
+                      "type": "readings",
+                      "description": "decoded 155, presented 138, dropped 14; the first frame at 0.000568 s of media time; the window: 60 presented and 59 decoded frames in 2 s, 30 fps; startup 5028.5 ms"
+                    }
+                  ],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "suites": []
+    },
+    {
+      "title": "e2e/vod-seek.spec.ts",
+      "specs": [
+        {
+          "title": "PB-VOD-006 seek forward inside the buffered range: seeked fires and playback continues from the target with no rebuffer",
+          "tags": ["merge", "dash"],
+          "file": "e2e/vod-seek.spec.ts",
+          "line": 20,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 7468,
+                  "retry": 0,
+                  "startTime": "2026-11-04T16:15:24.820Z",
+                  "error": {
+                    "message": "Error: premise of the test, not the behaviour under test: seconds buffered ahead of the playhead (2.114762 s) when the seek to 7 s is made (metrics.playback.bufferedAheadSec)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: > \u001b[32m5.885238\u001b[39m\nReceived:   \u001b[31m0\u001b[39m",
+                    "stack": "Error: premise of the test, not the behaviour under test: seconds buffered ahead of the playhead (2.114762 s) when the seek to 7 s is made (metrics.playback.bufferedAheadSec)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: > \u001b[32m5.885238\u001b[39m\nReceived:   \u001b[31m0\u001b[39m\n    at /work/playback-proof/tests/e2e/vod-seek.spec.ts:40:7"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "qa-events.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-chromium/qa-events.json"
+                    },
+                    {
+                      "name": "qa-metrics.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-chromium/qa-metrics.json"
+                    },
+                    {
+                      "name": "qa-info.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-chromium/qa-info.json"
+                    },
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-chromium/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-chromium/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-chromium/request-log.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 7450,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:15:32.772Z",
+                  "error": {
+                    "message": "Error: premise of the test, not the behaviour under test: seconds buffered ahead of the playhead (2.117316 s) when the seek to 7 s is made (metrics.playback.bufferedAheadSec)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: > \u001b[32m5.882683999999999\u001b[39m\nReceived:   \u001b[31m0\u001b[39m",
+                    "stack": "Error: premise of the test, not the behaviour under test: seconds buffered ahead of the playhead (2.117316 s) when the seek to 7 s is made (metrics.playback.bufferedAheadSec)\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThan\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: > \u001b[32m5.882683999999999\u001b[39m\nReceived:   \u001b[31m0\u001b[39m\n    at /work/playback-proof/tests/e2e/vod-seek.spec.ts:40:7"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "suites": []
+    }
+  ],
+  "errors": [],
+  "stats": { "startTime": "2026-11-04T16:14:58.214Z", "duration": 58621.09 }
+}

@@ -1,0 +1,586 @@
+{
+  "config": {
+    "rootDir": "/work/playback-proof/tests",
+    "projects": [
+      { "name": "chromium", "retries": 1 },
+      { "name": "firefox", "retries": 1 },
+      { "name": "webkit", "retries": 1 },
+      { "name": "chromium-cpu4x", "retries": 1 }
+    ]
+  },
+  "suites": [
+    {
+      "title": "e2e/env.spec.ts",
+      "specs": [
+        {
+          "title": "PB-ENV-001 the engine plays the selected flavour through the player, or the engine and OS pair is a documented gap",
+          "tags": ["merge"],
+          "file": "e2e/env.spec.ts",
+          "line": 20,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [
+                {
+                  "type": "environment",
+                  "description": "local-darwin-arm64: chromium 156.0.8078.4; evidence: docs/results/codec-matrix/local-darwin-arm64.json"
+                }
+              ],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15384,
+                  "retry": 0,
+                  "startTime": "2026-11-04T15:57:07.059Z",
+                  "error": {
+                    "message": "Error: chromium 156.0.8078.4 in local-darwin-arm64 could not play vod-cmaf over dash through the player, and no documented gap covers it.\nWhat the player said: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2F7f8d99d19e31%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://127.0.0.1:4740/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://127.0.0.1:4740/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\nCommitted evidence (docs/results/codec-matrix/local-darwin-arm64.json) claims it plays: cmaf-vp9-aac ok 5/5.\nSo the engine or the runner image changed since the matrix was probed: this is an environment failure, not a playback regression. Re-run `npm run codec-matrix` here and read docs/CODEC_MATRIX.md; do not retry the specs.",
+                    "stack": "Error: chromium 156.0.8078.4 in local-darwin-arm64 could not play vod-cmaf over dash through the player, and no documented gap covers it.\nWhat the player said: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2F7f8d99d19e31%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://127.0.0.1:4740/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://127.0.0.1:4740/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\nCommitted evidence (docs/results/codec-matrix/local-darwin-arm64.json) claims it plays: cmaf-vp9-aac ok 5/5.\nSo the engine or the runner image changed since the matrix was probed: this is an environment failure, not a playback regression. Re-run `npm run codec-matrix` here and read docs/CODEC_MATRIX.md; do not retry the specs.\n    at /work/playback-proof/tests/e2e/env.spec.ts:47:13"
+                  },
+                  "annotations": [
+                    {
+                      "type": "environment",
+                      "description": "local-darwin-arm64: chromium 156.0.8078.4; evidence: docs/results/codec-matrix/local-darwin-arm64.json"
+                    }
+                  ],
+                  "attachments": [
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-ENV-001-the-engine-plays-the-selected-flavour-through-the-chromium/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-ENV-001-the-engine-plays-the-selected-flavour-through-the-chromium/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-ENV-001-the-engine-plays-the-selected-flavour-through-the-chromium/request-log.json"
+                    },
+                    {
+                      "name": "diagnostics-problems.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-ENV-001-the-engine-plays-the-selected-flavour-through-the-chromium/diagnostics-problems.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15164,
+                  "retry": 1,
+                  "startTime": "2026-11-04T15:57:23.033Z",
+                  "error": {
+                    "message": "Error: chromium 156.0.8078.4 in local-darwin-arm64 could not play vod-cmaf over dash through the player, and no documented gap covers it.\nWhat the player said: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2F0ae8c75e1e5c%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://127.0.0.1:4740/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://127.0.0.1:4740/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\nCommitted evidence (docs/results/codec-matrix/local-darwin-arm64.json) claims it plays: cmaf-vp9-aac ok 5/5.\nSo the engine or the runner image changed since the matrix was probed: this is an environment failure, not a playback regression. Re-run `npm run codec-matrix` here and read docs/CODEC_MATRIX.md; do not retry the specs.",
+                    "stack": "Error: chromium 156.0.8078.4 in local-darwin-arm64 could not play vod-cmaf over dash through the player, and no documented gap covers it.\nWhat the player said: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2F0ae8c75e1e5c%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://127.0.0.1:4740/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://127.0.0.1:4740/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\nCommitted evidence (docs/results/codec-matrix/local-darwin-arm64.json) claims it plays: cmaf-vp9-aac ok 5/5.\nSo the engine or the runner image changed since the matrix was probed: this is an environment failure, not a playback regression. Re-run `npm run codec-matrix` here and read docs/CODEC_MATRIX.md; do not retry the specs.\n    at /work/playback-proof/tests/e2e/env.spec.ts:47:13"
+                  },
+                  "annotations": [
+                    {
+                      "type": "environment",
+                      "description": "local-darwin-arm64: chromium 156.0.8078.4; evidence: docs/results/codec-matrix/local-darwin-arm64.json"
+                    }
+                  ],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "PB-ENV-001 the engine plays the selected flavour through the player, or the engine and OS pair is a documented gap",
+          "tags": ["merge"],
+          "file": "e2e/env.spec.ts",
+          "line": 20,
+          "tests": [
+            {
+              "projectName": "firefox",
+              "expectedStatus": "skipped",
+              "status": "skipped",
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "documented gap in local-darwin-arm64: firefox does not start here: Failed to launch the browser process: Could not find profile folder. (see docs/CODEC_MATRIX.md)"
+                }
+              ],
+              "results": [
+                {
+                  "status": "skipped",
+                  "duration": 1,
+                  "retry": 0,
+                  "startTime": "2026-11-04T15:58:41.222Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "documented gap in local-darwin-arm64: firefox does not start here: Failed to launch the browser process: Could not find profile folder. (see docs/CODEC_MATRIX.md)"
+                    }
+                  ],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "PB-ENV-001 the engine plays the selected flavour through the player, or the engine and OS pair is a documented gap",
+          "tags": ["merge"],
+          "file": "e2e/env.spec.ts",
+          "line": 20,
+          "tests": [
+            {
+              "projectName": "webkit",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [
+                {
+                  "type": "environment",
+                  "description": "local-darwin-arm64: webkit 27.2; evidence: docs/results/codec-matrix/local-darwin-arm64.json"
+                }
+              ],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15884,
+                  "retry": 0,
+                  "startTime": "2026-11-04T15:58:41.612Z",
+                  "error": {
+                    "message": "Error: webkit 27.2 in local-darwin-arm64 could not play vod-cmaf over dash through the player, and no documented gap covers it.\nWhat the player said: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2F69a86b951a66%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Refused to load http://127.0.0.1:4740/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.\n  error: Refused to load http://127.0.0.1:4740/player/player.js because it does not appear in the script-src directive of the Content Security Policy.\nCommitted evidence (docs/results/codec-matrix/local-darwin-arm64.json) claims it plays: cmaf-vp9-aac ok 5/5.\nSo the engine or the runner image changed since the matrix was probed: this is an environment failure, not a playback regression. Re-run `npm run codec-matrix` here and read docs/CODEC_MATRIX.md; do not retry the specs.",
+                    "stack": "Error: webkit 27.2 in local-darwin-arm64 could not play vod-cmaf over dash through the player, and no documented gap covers it.\nWhat the player said: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2F69a86b951a66%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Refused to load http://127.0.0.1:4740/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.\n  error: Refused to load http://127.0.0.1:4740/player/player.js because it does not appear in the script-src directive of the Content Security Policy.\nCommitted evidence (docs/results/codec-matrix/local-darwin-arm64.json) claims it plays: cmaf-vp9-aac ok 5/5.\nSo the engine or the runner image changed since the matrix was probed: this is an environment failure, not a playback regression. Re-run `npm run codec-matrix` here and read docs/CODEC_MATRIX.md; do not retry the specs.\n    at /work/playback-proof/tests/e2e/env.spec.ts:47:13"
+                  },
+                  "annotations": [
+                    {
+                      "type": "environment",
+                      "description": "local-darwin-arm64: webkit 27.2; evidence: docs/results/codec-matrix/local-darwin-arm64.json"
+                    }
+                  ],
+                  "attachments": [
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-ENV-001-the-engine-plays-the-selected-flavour-through-the-webkit/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-ENV-001-the-engine-plays-the-selected-flavour-through-the-webkit/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-ENV-001-the-engine-plays-the-selected-flavour-through-the-webkit/request-log.json"
+                    },
+                    {
+                      "name": "diagnostics-problems.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-ENV-001-the-engine-plays-the-selected-flavour-through-the-webkit/diagnostics-problems.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15491,
+                  "retry": 1,
+                  "startTime": "2026-11-04T15:58:59.267Z",
+                  "error": {
+                    "message": "Error: webkit 27.2 in local-darwin-arm64 could not play vod-cmaf over dash through the player, and no documented gap covers it.\nWhat the player said: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2Ff11164ea7af1%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Refused to load http://127.0.0.1:4740/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.\n  error: Refused to load http://127.0.0.1:4740/player/player.js because it does not appear in the script-src directive of the Content Security Policy.\nCommitted evidence (docs/results/codec-matrix/local-darwin-arm64.json) claims it plays: cmaf-vp9-aac ok 5/5.\nSo the engine or the runner image changed since the matrix was probed: this is an environment failure, not a playback regression. Re-run `npm run codec-matrix` here and read docs/CODEC_MATRIX.md; do not retry the specs.",
+                    "stack": "Error: webkit 27.2 in local-darwin-arm64 could not play vod-cmaf over dash through the player, and no documented gap covers it.\nWhat the player said: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2Ff11164ea7af1%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Refused to load http://127.0.0.1:4740/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.\n  error: Refused to load http://127.0.0.1:4740/player/player.js because it does not appear in the script-src directive of the Content Security Policy.\nCommitted evidence (docs/results/codec-matrix/local-darwin-arm64.json) claims it plays: cmaf-vp9-aac ok 5/5.\nSo the engine or the runner image changed since the matrix was probed: this is an environment failure, not a playback regression. Re-run `npm run codec-matrix` here and read docs/CODEC_MATRIX.md; do not retry the specs.\n    at /work/playback-proof/tests/e2e/env.spec.ts:47:13"
+                  },
+                  "annotations": [
+                    {
+                      "type": "environment",
+                      "description": "local-darwin-arm64: webkit 27.2; evidence: docs/results/codec-matrix/local-darwin-arm64.json"
+                    }
+                  ],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "suites": []
+    },
+    {
+      "title": "e2e/vod-start.spec.ts",
+      "specs": [
+        {
+          "title": "PB-VOD-001 DASH VOD starts: first frame presented, 3 s of media time reached, no error",
+          "tags": ["merge", "cpu", "dash"],
+          "file": "e2e/vod-start.spec.ts",
+          "line": 78,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15170,
+                  "retry": 0,
+                  "startTime": "2026-11-04T15:57:38.676Z",
+                  "error": {
+                    "message": "Error: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2Fb1e3f924b812%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://127.0.0.1:4740/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://127.0.0.1:4740/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+                    "stack": "Error: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2Fb1e3f924b812%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://127.0.0.1:4740/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://127.0.0.1:4740/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:87:16"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/03-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-chromium/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/03-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-chromium/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/03-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-chromium/request-log.json"
+                    },
+                    {
+                      "name": "diagnostics-problems.json",
+                      "contentType": "application/json",
+                      "path": "test-results/03-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-chromium/diagnostics-problems.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15167,
+                  "retry": 1,
+                  "startTime": "2026-11-04T15:57:54.295Z",
+                  "error": {
+                    "message": "Error: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2F87af0e172e02%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://127.0.0.1:4740/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://127.0.0.1:4740/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+                    "stack": "Error: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2F87af0e172e02%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://127.0.0.1:4740/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://127.0.0.1:4740/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:87:16"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "PB-VOD-002 HLS VOD starts: first frame presented, 3 s of media time reached, no error",
+          "tags": ["merge", "hls"],
+          "file": "e2e/vod-start.spec.ts",
+          "line": 92,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15178,
+                  "retry": 0,
+                  "startTime": "2026-11-04T15:58:09.902Z",
+                  "error": {
+                    "message": "Error: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2Fb0d4095cf99a%2Fvod-cmaf%2Fhls%2Fmaster.m3u8): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://127.0.0.1:4740/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://127.0.0.1:4740/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+                    "stack": "Error: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2Fb0d4095cf99a%2Fvod-cmaf%2Fhls%2Fmaster.m3u8): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://127.0.0.1:4740/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://127.0.0.1:4740/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:101:16"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/04-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-chromium/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/04-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-chromium/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/04-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-chromium/request-log.json"
+                    },
+                    {
+                      "name": "diagnostics-problems.json",
+                      "contentType": "application/json",
+                      "path": "test-results/04-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-chromium/diagnostics-problems.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15183,
+                  "retry": 1,
+                  "startTime": "2026-11-04T15:58:25.529Z",
+                  "error": {
+                    "message": "Error: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2F62d11b8aafa2%2Fvod-cmaf%2Fhls%2Fmaster.m3u8): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://127.0.0.1:4740/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://127.0.0.1:4740/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+                    "stack": "Error: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2F62d11b8aafa2%2Fvod-cmaf%2Fhls%2Fmaster.m3u8): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://127.0.0.1:4740/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://127.0.0.1:4740/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:101:16"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "PB-VOD-001 DASH VOD starts: first frame presented, 3 s of media time reached, no error",
+          "tags": ["merge", "cpu", "dash"],
+          "file": "e2e/vod-start.spec.ts",
+          "line": 78,
+          "tests": [
+            {
+              "projectName": "firefox",
+              "expectedStatus": "skipped",
+              "status": "skipped",
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "documented gap in local-darwin-arm64: firefox does not start here: Failed to launch the browser process: Could not find profile folder. (see docs/CODEC_MATRIX.md)"
+                }
+              ],
+              "results": [
+                {
+                  "status": "skipped",
+                  "duration": 0,
+                  "retry": 0,
+                  "startTime": "2026-11-04T15:58:41.253Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "documented gap in local-darwin-arm64: firefox does not start here: Failed to launch the browser process: Could not find profile folder. (see docs/CODEC_MATRIX.md)"
+                    }
+                  ],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "PB-VOD-002 HLS VOD starts: first frame presented, 3 s of media time reached, no error",
+          "tags": ["merge", "hls"],
+          "file": "e2e/vod-start.spec.ts",
+          "line": 92,
+          "tests": [
+            {
+              "projectName": "firefox",
+              "expectedStatus": "skipped",
+              "status": "skipped",
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "documented gap in local-darwin-arm64: firefox does not start here: Failed to launch the browser process: Could not find profile folder. (see docs/CODEC_MATRIX.md)"
+                }
+              ],
+              "results": [
+                {
+                  "status": "skipped",
+                  "duration": 0,
+                  "retry": 0,
+                  "startTime": "2026-11-04T15:58:41.260Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "documented gap in local-darwin-arm64: firefox does not start here: Failed to launch the browser process: Could not find profile folder. (see docs/CODEC_MATRIX.md)"
+                    }
+                  ],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "PB-VOD-001 DASH VOD starts: first frame presented, 3 s of media time reached, no error",
+          "tags": ["merge", "cpu", "dash"],
+          "file": "e2e/vod-start.spec.ts",
+          "line": 78,
+          "tests": [
+            {
+              "projectName": "webkit",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15501,
+                  "retry": 0,
+                  "startTime": "2026-11-04T15:59:15.369Z",
+                  "error": {
+                    "message": "Error: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2F4847f97376ee%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Refused to load http://127.0.0.1:4740/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.\n  error: Refused to load http://127.0.0.1:4740/player/player.js because it does not appear in the script-src directive of the Content Security Policy.",
+                    "stack": "Error: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2F4847f97376ee%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Refused to load http://127.0.0.1:4740/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.\n  error: Refused to load http://127.0.0.1:4740/player/player.js because it does not appear in the script-src directive of the Content Security Policy.\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:87:16"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/05-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-webkit/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/05-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-webkit/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/05-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-webkit/request-log.json"
+                    },
+                    {
+                      "name": "diagnostics-problems.json",
+                      "contentType": "application/json",
+                      "path": "test-results/05-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-webkit/diagnostics-problems.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15516,
+                  "retry": 1,
+                  "startTime": "2026-11-04T15:59:31.462Z",
+                  "error": {
+                    "message": "Error: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2F412a34139a55%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Refused to load http://127.0.0.1:4740/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.\n  error: Refused to load http://127.0.0.1:4740/player/player.js because it does not appear in the script-src directive of the Content Security Policy.",
+                    "stack": "Error: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2F412a34139a55%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Refused to load http://127.0.0.1:4740/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.\n  error: Refused to load http://127.0.0.1:4740/player/player.js because it does not appear in the script-src directive of the Content Security Policy.\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:87:16"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "PB-VOD-002 HLS VOD starts: first frame presented, 3 s of media time reached, no error",
+          "tags": ["merge", "hls"],
+          "file": "e2e/vod-start.spec.ts",
+          "line": 92,
+          "tests": [
+            {
+              "projectName": "webkit",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15543,
+                  "retry": 0,
+                  "startTime": "2026-11-04T15:59:47.602Z",
+                  "error": {
+                    "message": "Error: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2Fbe0cd12c00d7%2Fvod-cmaf%2Fhls%2Fmaster.m3u8): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Refused to load http://127.0.0.1:4740/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.\n  error: Refused to load http://127.0.0.1:4740/player/player.js because it does not appear in the script-src directive of the Content Security Policy.",
+                    "stack": "Error: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2Fbe0cd12c00d7%2Fvod-cmaf%2Fhls%2Fmaster.m3u8): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Refused to load http://127.0.0.1:4740/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.\n  error: Refused to load http://127.0.0.1:4740/player/player.js because it does not appear in the script-src directive of the Content Security Policy.\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:101:16"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/06-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-webkit/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/06-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-webkit/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/06-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-webkit/request-log.json"
+                    },
+                    {
+                      "name": "diagnostics-problems.json",
+                      "contentType": "application/json",
+                      "path": "test-results/06-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-webkit/diagnostics-problems.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15508,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:00:03.744Z",
+                  "error": {
+                    "message": "Error: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2F81fa0ff0d500%2Fvod-cmaf%2Fhls%2Fmaster.m3u8): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Refused to load http://127.0.0.1:4740/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.\n  error: Refused to load http://127.0.0.1:4740/player/player.js because it does not appear in the script-src directive of the Content Security Policy.",
+                    "stack": "Error: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2F81fa0ff0d500%2Fvod-cmaf%2Fhls%2Fmaster.m3u8): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Refused to load http://127.0.0.1:4740/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.\n  error: Refused to load http://127.0.0.1:4740/player/player.js because it does not appear in the script-src directive of the Content Security Policy.\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:101:16"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "PB-VOD-001 DASH VOD starts: first frame presented, 3 s of media time reached, no error",
+          "tags": ["merge", "cpu", "dash"],
+          "file": "e2e/vod-start.spec.ts",
+          "line": 78,
+          "tests": [
+            {
+              "projectName": "chromium-cpu4x",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15234,
+                  "retry": 0,
+                  "startTime": "2026-11-04T16:00:19.845Z",
+                  "error": {
+                    "message": "Error: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2Fd6777e9db081%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://127.0.0.1:4740/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://127.0.0.1:4740/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+                    "stack": "Error: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2Fd6777e9db081%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://127.0.0.1:4740/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://127.0.0.1:4740/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:87:16"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/07-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-chromium-cpu4x/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/07-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-chromium-cpu4x/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/07-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-chromium-cpu4x/request-log.json"
+                    },
+                    {
+                      "name": "diagnostics-problems.json",
+                      "contentType": "application/json",
+                      "path": "test-results/07-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-chromium-cpu4x/diagnostics-problems.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15254,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:00:35.547Z",
+                  "error": {
+                    "message": "Error: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2F90ee652f035e%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://127.0.0.1:4740/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://127.0.0.1:4740/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+                    "stack": "Error: the player page did not boot (http://127.0.0.1:4740/player/?manifest=%2Fs%2F90ee652f035e%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://127.0.0.1:4740/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://127.0.0.1:4740/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:87:16"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "suites": []
+    }
+  ],
+  "errors": [],
+  "stats": { "startTime": "2026-11-04T15:57:05.736Z", "duration": 225209.008 }
+}

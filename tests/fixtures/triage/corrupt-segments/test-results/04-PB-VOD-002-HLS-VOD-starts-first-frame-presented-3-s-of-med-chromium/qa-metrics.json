@@ -1,0 +1,121 @@
+{
+  "state": "error",
+  "startupMs": null,
+  "startup": {
+    "manifestMs": 22.5,
+    "loadedMs": 33.10000002384186
+  },
+  "rebuffer": {
+    "count": 0,
+    "totalMs": 0,
+    "ratio": 0,
+    "events": []
+  },
+  "frames": {
+    "decoded": 0,
+    "dropped": 0,
+    "droppedRatio": 0,
+    "presented": 0
+  },
+  "bitrate": {
+    "switches": 1,
+    "current": {
+      "id": 8,
+      "bandwidth": 746778,
+      "width": 640,
+      "height": 360,
+      "videoCodec": "vp09.00.21.08",
+      "audioCodec": "mp4a.40.2"
+    },
+    "history": [
+      {
+        "t": 101.89999997615814,
+        "from": null,
+        "to": 11,
+        "height": 720,
+        "reason": "start"
+      },
+      {
+        "t": 1761.199999988079,
+        "from": 11,
+        "to": 8,
+        "height": 360,
+        "reason": "abr"
+      }
+    ]
+  },
+  "live": {
+    "isLive": false,
+    "latencyMs": null,
+    "latencyMaxMs": null,
+    "presentationDelayMs": null,
+    "edgeSeeks": 0
+  },
+  "errors": [
+    {
+      "t": 200.30000001192093,
+      "code": 3016,
+      "category": 3,
+      "severity": 2,
+      "message": "MEDIA.VIDEO_ERROR: Shaka Error 3016",
+      "data": [3, "undefined", "PipelineStatus::PIPELINE_ERROR_DECODE"],
+      "codeName": "VIDEO_ERROR",
+      "source": "shaka"
+    },
+    {
+      "t": 200.5999999642372,
+      "code": 0,
+      "category": 0,
+      "severity": 1,
+      "message": "AbortError: The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22",
+      "codeName": "AbortError",
+      "source": "play"
+    },
+    {
+      "t": 1761.199999988079,
+      "code": 3015,
+      "category": 3,
+      "severity": 1,
+      "message": "MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015",
+      "data": [
+        "{\"name\":\"InvalidStateError\",\"message\":\"Failed to execute 'appendBuffer' on 'SourceBuffer': The HTMLMediaElement.error attribute is not null.\"}",
+        "{\"code\":3,\"message\":\"PipelineStatus::PIPELINE_ERROR_DECODE\"}",
+        "http://127.0.0.1:4740/s/160a2694f24a/vod-cmaf/seg/v720/7.m4s"
+      ],
+      "codeName": "MEDIA_SOURCE_OPERATION_THREW",
+      "source": "shaka"
+    },
+    {
+      "t": 1770.5999999642372,
+      "code": 0,
+      "category": 0,
+      "severity": 1,
+      "message": "Shaka reset the MediaSource to recover from a media error that it did not report",
+      "codeName": "MEDIA_SOURCE_RECOVERED",
+      "source": "shaka"
+    },
+    {
+      "t": 1874.199999988079,
+      "code": 3015,
+      "category": 3,
+      "severity": 2,
+      "message": "MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015",
+      "data": [
+        "{\"name\":\"InvalidStateError\",\"message\":\"Failed to execute 'appendBuffer' on 'SourceBuffer': The HTMLMediaElement.error attribute is not null.\"}",
+        "{\"code\":3,\"message\":\"PipelineStatus::PIPELINE_ERROR_DECODE\"}",
+        "http://127.0.0.1:4740/s/160a2694f24a/vod-cmaf/seg/a-aac/6.m4s"
+      ],
+      "codeName": "MEDIA_SOURCE_OPERATION_THREW",
+      "source": "shaka"
+    }
+  ],
+  "playback": {
+    "currentTime": 0,
+    "duration": 59.98932600000001,
+    "paused": true,
+    "ended": false,
+    "playbackRate": 1,
+    "bufferedAheadSec": 0,
+    "readyState": 0
+  }
+}

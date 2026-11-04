@@ -1,0 +1,305 @@
+{
+  "config": {
+    "rootDir": "/work/playback-proof/tests",
+    "projects": [
+      { "name": "chromium", "retries": 1 },
+      { "name": "firefox", "retries": 1 },
+      { "name": "webkit", "retries": 1 },
+      { "name": "chromium-cpu4x", "retries": 1 }
+    ]
+  },
+  "suites": [
+    {
+      "title": "e2e/recovery.spec.ts",
+      "specs": [
+        {
+          "title": "PB-REC-001 transient segment 404: the failed request is retried and succeeds, playback continues with no critical error and at most one rebuffer",
+          "tags": ["merge", "dash"],
+          "file": "e2e/recovery.spec.ts",
+          "line": 41,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15476,
+                  "retry": 0,
+                  "startTime": "2026-11-04T16:12:06.861Z",
+                  "error": {
+                    "message": "Error: qa.waitForMediaTime(7) timed out after 15000 ms: the media clock is at 5.974 s.\n11 events so far, the last 11:\n  #0 t=96.8 media=0.000 load-requested {\"uri\":\"/s/c9aaf10528bb/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=97.7 media=0.000 buffering-start\n  #2 t=107.5 media=0.000 manifest-loaded\n  #3 t=115.3 media=0.000 buffering-start\n  #4 t=115.7 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=116.6 media=0.000 loaded\n  #6 t=288.3 media=0.000 playing\n  #7 t=288.5 media=0.001 buffering-end\n  #8 t=298.7 media=0.011 firstframe {\"source\":\"requestVideoFrameCallback\"}\n  #9 t=883.4 media=0.552 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/c9aaf…\n  #10 t=6305.9 media=5.974 buffering-start",
+                    "stack": "Error: qa.waitForMediaTime(7) timed out after 15000 ms: the media clock is at 5.974 s.\n11 events so far, the last 11:\n  #0 t=96.8 media=0.000 load-requested {\"uri\":\"/s/c9aaf10528bb/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=97.7 media=0.000 buffering-start\n  #2 t=107.5 media=0.000 manifest-loaded\n  #3 t=115.3 media=0.000 buffering-start\n  #4 t=115.7 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=116.6 media=0.000 loaded\n  #6 t=288.3 media=0.000 playing\n  #7 t=288.5 media=0.001 buffering-end\n  #8 t=298.7 media=0.011 firstframe {\"source\":\"requestVideoFrameCallback\"}\n  #9 t=883.4 media=0.552 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/c9aaf…\n  #10 t=6305.9 media=5.974 buffering-start\n    at /work/playback-proof/tests/e2e/recovery.spec.ts:63:5"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "qa-events.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-REC-001-transient-segment-404-the-failed-request-is-retr-chromium/qa-events.json"
+                    },
+                    {
+                      "name": "qa-metrics.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-REC-001-transient-segment-404-the-failed-request-is-retr-chromium/qa-metrics.json"
+                    },
+                    {
+                      "name": "qa-info.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-REC-001-transient-segment-404-the-failed-request-is-retr-chromium/qa-info.json"
+                    },
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-REC-001-transient-segment-404-the-failed-request-is-retr-chromium/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-REC-001-transient-segment-404-the-failed-request-is-retr-chromium/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-REC-001-transient-segment-404-the-failed-request-is-retr-chromium/request-log.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15421,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:12:23.027Z",
+                  "error": {
+                    "message": "Error: qa.waitForMediaTime(7) timed out after 15000 ms: the media clock is at 5.974 s.\n11 events so far, the last 11:\n  #0 t=92.0 media=0.000 load-requested {\"uri\":\"/s/a80698954988/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=92.8 media=0.000 buffering-start\n  #2 t=101.2 media=0.000 manifest-loaded\n  #3 t=105.7 media=0.000 buffering-start\n  #4 t=106.2 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=107.0 media=0.000 loaded\n  #6 t=284.0 media=0.000 playing\n  #7 t=284.2 media=0.001 buffering-end\n  #8 t=294.4 media=0.011 firstframe {\"source\":\"requestVideoFrameCallback\"}\n  #9 t=650.6 media=0.323 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a8069…\n  #10 t=6301.4 media=5.974 buffering-start",
+                    "stack": "Error: qa.waitForMediaTime(7) timed out after 15000 ms: the media clock is at 5.974 s.\n11 events so far, the last 11:\n  #0 t=92.0 media=0.000 load-requested {\"uri\":\"/s/a80698954988/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=92.8 media=0.000 buffering-start\n  #2 t=101.2 media=0.000 manifest-loaded\n  #3 t=105.7 media=0.000 buffering-start\n  #4 t=106.2 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=107.0 media=0.000 loaded\n  #6 t=284.0 media=0.000 playing\n  #7 t=284.2 media=0.001 buffering-end\n  #8 t=294.4 media=0.011 firstframe {\"source\":\"requestVideoFrameCallback\"}\n  #9 t=650.6 media=0.323 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/a8069…\n  #10 t=6301.4 media=5.974 buffering-start\n    at /work/playback-proof/tests/e2e/recovery.spec.ts:63:5"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "PB-REC-002 5xx burst on one segment: playback continues by retry or rung switch, with no critical error and at most one rebuffer",
+          "tags": ["merge", "dash"],
+          "file": "e2e/recovery.spec.ts",
+          "line": 107,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15308,
+                  "retry": 0,
+                  "startTime": "2026-11-04T16:12:39.003Z",
+                  "error": {
+                    "message": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":3,\"status\":503,\"id\":\"f1\"} named 1 of the 3 requests it was waited for within 15000 ms: the player stopped asking for what the rule matches before the rule was used up, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 9 entries, the last 9:\n  #1 GET manifest -> 200 in 0.29 ms\n  #2 GET init a-aac -> 200 in 0.37 ms\n  #3 GET segment a-aac #1 -> 200 in 0.13 ms\n  #4 GET init v720 -> 200 in 0.16 ms\n  #5 GET segment v720 #1 -> 200 in 0.47 ms\n  #6 GET segment a-aac #2 -> 200 in 0.18 ms\n  #7 GET segment v720 #2 -> 200 in 0.36 ms\n  #8 GET segment v720 #3 -> 503 in 0.15 ms [faults f1]\n  #9 GET segment a-aac #3 -> 200 in 0.22 ms",
+                    "stack": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":3,\"status\":503,\"id\":\"f1\"} named 1 of the 3 requests it was waited for within 15000 ms: the player stopped asking for what the rule matches before the rule was used up, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 9 entries, the last 9:\n  #1 GET manifest -> 200 in 0.29 ms\n  #2 GET init a-aac -> 200 in 0.37 ms\n  #3 GET segment a-aac #1 -> 200 in 0.13 ms\n  #4 GET init v720 -> 200 in 0.16 ms\n  #5 GET segment v720 #1 -> 200 in 0.47 ms\n  #6 GET segment a-aac #2 -> 200 in 0.18 ms\n  #7 GET segment v720 #2 -> 200 in 0.36 ms\n  #8 GET segment v720 #3 -> 503 in 0.15 ms [faults f1]\n  #9 GET segment a-aac #3 -> 200 in 0.22 ms\n    at /work/playback-proof/tests/e2e/recovery.spec.ts:121:19"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "qa-events.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-chromium/qa-events.json"
+                    },
+                    {
+                      "name": "qa-metrics.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-chromium/qa-metrics.json"
+                    },
+                    {
+                      "name": "qa-info.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-chromium/qa-info.json"
+                    },
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-chromium/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-chromium/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-chromium/request-log.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15312,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:12:54.971Z",
+                  "error": {
+                    "message": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":3,\"status\":503,\"id\":\"f1\"} named 1 of the 3 requests it was waited for within 15000 ms: the player stopped asking for what the rule matches before the rule was used up, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 9 entries, the last 9:\n  #1 GET manifest -> 200 in 0.28 ms\n  #2 GET init a-aac -> 200 in 0.36 ms\n  #3 GET segment a-aac #1 -> 200 in 0.12 ms\n  #4 GET init v720 -> 200 in 0.08 ms\n  #5 GET segment v720 #1 -> 200 in 0.55 ms\n  #6 GET segment a-aac #2 -> 200 in 0.48 ms\n  #7 GET segment v720 #2 -> 200 in 0.49 ms\n  #8 GET segment v720 #3 -> 503 in 0.16 ms [faults f1]\n  #9 GET segment a-aac #3 -> 200 in 0.18 ms",
+                    "stack": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":3,\"status\":503,\"id\":\"f1\"} named 1 of the 3 requests it was waited for within 15000 ms: the player stopped asking for what the rule matches before the rule was used up, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 9 entries, the last 9:\n  #1 GET manifest -> 200 in 0.28 ms\n  #2 GET init a-aac -> 200 in 0.36 ms\n  #3 GET segment a-aac #1 -> 200 in 0.12 ms\n  #4 GET init v720 -> 200 in 0.08 ms\n  #5 GET segment v720 #1 -> 200 in 0.55 ms\n  #6 GET segment a-aac #2 -> 200 in 0.48 ms\n  #7 GET segment v720 #2 -> 200 in 0.49 ms\n  #8 GET segment v720 #3 -> 503 in 0.16 ms [faults f1]\n  #9 GET segment a-aac #3 -> 200 in 0.18 ms\n    at /work/playback-proof/tests/e2e/recovery.spec.ts:121:19"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "PB-REC-001 transient segment 404: the failed request is retried and succeeds, playback continues with no critical error and at most one rebuffer",
+          "tags": ["merge", "dash"],
+          "file": "e2e/recovery.spec.ts",
+          "line": 41,
+          "tests": [
+            {
+              "projectName": "webkit",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 17131,
+                  "retry": 0,
+                  "startTime": "2026-11-04T16:13:14.671Z",
+                  "error": {
+                    "message": "Error: qa.waitForMediaTime(7) timed out after 15000 ms: the media clock is at 4.000 s.\n11 events so far, the last 11:\n  #0 t=213.0 media=0.000 load-requested {\"uri\":\"/s/17654bb551eb/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=240.0 media=0.000 buffering-start\n  #2 t=254.0 media=0.000 manifest-loaded\n  #3 t=296.0 media=0.000 buffering-start\n  #4 t=297.0 media=0.000 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}\n  #5 t=300.0 media=0.000 loaded\n  #6 t=490.0 media=0.000 playing\n  #7 t=490.0 media=0.000 buffering-end\n  #8 t=491.0 media=0.000 firstframe {\"source\":\"requestVideoFrameCallback\"}\n  #9 t=1406.0 media=0.602 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/17654…\n  #10 t=4882.0 media=4.000 buffering-start",
+                    "stack": "Error: qa.waitForMediaTime(7) timed out after 15000 ms: the media clock is at 4.000 s.\n11 events so far, the last 11:\n  #0 t=213.0 media=0.000 load-requested {\"uri\":\"/s/17654bb551eb/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=240.0 media=0.000 buffering-start\n  #2 t=254.0 media=0.000 manifest-loaded\n  #3 t=296.0 media=0.000 buffering-start\n  #4 t=297.0 media=0.000 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}\n  #5 t=300.0 media=0.000 loaded\n  #6 t=490.0 media=0.000 playing\n  #7 t=490.0 media=0.000 buffering-end\n  #8 t=491.0 media=0.000 firstframe {\"source\":\"requestVideoFrameCallback\"}\n  #9 t=1406.0 media=0.602 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/17654…\n  #10 t=4882.0 media=4.000 buffering-start\n    at /work/playback-proof/tests/e2e/recovery.spec.ts:63:5"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "qa-events.json",
+                      "contentType": "application/json",
+                      "path": "test-results/03-PB-REC-001-transient-segment-404-the-failed-request-is-retr-webkit/qa-events.json"
+                    },
+                    {
+                      "name": "qa-metrics.json",
+                      "contentType": "application/json",
+                      "path": "test-results/03-PB-REC-001-transient-segment-404-the-failed-request-is-retr-webkit/qa-metrics.json"
+                    },
+                    {
+                      "name": "qa-info.json",
+                      "contentType": "application/json",
+                      "path": "test-results/03-PB-REC-001-transient-segment-404-the-failed-request-is-retr-webkit/qa-info.json"
+                    },
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/03-PB-REC-001-transient-segment-404-the-failed-request-is-retr-webkit/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/03-PB-REC-001-transient-segment-404-the-failed-request-is-retr-webkit/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/03-PB-REC-001-transient-segment-404-the-failed-request-is-retr-webkit/request-log.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 16505,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:13:33.185Z",
+                  "error": {
+                    "message": "Error: qa.waitForMediaTime(7) timed out after 15000 ms: the media clock is at 4.000 s.\n11 events so far, the last 11:\n  #0 t=408.0 media=0.000 load-requested {\"uri\":\"/s/89236cbde31d/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=457.0 media=0.000 buffering-start\n  #2 t=473.0 media=0.000 manifest-loaded\n  #3 t=514.0 media=0.000 buffering-start\n  #4 t=514.0 media=0.000 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}\n  #5 t=521.0 media=0.000 loaded\n  #6 t=795.0 media=0.000 playing\n  #7 t=796.0 media=0.000 buffering-end\n  #8 t=843.0 media=0.000 firstframe {\"source\":\"requestVideoFrameCallback\"}\n  #9 t=1345.0 media=0.207 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/89236…\n  #10 t=5218.0 media=4.000 buffering-start",
+                    "stack": "Error: qa.waitForMediaTime(7) timed out after 15000 ms: the media clock is at 4.000 s.\n11 events so far, the last 11:\n  #0 t=408.0 media=0.000 load-requested {\"uri\":\"/s/89236cbde31d/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=457.0 media=0.000 buffering-start\n  #2 t=473.0 media=0.000 manifest-loaded\n  #3 t=514.0 media=0.000 buffering-start\n  #4 t=514.0 media=0.000 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}\n  #5 t=521.0 media=0.000 loaded\n  #6 t=795.0 media=0.000 playing\n  #7 t=796.0 media=0.000 buffering-end\n  #8 t=843.0 media=0.000 firstframe {\"source\":\"requestVideoFrameCallback\"}\n  #9 t=1345.0 media=0.207 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://127.0.0.1:4740/s/89236…\n  #10 t=5218.0 media=4.000 buffering-start\n    at /work/playback-proof/tests/e2e/recovery.spec.ts:63:5"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "PB-REC-002 5xx burst on one segment: playback continues by retry or rung switch, with no critical error and at most one rebuffer",
+          "tags": ["merge", "dash"],
+          "file": "e2e/recovery.spec.ts",
+          "line": 107,
+          "tests": [
+            {
+              "projectName": "webkit",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15810,
+                  "retry": 0,
+                  "startTime": "2026-11-04T16:13:50.840Z",
+                  "error": {
+                    "message": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":3,\"status\":503,\"id\":\"f1\"} named 1 of the 3 requests it was waited for within 15000 ms: the player stopped asking for what the rule matches before the rule was used up, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 9 entries, the last 9:\n  #1 GET manifest -> 200 in 0.28 ms\n  #2 GET init a-aac -> 200 in 0.24 ms\n  #3 GET segment a-aac #1 -> 200 in 0.11 ms\n  #4 GET init v360 -> 200 in 0.31 ms\n  #5 GET segment v360 #1 -> 200 in 0.19 ms\n  #6 GET segment v360 #2 -> 200 in 0.29 ms\n  #7 GET segment a-aac #2 -> 200 in 0.15 ms\n  #8 GET segment a-aac #3 -> 200 in 0.16 ms\n  #9 GET segment v360 #3 -> 503 in 0.06 ms [faults f1]",
+                    "stack": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":3,\"status\":503,\"id\":\"f1\"} named 1 of the 3 requests it was waited for within 15000 ms: the player stopped asking for what the rule matches before the rule was used up, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 9 entries, the last 9:\n  #1 GET manifest -> 200 in 0.28 ms\n  #2 GET init a-aac -> 200 in 0.24 ms\n  #3 GET segment a-aac #1 -> 200 in 0.11 ms\n  #4 GET init v360 -> 200 in 0.31 ms\n  #5 GET segment v360 #1 -> 200 in 0.19 ms\n  #6 GET segment v360 #2 -> 200 in 0.29 ms\n  #7 GET segment a-aac #2 -> 200 in 0.15 ms\n  #8 GET segment a-aac #3 -> 200 in 0.16 ms\n  #9 GET segment v360 #3 -> 503 in 0.06 ms [faults f1]\n    at /work/playback-proof/tests/e2e/recovery.spec.ts:121:19"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "qa-events.json",
+                      "contentType": "application/json",
+                      "path": "test-results/04-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-webkit/qa-events.json"
+                    },
+                    {
+                      "name": "qa-metrics.json",
+                      "contentType": "application/json",
+                      "path": "test-results/04-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-webkit/qa-metrics.json"
+                    },
+                    {
+                      "name": "qa-info.json",
+                      "contentType": "application/json",
+                      "path": "test-results/04-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-webkit/qa-info.json"
+                    },
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/04-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-webkit/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/04-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-webkit/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/04-PB-REC-002-5xx-burst-on-one-segment-playback-continues-by-r-webkit/request-log.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15949,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:14:07.750Z",
+                  "error": {
+                    "message": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":3,\"status\":503,\"id\":\"f1\"} named 1 of the 3 requests it was waited for within 15000 ms: the player stopped asking for what the rule matches before the rule was used up, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 9 entries, the last 9:\n  #1 GET manifest -> 200 in 0.37 ms\n  #2 GET init a-aac -> 200 in 0.23 ms\n  #3 GET segment a-aac #1 -> 200 in 0.21 ms\n  #4 GET init v360 -> 200 in 0.17 ms\n  #5 GET segment v360 #1 -> 200 in 0.19 ms\n  #6 GET segment a-aac #2 -> 200 in 0.23 ms\n  #7 GET segment v360 #2 -> 200 in 0.23 ms\n  #8 GET segment a-aac #3 -> 200 in 0.14 ms\n  #9 GET segment v360 #3 -> 503 in 0.08 ms [faults f1]",
+                    "stack": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":3,\"status\":503,\"id\":\"f1\"} named 1 of the 3 requests it was waited for within 15000 ms: the player stopped asking for what the rule matches before the rule was used up, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 9 entries, the last 9:\n  #1 GET manifest -> 200 in 0.37 ms\n  #2 GET init a-aac -> 200 in 0.23 ms\n  #3 GET segment a-aac #1 -> 200 in 0.21 ms\n  #4 GET init v360 -> 200 in 0.17 ms\n  #5 GET segment v360 #1 -> 200 in 0.19 ms\n  #6 GET segment a-aac #2 -> 200 in 0.23 ms\n  #7 GET segment v360 #2 -> 200 in 0.23 ms\n  #8 GET segment a-aac #3 -> 200 in 0.14 ms\n  #9 GET segment v360 #3 -> 503 in 0.08 ms [faults f1]\n    at /work/playback-proof/tests/e2e/recovery.spec.ts:121:19"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "suites": []
+    }
+  ],
+  "errors": [],
+  "stats": { "startTime": "2026-11-04T16:12:05.480Z", "duration": 143586.818 }
+}

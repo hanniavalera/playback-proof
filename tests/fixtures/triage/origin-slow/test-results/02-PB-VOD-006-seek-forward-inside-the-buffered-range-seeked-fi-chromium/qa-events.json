@@ -1,0 +1,82 @@
+[
+  {
+    "index": 0,
+    "t": 76.10000002384186,
+    "name": "load-requested",
+    "mediaTime": 0,
+    "detail": {
+      "uri": "/s/1603bb67cec9/vod-cmaf/dash/manifest.mpd"
+    }
+  },
+  {
+    "index": 1,
+    "t": 76.89999997615814,
+    "name": "buffering-start",
+    "mediaTime": 0
+  },
+  {
+    "index": 2,
+    "t": 83.60000002384186,
+    "name": "manifest-loaded",
+    "mediaTime": 0
+  },
+  {
+    "index": 3,
+    "t": 86.80000001192093,
+    "name": "buffering-start",
+    "mediaTime": 0
+  },
+  {
+    "index": 4,
+    "t": 87.19999998807907,
+    "name": "variant-changed",
+    "mediaTime": 0,
+    "detail": {
+      "from": null,
+      "to": 2,
+      "bandwidth": 1845302,
+      "height": 720,
+      "reason": "start"
+    }
+  },
+  {
+    "index": 5,
+    "t": 87.89999997615814,
+    "name": "loaded",
+    "mediaTime": 0
+  },
+  {
+    "index": 6,
+    "t": 2594.199999988079,
+    "name": "variant-changed",
+    "mediaTime": 0,
+    "detail": {
+      "from": 2,
+      "to": 1,
+      "bandwidth": 746778,
+      "height": 360,
+      "reason": "abr"
+    }
+  },
+  {
+    "index": 7,
+    "t": 5100.300000011921,
+    "name": "playing",
+    "mediaTime": 0.000072
+  },
+  {
+    "index": 8,
+    "t": 5100.600000023842,
+    "name": "buffering-end",
+    "mediaTime": 0.000208
+  },
+  {
+    "index": 9,
+    "t": 5105.199999988079,
+    "name": "firstframe",
+    "mediaTime": 0.004925,
+    "detail": {
+      "source": "requestVideoFrameCallback"
+    }
+  }
+]

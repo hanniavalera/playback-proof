@@ -3,7 +3,7 @@ name: ci
 # The merge gate. Each job is one stage of the pipeline that the Jenkinsfile also runs: the stage names are the
 # `npm run gate:*` scripts, so the two CI systems cannot drift apart (a unit test compares them).
 # The pipeline as a diagram, the budgets and how to reproduce a job locally: docs/CI.md. The decisions: docs/decisions/ci.md.
-# The performance gate and the triage stage are added as the lab grows; see TEST_STRATEGY.md section 6.
+# The performance gate is added when the baselines of the runner are recorded; see TEST_STRATEGY.md section 6.
 
 on:
   push:
@@ -209,3 +209,37 @@ jobs:
       - name: Check that both environments are in the history
         if: ${{ !cancelled() }}
         run: jq -e -s 'all(.[]; .recorded != null)' reports/flake/gate-linux.json reports/flake/gate-macos.json
+
+  # Failure triage (docs/TRIAGE.md, ADR-160 to ADR-169): when the merge gate or the flake gate is red, it groups the failures of every
+  # leg by cause and says what to look at first. It explains a red build and never decides one: it is not a required check, it exits 0
+  # whatever it finds (a bad command line is the only exit 2), and it is skipped on a green build, where there is nothing to explain.
+  # It reads the Playwright reports of the legs from the artifacts, so the same cause in three engines is one cluster.
+  triage:
+    name: triage
+    needs: [merge-gate, flake]
+    if: ${{ failure() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Set up Node and the dependencies
+        uses: ./.github/actions/setup
+      - name: Download the reports of the legs
+        uses: actions/download-artifact@v8
+        with:
+          pattern: reports-*
+          path: artifacts
+      - name: Triage the failures
+        run: npm run gate:triage -- --from artifacts --out reports/triage
+      - name: Upload the triage report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: triage
+          path: reports/triage
+          retention-days: 14
+          overwrite: true

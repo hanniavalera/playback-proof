@@ -1,0 +1,15 @@
+[
+  {
+    "type": "error",
+    "text": "Refused to load http://127.0.0.1:4740/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy."
+  },
+  {
+    "type": "error",
+    "text": "Refused to load http://127.0.0.1:4740/player/player.js because it does not appear in the script-src directive of the Content Security Policy."
+  },
+  {
+    "type": "error",
+    "text": "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+    "location": "http://127.0.0.1:4740/player/?manifest=%2Fs%2Fbe0cd12c00d7%2Fvod-cmaf%2Fhls%2Fmaster.m3u8:0"
+  }
+]

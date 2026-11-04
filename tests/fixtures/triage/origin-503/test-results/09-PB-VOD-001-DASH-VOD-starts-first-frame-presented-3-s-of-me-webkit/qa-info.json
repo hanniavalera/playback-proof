@@ -1,0 +1,20 @@
+{
+  "shakaVersion": "v5.3.3",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+  "config": "A",
+  "configOverrides": {},
+  "configDefaults": {},
+  "configured": [],
+  "manifestUri": "/s/a06747e909fb/vod-cmaf/dash/manifest.mpd",
+  "supported": true,
+  "loadMode": "media-source",
+  "params": {
+    "config": "A",
+    "autoplay": true,
+    "muted": true,
+    "start": null,
+    "abr": true,
+    "hud": false
+  },
+  "paramProblems": []
+}

@@ -1,0 +1,91 @@
+{
+  "state": "error",
+  "startupMs": null,
+  "startup": {
+    "manifestMs": 10.400000035762787,
+    "loadedMs": 22.100000023841858
+  },
+  "rebuffer": {
+    "count": 0,
+    "totalMs": 0,
+    "ratio": 0,
+    "events": []
+  },
+  "frames": {
+    "decoded": 0,
+    "dropped": 0,
+    "droppedRatio": 0,
+    "presented": 0
+  },
+  "bitrate": {
+    "switches": 0,
+    "current": {
+      "id": 2,
+      "bandwidth": 1845302,
+      "width": 1280,
+      "height": 720,
+      "videoCodec": "vp09.00.31.08",
+      "audioCodec": "mp4a.40.2"
+    },
+    "history": [
+      {
+        "t": 109.39999997615814,
+        "from": null,
+        "to": 2,
+        "height": 720,
+        "reason": "start"
+      }
+    ]
+  },
+  "live": {
+    "isLive": false,
+    "latencyMs": null,
+    "latencyMaxMs": null,
+    "presentationDelayMs": null,
+    "edgeSeeks": 0
+  },
+  "errors": [
+    {
+      "t": 247,
+      "code": 3016,
+      "category": 3,
+      "severity": 2,
+      "message": "MEDIA.VIDEO_ERROR: Shaka Error 3016",
+      "data": [3, "undefined", "PipelineStatus::PIPELINE_ERROR_DECODE"],
+      "codeName": "VIDEO_ERROR",
+      "source": "shaka"
+    },
+    {
+      "t": 247.5,
+      "code": 0,
+      "category": 0,
+      "severity": 1,
+      "message": "AbortError: The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22",
+      "codeName": "AbortError",
+      "source": "play"
+    },
+    {
+      "t": 2062.300000011921,
+      "code": 3015,
+      "category": 3,
+      "severity": 2,
+      "message": "MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015",
+      "data": [
+        "{\"name\":\"InvalidStateError\",\"message\":\"Failed to execute 'appendBuffer' on 'SourceBuffer': The HTMLMediaElement.error attribute is not null.\"}",
+        "{\"code\":3,\"message\":\"PipelineStatus::PIPELINE_ERROR_DECODE\"}",
+        "http://127.0.0.1:4740/s/3e19f504cdfe/vod-cmaf/seg/a-aac/3.m4s"
+      ],
+      "codeName": "MEDIA_SOURCE_OPERATION_THREW",
+      "source": "shaka"
+    }
+  ],
+  "playback": {
+    "currentTime": 0,
+    "duration": 60,
+    "paused": true,
+    "ended": false,
+    "playbackRate": 1,
+    "bufferedAheadSec": 0,
+    "readyState": 0
+  }
+}

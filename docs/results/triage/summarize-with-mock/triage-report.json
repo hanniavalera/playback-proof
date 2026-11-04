@@ -1,0 +1,2865 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-04T16:34:07.007Z",
+  "from": "tests/fixtures/triage",
+  "sources": [
+    {
+      "path": "corrupt-segments/playwright.json",
+      "tests": 6,
+      "passed": 0,
+      "failed": 6,
+      "flaky": 0,
+      "skipped": 0,
+      "notRun": 0,
+      "interrupted": 0,
+      "runErrors": 0,
+      "startTime": "2026-11-04T16:08:21.209Z",
+      "durationMs": 197862
+    },
+    {
+      "path": "csp-blocks-scripts/playwright.json",
+      "tests": 10,
+      "passed": 0,
+      "failed": 7,
+      "flaky": 0,
+      "skipped": 3,
+      "notRun": 0,
+      "interrupted": 0,
+      "runErrors": 0,
+      "startTime": "2026-11-04T15:57:05.736Z",
+      "durationMs": 225209
+    },
+    {
+      "path": "origin-503/playwright.json",
+      "tests": 10,
+      "passed": 0,
+      "failed": 10,
+      "flaky": 0,
+      "skipped": 0,
+      "notRun": 0,
+      "interrupted": 0,
+      "runErrors": 0,
+      "startTime": "2026-11-04T16:01:48.955Z",
+      "durationMs": 321640
+    },
+    {
+      "path": "origin-slow/playwright.json",
+      "tests": 2,
+      "passed": 0,
+      "failed": 2,
+      "flaky": 0,
+      "skipped": 0,
+      "notRun": 0,
+      "interrupted": 0,
+      "runErrors": 0,
+      "startTime": "2026-11-04T16:14:58.214Z",
+      "durationMs": 58621
+    },
+    {
+      "path": "retry-disabled/playwright.json",
+      "tests": 4,
+      "passed": 0,
+      "failed": 4,
+      "flaky": 0,
+      "skipped": 0,
+      "notRun": 0,
+      "interrupted": 0,
+      "runErrors": 0,
+      "startTime": "2026-11-04T16:12:05.480Z",
+      "durationMs": 143587
+    },
+    {
+      "path": "service-down/playwright.json",
+      "tests": 0,
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "notRun": 0,
+      "interrupted": 0,
+      "runErrors": 1,
+      "startTime": "2026-11-04T15:56:30.122Z",
+      "durationMs": 45
+    },
+    {
+      "path": "truncated-cache/playwright.json",
+      "tests": 0,
+      "passed": 0,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "notRun": 0,
+      "interrupted": 0,
+      "runErrors": 1,
+      "startTime": "2026-11-04T15:56:44.340Z",
+      "durationMs": 954
+    }
+  ],
+  "totals": {
+    "failures": 31,
+    "flaky": 0,
+    "clusters": 12,
+    "rootCauses": 8,
+    "skipped": 3,
+    "notRun": 0,
+    "interrupted": 0
+  },
+  "clusters": [
+    {
+      "rank": 1,
+      "key": "c9b6a99f380d",
+      "signature": "Error: qa.waitFor('firstframe') timed out after <n> ms (looking from index <n>). [thrown] {shaka 1001}",
+      "parts": {
+        "message": "Error: qa.waitFor('firstframe') timed out after <n> ms (looking from index <n>).",
+        "assertion": "thrown",
+        "location": null,
+        "shaka": "1001"
+      },
+      "size": 6,
+      "tests": [
+        "PB-VOD-001",
+        "PB-VOD-002",
+        "PB-VOD-006"
+      ],
+      "projects": [
+        "chromium",
+        "webkit"
+      ],
+      "outcomes": {
+        "failed": 6,
+        "timedOut": 0,
+        "flaky": 0
+      },
+      "category": "origin-error",
+      "rule": {
+        "rule": "origin-failed-without-fault",
+        "category": "origin-error",
+        "evidence": [
+          "14 requests failed at the origin with no fault rule on them (14 failed in all, 14 segment requests in the log)",
+          "the first failures: 503 on segment a-aac #1 ×3, 503 on segment v720 #1 ×2, 503 on segment v360 #1, 503 on segment a-aac #2 ×2",
+          "the player noticed: BAD_HTTP_STATUS (code 1001, network, critical)"
+        ],
+        "cause": "the origin answered 503 on segment to requests no fault rule named"
+      },
+      "ruleRationale": "The origin answered errors or cut responses on requests no fault rule named, and the player noticed: the service or its stream cache is at fault.",
+      "failureClass": "Environment or infrastructure",
+      "firstCheck": "The failed requests in request-log.json: ask the service for the same path (`curl -i <origin><path>`), run `npm run verify:streams`, and read the service log (`PB_LOG=1`).",
+      "agreement": {
+        "sameRule": 6,
+        "of": 6,
+        "otherRules": []
+      },
+      "representative": {
+        "scope": "test",
+        "id": "PB-VOD-001",
+        "title": "PB-VOD-001 DASH VOD starts: first frame presented, 3 s of media time reached, no error",
+        "file": "tests/e2e/vod-start.spec.ts",
+        "line": 78,
+        "project": "chromium",
+        "tags": [
+          "@cpu",
+          "@dash",
+          "@merge"
+        ],
+        "tier": "merge",
+        "outcome": "failed",
+        "retries": 1,
+        "attempts": 2,
+        "failedAttempts": 2,
+        "attempt": 0,
+        "durationMs": 15300,
+        "quarantined": false,
+        "experimental": false,
+        "annotations": [],
+        "envId": null,
+        "source": "origin-503/playwright.json",
+        "error": {
+          "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n14 events so far, the last 14:\n  #0 t=77.9 media=0.000 load-requested {\"uri\":\"/s/7c06e0c7db20/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=78.8 media=0.000 buffering-start\n  #2 t=86.5 media=0.000 manifest-loaded\n  #3 t=90.0 media=0.000 buffering-start\n  #4 t=90.4 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=91.2 media=0.000 loaded\n  #6 t=2308.4 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://<host>/s/7c06e…\n  #7 t=2326.6 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://<host>/s/7c06e…\n  #8 t=2326.6 media=0.000 variant-changed {\"from\":2,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"abr\"}\n  #9 t=4154.8 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://<host>/s/7c06e…\n  #10 t=4265.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://<host>/s/7c06e…\n  #11 t=4265.0 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #12 t=6320.4 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://<host>/s/7c06e…\n  #13 t=6664.6 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://<host>/s/7c06e…",
+          "frames": [
+            {
+              "file": "tests/e2e/vod-start.spec.ts",
+              "fn": "expectStartsAndPlays",
+              "line": 24
+            },
+            {
+              "file": "tests/e2e/vod-start.spec.ts",
+              "fn": null,
+              "line": 88
+            }
+          ]
+        },
+        "diagnostics": {
+          "attached": [
+            "page-console.json",
+            "qa-events.json",
+            "qa-info.json",
+            "qa-metrics.json",
+            "request-log.json",
+            "session-detail.json"
+          ],
+          "players": 1,
+          "sessions": 1,
+          "shakaErrors": [
+            {
+              "code": 1001,
+              "codeName": "BAD_HTTP_STATUS",
+              "category": 1,
+              "severity": 2,
+              "message": "NETWORK.BAD_HTTP_STATUS: Shaka Error 1001",
+              "source": "shaka"
+            },
+            {
+              "code": 1001,
+              "codeName": "BAD_HTTP_STATUS",
+              "category": 1,
+              "severity": 1,
+              "message": "NETWORK.BAD_HTTP_STATUS: Shaka Error 1001",
+              "source": "shaka"
+            }
+          ],
+          "primaryError": {
+            "code": 1001,
+            "codeName": "BAD_HTTP_STATUS",
+            "category": 1,
+            "severity": 2,
+            "message": "NETWORK.BAD_HTTP_STATUS: Shaka Error 1001",
+            "source": "shaka"
+          },
+          "metrics": {
+            "state": "error",
+            "startupMs": null,
+            "rebuffers": {
+              "count": 0,
+              "totalMs": 0
+            },
+            "frames": {
+              "decoded": 0,
+              "dropped": 0
+            },
+            "liveLatencyMs": null,
+            "bitrateSwitches": 2,
+            "currentTime": 0
+          },
+          "events": {
+            "total": 14,
+            "names": {
+              "load-requested": 1,
+              "buffering-start": 2,
+              "manifest-loaded": 1,
+              "variant-changed": 3,
+              "loaded": 1,
+              "error": 6
+            },
+            "around": [
+              "#3 t=90.0 media=0.000 buffering-start",
+              "#4 t=90.4 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}",
+              "#5 t=91.2 media=0.000 loaded",
+              "#6 t=2308.4 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://<host>/s/7c06…",
+              "#7 t=2326.6 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://<host>/s/7c06…",
+              "#8 t=2326.6 media=0.000 variant-changed {\"from\":2,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"abr\"}",
+              "#9 t=4154.8 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://<host>/s/7c06…",
+              "#10 t=4265.0 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://<host>/s/7c06…"
+            ]
+          },
+          "requestLog": {
+            "entries": 20,
+            "segments": 14,
+            "manifests": 1,
+            "inits": 5,
+            "other": 0,
+            "originFailures": 14,
+            "originFailuresWithoutFault": 14,
+            "clientAborted": 0,
+            "pending": 0,
+            "byStatus": {
+              "200": 6,
+              "503": 14
+            },
+            "failed": [
+              {
+                "seq": 3,
+                "kind": "segment",
+                "rep": "a-aac",
+                "number": 1,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              },
+              {
+                "seq": 5,
+                "kind": "segment",
+                "rep": "v720",
+                "number": 1,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              },
+              {
+                "seq": 6,
+                "kind": "segment",
+                "rep": "a-aac",
+                "number": 1,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              },
+              {
+                "seq": 7,
+                "kind": "segment",
+                "rep": "v720",
+                "number": 1,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              },
+              {
+                "seq": 9,
+                "kind": "segment",
+                "rep": "v360",
+                "number": 1,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              },
+              {
+                "seq": 11,
+                "kind": "segment",
+                "rep": "a-aac",
+                "number": 2,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              },
+              {
+                "seq": 12,
+                "kind": "segment",
+                "rep": "a-aac",
+                "number": 1,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              },
+              {
+                "seq": 13,
+                "kind": "segment",
+                "rep": "a-aac",
+                "number": 2,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              }
+            ]
+          },
+          "faults": [],
+          "console": {
+            "errors": 14,
+            "warnings": 0,
+            "pageErrors": 0,
+            "samples": [
+              "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+            ]
+          },
+          "problems": {},
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+          "config": "A",
+          "loadMode": "media-source"
+        },
+        "missing": []
+      },
+      "members": [
+        {
+          "id": "PB-VOD-001",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "origin-503/playwright.json"
+        },
+        {
+          "id": "PB-VOD-001",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "origin-503/playwright.json"
+        },
+        {
+          "id": "PB-VOD-002",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "origin-503/playwright.json"
+        },
+        {
+          "id": "PB-VOD-002",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "origin-503/playwright.json"
+        },
+        {
+          "id": "PB-VOD-006",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "origin-503/playwright.json"
+        },
+        {
+          "id": "PB-VOD-006",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "origin-503/playwright.json"
+        }
+      ],
+      "rootCause": "47e94ecc98aa"
+    },
+    {
+      "rank": 2,
+      "key": "a0957e05ad95",
+      "signature": "Error: qa.waitFor('firstframe') timed out after <n> ms (looking from index <n>). [thrown] {shaka media}",
+      "parts": {
+        "message": "Error: qa.waitFor('firstframe') timed out after <n> ms (looking from index <n>).",
+        "assertion": "thrown",
+        "location": null,
+        "shaka": "media"
+      },
+      "size": 6,
+      "tests": [
+        "PB-VOD-001",
+        "PB-VOD-002",
+        "PB-VOD-006"
+      ],
+      "projects": [
+        "chromium",
+        "webkit"
+      ],
+      "outcomes": {
+        "failed": 6,
+        "timedOut": 0,
+        "flaky": 0
+      },
+      "category": "decode-or-mse-error",
+      "rule": {
+        "rule": "media-error",
+        "category": "decode-or-mse-error",
+        "evidence": [
+          "the player reported a media error: VIDEO_ERROR (code 3016, media, critical)",
+          "the player reported a media error: MEDIA_SOURCE_OPERATION_THREW (code 3015, media, critical)",
+          "the origin delivered every request it was asked for (10 requests, none failed): the bytes themselves are suspect"
+        ],
+        "cause": "the bytes arrived and the browser could not append or decode them"
+      },
+      "ruleRationale": "Shaka category 3 (media) or a media-element error: the bytes arrived and the browser could not append or decode them.",
+      "failureClass": "Functional regression",
+      "firstCheck": "The error in qa-events.json (code and data), then the segment that was being appended: `npm run verify:streams`, and try the same stream in another engine.",
+      "agreement": {
+        "sameRule": 6,
+        "of": 6,
+        "otherRules": []
+      },
+      "representative": {
+        "scope": "test",
+        "id": "PB-VOD-001",
+        "title": "PB-VOD-001 DASH VOD starts: first frame presented, 3 s of media time reached, no error",
+        "file": "tests/e2e/vod-start.spec.ts",
+        "line": 78,
+        "project": "chromium",
+        "tags": [
+          "@cpu",
+          "@dash",
+          "@merge"
+        ],
+        "tier": "merge",
+        "outcome": "failed",
+        "retries": 1,
+        "attempts": 2,
+        "failedAttempts": 2,
+        "attempt": 0,
+        "durationMs": 15326,
+        "quarantined": false,
+        "experimental": false,
+        "annotations": [],
+        "envId": null,
+        "source": "corrupt-segments/playwright.json",
+        "error": {
+          "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n10 events so far, the last 10:\n  #0 t=74.8 media=0.000 load-requested {\"uri\":\"/s/4baeb6aabb1d/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=75.7 media=0.000 buffering-start\n  #2 t=82.6 media=0.000 manifest-loaded\n  #3 t=85.9 media=0.000 buffering-start\n  #4 t=86.3 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=87.0 media=0.000 loaded\n  #6 t=192.9 media=0.000 error {\"code\":3016,\"codeName\":\"VIDEO_ERROR\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.VIDEO_ERROR: Shaka Error 3016\",\"data\":[3,\"undefined\",\"PipelineStatus::PIPELINE_…\n  #7 t=193.0 media=0.000 paused\n  #8 t=193.1 media=0.000 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"AbortError: The play() request was interrupted by a call to pause(). https://<host>/LdLk22\",\"source\":\"play\",\"code…\n  #9 t=1807.4 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…",
+          "frames": [
+            {
+              "file": "tests/e2e/vod-start.spec.ts",
+              "fn": "expectStartsAndPlays",
+              "line": 24
+            },
+            {
+              "file": "tests/e2e/vod-start.spec.ts",
+              "fn": null,
+              "line": 88
+            }
+          ]
+        },
+        "diagnostics": {
+          "attached": [
+            "page-console.json",
+            "qa-events.json",
+            "qa-info.json",
+            "qa-metrics.json",
+            "request-log.json",
+            "session-detail.json"
+          ],
+          "players": 1,
+          "sessions": 1,
+          "shakaErrors": [
+            {
+              "code": 3016,
+              "codeName": "VIDEO_ERROR",
+              "category": 3,
+              "severity": 2,
+              "message": "MEDIA.VIDEO_ERROR: Shaka Error 3016",
+              "source": "shaka"
+            },
+            {
+              "code": 0,
+              "codeName": "AbortError",
+              "category": 0,
+              "severity": 1,
+              "message": "AbortError: The play() request was interrupted by a call to pause(). https://<host>/LdLk22",
+              "source": "play"
+            },
+            {
+              "code": 3015,
+              "codeName": "MEDIA_SOURCE_OPERATION_THREW",
+              "category": 3,
+              "severity": 2,
+              "message": "MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015",
+              "source": "shaka"
+            }
+          ],
+          "primaryError": {
+            "code": 3016,
+            "codeName": "VIDEO_ERROR",
+            "category": 3,
+            "severity": 2,
+            "message": "MEDIA.VIDEO_ERROR: Shaka Error 3016",
+            "source": "shaka"
+          },
+          "metrics": {
+            "state": "error",
+            "startupMs": null,
+            "rebuffers": {
+              "count": 0,
+              "totalMs": 0
+            },
+            "frames": {
+              "decoded": 0,
+              "dropped": 0
+            },
+            "liveLatencyMs": null,
+            "bitrateSwitches": 0,
+            "currentTime": 0
+          },
+          "events": {
+            "total": 10,
+            "names": {
+              "load-requested": 1,
+              "buffering-start": 2,
+              "manifest-loaded": 1,
+              "variant-changed": 1,
+              "loaded": 1,
+              "error": 3,
+              "paused": 1
+            },
+            "around": [
+              "#2 t=82.6 media=0.000 manifest-loaded",
+              "#3 t=85.9 media=0.000 buffering-start",
+              "#4 t=86.3 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}",
+              "#5 t=87.0 media=0.000 loaded",
+              "#6 t=192.9 media=0.000 error {\"code\":3016,\"codeName\":\"VIDEO_ERROR\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.VIDEO_ERROR: Shaka Error 3016\",\"data\":[3,\"undefined\",\"PipelineStatus::PIPELINE…",
+              "#7 t=193.0 media=0.000 paused",
+              "#8 t=193.1 media=0.000 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"AbortError: The play() request was interrupted by a call to pause(). https://<host>/LdLk22\",\"source\":\"play\",\"cod…",
+              "#9 t=1807.4 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"n…"
+            ]
+          },
+          "requestLog": {
+            "entries": 10,
+            "segments": 7,
+            "manifests": 1,
+            "inits": 2,
+            "other": 0,
+            "originFailures": 0,
+            "originFailuresWithoutFault": 0,
+            "clientAborted": 0,
+            "pending": 0,
+            "byStatus": {
+              "200": 10
+            },
+            "failed": []
+          },
+          "faults": [],
+          "console": {
+            "errors": 0,
+            "warnings": 0,
+            "pageErrors": 0,
+            "samples": []
+          },
+          "problems": {},
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+          "config": "A",
+          "loadMode": "media-source"
+        },
+        "missing": []
+      },
+      "members": [
+        {
+          "id": "PB-VOD-001",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "corrupt-segments/playwright.json"
+        },
+        {
+          "id": "PB-VOD-001",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "corrupt-segments/playwright.json"
+        },
+        {
+          "id": "PB-VOD-002",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "corrupt-segments/playwright.json"
+        },
+        {
+          "id": "PB-VOD-002",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "corrupt-segments/playwright.json"
+        },
+        {
+          "id": "PB-VOD-006",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "corrupt-segments/playwright.json"
+        },
+        {
+          "id": "PB-VOD-006",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "corrupt-segments/playwright.json"
+        }
+      ],
+      "rootCause": "37b6710377fd"
+    },
+    {
+      "rank": 3,
+      "key": "fc2f02c1e869",
+      "signature": "Error: the player page did not boot (<url>): Timeout <n>ms exceeded. [thrown]",
+      "parts": {
+        "message": "Error: the player page did not boot (<url>): Timeout <n>ms exceeded.",
+        "assertion": "thrown",
+        "location": null,
+        "shaka": null
+      },
+      "size": 5,
+      "tests": [
+        "PB-VOD-001",
+        "PB-VOD-002"
+      ],
+      "projects": [
+        "chromium",
+        "chromium-cpu4x",
+        "webkit"
+      ],
+      "outcomes": {
+        "failed": 5,
+        "timedOut": 0,
+        "flaky": 0
+      },
+      "category": "page-boot-failure",
+      "rule": {
+        "rule": "page-did-not-boot",
+        "category": "page-boot-failure",
+        "evidence": [
+          "the page did not boot: “Error: the player page did not boot (http://<host>/player/?<query>): Timeout 15000ms exceeded.”",
+          "the console names a Content Security Policy violation",
+          "console: “Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src…”",
+          "console: “Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-sr…”"
+        ],
+        "cause": "the player page did not boot: a Content Security Policy blocked its scripts"
+      },
+      "ruleRationale": "The page loaded and the player hook never became ready: the page build, its scripts or its headers are what is wrong.",
+      "failureClass": "Functional regression",
+      "firstCheck": "The console lines quoted in the message (a blocked script is a Content Security Policy or a missing `dist/player`): `curl -I <origin>/player/`, then `npm run build:player`.",
+      "agreement": {
+        "sameRule": 5,
+        "of": 5,
+        "otherRules": []
+      },
+      "representative": {
+        "scope": "test",
+        "id": "PB-VOD-001",
+        "title": "PB-VOD-001 DASH VOD starts: first frame presented, 3 s of media time reached, no error",
+        "file": "tests/e2e/vod-start.spec.ts",
+        "line": 78,
+        "project": "chromium",
+        "tags": [
+          "@cpu",
+          "@dash",
+          "@merge"
+        ],
+        "tier": "merge",
+        "outcome": "failed",
+        "retries": 1,
+        "attempts": 2,
+        "failedAttempts": 2,
+        "attempt": 0,
+        "durationMs": 15170,
+        "quarantined": false,
+        "experimental": false,
+        "annotations": [],
+        "envId": null,
+        "source": "csp-blocks-scripts/playwright.json",
+        "error": {
+          "message": "Error: the player page did not boot (http://<host>/player/?<query>): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+          "frames": [
+            {
+              "file": "tests/e2e/vod-start.spec.ts",
+              "fn": null,
+              "line": 87
+            }
+          ]
+        },
+        "diagnostics": {
+          "attached": [
+            "diagnostics-problems.json",
+            "page-console.json",
+            "request-log.json",
+            "session-detail.json"
+          ],
+          "players": 1,
+          "sessions": 1,
+          "shakaErrors": [],
+          "primaryError": null,
+          "metrics": {
+            "state": null,
+            "startupMs": null,
+            "rebuffers": null,
+            "frames": null,
+            "liveLatencyMs": null,
+            "bitrateSwitches": null,
+            "currentTime": null
+          },
+          "events": {
+            "total": 0,
+            "names": {},
+            "around": []
+          },
+          "requestLog": {
+            "entries": 0,
+            "segments": 0,
+            "manifests": 0,
+            "inits": 0,
+            "other": 0,
+            "originFailures": 0,
+            "originFailuresWithoutFault": 0,
+            "clientAborted": 0,
+            "pending": 0,
+            "byStatus": {},
+            "failed": []
+          },
+          "faults": [],
+          "console": {
+            "errors": 2,
+            "warnings": 0,
+            "pageErrors": 0,
+            "samples": [
+              "Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src…",
+              "Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-sr…"
+            ]
+          },
+          "problems": {
+            "qa-events.json": "TypeError: Cannot read properties of undefined (reading 'events')",
+            "qa-metrics.json": "TypeError: Cannot read properties of undefined (reading 'metrics')",
+            "qa-info.json": "TypeError: Cannot read properties of undefined (reading 'info')"
+          },
+          "userAgent": null,
+          "config": null,
+          "loadMode": null
+        },
+        "missing": [
+          "qa-events.json: not attached",
+          "qa-metrics.json: not attached",
+          "qa-info.json: not attached"
+        ]
+      },
+      "members": [
+        {
+          "id": "PB-VOD-001",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "csp-blocks-scripts/playwright.json"
+        },
+        {
+          "id": "PB-VOD-001",
+          "project": "chromium-cpu4x",
+          "outcome": "failed",
+          "source": "csp-blocks-scripts/playwright.json"
+        },
+        {
+          "id": "PB-VOD-001",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "csp-blocks-scripts/playwright.json"
+        },
+        {
+          "id": "PB-VOD-002",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "csp-blocks-scripts/playwright.json"
+        },
+        {
+          "id": "PB-VOD-002",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "csp-blocks-scripts/playwright.json"
+        }
+      ],
+      "rootCause": "687c7a715605"
+    },
+    {
+      "rank": 4,
+      "key": "8cae2e3bcaa6",
+      "signature": "Error: <engine> <n> in <env> could not play vod-cmaf over dash through the player, and no documented gap covers it. [thrown]",
+      "parts": {
+        "message": "Error: <engine> <n> in <env> could not play vod-cmaf over dash through the player, and no documented gap covers it.",
+        "assertion": "thrown",
+        "location": null,
+        "shaka": null
+      },
+      "size": 2,
+      "tests": [
+        "PB-ENV-001"
+      ],
+      "projects": [
+        "chromium",
+        "webkit"
+      ],
+      "outcomes": {
+        "failed": 2,
+        "timedOut": 0,
+        "flaky": 0
+      },
+      "category": "page-boot-failure",
+      "rule": {
+        "rule": "page-did-not-boot",
+        "category": "page-boot-failure",
+        "evidence": [
+          "the page did not boot: “Error: chromium 156.0.8078.4 in local-darwin-arm64 could not play vod-cmaf over dash through the player, and no documented gap covers it.”",
+          "the console names a Content Security Policy violation",
+          "console: “Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src…”",
+          "console: “Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-sr…”"
+        ],
+        "cause": "the player page did not boot: a Content Security Policy blocked its scripts"
+      },
+      "ruleRationale": "The page loaded and the player hook never became ready: the page build, its scripts or its headers are what is wrong.",
+      "failureClass": "Functional regression",
+      "firstCheck": "The console lines quoted in the message (a blocked script is a Content Security Policy or a missing `dist/player`): `curl -I <origin>/player/`, then `npm run build:player`.",
+      "agreement": {
+        "sameRule": 2,
+        "of": 2,
+        "otherRules": []
+      },
+      "representative": {
+        "scope": "test",
+        "id": "PB-ENV-001",
+        "title": "PB-ENV-001 the engine plays the selected flavour through the player, or the engine and OS pair is a documented gap",
+        "file": "tests/e2e/env.spec.ts",
+        "line": 20,
+        "project": "chromium",
+        "tags": [
+          "@merge"
+        ],
+        "tier": "merge",
+        "outcome": "failed",
+        "retries": 1,
+        "attempts": 2,
+        "failedAttempts": 2,
+        "attempt": 0,
+        "durationMs": 15384,
+        "quarantined": false,
+        "experimental": false,
+        "annotations": [
+          {
+            "type": "environment",
+            "description": "local-darwin-arm64: chromium 156.0.8078.4; evidence: docs/results/codec-matrix/local-darwin-arm64.json"
+          }
+        ],
+        "envId": "local-darwin-arm64",
+        "source": "csp-blocks-scripts/playwright.json",
+        "error": {
+          "message": "Error: chromium 156.0.8078.4 in local-darwin-arm64 could not play vod-cmaf over dash through the player, and no documented gap covers it.\nWhat the player said: the player page did not boot (http://<host>/player/?<query>): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\nCommitted evidence (docs/results/codec-matrix/local-darwin-arm64.json) claims it plays: cmaf-vp9-aac ok 5/5.\nSo the engine or the runner image changed since the matrix was probed: this is an environment failure, not a playback regression. Re-run `npm run codec-matrix` here and read docs/CODEC_MATRIX.md; do not retry the specs.",
+          "frames": [
+            {
+              "file": "tests/e2e/env.spec.ts",
+              "fn": null,
+              "line": 47
+            }
+          ]
+        },
+        "diagnostics": {
+          "attached": [
+            "diagnostics-problems.json",
+            "page-console.json",
+            "request-log.json",
+            "session-detail.json"
+          ],
+          "players": 1,
+          "sessions": 1,
+          "shakaErrors": [],
+          "primaryError": null,
+          "metrics": {
+            "state": null,
+            "startupMs": null,
+            "rebuffers": null,
+            "frames": null,
+            "liveLatencyMs": null,
+            "bitrateSwitches": null,
+            "currentTime": null
+          },
+          "events": {
+            "total": 0,
+            "names": {},
+            "around": []
+          },
+          "requestLog": {
+            "entries": 0,
+            "segments": 0,
+            "manifests": 0,
+            "inits": 0,
+            "other": 0,
+            "originFailures": 0,
+            "originFailuresWithoutFault": 0,
+            "clientAborted": 0,
+            "pending": 0,
+            "byStatus": {},
+            "failed": []
+          },
+          "faults": [],
+          "console": {
+            "errors": 2,
+            "warnings": 0,
+            "pageErrors": 0,
+            "samples": [
+              "Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src…",
+              "Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-sr…"
+            ]
+          },
+          "problems": {
+            "qa-events.json": "TypeError: Cannot read properties of undefined (reading 'events')",
+            "qa-metrics.json": "TypeError: Cannot read properties of undefined (reading 'metrics')",
+            "qa-info.json": "TypeError: Cannot read properties of undefined (reading 'info')"
+          },
+          "userAgent": null,
+          "config": null,
+          "loadMode": null
+        },
+        "missing": [
+          "qa-events.json: not attached",
+          "qa-metrics.json: not attached",
+          "qa-info.json: not attached"
+        ]
+      },
+      "members": [
+        {
+          "id": "PB-ENV-001",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "csp-blocks-scripts/playwright.json"
+        },
+        {
+          "id": "PB-ENV-001",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "csp-blocks-scripts/playwright.json"
+        }
+      ],
+      "rootCause": "687c7a715605"
+    },
+    {
+      "rank": 5,
+      "key": "b8e5edac63ec",
+      "signature": "Error: qa.waitForMediaTime(<n>) timed out after <n> ms: the media clock is at <n> s. [thrown] {shaka 1001}",
+      "parts": {
+        "message": "Error: qa.waitForMediaTime(<n>) timed out after <n> ms: the media clock is at <n> s.",
+        "assertion": "thrown",
+        "location": null,
+        "shaka": "1001"
+      },
+      "size": 2,
+      "tests": [
+        "PB-REC-001"
+      ],
+      "projects": [
+        "chromium",
+        "webkit"
+      ],
+      "outcomes": {
+        "failed": 2,
+        "timedOut": 0,
+        "flaky": 0
+      },
+      "category": "network-fault-not-recovered",
+      "rule": {
+        "rule": "fault-fired-player-failed",
+        "category": "network-fault-not-recovered",
+        "evidence": [
+          "fault f1 (status 404 on segment video #3 first 1) fired on 1 request",
+          "the player reported a critical error: BAD_HTTP_STATUS (code 1001, network, critical)",
+          "player state at the end: error"
+        ],
+        "cause": "a fault of type status fired and the player did not recover"
+      },
+      "ruleRationale": "The request log shows a fault rule firing and the player then reported a critical error: the failure is the recovery, not the fault.",
+      "failureClass": "Functional regression",
+      "firstCheck": "In request-log.json, the first request the fault hit; then in qa-events.json what the player did next: retry, fail over to another rung, or give up. `session-detail.json` has the rule to reproduce it.",
+      "agreement": {
+        "sameRule": 2,
+        "of": 2,
+        "otherRules": []
+      },
+      "representative": {
+        "scope": "test",
+        "id": "PB-REC-001",
+        "title": "PB-REC-001 transient segment 404: the failed request is retried and succeeds, playback continues with no critical error and at most one rebuffer",
+        "file": "tests/e2e/recovery.spec.ts",
+        "line": 41,
+        "project": "chromium",
+        "tags": [
+          "@dash",
+          "@merge"
+        ],
+        "tier": "merge",
+        "outcome": "failed",
+        "retries": 1,
+        "attempts": 2,
+        "failedAttempts": 2,
+        "attempt": 0,
+        "durationMs": 15476,
+        "quarantined": false,
+        "experimental": false,
+        "annotations": [],
+        "envId": null,
+        "source": "retry-disabled/playwright.json",
+        "error": {
+          "message": "Error: qa.waitForMediaTime(7) timed out after 15000 ms: the media clock is at 5.974 s.\n11 events so far, the last 11:\n  #0 t=96.8 media=0.000 load-requested {\"uri\":\"/s/c9aaf10528bb/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=97.7 media=0.000 buffering-start\n  #2 t=107.5 media=0.000 manifest-loaded\n  #3 t=115.3 media=0.000 buffering-start\n  #4 t=115.7 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=116.6 media=0.000 loaded\n  #6 t=288.3 media=0.000 playing\n  #7 t=288.5 media=0.001 buffering-end\n  #8 t=298.7 media=0.011 firstframe {\"source\":\"requestVideoFrameCallback\"}\n  #9 t=883.4 media=0.552 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://<host>/s/c9aaf…\n  #10 t=6305.9 media=5.974 buffering-start",
+          "frames": [
+            {
+              "file": "tests/e2e/recovery.spec.ts",
+              "fn": null,
+              "line": 63
+            }
+          ]
+        },
+        "diagnostics": {
+          "attached": [
+            "page-console.json",
+            "qa-events.json",
+            "qa-info.json",
+            "qa-metrics.json",
+            "request-log.json",
+            "session-detail.json"
+          ],
+          "players": 1,
+          "sessions": 1,
+          "shakaErrors": [
+            {
+              "code": 1001,
+              "codeName": "BAD_HTTP_STATUS",
+              "category": 1,
+              "severity": 2,
+              "message": "NETWORK.BAD_HTTP_STATUS: Shaka Error 1001",
+              "source": "shaka"
+            }
+          ],
+          "primaryError": {
+            "code": 1001,
+            "codeName": "BAD_HTTP_STATUS",
+            "category": 1,
+            "severity": 2,
+            "message": "NETWORK.BAD_HTTP_STATUS: Shaka Error 1001",
+            "source": "shaka"
+          },
+          "metrics": {
+            "state": "error",
+            "startupMs": 201.89999997615814,
+            "rebuffers": {
+              "count": 1,
+              "totalMs": 8897
+            },
+            "frames": {
+              "decoded": 120,
+              "dropped": 0
+            },
+            "liveLatencyMs": null,
+            "bitrateSwitches": 0,
+            "currentTime": 5.973736
+          },
+          "events": {
+            "total": 11,
+            "names": {
+              "load-requested": 1,
+              "buffering-start": 3,
+              "manifest-loaded": 1,
+              "variant-changed": 1,
+              "loaded": 1,
+              "playing": 1,
+              "buffering-end": 1,
+              "firstframe": 1,
+              "error": 1
+            },
+            "around": [
+              "#3 t=115.3 media=0.000 buffering-start",
+              "#4 t=115.7 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}",
+              "#5 t=116.6 media=0.000 loaded",
+              "#6 t=288.3 media=0.000 playing",
+              "#7 t=288.5 media=0.001 buffering-end",
+              "#8 t=298.7 media=0.011 firstframe {\"source\":\"requestVideoFrameCallback\"}",
+              "#9 t=883.4 media=0.552 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://<host>/s/c9aa…",
+              "#10 t=6305.9 media=5.974 buffering-start"
+            ]
+          },
+          "requestLog": {
+            "entries": 9,
+            "segments": 6,
+            "manifests": 1,
+            "inits": 2,
+            "other": 0,
+            "originFailures": 1,
+            "originFailuresWithoutFault": 0,
+            "clientAborted": 0,
+            "pending": 0,
+            "byStatus": {
+              "200": 8,
+              "404": 1
+            },
+            "failed": [
+              {
+                "seq": 8,
+                "kind": "segment",
+                "rep": "v720",
+                "number": 3,
+                "status": 404,
+                "abortReason": null,
+                "faults": [
+                  "f1"
+                ]
+              }
+            ]
+          },
+          "faults": [
+            {
+              "id": "f1",
+              "type": "status",
+              "description": "status 404 on segment video #3 first 1",
+              "fired": 1
+            }
+          ],
+          "console": {
+            "errors": 1,
+            "warnings": 0,
+            "pageErrors": 0,
+            "samples": [
+              "Failed to load resource: the server responded with a status of 404 (Not Found)"
+            ]
+          },
+          "problems": {},
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+          "config": "A",
+          "loadMode": "media-source"
+        },
+        "missing": []
+      },
+      "members": [
+        {
+          "id": "PB-REC-001",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "retry-disabled/playwright.json"
+        },
+        {
+          "id": "PB-REC-001",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "retry-disabled/playwright.json"
+        }
+      ],
+      "rootCause": "b5aba8823b63"
+    },
+    {
+      "rank": 6,
+      "key": "011e98b3e6ee",
+      "signature": "Error: the fault rule <rule> {…} named <n> of the <n> request it was waited for within <n> ms: the player never asked for what the rule matches, so nothing after this line says how the player copes w… [thrown] {shaka 1001}",
+      "parts": {
+        "message": "Error: the fault rule <rule> {…} named <n> of the <n> request it was waited for within <n> ms: the player never asked for what the rule matches, so nothing after this line says how the player copes w…",
+        "assertion": "thrown",
+        "location": null,
+        "shaka": "1001"
+      },
+      "size": 2,
+      "tests": [
+        "PB-REC-001"
+      ],
+      "projects": [
+        "chromium",
+        "webkit"
+      ],
+      "outcomes": {
+        "failed": 2,
+        "timedOut": 0,
+        "flaky": 0
+      },
+      "category": "origin-error",
+      "rule": {
+        "rule": "origin-failed-without-fault",
+        "category": "origin-error",
+        "evidence": [
+          "14 requests failed at the origin with no fault rule on them (14 failed in all, 14 segment requests in the log)",
+          "the first failures: 503 on segment a-aac #1 ×4, 503 on segment v720 #1 ×2, 503 on segment v360 #1, 503 on segment a-aac #2",
+          "the player noticed: BAD_HTTP_STATUS (code 1001, network, recoverable)"
+        ],
+        "cause": "the origin answered 503 on segment to requests no fault rule named"
+      },
+      "ruleRationale": "The origin answered errors or cut responses on requests no fault rule named, and the player noticed: the service or its stream cache is at fault.",
+      "failureClass": "Environment or infrastructure",
+      "firstCheck": "The failed requests in request-log.json: ask the service for the same path (`curl -i <origin><path>`), run `npm run verify:streams`, and read the service log (`PB_LOG=1`).",
+      "agreement": {
+        "sameRule": 2,
+        "of": 2,
+        "otherRules": []
+      },
+      "representative": {
+        "scope": "test",
+        "id": "PB-REC-001",
+        "title": "PB-REC-001 transient segment 404: the failed request is retried and succeeds, playback continues with no critical error and at most one rebuffer",
+        "file": "tests/e2e/recovery.spec.ts",
+        "line": 41,
+        "project": "chromium",
+        "tags": [
+          "@dash",
+          "@merge"
+        ],
+        "tier": "merge",
+        "outcome": "failed",
+        "retries": 1,
+        "attempts": 2,
+        "failedAttempts": 2,
+        "attempt": 0,
+        "durationMs": 15294,
+        "quarantined": false,
+        "experimental": false,
+        "annotations": [],
+        "envId": null,
+        "source": "origin-503/playwright.json",
+        "error": {
+          "message": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":1,\"status\":404,\"id\":\"f1\"} named 0 of the 1 request it was waited for within 15000 ms: the player never asked for what the rule matches, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 20 entries, the last 12:\n  #9 GET segment v360 #1 -> 503 in 0.92 ms\n  #10 GET init a-aac -> 200 in 0.31 ms\n  #11 GET segment a-aac #2 -> 503 in 0.5 ms\n  #12 GET segment a-aac #1 -> 503 in 0.11 ms\n  #13 GET segment a-aac #1 -> 503 in 0.57 ms\n  #14 GET segment a-aac #2 -> 503 in 0.32 ms\n  #15 GET segment v360 #1 -> 503 in 0.22 ms\n  #16 GET init v240 -> 200 in 0.82 ms\n  #17 GET segment v240 #1 -> 503 in 0.62 ms\n  #18 GET segment a-aac #1 -> 503 in 0.19 ms\n  #19 GET segment v240 #1 -> 503 in 0.19 ms\n  #20 GET segment a-aac #1 -> 503 in 0.22 ms",
+          "frames": [
+            {
+              "file": "tests/e2e/recovery.spec.ts",
+              "fn": null,
+              "line": 54
+            }
+          ]
+        },
+        "diagnostics": {
+          "attached": [
+            "page-console.json",
+            "qa-events.json",
+            "qa-info.json",
+            "qa-metrics.json",
+            "request-log.json",
+            "session-detail.json"
+          ],
+          "players": 1,
+          "sessions": 1,
+          "shakaErrors": [
+            {
+              "code": 1001,
+              "codeName": "BAD_HTTP_STATUS",
+              "category": 1,
+              "severity": 1,
+              "message": "NETWORK.BAD_HTTP_STATUS: Shaka Error 1001",
+              "source": "shaka"
+            },
+            {
+              "code": 1001,
+              "codeName": "BAD_HTTP_STATUS",
+              "category": 1,
+              "severity": 2,
+              "message": "NETWORK.BAD_HTTP_STATUS: Shaka Error 1001",
+              "source": "shaka"
+            }
+          ],
+          "primaryError": {
+            "code": 1001,
+            "codeName": "BAD_HTTP_STATUS",
+            "category": 1,
+            "severity": 2,
+            "message": "NETWORK.BAD_HTTP_STATUS: Shaka Error 1001",
+            "source": "shaka"
+          },
+          "metrics": {
+            "state": "error",
+            "startupMs": null,
+            "rebuffers": {
+              "count": 0,
+              "totalMs": 0
+            },
+            "frames": {
+              "decoded": 0,
+              "dropped": 0
+            },
+            "liveLatencyMs": null,
+            "bitrateSwitches": 2,
+            "currentTime": 0
+          },
+          "events": {
+            "total": 14,
+            "names": {
+              "load-requested": 1,
+              "buffering-start": 2,
+              "manifest-loaded": 1,
+              "variant-changed": 3,
+              "loaded": 1,
+              "error": 6
+            },
+            "around": [
+              "#5 t=104.6 media=0.000 loaded",
+              "#6 t=1905.2 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://<host>/s/4dcb…",
+              "#7 t=1905.3 media=0.000 variant-changed {\"from\":2,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"abr\"}",
+              "#8 t=2291.8 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://<host>/s/4dcb…",
+              "#9 t=3280.8 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://<host>/s/4dcb…",
+              "#10 t=3770.5 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://<host>/s/4dcb…",
+              "#11 t=3770.5 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}",
+              "#12 t=5875.2 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://<host>/s/4dcb…"
+            ]
+          },
+          "requestLog": {
+            "entries": 20,
+            "segments": 14,
+            "manifests": 1,
+            "inits": 5,
+            "other": 0,
+            "originFailures": 14,
+            "originFailuresWithoutFault": 14,
+            "clientAborted": 0,
+            "pending": 0,
+            "byStatus": {
+              "200": 6,
+              "503": 14
+            },
+            "failed": [
+              {
+                "seq": 3,
+                "kind": "segment",
+                "rep": "a-aac",
+                "number": 1,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              },
+              {
+                "seq": 5,
+                "kind": "segment",
+                "rep": "v720",
+                "number": 1,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              },
+              {
+                "seq": 6,
+                "kind": "segment",
+                "rep": "v720",
+                "number": 1,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              },
+              {
+                "seq": 7,
+                "kind": "segment",
+                "rep": "a-aac",
+                "number": 1,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              },
+              {
+                "seq": 9,
+                "kind": "segment",
+                "rep": "v360",
+                "number": 1,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              },
+              {
+                "seq": 11,
+                "kind": "segment",
+                "rep": "a-aac",
+                "number": 2,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              },
+              {
+                "seq": 12,
+                "kind": "segment",
+                "rep": "a-aac",
+                "number": 1,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              },
+              {
+                "seq": 13,
+                "kind": "segment",
+                "rep": "a-aac",
+                "number": 1,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              }
+            ]
+          },
+          "faults": [
+            {
+              "id": "f1",
+              "type": "status",
+              "description": "status 404 on segment video #3 first 1",
+              "fired": 0
+            }
+          ],
+          "console": {
+            "errors": 14,
+            "warnings": 0,
+            "pageErrors": 0,
+            "samples": [
+              "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+            ]
+          },
+          "problems": {},
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+          "config": "A",
+          "loadMode": "media-source"
+        },
+        "missing": []
+      },
+      "members": [
+        {
+          "id": "PB-REC-001",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "origin-503/playwright.json"
+        },
+        {
+          "id": "PB-REC-001",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "origin-503/playwright.json"
+        }
+      ],
+      "rootCause": "47e94ecc98aa"
+    },
+    {
+      "rank": 7,
+      "key": "1966266eef5d",
+      "signature": "Error: the fault rule <rule> {…} named <n> of the <n> requests it was waited for within <n> ms: the player never asked for what the rule matches, so nothing after this line says how the player copes … [thrown] {shaka 1001}",
+      "parts": {
+        "message": "Error: the fault rule <rule> {…} named <n> of the <n> requests it was waited for within <n> ms: the player never asked for what the rule matches, so nothing after this line says how the player copes …",
+        "assertion": "thrown",
+        "location": null,
+        "shaka": "1001"
+      },
+      "size": 2,
+      "tests": [
+        "PB-REC-002"
+      ],
+      "projects": [
+        "chromium",
+        "webkit"
+      ],
+      "outcomes": {
+        "failed": 2,
+        "timedOut": 0,
+        "flaky": 0
+      },
+      "category": "origin-error",
+      "rule": {
+        "rule": "origin-failed-without-fault",
+        "category": "origin-error",
+        "evidence": [
+          "14 requests failed at the origin with no fault rule on them (14 failed in all, 14 segment requests in the log)",
+          "the first failures: 503 on segment a-aac #1 ×3, 503 on segment v720 #1 ×2, 503 on segment v360 #1 ×2, 503 on segment a-aac #2",
+          "the player noticed: BAD_HTTP_STATUS (code 1001, network, recoverable)"
+        ],
+        "cause": "the origin answered 503 on segment to requests no fault rule named"
+      },
+      "ruleRationale": "The origin answered errors or cut responses on requests no fault rule named, and the player noticed: the service or its stream cache is at fault.",
+      "failureClass": "Environment or infrastructure",
+      "firstCheck": "The failed requests in request-log.json: ask the service for the same path (`curl -i <origin><path>`), run `npm run verify:streams`, and read the service log (`PB_LOG=1`).",
+      "agreement": {
+        "sameRule": 2,
+        "of": 2,
+        "otherRules": []
+      },
+      "representative": {
+        "scope": "test",
+        "id": "PB-REC-002",
+        "title": "PB-REC-002 5xx burst on one segment: playback continues by retry or rung switch, with no critical error and at most one rebuffer",
+        "file": "tests/e2e/recovery.spec.ts",
+        "line": 107,
+        "project": "chromium",
+        "tags": [
+          "@dash",
+          "@merge"
+        ],
+        "tier": "merge",
+        "outcome": "failed",
+        "retries": 1,
+        "attempts": 2,
+        "failedAttempts": 2,
+        "attempt": 0,
+        "durationMs": 15299,
+        "quarantined": false,
+        "experimental": false,
+        "annotations": [],
+        "envId": null,
+        "source": "origin-503/playwright.json",
+        "error": {
+          "message": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":3,\"status\":503,\"id\":\"f1\"} named 0 of the 3 requests it was waited for within 15000 ms: the player never asked for what the rule matches, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 20 entries, the last 12:\n  #9 GET segment v360 #1 -> 503 in 0.08 ms\n  #10 GET init a-aac -> 200 in 0.07 ms\n  #11 GET segment a-aac #2 -> 503 in 0.05 ms\n  #12 GET segment a-aac #1 -> 503 in 0.14 ms\n  #13 GET segment v360 #1 -> 503 in 0.13 ms\n  #14 GET segment a-aac #1 -> 503 in 0.19 ms\n  #15 GET segment a-aac #2 -> 503 in 0.15 ms\n  #16 GET init v240 -> 200 in 0.23 ms\n  #17 GET segment v240 #1 -> 503 in 0.24 ms\n  #18 GET segment a-aac #1 -> 503 in 0.18 ms\n  #19 GET segment v240 #1 -> 503 in 0.17 ms\n  #20 GET segment a-aac #1 -> 503 in 0.17 ms",
+          "frames": [
+            {
+              "file": "tests/e2e/recovery.spec.ts",
+              "fn": null,
+              "line": 121
+            }
+          ]
+        },
+        "diagnostics": {
+          "attached": [
+            "page-console.json",
+            "qa-events.json",
+            "qa-info.json",
+            "qa-metrics.json",
+            "request-log.json",
+            "session-detail.json"
+          ],
+          "players": 1,
+          "sessions": 1,
+          "shakaErrors": [
+            {
+              "code": 1001,
+              "codeName": "BAD_HTTP_STATUS",
+              "category": 1,
+              "severity": 1,
+              "message": "NETWORK.BAD_HTTP_STATUS: Shaka Error 1001",
+              "source": "shaka"
+            },
+            {
+              "code": 1001,
+              "codeName": "BAD_HTTP_STATUS",
+              "category": 1,
+              "severity": 2,
+              "message": "NETWORK.BAD_HTTP_STATUS: Shaka Error 1001",
+              "source": "shaka"
+            }
+          ],
+          "primaryError": {
+            "code": 1001,
+            "codeName": "BAD_HTTP_STATUS",
+            "category": 1,
+            "severity": 2,
+            "message": "NETWORK.BAD_HTTP_STATUS: Shaka Error 1001",
+            "source": "shaka"
+          },
+          "metrics": {
+            "state": "error",
+            "startupMs": null,
+            "rebuffers": {
+              "count": 0,
+              "totalMs": 0
+            },
+            "frames": {
+              "decoded": 0,
+              "dropped": 0
+            },
+            "liveLatencyMs": null,
+            "bitrateSwitches": 2,
+            "currentTime": 0
+          },
+          "events": {
+            "total": 14,
+            "names": {
+              "load-requested": 1,
+              "buffering-start": 2,
+              "manifest-loaded": 1,
+              "variant-changed": 3,
+              "loaded": 1,
+              "error": 6
+            },
+            "around": [
+              "#5 t=91.0 media=0.000 loaded",
+              "#6 t=2064.2 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://<host>/s/48e7…",
+              "#7 t=2064.3 media=0.000 variant-changed {\"from\":2,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"abr\"}",
+              "#8 t=2072.4 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://<host>/s/48e7…",
+              "#9 t=3668.9 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":1,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://<host>/s/48e7…",
+              "#10 t=3669.0 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}",
+              "#11 t=4409.9 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://<host>/s/48e7…",
+              "#12 t=5823.8 media=0.000 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://<host>/s/48e7…"
+            ]
+          },
+          "requestLog": {
+            "entries": 20,
+            "segments": 14,
+            "manifests": 1,
+            "inits": 5,
+            "other": 0,
+            "originFailures": 14,
+            "originFailuresWithoutFault": 14,
+            "clientAborted": 0,
+            "pending": 0,
+            "byStatus": {
+              "200": 6,
+              "503": 14
+            },
+            "failed": [
+              {
+                "seq": 3,
+                "kind": "segment",
+                "rep": "a-aac",
+                "number": 1,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              },
+              {
+                "seq": 5,
+                "kind": "segment",
+                "rep": "v720",
+                "number": 1,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              },
+              {
+                "seq": 6,
+                "kind": "segment",
+                "rep": "a-aac",
+                "number": 1,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              },
+              {
+                "seq": 7,
+                "kind": "segment",
+                "rep": "v720",
+                "number": 1,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              },
+              {
+                "seq": 9,
+                "kind": "segment",
+                "rep": "v360",
+                "number": 1,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              },
+              {
+                "seq": 11,
+                "kind": "segment",
+                "rep": "a-aac",
+                "number": 2,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              },
+              {
+                "seq": 12,
+                "kind": "segment",
+                "rep": "a-aac",
+                "number": 1,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              },
+              {
+                "seq": 13,
+                "kind": "segment",
+                "rep": "v360",
+                "number": 1,
+                "status": 503,
+                "abortReason": null,
+                "faults": []
+              }
+            ]
+          },
+          "faults": [
+            {
+              "id": "f1",
+              "type": "status",
+              "description": "status 503 on segment video #3 first 3",
+              "fired": 0
+            }
+          ],
+          "console": {
+            "errors": 14,
+            "warnings": 0,
+            "pageErrors": 0,
+            "samples": [
+              "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+            ]
+          },
+          "problems": {},
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+          "config": "A",
+          "loadMode": "media-source"
+        },
+        "missing": []
+      },
+      "members": [
+        {
+          "id": "PB-REC-002",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "origin-503/playwright.json"
+        },
+        {
+          "id": "PB-REC-002",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "origin-503/playwright.json"
+        }
+      ],
+      "rootCause": "47e94ecc98aa"
+    },
+    {
+      "rank": 8,
+      "key": "30a43b41436d",
+      "signature": "Error: the fault rule <rule> {…} named <n> of the <n> requests it was waited for within <n> ms: the player stopped asking for what the rule matches before the rule was used up, so nothing after this … [thrown] {shaka 1001}",
+      "parts": {
+        "message": "Error: the fault rule <rule> {…} named <n> of the <n> requests it was waited for within <n> ms: the player stopped asking for what the rule matches before the rule was used up, so nothing after this …",
+        "assertion": "thrown",
+        "location": null,
+        "shaka": "1001"
+      },
+      "size": 2,
+      "tests": [
+        "PB-REC-002"
+      ],
+      "projects": [
+        "chromium",
+        "webkit"
+      ],
+      "outcomes": {
+        "failed": 2,
+        "timedOut": 0,
+        "flaky": 0
+      },
+      "category": "network-fault-not-recovered",
+      "rule": {
+        "rule": "fault-fired-player-failed",
+        "category": "network-fault-not-recovered",
+        "evidence": [
+          "fault f1 (status 503 on segment video #3 first 3) fired on 1 request",
+          "the player reported a critical error: BAD_HTTP_STATUS (code 1001, network, critical)",
+          "player state at the end: error"
+        ],
+        "cause": "a fault of type status fired and the player did not recover"
+      },
+      "ruleRationale": "The request log shows a fault rule firing and the player then reported a critical error: the failure is the recovery, not the fault.",
+      "failureClass": "Functional regression",
+      "firstCheck": "In request-log.json, the first request the fault hit; then in qa-events.json what the player did next: retry, fail over to another rung, or give up. `session-detail.json` has the rule to reproduce it.",
+      "agreement": {
+        "sameRule": 2,
+        "of": 2,
+        "otherRules": []
+      },
+      "representative": {
+        "scope": "test",
+        "id": "PB-REC-002",
+        "title": "PB-REC-002 5xx burst on one segment: playback continues by retry or rung switch, with no critical error and at most one rebuffer",
+        "file": "tests/e2e/recovery.spec.ts",
+        "line": 107,
+        "project": "chromium",
+        "tags": [
+          "@dash",
+          "@merge"
+        ],
+        "tier": "merge",
+        "outcome": "failed",
+        "retries": 1,
+        "attempts": 2,
+        "failedAttempts": 2,
+        "attempt": 0,
+        "durationMs": 15308,
+        "quarantined": false,
+        "experimental": false,
+        "annotations": [],
+        "envId": null,
+        "source": "retry-disabled/playwright.json",
+        "error": {
+          "message": "Error: the fault rule f1 {\"type\":\"status\",\"match\":{\"kind\":\"segment\",\"track\":\"video\",\"number\":3},\"times\":3,\"status\":503,\"id\":\"f1\"} named 1 of the 3 requests it was waited for within 15000 ms: the player stopped asking for what the rule matches before the rule was used up, so nothing after this line says how the player copes with the fault.\nThe log after the cursor has 9 entries, the last 9:\n  #1 GET manifest -> 200 in 0.29 ms\n  #2 GET init a-aac -> 200 in 0.37 ms\n  #3 GET segment a-aac #1 -> 200 in 0.13 ms\n  #4 GET init v720 -> 200 in 0.16 ms\n  #5 GET segment v720 #1 -> 200 in 0.47 ms\n  #6 GET segment a-aac #2 -> 200 in 0.18 ms\n  #7 GET segment v720 #2 -> 200 in 0.36 ms\n  #8 GET segment v720 #3 -> 503 in 0.15 ms [faults f1]\n  #9 GET segment a-aac #3 -> 200 in 0.22 ms",
+          "frames": [
+            {
+              "file": "tests/e2e/recovery.spec.ts",
+              "fn": null,
+              "line": 121
+            }
+          ]
+        },
+        "diagnostics": {
+          "attached": [
+            "page-console.json",
+            "qa-events.json",
+            "qa-info.json",
+            "qa-metrics.json",
+            "request-log.json",
+            "session-detail.json"
+          ],
+          "players": 1,
+          "sessions": 1,
+          "shakaErrors": [
+            {
+              "code": 1001,
+              "codeName": "BAD_HTTP_STATUS",
+              "category": 1,
+              "severity": 2,
+              "message": "NETWORK.BAD_HTTP_STATUS: Shaka Error 1001",
+              "source": "shaka"
+            }
+          ],
+          "primaryError": {
+            "code": 1001,
+            "codeName": "BAD_HTTP_STATUS",
+            "category": 1,
+            "severity": 2,
+            "message": "NETWORK.BAD_HTTP_STATUS: Shaka Error 1001",
+            "source": "shaka"
+          },
+          "metrics": {
+            "state": "error",
+            "startupMs": 154.60000002384186,
+            "rebuffers": {
+              "count": 1,
+              "totalMs": 8879.699999988079
+            },
+            "frames": {
+              "decoded": 120,
+              "dropped": 0
+            },
+            "liveLatencyMs": null,
+            "bitrateSwitches": 0,
+            "currentTime": 5.97341
+          },
+          "events": {
+            "total": 11,
+            "names": {
+              "load-requested": 1,
+              "buffering-start": 3,
+              "manifest-loaded": 1,
+              "variant-changed": 1,
+              "loaded": 1,
+              "playing": 1,
+              "buffering-end": 1,
+              "firstframe": 1,
+              "error": 1
+            },
+            "around": [
+              "#3 t=103.5 media=0.000 buffering-start",
+              "#4 t=104.3 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}",
+              "#5 t=105.0 media=0.000 loaded",
+              "#6 t=230.5 media=0.000 playing",
+              "#7 t=230.9 media=0.001 buffering-end",
+              "#8 t=240.7 media=0.011 firstframe {\"source\":\"requestVideoFrameCallback\"}",
+              "#9 t=956.9 media=0.683 error {\"code\":1001,\"codeName\":\"BAD_HTTP_STATUS\",\"category\":1,\"severity\":2,\"message\":\"NETWORK.BAD_HTTP_STATUS: Shaka Error 1001\",\"data\":[\"http://<host>/s/f233…",
+              "#10 t=6247.4 media=5.973 buffering-start"
+            ]
+          },
+          "requestLog": {
+            "entries": 9,
+            "segments": 6,
+            "manifests": 1,
+            "inits": 2,
+            "other": 0,
+            "originFailures": 1,
+            "originFailuresWithoutFault": 0,
+            "clientAborted": 0,
+            "pending": 0,
+            "byStatus": {
+              "200": 8,
+              "503": 1
+            },
+            "failed": [
+              {
+                "seq": 8,
+                "kind": "segment",
+                "rep": "v720",
+                "number": 3,
+                "status": 503,
+                "abortReason": null,
+                "faults": [
+                  "f1"
+                ]
+              }
+            ]
+          },
+          "faults": [
+            {
+              "id": "f1",
+              "type": "status",
+              "description": "status 503 on segment video #3 first 3",
+              "fired": 1
+            }
+          ],
+          "console": {
+            "errors": 1,
+            "warnings": 0,
+            "pageErrors": 0,
+            "samples": [
+              "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+            ]
+          },
+          "problems": {},
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+          "config": "A",
+          "loadMode": "media-source"
+        },
+        "missing": []
+      },
+      "members": [
+        {
+          "id": "PB-REC-002",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "retry-disabled/playwright.json"
+        },
+        {
+          "id": "PB-REC-002",
+          "project": "webkit",
+          "outcome": "failed",
+          "source": "retry-disabled/playwright.json"
+        }
+      ],
+      "rootCause": "b5aba8823b63"
+    },
+    {
+      "rank": 9,
+      "key": "d5f804cf8b61",
+      "signature": "Error: Process from config.webServer was not able to start. Exit code: <n> [thrown]",
+      "parts": {
+        "message": "Error: Process from config.webServer was not able to start. Exit code: <n>",
+        "assertion": "thrown",
+        "location": null,
+        "shaka": null
+      },
+      "size": 1,
+      "tests": [
+        "(run)"
+      ],
+      "projects": [
+        "(run)"
+      ],
+      "outcomes": {
+        "failed": 1,
+        "timedOut": 0,
+        "flaky": 0
+      },
+      "category": "environment",
+      "rule": {
+        "rule": "run-failed-before-any-test",
+        "category": "environment",
+        "evidence": [
+          "an error of the run, with no test to blame: “Error: Process from config.webServer was not able to start. Exit code: 1”",
+          "the web server of the config is the test data service: it refuses to start when a stream file is missing or damaged (`npm run verify:streams`) or its port is taken, and says which in its own output, which is in the job log and not in this report"
+        ],
+        "cause": "the run failed before any test: a global setup threw or the web server did not start"
+      },
+      "ruleRationale": "Playwright itself reported an error of the run (a global setup that threw, a web server that did not start): no test ran.",
+      "failureClass": "Environment or infrastructure",
+      "firstCheck": "The job log above the first test: the global setup (`tests/e2e/support/global-setup.ts`) and the `webServer` of playwright.config.ts print what is wrong.",
+      "agreement": {
+        "sameRule": 1,
+        "of": 1,
+        "otherRules": []
+      },
+      "representative": {
+        "scope": "run",
+        "id": "(run)",
+        "title": "(run)",
+        "file": "",
+        "line": null,
+        "project": "(run)",
+        "tags": [],
+        "tier": null,
+        "outcome": "failed",
+        "retries": 0,
+        "attempts": 0,
+        "failedAttempts": 0,
+        "attempt": 0,
+        "durationMs": 0,
+        "quarantined": false,
+        "experimental": false,
+        "annotations": [],
+        "envId": null,
+        "source": "truncated-cache/playwright.json",
+        "error": {
+          "message": "Error: Process from config.webServer was not able to start. Exit code: 1",
+          "frames": []
+        },
+        "diagnostics": {
+          "attached": [],
+          "players": 0,
+          "sessions": 0,
+          "shakaErrors": [],
+          "primaryError": null,
+          "metrics": {
+            "state": null,
+            "startupMs": null,
+            "rebuffers": null,
+            "frames": null,
+            "liveLatencyMs": null,
+            "bitrateSwitches": null,
+            "currentTime": null
+          },
+          "events": {
+            "total": 0,
+            "names": {},
+            "around": []
+          },
+          "requestLog": null,
+          "faults": [],
+          "console": {
+            "errors": 0,
+            "warnings": 0,
+            "pageErrors": 0,
+            "samples": []
+          },
+          "problems": {},
+          "userAgent": null,
+          "config": null,
+          "loadMode": null
+        },
+        "missing": [
+          "an error of the run, not of a test: there are no failure attachments"
+        ]
+      },
+      "members": [
+        {
+          "id": "(run)",
+          "project": "(run)",
+          "outcome": "failed",
+          "source": "truncated-cache/playwright.json"
+        }
+      ],
+      "rootCause": "45ca4c619bea"
+    },
+    {
+      "rank": 10,
+      "key": "ea3ccc131a7d",
+      "signature": "Error: premise of the test, not the behaviour under test: seconds buffered ahead of the playhead (<n> s) when the seek to <n> s is made (metrics.playback.bufferedAheadSec) [toBeGreaterThan]",
+      "parts": {
+        "message": "Error: premise of the test, not the behaviour under test: seconds buffered ahead of the playhead (<n> s) when the seek to <n> s is made (metrics.playback.bufferedAheadSec)",
+        "assertion": "toBeGreaterThan",
+        "location": null,
+        "shaka": null
+      },
+      "size": 1,
+      "tests": [
+        "PB-VOD-006"
+      ],
+      "projects": [
+        "chromium"
+      ],
+      "outcomes": {
+        "failed": 1,
+        "timedOut": 0,
+        "flaky": 0
+      },
+      "category": "instrument-disagreement",
+      "rule": {
+        "rule": "test-premise-not-met",
+        "category": "instrument-disagreement",
+        "evidence": [
+          "a premise of the test did not hold: “Error: premise of the test, not the behaviour under test: seconds buffered ahead of the playhead (2.114762 s) when the seek to 7 s is made (metrics.playback.bufferedAheadSec)”",
+          "the timeline has 10 events and ends with “#9 t=5105.2 media=0.005 firstframe {\"source\":\"requestVideoFrameCallback\"}”",
+          "player state at the end: playing"
+        ],
+        "cause": null
+      },
+      "ruleRationale": "The test checked a condition it needs before it can judge anything (its own message says \"premise of the test, not the behaviour under test\") and the condition did not hold: the behaviour was never exercised.",
+      "failureClass": "Needs a person",
+      "firstCheck": "The premise the message names against the player’s numbers (qa-metrics.json) and the request log: a premise that does not hold means the scenario could not be set up (a slow or failing origin, a loaded host). Compare `ttfbMs` and `totalMs` of the segments in request-log.json with the length of a segment.",
+      "agreement": {
+        "sameRule": 1,
+        "of": 1,
+        "otherRules": []
+      },
+      "representative": {
+        "scope": "test",
+        "id": "PB-VOD-006",
+        "title": "PB-VOD-006 seek forward inside the buffered range: seeked fires and playback continues from the target with no rebuffer",
+        "file": "tests/e2e/vod-seek.spec.ts",
+        "line": 20,
+        "project": "chromium",
+        "tags": [
+          "@dash",
+          "@merge"
+        ],
+        "tier": "merge",
+        "outcome": "failed",
+        "retries": 1,
+        "attempts": 2,
+        "failedAttempts": 2,
+        "attempt": 0,
+        "durationMs": 7468,
+        "quarantined": false,
+        "experimental": false,
+        "annotations": [],
+        "envId": null,
+        "source": "origin-slow/playwright.json",
+        "error": {
+          "message": "Error: premise of the test, not the behaviour under test: seconds buffered ahead of the playhead (2.114762 s) when the seek to 7 s is made (metrics.playback.bufferedAheadSec)\n\nexpect(received).toBeGreaterThan(expected)\n\nExpected: > 5.885238\nReceived:   0",
+          "frames": [
+            {
+              "file": "tests/e2e/vod-seek.spec.ts",
+              "fn": null,
+              "line": 40
+            }
+          ]
+        },
+        "diagnostics": {
+          "attached": [
+            "page-console.json",
+            "qa-events.json",
+            "qa-info.json",
+            "qa-metrics.json",
+            "request-log.json",
+            "session-detail.json"
+          ],
+          "players": 1,
+          "sessions": 1,
+          "shakaErrors": [],
+          "primaryError": null,
+          "metrics": {
+            "state": "playing",
+            "startupMs": 5029.099999964237,
+            "rebuffers": {
+              "count": 0,
+              "totalMs": 0
+            },
+            "frames": {
+              "decoded": 60,
+              "dropped": 0
+            },
+            "liveLatencyMs": null,
+            "bitrateSwitches": 1,
+            "currentTime": 2.164434
+          },
+          "events": {
+            "total": 10,
+            "names": {
+              "load-requested": 1,
+              "buffering-start": 2,
+              "manifest-loaded": 1,
+              "variant-changed": 2,
+              "loaded": 1,
+              "playing": 1,
+              "buffering-end": 1,
+              "firstframe": 1
+            },
+            "around": [
+              "#2 t=83.6 media=0.000 manifest-loaded",
+              "#3 t=86.8 media=0.000 buffering-start",
+              "#4 t=87.2 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}",
+              "#5 t=87.9 media=0.000 loaded",
+              "#6 t=2594.2 media=0.000 variant-changed {\"from\":2,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"abr\"}",
+              "#7 t=5100.3 media=0.000 playing",
+              "#8 t=5100.6 media=0.000 buffering-end",
+              "#9 t=5105.2 media=0.005 firstframe {\"source\":\"requestVideoFrameCallback\"}"
+            ]
+          },
+          "requestLog": {
+            "entries": 9,
+            "segments": 5,
+            "manifests": 1,
+            "inits": 3,
+            "other": 0,
+            "originFailures": 0,
+            "originFailuresWithoutFault": 0,
+            "clientAborted": 0,
+            "pending": 1,
+            "byStatus": {
+              "200": 8
+            },
+            "failed": []
+          },
+          "faults": [],
+          "console": {
+            "errors": 0,
+            "warnings": 0,
+            "pageErrors": 0,
+            "samples": []
+          },
+          "problems": {},
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+          "config": "A",
+          "loadMode": "media-source"
+        },
+        "missing": []
+      },
+      "members": [
+        {
+          "id": "PB-VOD-006",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "origin-slow/playwright.json"
+        }
+      ],
+      "rootCause": "7ec0da0c9c21"
+    },
+    {
+      "rank": 11,
+      "key": "ec15e8fc1232",
+      "signature": "Error: rebuffers (metrics.rebuffer.count): expected none, saw <n> totalling <n> ms: at media time <n> s for <n> ms; … [toBe]",
+      "parts": {
+        "message": "Error: rebuffers (metrics.rebuffer.count): expected none, saw <n> totalling <n> ms: at media time <n> s for <n> ms; …",
+        "assertion": "toBe",
+        "location": null,
+        "shaka": null
+      },
+      "size": 1,
+      "tests": [
+        "PB-VOD-012"
+      ],
+      "projects": [
+        "chromium"
+      ],
+      "outcomes": {
+        "failed": 1,
+        "timedOut": 0,
+        "flaky": 0
+      },
+      "category": "metric-regression",
+      "rule": {
+        "rule": "metric-assertion-failed",
+        "category": "metric-regression",
+        "evidence": [
+          "the assertion is on metrics.rebuffer.count: “Error: rebuffers (metrics.rebuffer.count): expected none, saw 2 totalling 3994 ms: at media time 1.96 s for 3003 ms; at media time 3.97 s for 991 ms”",
+          "the player’s own numbers: 2 rebuffers totalling 3994 ms, 2 of 158 frames dropped, startup 2553 ms"
+        ],
+        "cause": null
+      },
+      "ruleRationale": "The failing assertion is about a measured quantity (rebuffers, dropped frames, latency, startup) and nothing underneath explains it as an error.",
+      "failureClass": "Performance regression",
+      "firstCheck": "The metric against METRICS.md and its tolerance in the spec; then the same run’s qa-metrics.json and the timeline around the value. Compare with the performance baseline before blaming the player.",
+      "agreement": {
+        "sameRule": 1,
+        "of": 1,
+        "otherRules": []
+      },
+      "representative": {
+        "scope": "test",
+        "id": "PB-VOD-012",
+        "title": "PB-VOD-012 metrics integrity on a clean network: decoded frames above zero, dropped no more than decoded, presented frames agree with decoded, no rebuffer, startup defined, no error",
+        "file": "tests/e2e/vod-metrics.spec.ts",
+        "line": 16,
+        "project": "chromium",
+        "tags": [
+          "@dash",
+          "@merge"
+        ],
+        "tier": "merge",
+        "outcome": "failed",
+        "retries": 1,
+        "attempts": 2,
+        "failedAttempts": 2,
+        "attempt": 0,
+        "durationMs": 12176,
+        "quarantined": false,
+        "experimental": false,
+        "annotations": [
+          {
+            "type": "readings",
+            "description": "decoded 155, presented 138, dropped 14; the first frame at 0.000568 s of media time; the window: 60 presented and 59 decoded frames in 2 s, 30 fps; startup 5028.5 ms"
+          },
+          {
+            "type": "readings",
+            "description": "decoded 156, presented 151, dropped 2; the first frame at 0.004121 s of media time; the window: 60 presented and 59 decoded frames in 2 s, 30 fps; startup 2552.5 ms"
+          }
+        ],
+        "envId": null,
+        "source": "origin-slow/playwright.json",
+        "error": {
+          "message": "Error: rebuffers (metrics.rebuffer.count): expected none, saw 2 totalling 3994 ms: at media time 1.96 s for 3003 ms; at media time 3.97 s for 991 ms\n\nexpect(received).toBe(expected) // Object.is equality\n\nExpected: 0\nReceived: 2",
+          "frames": [
+            {
+              "file": "tests/e2e/vod-metrics.spec.ts",
+              "fn": null,
+              "line": 141
+            }
+          ]
+        },
+        "diagnostics": {
+          "attached": [
+            "page-console.json",
+            "qa-events.json",
+            "qa-info.json",
+            "qa-metrics.json",
+            "request-log.json",
+            "session-detail.json"
+          ],
+          "players": 1,
+          "sessions": 1,
+          "shakaErrors": [],
+          "primaryError": null,
+          "metrics": {
+            "state": "playing",
+            "startupMs": 2552.5,
+            "rebuffers": {
+              "count": 2,
+              "totalMs": 3993.9999999403954
+            },
+            "frames": {
+              "decoded": 158,
+              "dropped": 2
+            },
+            "liveLatencyMs": null,
+            "bitrateSwitches": 1,
+            "currentTime": 5.08822
+          },
+          "events": {
+            "total": 16,
+            "names": {
+              "load-requested": 1,
+              "buffering-start": 4,
+              "manifest-loaded": 1,
+              "variant-changed": 2,
+              "loaded": 1,
+              "playing": 3,
+              "buffering-end": 3,
+              "firstframe": 1
+            },
+            "around": [
+              "#8 t=2706.7 media=0.004 firstframe {\"source\":\"requestVideoFrameCallback\"}",
+              "#9 t=4709.6 media=1.963 buffering-start",
+              "#10 t=5205.0 media=1.963 variant-changed {\"from\":2,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}",
+              "#11 t=7712.9 media=2.005 playing",
+              "#12 t=7713.0 media=2.005 buffering-end",
+              "#13 t=9719.9 media=3.968 buffering-start",
+              "#14 t=10710.4 media=4.011 playing",
+              "#15 t=10710.5 media=4.011 buffering-end"
+            ]
+          },
+          "requestLog": {
+            "entries": 13,
+            "segments": 9,
+            "manifests": 1,
+            "inits": 3,
+            "other": 0,
+            "originFailures": 0,
+            "originFailuresWithoutFault": 0,
+            "clientAborted": 0,
+            "pending": 2,
+            "byStatus": {
+              "200": 11
+            },
+            "failed": []
+          },
+          "faults": [],
+          "console": {
+            "errors": 0,
+            "warnings": 0,
+            "pageErrors": 0,
+            "samples": []
+          },
+          "problems": {},
+          "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36",
+          "config": "A",
+          "loadMode": "media-source"
+        },
+        "missing": []
+      },
+      "members": [
+        {
+          "id": "PB-VOD-012",
+          "project": "chromium",
+          "outcome": "failed",
+          "source": "origin-slow/playwright.json"
+        }
+      ],
+      "rootCause": "1e51d08bb0f2"
+    },
+    {
+      "rank": 12,
+      "key": "6a6f2e7b5f99",
+      "signature": "Error: the test data service at <url> is not answering (GET /health -> no answer ECONNREFUSED): start it with `npm run build:player && npm run serve` [thrown]",
+      "parts": {
+        "message": "Error: the test data service at <url> is not answering (GET /health -> no answer ECONNREFUSED): start it with `npm run build:player && npm run serve`",
+        "assertion": "thrown",
+        "location": null,
+        "shaka": null
+      },
+      "size": 1,
+      "tests": [
+        "(run)"
+      ],
+      "projects": [
+        "(run)"
+      ],
+      "outcomes": {
+        "failed": 1,
+        "timedOut": 0,
+        "flaky": 0
+      },
+      "category": "environment",
+      "rule": {
+        "rule": "service-not-reachable",
+        "category": "environment",
+        "evidence": [
+          "the service could not be reached: “Error: the test data service at http://<host> is not answering (GET /health -> no answer ECONNREFUSED): start it with `npm run build:player && npm run serve`”"
+        ],
+        "cause": "the test data service cannot be reached"
+      },
+      "ruleRationale": "Nothing could talk to the test data service: every test needs it, so this is the environment, not a test.",
+      "failureClass": "Environment or infrastructure",
+      "firstCheck": "Is the service running on the port the run used (`curl <origin>/health`)? Start it with `npm run build:player && npm run serve`, and read its own log.",
+      "agreement": {
+        "sameRule": 1,
+        "of": 1,
+        "otherRules": []
+      },
+      "representative": {
+        "scope": "run",
+        "id": "(run)",
+        "title": "(run)",
+        "file": "",
+        "line": null,
+        "project": "(run)",
+        "tags": [],
+        "tier": null,
+        "outcome": "failed",
+        "retries": 0,
+        "attempts": 0,
+        "failedAttempts": 0,
+        "attempt": 0,
+        "durationMs": 0,
+        "quarantined": false,
+        "experimental": false,
+        "annotations": [],
+        "envId": null,
+        "source": "service-down/playwright.json",
+        "error": {
+          "message": "Error: the test data service at http://<host> is not answering (GET /health -> no answer ECONNREFUSED): start it with `npm run build:player && npm run serve`",
+          "frames": [
+            {
+              "file": "tests/e2e/support/global-setup.ts",
+              "fn": null,
+              "line": 26
+            },
+            {
+              "file": "tests/e2e/support/global-setup.ts",
+              "fn": "globalSetup",
+              "line": 25
+            }
+          ]
+        },
+        "diagnostics": {
+          "attached": [],
+          "players": 0,
+          "sessions": 0,
+          "shakaErrors": [],
+          "primaryError": null,
+          "metrics": {
+            "state": null,
+            "startupMs": null,
+            "rebuffers": null,
+            "frames": null,
+            "liveLatencyMs": null,
+            "bitrateSwitches": null,
+            "currentTime": null
+          },
+          "events": {
+            "total": 0,
+            "names": {},
+            "around": []
+          },
+          "requestLog": null,
+          "faults": [],
+          "console": {
+            "errors": 0,
+            "warnings": 0,
+            "pageErrors": 0,
+            "samples": []
+          },
+          "problems": {},
+          "userAgent": null,
+          "config": null,
+          "loadMode": null
+        },
+        "missing": [
+          "an error of the run, not of a test: there are no failure attachments"
+        ]
+      },
+      "members": [
+        {
+          "id": "(run)",
+          "project": "(run)",
+          "outcome": "failed",
+          "source": "service-down/playwright.json"
+        }
+      ],
+      "rootCause": "8a94c62e02d9"
+    }
+  ],
+  "rootCauses": [
+    {
+      "rank": 1,
+      "key": "47e94ecc98aa",
+      "category": "origin-error",
+      "rule": "origin-failed-without-fault",
+      "cause": "the origin answered 503 on segment to requests no fault rule named",
+      "size": 10,
+      "clusters": [
+        "c9b6a99f380d",
+        "011e98b3e6ee",
+        "1966266eef5d"
+      ],
+      "clusterRanks": [
+        1,
+        6,
+        7
+      ],
+      "tests": [
+        "PB-REC-001",
+        "PB-REC-002",
+        "PB-VOD-001",
+        "PB-VOD-002",
+        "PB-VOD-006"
+      ],
+      "projects": [
+        "chromium",
+        "webkit"
+      ],
+      "failureClass": "Environment or infrastructure"
+    },
+    {
+      "rank": 2,
+      "key": "687c7a715605",
+      "category": "page-boot-failure",
+      "rule": "page-did-not-boot",
+      "cause": "the player page did not boot: a Content Security Policy blocked its scripts",
+      "size": 7,
+      "clusters": [
+        "fc2f02c1e869",
+        "8cae2e3bcaa6"
+      ],
+      "clusterRanks": [
+        3,
+        4
+      ],
+      "tests": [
+        "PB-ENV-001",
+        "PB-VOD-001",
+        "PB-VOD-002"
+      ],
+      "projects": [
+        "chromium",
+        "chromium-cpu4x",
+        "webkit"
+      ],
+      "failureClass": "Functional regression"
+    },
+    {
+      "rank": 3,
+      "key": "37b6710377fd",
+      "category": "decode-or-mse-error",
+      "rule": "media-error",
+      "cause": "the bytes arrived and the browser could not append or decode them",
+      "size": 6,
+      "clusters": [
+        "a0957e05ad95"
+      ],
+      "clusterRanks": [
+        2
+      ],
+      "tests": [
+        "PB-VOD-001",
+        "PB-VOD-002",
+        "PB-VOD-006"
+      ],
+      "projects": [
+        "chromium",
+        "webkit"
+      ],
+      "failureClass": "Functional regression"
+    },
+    {
+      "rank": 4,
+      "key": "b5aba8823b63",
+      "category": "network-fault-not-recovered",
+      "rule": "fault-fired-player-failed",
+      "cause": "a fault of type status fired and the player did not recover",
+      "size": 4,
+      "clusters": [
+        "b8e5edac63ec",
+        "30a43b41436d"
+      ],
+      "clusterRanks": [
+        5,
+        8
+      ],
+      "tests": [
+        "PB-REC-001",
+        "PB-REC-002"
+      ],
+      "projects": [
+        "chromium",
+        "webkit"
+      ],
+      "failureClass": "Functional regression"
+    },
+    {
+      "rank": 5,
+      "key": "1e51d08bb0f2",
+      "category": "metric-regression",
+      "rule": "metric-assertion-failed",
+      "cause": null,
+      "size": 1,
+      "clusters": [
+        "ec15e8fc1232"
+      ],
+      "clusterRanks": [
+        11
+      ],
+      "tests": [
+        "PB-VOD-012"
+      ],
+      "projects": [
+        "chromium"
+      ],
+      "failureClass": "Performance regression"
+    },
+    {
+      "rank": 6,
+      "key": "45ca4c619bea",
+      "category": "environment",
+      "rule": "run-failed-before-any-test",
+      "cause": "the run failed before any test: a global setup threw or the web server did not start",
+      "size": 1,
+      "clusters": [
+        "d5f804cf8b61"
+      ],
+      "clusterRanks": [
+        9
+      ],
+      "tests": [
+        "(run)"
+      ],
+      "projects": [
+        "(run)"
+      ],
+      "failureClass": "Environment or infrastructure"
+    },
+    {
+      "rank": 7,
+      "key": "7ec0da0c9c21",
+      "category": "instrument-disagreement",
+      "rule": "test-premise-not-met",
+      "cause": null,
+      "size": 1,
+      "clusters": [
+        "ea3ccc131a7d"
+      ],
+      "clusterRanks": [
+        10
+      ],
+      "tests": [
+        "PB-VOD-006"
+      ],
+      "projects": [
+        "chromium"
+      ],
+      "failureClass": "Needs a person"
+    },
+    {
+      "rank": 8,
+      "key": "8a94c62e02d9",
+      "category": "environment",
+      "rule": "service-not-reachable",
+      "cause": "the test data service cannot be reached",
+      "size": 1,
+      "clusters": [
+        "6a6f2e7b5f99"
+      ],
+      "clusterRanks": [
+        12
+      ],
+      "tests": [
+        "(run)"
+      ],
+      "projects": [
+        "(run)"
+      ],
+      "failureClass": "Environment or infrastructure"
+    }
+  ],
+  "skipped": [
+    {
+      "id": "PB-ENV-001",
+      "project": "firefox",
+      "reason": "documented gap in local-darwin-arm64: firefox does not start here: Failed to launch the browser process: Could not find profile folder. (see docs/CODEC_MATRIX.md)",
+      "source": "csp-blocks-scripts/playwright.json"
+    },
+    {
+      "id": "PB-VOD-001",
+      "project": "firefox",
+      "reason": "documented gap in local-darwin-arm64: firefox does not start here: Failed to launch the browser process: Could not find profile folder. (see docs/CODEC_MATRIX.md)",
+      "source": "csp-blocks-scripts/playwright.json"
+    },
+    {
+      "id": "PB-VOD-002",
+      "project": "firefox",
+      "reason": "documented gap in local-darwin-arm64: firefox does not start here: Failed to launch the browser process: Could not find profile folder. (see docs/CODEC_MATRIX.md)",
+      "source": "csp-blocks-scripts/playwright.json"
+    }
+  ],
+  "problems": [],
+  "summaries": [
+    {
+      "clusterKey": "c9b6a99f380d",
+      "status": "summarized",
+      "text": "Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 3933 characters of evidence for cluster c9b6a99f380d (category origin-error).\nFirst thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.\nNot sure about: [MOCK] everything: this is a test double of the Messages API.",
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "inputTokens": 1044,
+        "outputTokens": 93
+      }
+    },
+    {
+      "clusterKey": "a0957e05ad95",
+      "status": "summarized",
+      "text": "Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 3617 characters of evidence for cluster a0957e05ad95 (category decode-or-mse-error).\nFirst thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.\nNot sure about: [MOCK] everything: this is a test double of the Messages API.",
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "inputTokens": 955,
+        "outputTokens": 94
+      }
+    },
+    {
+      "clusterKey": "fc2f02c1e869",
+      "status": "summarized",
+      "text": "Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 2440 characters of evidence for cluster fc2f02c1e869 (category page-boot-failure).\nFirst thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.\nNot sure about: [MOCK] everything: this is a test double of the Messages API.",
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "inputTokens": 626,
+        "outputTokens": 94
+      }
+    },
+    {
+      "clusterKey": "8cae2e3bcaa6",
+      "status": "summarized",
+      "text": "Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 2983 characters of evidence for cluster 8cae2e3bcaa6 (category page-boot-failure).\nFirst thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.\nNot sure about: [MOCK] everything: this is a test double of the Messages API.",
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "inputTokens": 763,
+        "outputTokens": 94
+      }
+    },
+    {
+      "clusterKey": "b8e5edac63ec",
+      "status": "summarized",
+      "text": "Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 2922 characters of evidence for cluster b8e5edac63ec (category network-fault-not-recovered).\nFirst thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.\nNot sure about: [MOCK] everything: this is a test double of the Messages API.",
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "inputTokens": 766,
+        "outputTokens": 96
+      }
+    },
+    {
+      "clusterKey": "011e98b3e6ee",
+      "status": "summarized",
+      "text": "Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 3796 characters of evidence for cluster 011e98b3e6ee (category origin-error).\nFirst thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.\nNot sure about: [MOCK] everything: this is a test double of the Messages API.",
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "inputTokens": 1000,
+        "outputTokens": 93
+      }
+    },
+    {
+      "clusterKey": "1966266eef5d",
+      "status": "summarized",
+      "text": "Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 3799 characters of evidence for cluster 1966266eef5d (category origin-error).\nFirst thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.\nNot sure about: [MOCK] everything: this is a test double of the Messages API.",
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "inputTokens": 1001,
+        "outputTokens": 93
+      }
+    },
+    {
+      "clusterKey": "30a43b41436d",
+      "status": "summarized",
+      "text": "Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 2917 characters of evidence for cluster 30a43b41436d (category network-fault-not-recovered).\nFirst thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.\nNot sure about: [MOCK] everything: this is a test double of the Messages API.",
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "inputTokens": 761,
+        "outputTokens": 96
+      }
+    },
+    {
+      "clusterKey": "d5f804cf8b61",
+      "status": "summarized",
+      "text": "Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 1231 characters of evidence for cluster d5f804cf8b61 (category environment).\nFirst thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.\nNot sure about: [MOCK] everything: this is a test double of the Messages API.",
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "inputTokens": 319,
+        "outputTokens": 92
+      }
+    },
+    {
+      "clusterKey": "ea3ccc131a7d",
+      "status": "summarized",
+      "text": "Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 2461 characters of evidence for cluster ea3ccc131a7d (category instrument-disagreement).\nFirst thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.\nNot sure about: [MOCK] everything: this is a test double of the Messages API.",
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "inputTokens": 639,
+        "outputTokens": 95
+      }
+    },
+    {
+      "clusterKey": "ec15e8fc1232",
+      "status": "summarized",
+      "text": "Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 2056 characters of evidence for cluster ec15e8fc1232 (category metric-regression).\nFirst thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.\nNot sure about: [MOCK] everything: this is a test double of the Messages API.",
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "inputTokens": 533,
+        "outputTokens": 94
+      }
+    },
+    {
+      "clusterKey": "6a6f2e7b5f99",
+      "status": "summarized",
+      "text": "Likely root cause: [MOCK] no model wrote this: tools/triage-mock.ts answered, having read 1311 characters of evidence for cluster 6a6f2e7b5f99 (category environment).\nFirst thing to check: [MOCK] run the same command with ANTHROPIC_API_KEY set and no ANTHROPIC_BASE_URL to get a real draft.\nNot sure about: [MOCK] everything: this is a test double of the Messages API.",
+      "model": "claude-haiku-5-5",
+      "usage": {
+        "inputTokens": 339,
+        "outputTokens": 92
+      }
+    }
+  ],
+  "summaryNote": null,
+  "summaryRun": {
+    "model": "claude-haiku-5-5",
+    "endpoint": "http://<host>",
+    "requests": 12,
+    "cacheHits": 0,
+    "usage": {
+      "inputTokens": 8746,
+      "outputTokens": 1126
+    }
+  }
+}

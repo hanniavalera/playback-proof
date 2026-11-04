@@ -1,0 +1,206 @@
+[
+  {
+    "index": 0,
+    "t": 225,
+    "name": "load-requested",
+    "mediaTime": 0,
+    "detail": {
+      "uri": "/s/b4d5e84813ca/vod-cmaf/dash/manifest.mpd"
+    }
+  },
+  {
+    "index": 1,
+    "t": 248,
+    "name": "buffering-start",
+    "mediaTime": 0
+  },
+  {
+    "index": 2,
+    "t": 262,
+    "name": "manifest-loaded",
+    "mediaTime": 0
+  },
+  {
+    "index": 3,
+    "t": 303,
+    "name": "buffering-start",
+    "mediaTime": 0
+  },
+  {
+    "index": 4,
+    "t": 304,
+    "name": "variant-changed",
+    "mediaTime": 0,
+    "detail": {
+      "from": null,
+      "to": 1,
+      "bandwidth": 746778,
+      "height": 360,
+      "reason": "start"
+    }
+  },
+  {
+    "index": 5,
+    "t": 305,
+    "name": "loaded",
+    "mediaTime": 0
+  },
+  {
+    "index": 6,
+    "t": 1871,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 1001,
+      "codeName": "BAD_HTTP_STATUS",
+      "category": 1,
+      "severity": 1,
+      "message": "NETWORK.BAD_HTTP_STATUS: Shaka Error 1001",
+      "data": [
+        "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/v360/1.m4s",
+        503,
+        "",
+        "{\"access-control-allow-origin\":\"*\",\"cache-control\":\"no-store\",\"connection\":\"keep-alive\",\"content-length\":\"0\",\"date\":\"Wed, 04 Nov 2026 16:04:30 GMT\",\"keep-alive\":\"timeout=5\"}",
+        1,
+        "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/v360/1.m4s"
+      ],
+      "source": "shaka"
+    }
+  },
+  {
+    "index": 7,
+    "t": 1871,
+    "name": "variant-changed",
+    "mediaTime": 0,
+    "detail": {
+      "from": 1,
+      "to": 0,
+      "bandwidth": 341878,
+      "height": 240,
+      "reason": "abr"
+    }
+  },
+  {
+    "index": 8,
+    "t": 3155,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 1001,
+      "codeName": "BAD_HTTP_STATUS",
+      "category": 1,
+      "severity": 2,
+      "message": "NETWORK.BAD_HTTP_STATUS: Shaka Error 1001",
+      "data": [
+        "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/a-aac/1.m4s",
+        503,
+        "",
+        "{\"access-control-allow-origin\":\"*\",\"cache-control\":\"no-store\",\"connection\":\"keep-alive\",\"content-length\":\"0\",\"date\":\"Wed, 04 Nov 2026 16:04:30 GMT\",\"keep-alive\":\"timeout=5\"}",
+        1,
+        "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/a-aac/1.m4s"
+      ],
+      "source": "shaka"
+    }
+  },
+  {
+    "index": 9,
+    "t": 4272,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 1001,
+      "codeName": "BAD_HTTP_STATUS",
+      "category": 1,
+      "severity": 2,
+      "message": "NETWORK.BAD_HTTP_STATUS: Shaka Error 1001",
+      "data": [
+        "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/a-aac/1.m4s",
+        503,
+        "",
+        "{\"access-control-allow-origin\":\"*\",\"cache-control\":\"no-store\",\"connection\":\"keep-alive\",\"content-length\":\"0\",\"date\":\"Wed, 04 Nov 2026 16:04:32 GMT\",\"keep-alive\":\"timeout=5\"}",
+        1,
+        "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/a-aac/1.m4s"
+      ],
+      "source": "shaka"
+    }
+  },
+  {
+    "index": 10,
+    "t": 4558,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 1001,
+      "codeName": "BAD_HTTP_STATUS",
+      "category": 1,
+      "severity": 1,
+      "message": "NETWORK.BAD_HTTP_STATUS: Shaka Error 1001",
+      "data": [
+        "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/v240/1.m4s",
+        503,
+        "",
+        "{\"access-control-allow-origin\":\"*\",\"cache-control\":\"no-store\",\"connection\":\"keep-alive\",\"content-length\":\"0\",\"date\":\"Wed, 04 Nov 2026 16:04:32 GMT\",\"keep-alive\":\"timeout=5\"}",
+        1,
+        "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/v240/1.m4s"
+      ],
+      "source": "shaka"
+    }
+  },
+  {
+    "index": 11,
+    "t": 4558,
+    "name": "variant-changed",
+    "mediaTime": 0,
+    "detail": {
+      "from": 0,
+      "to": 2,
+      "bandwidth": 1845302,
+      "height": 720,
+      "reason": "abr"
+    }
+  },
+  {
+    "index": 12,
+    "t": 6853,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 1001,
+      "codeName": "BAD_HTTP_STATUS",
+      "category": 1,
+      "severity": 2,
+      "message": "NETWORK.BAD_HTTP_STATUS: Shaka Error 1001",
+      "data": [
+        "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/a-aac/1.m4s",
+        503,
+        "",
+        "{\"access-control-allow-origin\":\"*\",\"cache-control\":\"no-store\",\"connection\":\"keep-alive\",\"content-length\":\"0\",\"date\":\"Wed, 04 Nov 2026 16:04:35 GMT\",\"keep-alive\":\"timeout=5\"}",
+        1,
+        "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/a-aac/1.m4s"
+      ],
+      "source": "shaka"
+    }
+  },
+  {
+    "index": 13,
+    "t": 7199,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 1001,
+      "codeName": "BAD_HTTP_STATUS",
+      "category": 1,
+      "severity": 2,
+      "message": "NETWORK.BAD_HTTP_STATUS: Shaka Error 1001",
+      "data": [
+        "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/v720/1.m4s",
+        503,
+        "",
+        "{\"access-control-allow-origin\":\"*\",\"cache-control\":\"no-store\",\"connection\":\"keep-alive\",\"content-length\":\"0\",\"date\":\"Wed, 04 Nov 2026 16:04:34 GMT\",\"keep-alive\":\"timeout=5\"}",
+        1,
+        "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/v720/1.m4s"
+      ],
+      "source": "shaka"
+    }
+  }
+]

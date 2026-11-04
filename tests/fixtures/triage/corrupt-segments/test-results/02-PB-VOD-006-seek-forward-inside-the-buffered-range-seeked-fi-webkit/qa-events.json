@@ -1,0 +1,339 @@
+[
+  {
+    "index": 0,
+    "t": 168,
+    "name": "load-requested",
+    "mediaTime": 0,
+    "detail": {
+      "uri": "/s/409d941847d7/vod-cmaf/dash/manifest.mpd"
+    }
+  },
+  {
+    "index": 1,
+    "t": 175,
+    "name": "buffering-start",
+    "mediaTime": 0
+  },
+  {
+    "index": 2,
+    "t": 187,
+    "name": "manifest-loaded",
+    "mediaTime": 0
+  },
+  {
+    "index": 3,
+    "t": 224,
+    "name": "buffering-start",
+    "mediaTime": 0
+  },
+  {
+    "index": 4,
+    "t": 225,
+    "name": "variant-changed",
+    "mediaTime": 0,
+    "detail": {
+      "from": null,
+      "to": 1,
+      "bandwidth": 746778,
+      "height": 360,
+      "reason": "start"
+    }
+  },
+  {
+    "index": 5,
+    "t": 227,
+    "name": "loaded",
+    "mediaTime": 0
+  },
+  {
+    "index": 6,
+    "t": 794,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 0,
+      "category": 0,
+      "severity": 1,
+      "message": "AbortError: The operation was aborted.",
+      "source": "play",
+      "codeName": "AbortError"
+    }
+  },
+  {
+    "index": 7,
+    "t": 802,
+    "name": "variant-changed",
+    "mediaTime": 0,
+    "detail": {
+      "from": 1,
+      "to": 2,
+      "bandwidth": 1845302,
+      "height": 720,
+      "reason": "abr"
+    }
+  },
+  {
+    "index": 8,
+    "t": 802,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": null,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 9,
+    "t": 831,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": null,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 10,
+    "t": 1824,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 3015,
+      "codeName": "MEDIA_SOURCE_OPERATION_THREW",
+      "category": 3,
+      "severity": 1,
+      "message": "MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015",
+      "data": [
+        "{\"name\":\"InvalidStateError\",\"message\":\"The object is in an invalid state.\"}",
+        "{\"code\":3,\"message\":\"Media failed to decode\"}",
+        "http://127.0.0.1:4740/s/409d941847d7/vod-cmaf/seg/v720/3.m4s"
+      ],
+      "source": "shaka"
+    }
+  },
+  {
+    "index": 11,
+    "t": 1824,
+    "name": "variant-changed",
+    "mediaTime": 0,
+    "detail": {
+      "from": 2,
+      "to": 1,
+      "bandwidth": 746778,
+      "height": 360,
+      "reason": "abr"
+    }
+  },
+  {
+    "index": 12,
+    "t": 2831,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": null,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 13,
+    "t": 3547,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 3015,
+      "codeName": "MEDIA_SOURCE_OPERATION_THREW",
+      "category": 3,
+      "severity": 1,
+      "message": "MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015",
+      "data": [
+        "{\"name\":\"InvalidStateError\",\"message\":\"The object is in an invalid state.\"}",
+        "{\"code\":3,\"message\":\"Media failed to decode\"}",
+        "http://127.0.0.1:4740/s/409d941847d7/vod-cmaf/seg/v360/5.m4s"
+      ],
+      "source": "shaka"
+    }
+  },
+  {
+    "index": 14,
+    "t": 3547,
+    "name": "variant-changed",
+    "mediaTime": 0,
+    "detail": {
+      "from": 1,
+      "to": 0,
+      "bandwidth": 341878,
+      "height": 240,
+      "reason": "abr"
+    }
+  },
+  {
+    "index": 15,
+    "t": 3553,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": null,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 16,
+    "t": 3577,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": null,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 17,
+    "t": 3593,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": null,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 18,
+    "t": 3608,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": null,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 19,
+    "t": 3628,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": null,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 20,
+    "t": 3645,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": null,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 21,
+    "t": 3659,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": null,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 22,
+    "t": 3676,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": null,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 23,
+    "t": 3699,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": null,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 24,
+    "t": 3713,
+    "name": "seeking",
+    "mediaTime": 0,
+    "detail": {
+      "from": null,
+      "to": 0,
+      "requested": false
+    }
+  },
+  {
+    "index": 25,
+    "t": 4576,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 3015,
+      "codeName": "MEDIA_SOURCE_OPERATION_THREW",
+      "category": 3,
+      "severity": 2,
+      "message": "MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015",
+      "data": [
+        "{\"name\":\"InvalidStateError\",\"message\":\"The object is in an invalid state.\"}",
+        "{\"code\":3,\"message\":\"Media failed to decode\"}",
+        "http://127.0.0.1:4740/s/409d941847d7/vod-cmaf/seg/a-aac/3.m4s"
+      ],
+      "source": "shaka"
+    }
+  },
+  {
+    "index": 26,
+    "t": 4685,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 3015,
+      "codeName": "MEDIA_SOURCE_OPERATION_THREW",
+      "category": 3,
+      "severity": 2,
+      "message": "MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015",
+      "data": [
+        "{\"name\":\"InvalidStateError\",\"message\":\"The object is in an invalid state.\"}",
+        "{\"code\":3,\"message\":\"Media failed to decode\"}",
+        "http://127.0.0.1:4740/s/409d941847d7/vod-cmaf/seg/a-aac/3.m4s"
+      ],
+      "source": "shaka"
+    }
+  },
+  {
+    "index": 27,
+    "t": 5184,
+    "name": "error",
+    "mediaTime": 0,
+    "detail": {
+      "code": 3015,
+      "codeName": "MEDIA_SOURCE_OPERATION_THREW",
+      "category": 3,
+      "severity": 2,
+      "message": "MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015",
+      "data": [
+        "{\"name\":\"InvalidStateError\",\"message\":\"The object is in an invalid state.\"}",
+        "{\"code\":3,\"message\":\"Media failed to decode\"}",
+        "http://127.0.0.1:4740/s/409d941847d7/vod-cmaf/seg/v240/3.m4s"
+      ],
+      "source": "shaka"
+    }
+  }
+]

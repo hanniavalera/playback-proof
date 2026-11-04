@@ -1,0 +1,77 @@
+[
+  {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    "location": "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/a-aac/1.m4s:0"
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    "location": "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/v360/1.m4s:0"
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    "location": "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/v360/1.m4s:0"
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    "location": "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/a-aac/1.m4s:0"
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    "location": "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/v240/1.m4s:0"
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    "location": "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/a-aac/2.m4s:0"
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    "location": "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/a-aac/1.m4s:0"
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    "location": "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/a-aac/2.m4s:0"
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    "location": "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/v240/1.m4s:0"
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    "location": "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/a-aac/1.m4s:0"
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    "location": "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/v720/1.m4s:0"
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    "location": "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/a-aac/1.m4s:0"
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    "location": "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/v720/1.m4s:0"
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    "location": "http://127.0.0.1:4740/s/b4d5e84813ca/vod-cmaf/seg/a-aac/1.m4s:0"
+  },
+  {
+    "type": "error",
+    "text": "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+    "location": "http://127.0.0.1:4740/player/?manifest=%2Fs%2Fb4d5e84813ca%2Fvod-cmaf%2Fdash%2Fmanifest.mpd:0"
+  }
+]

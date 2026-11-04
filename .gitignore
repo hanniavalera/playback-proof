@@ -5,6 +5,9 @@ test-results/
 playwright-report/
 coverage/
 .cache/
+# Fixtures are data that tests read, and some are the reports of real runs: the rules above, for run output, must not hide them.
+!tests/fixtures/**/reports/
+!tests/fixtures/**/test-results/
 # The flake history of this machine (flake/store.ts, file store): data, not source. CI keeps its own on the ci-data branch.
 flake/history/
 *.log

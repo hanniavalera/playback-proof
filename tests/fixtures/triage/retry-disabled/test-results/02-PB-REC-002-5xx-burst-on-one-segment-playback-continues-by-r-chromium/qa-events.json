@@ -1,0 +1,97 @@
+[
+  {
+    "index": 0,
+    "t": 86.09999996423721,
+    "name": "load-requested",
+    "mediaTime": 0,
+    "detail": {
+      "uri": "/s/f233be5decee/vod-cmaf/dash/manifest.mpd"
+    }
+  },
+  {
+    "index": 1,
+    "t": 87,
+    "name": "buffering-start",
+    "mediaTime": 0
+  },
+  {
+    "index": 2,
+    "t": 95.5,
+    "name": "manifest-loaded",
+    "mediaTime": 0
+  },
+  {
+    "index": 3,
+    "t": 103.5,
+    "name": "buffering-start",
+    "mediaTime": 0
+  },
+  {
+    "index": 4,
+    "t": 104.30000001192093,
+    "name": "variant-changed",
+    "mediaTime": 0,
+    "detail": {
+      "from": null,
+      "to": 2,
+      "bandwidth": 1845302,
+      "height": 720,
+      "reason": "start"
+    }
+  },
+  {
+    "index": 5,
+    "t": 105,
+    "name": "loaded",
+    "mediaTime": 0
+  },
+  {
+    "index": 6,
+    "t": 230.5,
+    "name": "playing",
+    "mediaTime": 0.000376
+  },
+  {
+    "index": 7,
+    "t": 230.89999997615814,
+    "name": "buffering-end",
+    "mediaTime": 0.000602
+  },
+  {
+    "index": 8,
+    "t": 240.69999998807907,
+    "name": "firstframe",
+    "mediaTime": 0.01054,
+    "detail": {
+      "source": "requestVideoFrameCallback"
+    }
+  },
+  {
+    "index": 9,
+    "t": 956.8999999761581,
+    "name": "error",
+    "mediaTime": 0.683472,
+    "detail": {
+      "code": 1001,
+      "codeName": "BAD_HTTP_STATUS",
+      "category": 1,
+      "severity": 2,
+      "message": "NETWORK.BAD_HTTP_STATUS: Shaka Error 1001",
+      "data": [
+        "http://127.0.0.1:4740/s/f233be5decee/vod-cmaf/seg/v720/3.m4s",
+        503,
+        "",
+        "{\"access-control-allow-origin\":\"*\",\"cache-control\":\"no-store\",\"connection\":\"keep-alive\",\"content-length\":\"0\",\"date\":\"Wed, 04 Nov 2026 16:12:39 GMT\",\"keep-alive\":\"timeout=5\"}",
+        1,
+        "http://127.0.0.1:4740/s/f233be5decee/vod-cmaf/seg/v720/3.m4s"
+      ],
+      "source": "shaka"
+    }
+  },
+  {
+    "index": 10,
+    "t": 6247.399999976158,
+    "name": "buffering-start",
+    "mediaTime": 5.97341
+  }
+]

@@ -1,0 +1,82 @@
+{
+  "state": "error",
+  "startupMs": 154.60000002384186,
+  "startup": {
+    "manifestMs": 9.400000035762787,
+    "loadedMs": 18.900000035762787
+  },
+  "rebuffer": {
+    "count": 1,
+    "totalMs": 8879.699999988079,
+    "ratio": 0.5964974742047977,
+    "events": [
+      {
+        "startMs": 6247.399999976158,
+        "durationMs": 8879.699999988079,
+        "mediaTime": 5.97341,
+        "ongoing": true
+      }
+    ]
+  },
+  "frames": {
+    "decoded": 120,
+    "dropped": 0,
+    "droppedRatio": 0,
+    "presented": 120
+  },
+  "bitrate": {
+    "switches": 0,
+    "current": {
+      "id": 2,
+      "bandwidth": 1845302,
+      "width": 1280,
+      "height": 720,
+      "videoCodec": "vp09.00.31.08",
+      "audioCodec": "mp4a.40.2"
+    },
+    "history": [
+      {
+        "t": 104.30000001192093,
+        "from": null,
+        "to": 2,
+        "height": 720,
+        "reason": "start"
+      }
+    ]
+  },
+  "live": {
+    "isLive": false,
+    "latencyMs": null,
+    "latencyMaxMs": null,
+    "presentationDelayMs": null,
+    "edgeSeeks": 0
+  },
+  "errors": [
+    {
+      "t": 956.8999999761581,
+      "code": 1001,
+      "category": 1,
+      "severity": 2,
+      "message": "NETWORK.BAD_HTTP_STATUS: Shaka Error 1001",
+      "data": [
+        "http://127.0.0.1:4740/s/f233be5decee/vod-cmaf/seg/v720/3.m4s",
+        503,
+        "",
+        "{\"access-control-allow-origin\":\"*\",\"cache-control\":\"no-store\",\"connection\":\"keep-alive\",\"content-length\":\"0\",\"date\":\"Wed, 04 Nov 2026 16:12:39 GMT\",\"keep-alive\":\"timeout=5\"}",
+        1,
+        "http://127.0.0.1:4740/s/f233be5decee/vod-cmaf/seg/v720/3.m4s"
+      ],
+      "codeName": "BAD_HTTP_STATUS",
+      "source": "shaka"
+    }
+  ],
+  "playback": {
+    "currentTime": 5.97341,
+    "duration": 60,
+    "paused": false,
+    "ended": false,
+    "playbackRate": 1,
+    "bufferedAheadSec": 0,
+    "readyState": 2
+  }
+}

@@ -9,9 +9,10 @@
 // `reports/` and `test-results/` cannot clobber each other) and its own service port (the agent's executors share one
 // network namespace).
 //
-// A later gate (perf, triage) is one more block in `stages` with its own `sh 'npm run gate:<name>'` line. None exists here until its
-// script does. `Flake` (gate:flake) is the last stage: it judges the run files the engines stashed against the history on the
-// `flake-history` volume, and records the build when it is a build of main (ADR-174 in docs/decisions/ci-flake.md).
+// A later gate (perf) is one more block in `stages` with its own `sh 'npm run gate:<name>'` line. None exists here until its
+// script does. `Flake` (gate:flake) judges the run files the engines stashed against the history on the `flake-history` volume,
+// and records the build when it is a build of main (ADR-174 in docs/decisions/ci-flake.md). `Triage` (gate:triage) is the last
+// stage and runs only when the build is not green: it explains the red, it never decides it.
 
 // Keeps what the engine runs produced (the failure attachments of docs/CONTRACTS.md 7.2 live in test-results/), then
 // frees the workspace: the next build starts from a clean checkout. The JUnit step is a no-op until a JUnit report exists.
@@ -22,6 +23,8 @@ def collectResults(String flakeStash = '') {
     junit allowEmptyResults: true, testResults: 'reports/**/junit*.xml'
     if (flakeStash != '') {
         stash name: flakeStash, includes: 'reports/flake/run*.json', allowEmpty: true
+        // The Triage stage reads the Playwright report of every engine, with the flake run file beside it for the environment id.
+        stash name: flakeStash.replace('flake-', 'triage-'), includes: 'reports/**/playwright*.json, reports/flake/run*.json', allowEmpty: true
     }
     cleanWs()
 }
@@ -212,12 +215,40 @@ pipeline {
                             unstash "flake-${engine}"
                         }
                     }
-                    if (isMainBranch(scmVars.GIT_BRANCH)) {
-                        sh 'npm run gate:flake -- --store file --runs reports/flake --record'
-                    } else {
-                        sh 'npm run gate:flake -- --store file --runs reports/flake'
+                    // A red flake gate does not skip the Triage stage that follows: it is the one that explains a red build.
+                    catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                        if (isMainBranch(scmVars.GIT_BRANCH)) {
+                            sh 'npm run gate:flake -- --store file --runs reports/flake --record'
+                        } else {
+                            sh 'npm run gate:flake -- --store file --runs reports/flake'
+                        }
                     }
                 }
+            }
+            post {
+                always {
+                    script { collectResults() }
+                }
+            }
+        }
+
+        // Failure triage (docs/TRIAGE.md, ADR-160 to ADR-169), for a red build: it groups the failures of every engine by cause and
+        // never decides anything: it is not a gate, it exits 0 whatever it finds. The engines above stashed their Playwright reports;
+        // this stage lays them side by side (the layout of GitHub's download step) and runs the script of the `triage` job.
+        stage('Triage') {
+            when { expression { currentBuild.currentResult != 'SUCCESS' } }
+            agent { label 'playwright' }
+            steps {
+                checkout scm
+                sh 'npm ci --no-audit --no-fund'
+                script {
+                    for (engine in ['chromium', 'firefox', 'chromium-cpu4x', 'webkit']) {
+                        dir("artifacts/${engine}") {
+                            unstash "triage-${engine}"
+                        }
+                    }
+                }
+                sh 'npm run gate:triage -- --from artifacts --out reports/triage'
             }
             post {
                 always {

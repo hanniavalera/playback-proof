@@ -1,0 +1,5 @@
+{
+  "qa-events.json": "TypeError: Cannot read properties of undefined (reading 'events')",
+  "qa-metrics.json": "TypeError: Cannot read properties of undefined (reading 'metrics')",
+  "qa-info.json": "TypeError: Cannot read properties of undefined (reading 'info')"
+}
