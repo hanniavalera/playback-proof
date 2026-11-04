@@ -44,7 +44,9 @@ import {
 
 export { blockBody, blockMarkers, checkBlockFresh, locateBlock, replaceBlock } from './doc-blocks.ts';
 
-const ROOT = resolve(new URL('..', import.meta.url).pathname);
+// PB_DOCS_ROOT points the checks at a copy of the repository: tests/unit/docs/check-docs-cli.test.ts runs the real command on a copy that
+// has been broken on purpose, to see that its exit code is 1.
+const ROOT = resolve(process.env.PB_DOCS_ROOT ?? new URL('..', import.meta.url).pathname);
 export const STRATEGY_FILE = 'TEST_STRATEGY.md';
 export const README_FILE = 'README.md';
 const SKIP_DIRS = new Set([

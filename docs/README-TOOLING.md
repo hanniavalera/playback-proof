@@ -46,7 +46,7 @@ A renderer is a pure function of a `FileSet` (strings in, a string out, in [`too
 2. Register it in `RESULT_BLOCKS` in [`tools/results-tables.ts`](../tools/results-tables.ts): its name, a title, the files it reads, whether the README must hold it.
 3. Put the marker pair where the table belongs in `README.md` and run `npm run docs:check -- --write`.
 
-Tests: [`tests/unit/docs/results-tables.test.ts`](../tests/unit/docs/results-tables.test.ts) renders every block from the real committed files and from synthetic ones, and changes one number in a copy of a result file (or deletes it) to see that the check fails with a message; [`tests/unit/docs/readme.test.ts`](../tests/unit/docs/readme.test.ts) checks the README itself (its blocks, its links, the paths and scripts it names).
+Tests: [`tests/unit/docs/results-tables.test.ts`](../tests/unit/docs/results-tables.test.ts) renders every block from the real committed files and from synthetic ones; [`tests/unit/docs/results-mutations.test.ts`](../tests/unit/docs/results-mutations.test.ts) changes one number in a copy of a result file (or deletes or corrupts it) to see that the check fails with a message; [`tests/unit/docs/check-docs-cli.test.ts`](../tests/unit/docs/check-docs-cli.test.ts) runs the command itself on a copy of the repository (`PB_DOCS_ROOT` points it there) and looks at its exit code; [`tests/unit/docs/readme.test.ts`](../tests/unit/docs/readme.test.ts) checks the README (its blocks, links, anchors, the paths and scripts it names, the ADRs it cites) and the sentences of its prose that stand on a result file.
 
 ## Blocks that wait for data, and the shapes they expect
 
