@@ -70,6 +70,16 @@ export function aggregate(evaluations: readonly Evaluation[]): Verdict {
   return 'INCONCLUSIVE';
 }
 
+/**
+ * The verdict of a set of verdicts: NO-GO if any is, otherwise INCONCLUSIVE if any is (or there is none), otherwise GO. For a run's
+ * configurations and for a configuration's checks, whose verdicts have been decided already.
+ */
+export function worstOf(verdicts: readonly Verdict[]): Verdict {
+  if (verdicts.includes('NO-GO')) return 'NO-GO';
+  if (verdicts.length === 0 || verdicts.includes('INCONCLUSIVE')) return 'INCONCLUSIVE';
+  return verdicts.includes('GO') ? 'GO' : 'INCONCLUSIVE';
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Words and numbers for sentences
 
