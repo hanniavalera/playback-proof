@@ -253,39 +253,106 @@ export function evaluateCriticalErrors(input: SoakInput, limits: Limits = LIVE_L
   });
 }
 
-/**
- * Errors of any severity that no injected fault explains, as information next to the criteria: it decides nothing. TEST_STRATEGY.md
- * section 8 says that "anything outside an injected fault window fails the soak", and `LIVE_READINESS` has no row for it (only the
- * critical errors, which are judged above and fail the soak whenever they happen); whether this line should be one is the owner's decision
- * (ADR-156). A recoverable error is a signal the soak exists to find (a retried segment, a manifest that did not arrive), so the sheet
- * shows it, with the zero of the critical-error limit as the reference it is held against.
- */
-export function evaluateUnexplainedErrors(input: SoakInput, limits: Limits = LIVE_LIMITS): Evaluation {
+/** The errors that no injected fault explains: not inside the window of a fault (from its start to the stall-recovery limit after it ends). */
+export function unexplainedErrors(input: SoakInput, limits: Limits = LIVE_LIMITS): SoakError[] {
   const windows = explainedWindows(input.faults, limits);
-  const unexplained = input.errors.filter((error) => !inside(windows, error.atMs));
+  return input.errors.filter((error) => !inside(windows, error.atMs));
+}
+
+/** The examples a reader starts from, as many as this. */
+const FIRST_EXAMPLES = 3;
+
+/** `2 x HTTP_ERROR (code 1002), 1 x TIMEOUT (code 1003)`: the errors counted by what they are, the most frequent first. */
+function countedByName(errors: readonly SoakError[]): string {
+  const counts = new Map<string, number>();
+  for (const error of errors) {
+    const name = `${error.codeName ?? 'error'} (code ${error.code})`;
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return [...counts]
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, count]) => `${count} x ${name}`)
+    .join(', ');
+}
+
+/** What a reader needs to start looking at an error: when, what, where it was caught, and what it said. */
+function exampleOf(error: SoakError, firstFrameMs: number) {
+  return {
+    atMs: error.atMs,
+    minute: Number(((error.atMs - firstFrameMs) / 60_000).toFixed(2)),
+    error: describeError(error),
+    source: error.source ?? null,
+    message: error.message,
+  };
+}
+
+/**
+ * The criterion: errors of severity 2 that no injected fault explains. A live event cannot tolerate an error that nobody can attribute: an
+ * injected fault is a cause the lab put there and can name, and a critical error outside its window has no cause that anyone knows. The
+ * failure is a no-go, and its first example is where the investigation starts (docs/decisions/readiness.md, ADR-156). It sits beside
+ * `evaluateCriticalErrors`, which fails on every critical error whether a fault explains it or not (a critical error inside a fault's window
+ * is a recovery that failed); both limits are zero.
+ */
+export function evaluateUnexplainedCriticalErrors(
+  input: SoakInput,
+  limits: Limits = LIVE_LIMITS,
+): Evaluation {
+  const critical = input.errors.filter((error) => error.severity >= 2);
+  const unexplained = unexplainedErrors(input, limits).filter((error) => error.severity >= 2);
   return evaluation({
-    id: 'soak.unexplained-errors',
+    id: 'soak.unexplained-critical-errors',
     check: 'PB-RDY-005',
-    label: 'Errors outside injected faults',
+    label: 'Unexplained critical errors',
     value: unexplained.length,
     unit: 'count',
-    limitKey: 'maxCriticalErrors',
+    limitKey: 'maxUnexplainedCriticalErrors',
+    bound: 'at-most',
+    limits,
+    detail: {
+      critical: critical.length,
+      explainedByFaults: critical.length - unexplained.length,
+      graceMs: limits.stallRecoveryMaxMs,
+      first: unexplained.slice(0, FIRST_EXAMPLES).map((error) => exampleOf(error, input.firstFrameMs)),
+    },
+    sentence: ({ verdict, limit }) =>
+      verdict === 'GO'
+        ? `No critical error that no injected fault explains (the limit is ${limit})${critical.length > 0 ? `; ${plural(critical.length, 'critical error')}, all inside a fault's window` : ''}.`
+        : `${plural(unexplained.length, 'critical error')} that no injected fault explains: ${countedByName(unexplained)}. A live event cannot tolerate an error nobody can attribute: this is a no-go, and the first example, at minute ${exampleOf(unexplained[0] as SoakError, input.firstFrameMs).minute}, is where to start: ${unexplained[0]?.message ?? ''}`,
+  });
+}
+
+/**
+ * Information next to the criterion: the errors of severity 1, and those of the page itself, that no injected fault explains, with their
+ * counts and first examples. They do not block (real networks produce recoverable errors), and a soak that has some is not the soak of
+ * a player nobody needs to look at: the sheet shows them with the verdict of the zero they are held against, marked advisory.
+ */
+export function evaluateUnexplainedRecoverableErrors(
+  input: SoakInput,
+  limits: Limits = LIVE_LIMITS,
+): Evaluation {
+  const recoverable = input.errors.filter((error) => error.severity < 2);
+  const unexplained = unexplainedErrors(input, limits).filter((error) => error.severity < 2);
+  return evaluation({
+    id: 'soak.unexplained-recoverable-errors',
+    check: 'PB-RDY-005',
+    label: 'Unexplained recoverable errors',
+    value: unexplained.length,
+    unit: 'count',
+    limitKey: 'maxUnexplainedCriticalErrors',
     bound: 'at-most',
     limits,
     scope: 'advisory',
     detail: {
-      total: input.errors.length,
-      explainedByFaults: input.errors.length - unexplained.length,
-      unexplained: unexplained.map((error) => ({
-        atMs: error.atMs,
-        error: describeError(error),
-        message: error.message,
-      })),
+      recoverable: recoverable.length,
+      explainedByFaults: recoverable.length - unexplained.length,
+      graceMs: limits.stallRecoveryMaxMs,
+      counts: countedByName(unexplained),
+      first: unexplained.slice(0, FIRST_EXAMPLES).map((error) => exampleOf(error, input.firstFrameMs)),
     },
     sentence: ({ verdict }) =>
       verdict === 'GO'
-        ? `${plural(input.errors.length, 'error')} in the soak, ${input.errors.length === 0 ? 'none to explain' : 'all inside an injected fault'}.`
-        : `${plural(unexplained.length, 'error')} that no injected fault explains: ${unexplained.map(describeError).join('; ')}. The first: ${unexplained[0]?.message ?? ''} This line is information and does not decide the soak (a critical error does, on its own line).`,
+        ? `${plural(recoverable.length, 'recoverable error')} in the soak${recoverable.length === 0 ? '' : ', all inside an injected fault'}.`
+        : `${plural(unexplained.length, 'recoverable error')} that no injected fault explains: ${countedByName(unexplained)}. The first, at minute ${exampleOf(unexplained[0] as SoakError, input.firstFrameMs).minute}: ${unexplained[0]?.message ?? ''} Reported with its examples and not blocking: only a critical error that nothing explains decides the soak.`,
   });
 }
 
@@ -654,20 +721,21 @@ export interface SoakEvaluation {
 }
 
 /**
- * The verdict of the soak and every line behind it. The criteria are those of the PB-RDY-005 row (stalls, critical errors, rebuffer ratio,
- * drift, heap, dropped frames) plus the errors no fault explains and the length; the advisory lines (latency, the manifest cadence over the
- * soak) are evidence and decide nothing.
+ * The verdict of the soak and every line behind it. The criteria are those of the PB-RDY-005 row (stalls, critical errors, unexplained
+ * critical errors, rebuffer ratio, drift, heap, dropped frames) plus the length; the advisory lines (latency, the manifest cadence over the
+ * soak, the recoverable errors that no fault explains) are evidence and decide nothing.
  */
 export function evaluateSoak(input: SoakInput, limits: Limits = LIVE_LIMITS): SoakEvaluation {
   const evaluations = [
     evaluateSoakLength(input, limits),
     evaluateUnrecoveredStalls(input, limits),
     evaluateCriticalErrors(input, limits),
-    evaluateUnexplainedErrors(input, limits),
+    evaluateUnexplainedCriticalErrors(input, limits),
     evaluateRebufferRatio(input, limits),
     evaluateLatencyDrift(input, limits),
     evaluateHeapGrowth(input, limits),
     evaluateDroppedFrames(input, limits),
+    evaluateUnexplainedRecoverableErrors(input, limits),
     ...advisoryLatency(input, limits),
     ...evaluateManifestCadence(input.manifestArrivalsMs, explainedWindows(input.faults, limits), limits, {
       check: 'PB-RDY-005',

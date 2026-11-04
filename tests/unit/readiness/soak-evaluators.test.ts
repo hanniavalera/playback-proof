@@ -9,7 +9,8 @@ import {
   evaluateRebufferRatio,
   evaluateSoak,
   evaluateSoakLength,
-  evaluateUnexplainedErrors,
+  evaluateUnexplainedCriticalErrors,
+  evaluateUnexplainedRecoverableErrors,
   evaluateUnrecoveredStalls,
   soakKind,
   unrecoveredStalls,
@@ -38,7 +39,8 @@ describe('a healthy soak', () => {
     for (const id of [
       'soak.stalls',
       'soak.critical-errors',
-      'soak.unexplained-errors',
+      'soak.unexplained-critical-errors',
+      'soak.unexplained-recoverable-errors',
       'soak.rebuffer-ratio',
       'soak.latency-drift',
       'soak.heap-growth',
@@ -316,30 +318,119 @@ describe('errors', () => {
     expect(evaluateCriticalErrors(soak({ errors: [error(130, 1)] })).verdict).toBe('GO');
   });
 
-  it('reports an error that no injected fault explains as information, and accepts one inside the stall it belongs to', () => {
+  describe('unexplained critical errors (a criterion of PB-RDY-005)', () => {
     const faults = [fault(120, 10)];
-    expect(evaluateUnexplainedErrors(soak({ errors: [error(100, 1)], faults })).verdict).toBe('NO-GO');
-    expect(evaluateUnexplainedErrors(soak({ errors: [error(125, 1)], faults })).verdict).toBe('GO');
-    // The player is given the stall-recovery limit after the origin returns to get going again: an error in that tail is the fault's.
-    const tail = 130 + LIVE_LIMITS.stallRecoveryMaxMs / 1000;
-    expect(evaluateUnexplainedErrors(soak({ errors: [error(tail - 1, 1)], faults })).verdict).toBe('GO');
-    expect(evaluateUnexplainedErrors(soak({ errors: [error(tail + 1, 1)], faults })).verdict).toBe('NO-GO');
-    expect(evaluateUnexplainedErrors(soak({ errors: [error(100, 1, 'HTTP_ERROR')] })).sentence).toContain(
-      'HTTP_ERROR',
-    );
+
+    it('is the count of errors of severity 2 outside the window of every injected fault, held to zero', () => {
+      const line = evaluateUnexplainedCriticalErrors(soak({ errors: [error(100, 2)], faults }));
+      expect(line.scope).toBe('criterion');
+      expect(line.limitKey).toBe('maxUnexplainedCriticalErrors');
+      expect(line.value).toBe(1);
+      expect(line.verdict).toBe('NO-GO');
+      expect(evaluateUnexplainedCriticalErrors(soak({ errors: [], faults })).verdict).toBe('GO');
+    });
+
+    it('blocks the soak, and says what it drives: a no-go and where to start', () => {
+      const result = evaluateSoak(soak({ errors: [error(100, 2, 'MEDIA_SOURCE_OPERATION_THREW')], faults }));
+      expect(result.verdict).toBe('NO-GO');
+      const line = get(result.evaluations, 'soak.unexplained-critical-errors');
+      expect(line.verdict).toBe('NO-GO');
+      // By itself, without the line of every critical error that would block as well: it is the criterion that decides.
+      expect(aggregate([line])).toBe('NO-GO');
+      expect(line.sentence).toContain('1 critical error that no injected fault explains');
+      expect(line.sentence).toContain('1 x MEDIA_SOURCE_OPERATION_THREW (code 1001)');
+      expect(line.sentence).toContain('a no-go, and the first example, at minute 1.67');
+      expect(line.sentence).toContain('HTTP error status 404');
+    });
+
+    it('explains an error by the window of a fault: from its start to the stall-recovery limit after it ends, and no further', () => {
+      const tail = 130 + LIVE_LIMITS.stallRecoveryMaxMs / 1000;
+      for (const [sec, verdict] of [
+        [119, 'NO-GO'],
+        [120, 'GO'],
+        [125, 'GO'],
+        [tail - 1, 'GO'],
+        [tail, 'NO-GO'],
+        [tail + 1, 'NO-GO'],
+      ] as const)
+        expect(
+          evaluateUnexplainedCriticalErrors(soak({ errors: [error(sec, 2)], faults })).verdict,
+          `at ${sec} s`,
+        ).toBe(verdict);
+    });
+
+    it('lets a critical error inside a fault pass this line and still fail the soak on the line of every critical error', () => {
+      const result = evaluateSoak(soak({ errors: [error(125, 2)], faults }));
+      expect(get(result.evaluations, 'soak.unexplained-critical-errors').verdict).toBe('GO');
+      expect(get(result.evaluations, 'soak.unexplained-critical-errors').sentence).toContain(
+        "1 critical error, all inside a fault's window",
+      );
+      expect(get(result.evaluations, 'soak.critical-errors').verdict).toBe('NO-GO');
+      expect(result.verdict).toBe('NO-GO');
+    });
+
+    it('counts a critical error with no fault injected at all as unexplained', () => {
+      expect(evaluateUnexplainedCriticalErrors(soak({ errors: [error(60, 2)] })).value).toBe(1);
+    });
+
+    it('keeps the examples a reader starts from: what, when, where it was caught, what it said, the first three', () => {
+      const errors = [10, 20, 30, 40, 50].map((sec) => error(sec, 2, `CODE_${sec}`));
+      const line = evaluateUnexplainedCriticalErrors(soak({ errors }));
+      const first = line.detail?.first as Array<{
+        error: string;
+        minute: number;
+        source: string;
+        message: string;
+      }>;
+      expect(first).toHaveLength(3);
+      expect(first.map((example) => example.minute)).toEqual([0.17, 0.33, 0.5]);
+      expect(first[0]).toMatchObject({ source: 'shaka', message: 'HTTP error status 404' });
+      expect(first[0]?.error).toContain('CODE_10');
+      expect(line.detail).toMatchObject({
+        critical: 5,
+        explainedByFaults: 0,
+        graceMs: LIVE_LIMITS.stallRecoveryMaxMs,
+      });
+    });
+
+    it('does not mistake a recoverable error for a critical one, whether or not a fault explains it', () => {
+      expect(evaluateUnexplainedCriticalErrors(soak({ errors: [error(100, 1)], faults })).value).toBe(0);
+    });
   });
 
-  it('does not let that line decide the soak (the strategy asks for it and criteria.ts has no row for it: the owner decides)', () => {
-    const line = evaluateUnexplainedErrors(soak({ errors: [error(100, 1)] }));
-    expect(line.scope).toBe('advisory');
-    expect(line.verdict).toBe('NO-GO');
-    expect(line.sentence).toContain('does not decide the soak');
-    const recoverable = evaluateSoak(soak({ errors: [error(100, 1)] }));
-    expect(recoverable.verdict).toBe('GO');
-    // A critical error is a criterion of its own, whether or not an injected fault explains it, and still fails the soak.
-    const critical = evaluateSoak(soak({ errors: [error(100, 2)] }));
-    expect(critical.verdict).toBe('NO-GO');
-    expect(get(critical.evaluations, 'soak.critical-errors').scope).toBe('criterion');
+  describe('unexplained recoverable errors (information next to the criteria)', () => {
+    const faults = [fault(120, 10)];
+
+    it('counts the errors of severity 1 outside every fault, with the first examples, and does not block', () => {
+      const errors = [error(30, 1, 'HTTP_ERROR'), error(40, 1, 'HTTP_ERROR'), error(50, 1, 'TIMEOUT')];
+      const result = evaluateSoak(soak({ errors, faults }));
+      const line = get(result.evaluations, 'soak.unexplained-recoverable-errors');
+      expect(line.scope).toBe('advisory');
+      expect(line.value).toBe(3);
+      expect(line.verdict).toBe('NO-GO');
+      expect(line.sentence).toContain(
+        '3 recoverable errors that no injected fault explains: 2 x HTTP_ERROR (code 1001), 1 x TIMEOUT (code 1001)',
+      );
+      expect(line.sentence).toContain('The first, at minute 0.5: HTTP error status 404');
+      expect(line.sentence).toContain('not blocking');
+      expect(line.detail?.first).toHaveLength(3);
+      expect(result.verdict).toBe('GO');
+    });
+
+    it('accepts the recoverable errors that the injected stall explains, and says so', () => {
+      const line = evaluateUnexplainedRecoverableErrors(
+        soak({ errors: [error(125, 1), error(135, 1)], faults }),
+      );
+      expect(line.verdict).toBe('GO');
+      expect(line.sentence).toContain('2 recoverable errors in the soak, all inside an injected fault');
+      expect(evaluateUnexplainedRecoverableErrors(soak()).sentence).toContain(
+        '0 recoverable errors in the soak.',
+      );
+    });
+
+    it('leaves the critical errors to the criterion: they are not counted here', () => {
+      expect(evaluateUnexplainedRecoverableErrors(soak({ errors: [error(30, 2)] })).value).toBe(0);
+    });
   });
 });
 

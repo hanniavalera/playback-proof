@@ -329,8 +329,8 @@ describe('the sheet of a soak', () => {
   it('explains an informational line that is not a GO, and marks it as one that decides nothing', () => {
     const text = renderSoakReport(soakReport('chromium', 5, { errors: [error(100, 1, 'HTTP_ERROR')] }));
     expect(text).toMatch(/Soak verdict\s+GO/);
-    expect(text).toMatch(/NO-GO\s+Errors outside injected faults \(advisory\)\s+1\s+<= 0/);
-    expect(text).toContain('NO-GO (advisory): 1 error that no injected fault explains');
+    expect(text).toMatch(/NO-GO\s+Unexplained recoverable errors \(advisory\)\s+1\s+<= 0/);
+    expect(text).toContain('NO-GO (advisory): 1 recoverable error that no injected fault explains');
   });
 });
 

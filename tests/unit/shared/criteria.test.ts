@@ -153,6 +153,7 @@ describe('PB-LAB-007 live readiness: the limits follow from the stream arithmeti
   it('keeps the soak limits sane: zero hangs, a small ratio, drift below one segment', () => {
     expect(L.maxUnrecoveredStalls).toBe(0);
     expect(L.maxCriticalErrors).toBe(0);
+    expect(L.maxUnexplainedCriticalErrors).toBe(0);
     expect(L.maxRebufferRatio).toBeGreaterThan(0);
     expect(L.maxRebufferRatio).toBeLessThan(0.05);
     expect(L.maxDroppedFrameRatio).toBeLessThan(0.1);

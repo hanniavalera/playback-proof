@@ -34,7 +34,10 @@ try {
   const garbage = (): Promise<void> =>
     page.evaluate(() => {
       // 60 MB of arrays that nothing refers to afterwards: what a collection can free.
-      for (let i = 0; i < 60; i++) new Array(1_000_000).fill(i).length;
+      for (let i = 0; i < 60; i++) {
+        const array = new Array(1_000_000).fill(i);
+        if (array.length === 0) throw new Error('unreachable: keeps the allocation observable');
+      }
     });
   say('browser', browser.version());
 

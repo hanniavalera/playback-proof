@@ -188,7 +188,14 @@ export const LIVE_READINESS = {
     0,
     'count',
     'Shaka errors with severity 2 in `qa.metrics().errors` over the soak.',
-    'A critical error ends a viewing session. Recoverable errors are counted and reported, and must be explained by an injected fault.',
+    'A critical error ends a viewing session. Recoverable errors are counted and reported (next row), and do not block.',
+  ),
+  maxUnexplainedCriticalErrors: assumption(
+    'Unexplained critical errors',
+    0,
+    'count',
+    'Errors of severity 2 in `qa.metrics().errors` over the soak that are not inside the window of a fault the soak injected or the stall-recovery limit after it. A recoverable error that no injected fault explains is counted and reported with its first examples, and does not block.',
+    'A live event cannot tolerate an error that nobody can attribute: an injected fault is a cause the lab put there and can name, and a critical error outside its window has no cause that anyone knows. It is a no-go on its own, and its first example is where the investigation starts. Recoverable errors are reported and do not block, because real networks produce them.',
   ),
   maxRebufferRatio: assumption(
     'Rebuffer ratio',

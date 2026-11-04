@@ -291,7 +291,7 @@ export function checklist(input: ChecklistInput): ChecklistItem[] {
   });
   items.push({
     number: 4,
-    text: 'The release soak passed in every engine: no unrecovered stall, no critical error, rebuffer ratio, latency drift and dropped frames within their limits, and heap growth within its limit in Chromium.',
+    text: 'The release soak passed in every engine: no unrecovered stall, no critical error and none that no injected fault explains, rebuffer ratio, latency drift and dropped frames within their limits, and heap growth within its limit in Chromium.',
     status: statusOf(releaseVerdicts),
     evidence: [
       ...soakLines,
