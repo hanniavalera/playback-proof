@@ -2,6 +2,7 @@ import { profile } from '../../src/shared/profiles.ts';
 import { settleWindowSeconds, throttleOf, upshiftBoundSeconds } from './abr/conditions.ts';
 import { bestRungCarriedBy, ladderOf, rungOf } from './abr/ladder.ts';
 import { describeSegments, fromFirstOf, videoSegmentRequests } from './abr/log.ts';
+import { startupBound } from './abr/startup.ts';
 import { describeVariantChanges, variantChanges } from './abr/variants.ts';
 import {
   expectAtMostRebuffers,
@@ -24,6 +25,8 @@ const DOWNSHIFT_WAIT_MS = 45_000;
 // room to spare, and finite, so that a 75 KB segment of the lowest rung takes 100 ms to arrive: far above the 5 ms under which Shaka
 // does not count a download (PB-ABR-003).
 const RECOVERED_LINK_KBPS = 6000;
+// "The first 10 s" of PB-ABR-006, counted in media time: seconds of playback, not seconds since the page asked for the title.
+const EARLY_PLAYBACK_S = 10;
 
 test(
   'PB-ABR-002 downshifts when bandwidth drops mid-playback (bandwidth-drop): at most one rebuffer, settles on a rung the network can carry',
@@ -339,5 +342,90 @@ test(
       late.length,
       `${pinned.rep} segments the origin delivered in more than their ${stream.segmentDurationSec} s of playing time (request log): the ${link} kbps link must not carry the pinned rung`,
     ).toBeGreaterThan(0);
+  },
+);
+
+test(
+  'PB-ABR-006 startup on a constrained network (constrained-600): first frame within a bound derived from the throttle, at most one rebuffer in the first 10 s, settles on the lowest rung',
+  { tag: ['@release', '@dash'] },
+  async ({ newSession, streamFor, player }, testInfo) => {
+    test.setTimeout(ABR_TEST_TIMEOUT_MS);
+    const rules = profile('constrained-600');
+    const session = await newSession({ stream: streamFor('vod', 'dash'), protocol: 'dash', faults: rules });
+    const stream = await streamInfoOf(session);
+    const ladder = ladderOf(stream);
+    const link = throttleOf(rules).kbps;
+    expect(
+      bestRungCarriedBy(ladder, link).rep,
+      `the rung a ${link} kbps link carries (the ladder): the lowest, or this is not the slowest link the ladder can serve`,
+    ).toBe(ladder.lowest.rep);
+
+    const qa = await player(session).open();
+    await qa.waitFor('firstframe', { timeoutMs: WAIT_MS });
+
+    // The bound is derived for the rung the player started on, because that is what it fetches first, and the engines differ
+    // (Shaka's defaults: 720p in Chromium, 360p in WebKit and Firefox). Everything the link must carry before the first frame is
+    // in `startupBound`; on a start that is too heavy for the link the player cuts it off once it has sampled enough to know.
+    const [start] = variantChanges(await qa.events()).filter((change) => change.reason === 'start');
+    if (!start)
+      throw new Error('the hook recorded no initial variant selection (variant-changed with reason start)');
+    const bound = startupBound({
+      stream,
+      ladder,
+      start: rungOf(ladder, { height: start.height }),
+      linkKbps: link,
+    });
+    const startupMs = (await qa.metrics()).startupMs;
+    testInfo.annotations.push({
+      type: 'measured',
+      description: `first frame after ${startupMs?.toFixed(0)} ms (bound ${bound.boundMs} ms), started on ${start.height}p`,
+    });
+    expect(startupMs, 'startup time (metrics.startupMs): a first frame was presented').not.toBeNull();
+    expect(
+      startupMs as number,
+      `startup time (metrics.startupMs) in ms; the bound: ${bound.summary}`,
+    ).toBeLessThanOrEqual(bound.boundMs);
+
+    // Settled on the lowest rung: the step down may come before the first frame (it does when the start rung is cut off), so
+    // wait for the rung, whatever its reason, then watch it past the switch interval; and the first 10 s of playback are covered.
+    const low = await qa.waitFor('variant-changed', {
+      detail: { height: ladder.lowest.height },
+      timeoutMs: WAIT_MS,
+    });
+    const window = settleWindowSeconds(stream.segmentDurationSec);
+    await qa.waitForMediaTime(Math.max(EARLY_PLAYBACK_S, low.mediaTime + window), { timeoutMs: WAIT_MS });
+
+    const metrics = await qa.metrics();
+    const early = metrics.rebuffer.events.filter((event) => event.mediaTime <= EARLY_PLAYBACK_S);
+    const earlyList = early.map(
+      (event) => `at media time ${event.mediaTime.toFixed(2)} s for ${Math.round(event.durationMs)} ms`,
+    );
+    expect(
+      early.length,
+      `rebuffers in the first ${EARLY_PLAYBACK_S} s of playback (metrics.rebuffer.events): at most one, saw ${early.length}${early.length > 0 ? `: ${earlyList.join('; ')}` : ''}`,
+    ).toBeLessThanOrEqual(1);
+    expect(
+      describeVariantChanges(variantChanges(await qa.events(low.index + 1))),
+      `rung changes after settling on ${ladder.lowest.height}p (qa.events()): none`,
+    ).toBe('none');
+    expect(metrics.bitrate.current?.height, 'active rung (metrics.bitrate.current) at the end').toBe(
+      ladder.lowest.height,
+    );
+    expectHealthyPlayback(metrics);
+
+    // The origin's account: from the first segment of the lowest rung on nothing else is asked for, and it is what was delivered last.
+    const log = await session.service.log(session.id);
+    const video = videoSegmentRequests(log);
+    expect(
+      fromFirstOf(video, ladder.lowest.rep)
+        .filter((entry) => entry.rep !== ladder.lowest.rep)
+        .map((entry) => `${entry.rep} #${entry.number}`),
+      `video segments requested after the first ${ladder.lowest.rep} one (request log): ${describeSegments(video)}`,
+    ).toEqual([]);
+    const delivered = videoSegmentRequests(requestsFor(log, { status: 'ok' }));
+    expect(
+      delivered.slice(-3).map((entry) => entry.rep),
+      `rungs of the last three video segments the origin delivered (request log): ${describeSegments(delivered)}`,
+    ).toEqual([ladder.lowest.rep, ladder.lowest.rep, ladder.lowest.rep]);
   },
 );

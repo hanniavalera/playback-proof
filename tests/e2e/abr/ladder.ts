@@ -8,6 +8,8 @@ export interface Rung {
   /** The representation id the request log uses (`v240`). */
   rep: string;
   height: number;
+  /** What the video representation declares, bits per second: the peak of bytes x 8 / duration over its segments. */
+  videoBandwidth: number;
   /**
    * What a player that picks this rung declares it needs, bits per second: the video representation plus the audio one. It is the
    * `bandwidth` of the hook's `variant-changed` events and the number Shaka compares its estimate with.
@@ -32,7 +34,12 @@ export function ladderOf(stream: Pick<StreamInfo, 'id' | 'reps'>): Ladder {
     .map((rep): Rung => {
       if (rep.height === undefined)
         throw new Error(`video representation ${rep.id} of ${stream.id} has no height`);
-      return { rep: rep.id, height: rep.height, variantBandwidth: rep.bandwidth + audio.bandwidth };
+      return {
+        rep: rep.id,
+        height: rep.height,
+        videoBandwidth: rep.bandwidth,
+        variantBandwidth: rep.bandwidth + audio.bandwidth,
+      };
     })
     .sort((a, b) => a.variantBandwidth - b.variantBandwidth);
   const lowest = rungs[0];
