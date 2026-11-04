@@ -235,7 +235,7 @@ built the next best independent thing, and ran the real one in Docker."
 
 ## ADR-049: ClearKey (`vod-cmaf-clearkey`): CENC AES-CTR applied by the lab after the cut
 
-**Context.** The brief makes an encrypted 12 s stream (`v360` + `a-aac`, CENC AES-CTR, a public throw-away key pair, DASH only, `ContentProtection` in the manifest) a stretch goal. It prefers ffmpeg's `-encryption_scheme cenc-aes-ctr`, and allows writing the encryption by hand only when that is small and ffmpeg's own decryption (`-decryption_key`) can verify it.
+**Context.** The lab wants one encrypted stream for ClearKey tests (`v360` + `a-aac`, CENC AES-CTR, a public throw-away key pair, DASH only, `ContentProtection` in the manifest). The preferred way is ffmpeg's own `-encryption_scheme cenc-aes-ctr`; writing the encryption by hand is acceptable only when that is small and ffmpeg's own decryption (`-decryption_key`) can verify it.
 
 **What was measured before deciding.**
 
@@ -269,5 +269,5 @@ Checking in encrypted fixtures (no way to see what made them).
   needs the header in the clear would need a subsample map in `senc` (a local change in `cenc.ts` and the writer). No `pssh` box is written: a player is expected to start from the manifest's `ContentProtection` with the key configured (`clearKeys` in Shaka).
 - DASH only, VOD only, one key for both tracks, `cenc` (AES-CTR) and no `cbcs`.
 
-**Defending it.** "The brief said to use ffmpeg's encryption if it works. It works on my laptop and not on the CI image, and I proved that from a run and from the upstream source before writing a line. So I wrote one small path that behaves the same everywhere, used the platform's AES for the cipher, and had ffmpeg's own decryption judge it against an unencrypted
+**Defending it.** "My first choice was ffmpeg's own encryption. It works on my laptop and not on the CI image, and I proved that from a run and from the upstream source before writing a line. So I wrote one small path that behaves the same everywhere, used the platform's AES for the cipher, and had ffmpeg's own decryption judge it against an unencrypted
 twin, with a negative control. If I had got the counter wrong, ffmpeg would have shown me noise; it showed me the same 360 frames."
