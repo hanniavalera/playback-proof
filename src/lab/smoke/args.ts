@@ -11,6 +11,7 @@ export const SMOKE_SESSIONS = [
   'live-hls',
   'actions',
   'recovery',
+  'ended',
 ] as const;
 export type SmokeSession = (typeof SMOKE_SESSIONS)[number];
 
@@ -47,8 +48,10 @@ Each session runs in its own browser process. Exit code 1 when any session fails
                                start on macOS, run it with: npm run docker:pw -- npx tsx tools/player-smoke.ts --browsers firefox)
   --sessions a,b               ${SMOKE_SESSIONS.join(', ')} (default: all)
                                  vod-dash vod-hls live-dash live-hls: play a few media seconds, check what the hook reports
+                                 vod-dash also proves that the page's content-security policy is enforced
                                  actions:  pause and resume, a seek inside the buffer and one outside it, pin a rung, frame rate
                                  recovery: a segment that answers 404 once (the service's transient-404 profile)
+                                 ended:    seek to three seconds before the end and play to it: the ended event and the state
   --repeat N                   run the whole matrix N times (default 1)
   --muted 0|1                  the page's muted parameter (default 1)
   --config A|B                 the player configuration (default A)

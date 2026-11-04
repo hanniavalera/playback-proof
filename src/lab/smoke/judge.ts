@@ -22,6 +22,7 @@ export const SMOKE_STAGES = [
   'checks',
   'actions',
   'recovery',
+  'ended',
   'evaluate',
 ] as const;
 export type SmokeStage = (typeof SMOKE_STAGES)[number];
@@ -46,6 +47,16 @@ const describeErrors = (errors: readonly QAError[]): string =>
         `${error.codeName ?? error.code}${error.source ? ` (${error.source})` : ''}: ${error.message}`,
     )
     .join('; ');
+
+/**
+ * The media time a session has to reach: `seconds` of media after the whole second the first frame was in. The tool waits for
+ * this value and the judge checks it, so they cannot disagree (the first real run did: the tool waited for 3 s, the judge wanted
+ * 3.02 s because the first frame was at 0.02 s). A VOD session starts near 0, so it needs `seconds`; a live one starts near the
+ * edge (24 s with the lab's defaults), so it needs that plus `seconds`.
+ */
+export function mediaTargetSec(startMediaTime: number | null, seconds: number): number {
+  return Math.floor(startMediaTime ?? 0) + seconds;
+}
 
 /**
  * The pass criteria of a playing session: the browser is supported, the page played through Shaka's MSE path, a first frame
@@ -78,7 +89,7 @@ export function judgeBasic(o: BasicObservation): Check[] {
     o.firstFrameSeen && metrics?.startupMs !== null && metrics?.startupMs !== undefined,
     `startupMs=${String(metrics?.startupMs)}`,
   );
-  const target = (o.startMediaTime ?? 0) + o.mediaSeconds;
+  const target = mediaTargetSec(o.startMediaTime, o.mediaSeconds);
   add(
     `media time advanced ${o.mediaSeconds} s`,
     o.reachedMediaTime !== null && o.reachedMediaTime >= target,
@@ -123,10 +134,15 @@ export interface SessionResult {
   decoded: number | null;
   dropped: number | null;
   presented: number | null;
+  /** The height of the rung when the metrics were read. */
   rungHeight: number | null;
+  /** The height of the first rung Shaka picked for the load (the `start` variant-changed): what the configuration's defaults decide. */
+  startRungHeight: number | null;
   switches: number | null;
   latencyMs: number | null;
   info: QAInfo | null;
+  /** The last metrics snapshot of the session: the rebuffer events, the rung history, the errors, the live numbers. */
+  metrics: QAMetrics | null;
   errors: QAError[];
   checks: Check[];
   /** Console errors and uncaught page errors seen by the browser. */
@@ -140,7 +156,15 @@ export function summarizeMetrics(
   metrics: QAMetrics | null,
 ): Pick<
   SessionResult,
-  'startupMs' | 'rebuffers' | 'decoded' | 'dropped' | 'presented' | 'rungHeight' | 'switches' | 'latencyMs'
+  | 'startupMs'
+  | 'rebuffers'
+  | 'decoded'
+  | 'dropped'
+  | 'presented'
+  | 'rungHeight'
+  | 'startRungHeight'
+  | 'switches'
+  | 'latencyMs'
 > {
   return {
     startupMs: metrics?.startupMs ?? null,
@@ -149,6 +173,7 @@ export function summarizeMetrics(
     dropped: metrics?.frames.dropped ?? null,
     presented: metrics?.frames.presented ?? null,
     rungHeight: metrics?.bitrate.current?.height ?? null,
+    startRungHeight: metrics?.bitrate.history.find((change) => change.reason === 'start')?.height ?? null,
     switches: metrics?.bitrate.switches ?? null,
     latencyMs: metrics?.live.latencyMs ?? null,
   };
@@ -208,12 +233,20 @@ export function renderTable(results: readonly SessionResult[]): string {
       cell(r.rebuffers),
       r.dropped === null || r.decoded === null ? '-' : `${r.dropped}/${r.decoded}`,
       cell(r.presented),
-      r.rungHeight === null ? '-' : `${r.rungHeight}p`,
+      rungCell(r),
       cell(r.latencyMs, 0, ' ms'),
       noteOf(r),
     ]);
   }
   return formatTable(rows);
+}
+
+/** `720p`, or `360>720p` when the first rung and the current one differ. */
+function rungCell(r: SessionResult): string {
+  if (r.rungHeight === null) return '-';
+  if (r.startRungHeight !== null && r.startRungHeight !== r.rungHeight)
+    return `${r.startRungHeight}>${r.rungHeight}p`;
+  return `${r.rungHeight}p`;
 }
 
 export interface SessionSummary {
@@ -243,4 +276,43 @@ export function summarize(results: readonly SessionResult[]): SessionSummary[] {
     }
   }
   return [...byKey.values()];
+}
+
+/**
+ * What a failed run is called when runs are grouped: the stage it failed at and the error events the page recorded (code names,
+ * with Shaka's own data: for a media error, the MediaError code and message), or, when the page recorded none, the first line of
+ * the failure (a timeout names what it waited for). Two runs with the same signature failed the same way.
+ */
+export function failureSignature(result: SessionResult): string {
+  const recorded = [
+    ...new Set(
+      result.errors.map((error) => {
+        const data = error.data && error.data.length > 0 ? `(${error.data.map(String).join(', ')})` : '';
+        return `${error.codeName ?? error.code}${data}${error.source ? ` via ${error.source}` : ''}`;
+      }),
+    ),
+  ].sort();
+  const what = recorded.length > 0 ? recorded.join(' + ') : (result.error ?? 'failed').split('\n')[0];
+  return `[${result.stage ?? '?'}] ${what}`;
+}
+
+export interface FailureGroup {
+  engine: string;
+  session: SmokeSession;
+  signature: string;
+  count: number;
+}
+
+/** The failed runs grouped by engine, session and signature, most frequent first. */
+export function summarizeFailures(results: readonly SessionResult[]): FailureGroup[] {
+  const groups = new Map<string, FailureGroup>();
+  for (const r of results) {
+    if (r.status !== 'fail') continue;
+    const signature = failureSignature(r);
+    const key = `${r.engine}\u0000${r.session}\u0000${signature}`;
+    const group = groups.get(key);
+    if (group) group.count += 1;
+    else groups.set(key, { engine: r.engine, session: r.session, signature, count: 1 });
+  }
+  return [...groups.values()].sort((a, b) => b.count - a.count);
 }
