@@ -579,7 +579,7 @@ export function advisoryLatency(input: SoakInput, limits: Limits = LIVE_LIMITS):
     evaluation({
       id: 'soak.latency-p95',
       check: 'PB-RDY-005',
-      label: 'Latency, p95 (advisory)',
+      label: 'Latency, p95',
       value: p95,
       unit: 'ms',
       limitKey: 'latencyP95MaxMs',
@@ -594,7 +594,7 @@ export function advisoryLatency(input: SoakInput, limits: Limits = LIVE_LIMITS):
     evaluation({
       id: 'soak.latency-max',
       check: 'PB-RDY-005',
-      label: 'Latency, maximum (advisory)',
+      label: 'Latency, maximum',
       value: max,
       unit: 'ms',
       limitKey: 'latencyMaxMs',
