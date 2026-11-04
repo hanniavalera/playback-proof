@@ -187,10 +187,12 @@ Exact semantics (the service implements them as written and its tests pin them):
 
 ## 6. The player page and `window.__qa`
 
-- Page: `/player/` with query `manifest`, `config` (`A` | `B`), `autoplay`, `muted`, `start`, `abr`, `hud` (`PlayerPageParams`). Muted by default so autoplay is allowed in every engine. `hud=1` shows a small overlay (default off: the page under test carries no extra work). A parameter the page cannot use (`muted=maybe`, `start=-3`) is ignored and recorded as an `error` event with code 0, so a typo in a test fails loudly instead of silently changing what is measured.
-- Hook: `window.__qa` (`QAHook`, `src/shared/qa.ts`). Event timeline with a **cursor**, so waits are race-free; metrics snapshot;
-  actions that resolve on the resulting event (`seek` resolves on `seeked`).
-- Metric definitions: [METRICS.md](METRICS.md). Configurations A and B: `src/player/configs.ts` (A = Shaka defaults, B = a tuned candidate; both are printed by `qa.info()`).
+- Page: `/player/` with query `manifest`, `config` (`A` | `B`), `autoplay`, `muted`, `start`, `abr`, `hud` (`PlayerPageParams`). Muted by default so autoplay is allowed in every engine. `autoplay` applies to the page's own load (the `manifest` parameter); a load started with `qa.load()` never plays by itself. `hud=1` shows a small overlay (default off: the page under test carries no extra work). A parameter the page cannot use (`muted=maybe`, `start=-3`) is ignored and recorded as an `error` event with code 0, so a typo in a test fails loudly instead of silently changing what is measured.
+- Hook: `window.__qa` (`QAHook`, `src/shared/qa.ts`) exists synchronously when the script runs; `qa.ready` resolves when Shaka is built, configured and attached. Event timeline with a **cursor**, so waits are race-free; metrics snapshot;
+  actions that resolve on the resulting event (`seek` resolves on the `seeked` that follows its own `seeking`, `selectVariantByHeight` on its `variant-changed`). A wait that times out rejects with the last 15 events in its message. `qa.info()` reports the configuration letter, the exact override object and what Shaka's defaults held at those keys, every `qa.configure()` call, the page parameters as applied, and `loadMode` (`'media-source'` or `'src='`: the lab plays everything through MSE and its smoke asserts it).
+- Errors: every failure is an `error` event (`QAError`): Shaka errors with their code name and a digest of their data, a rejected `load()` or `play()`, a silent MediaSource recovery, unusable page parameters, unhandled exceptions and rejections of the page itself (code 0). Critical (severity 2) puts `state` in `error`. Nothing crashes the page.
+- Metric definitions: [METRICS.md](METRICS.md) (the seek window and the live latency are specified there in detail). Configurations A and B: `src/player/configs.ts` (A = Shaka defaults, B = three falsifiable overrides; both are printed by `qa.info()`). Decisions: [decisions/player.md](decisions/player.md).
+- Build and smoke: `npm run build:player` writes `dist/player` (Shaka's compiled build copied verbatim as `shaka.js`, the lab's code as `player.js`, `index.html`, `player.css`); `npm run player:smoke` plays real sessions through the hook in the installed browsers.
 
 ## 7. Tests: ids, tiers, tags, waiting
 
