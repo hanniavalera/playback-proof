@@ -220,7 +220,10 @@ describe('faults on the VOD pipeline', () => {
       const before = reply.chunks[at];
       const after = reply.chunks[at + 1];
       expect(before && after).toBeTruthy();
-      expect((after?.t ?? 0) - (before?.t ?? 0)).toBeGreaterThanOrEqual(295);
+      // The two timestamps are taken by the client, each as late as its event loop got to it, so a gap can read a little shorter than
+      // the stall (294.4 ms for 300 ms on a loaded runner); the stall itself is proved by the server's own clock below. A stall that did
+      // not happen reads a few milliseconds, so a quarter of a second still separates the two.
+      expect((after?.t ?? 0) - (before?.t ?? 0)).toBeGreaterThanOrEqual(250);
       const [entry] = await logOf(h, s.id);
       expect(entry).toMatchObject({ status: 200, bytes: 600, faults: ['f1'], pending: false });
       expect(entry?.totalMs).toBeGreaterThanOrEqual(300);

@@ -226,8 +226,12 @@ describe('stall', () => {
     console.info(
       `[delivery] stall ${ms} ms after ${afterBytes} bytes: the client saw ${pause.toFixed(1)} ms of silence at that byte`,
     );
-    expect(pause).toBeGreaterThanOrEqual(ms - 10);
-    expect(pause).toBeLessThan(ms + 120);
+    // Both timestamps are taken by the client when its event loop gets to the reads, so the silence it sees is the stall plus the jitter
+    // of the second read minus the jitter of the first: a loaded CI runner showed 294 ms for 300. A stall that did not happen reads a few
+    // milliseconds and one that was served twice reads twice as long, so half the stall below and a whole stall above still tell them
+    // apart; the stall itself is proved by the server's own clock (`totalMs`).
+    expect(pause).toBeGreaterThanOrEqual(ms - ms / 2);
+    expect(pause).toBeLessThan(ms + ms);
     expect(outcome?.totalMs).toBeGreaterThanOrEqual(ms);
     expect(outcome).toMatchObject({ aborted: false, bytesSent: BODY.length });
     await srv.close();
@@ -335,7 +339,8 @@ describe('abort', () => {
     const got = await download(srv.port, '/');
     expect(got.bytes).toBe(30_000);
     expect(got.complete).toBe(false);
-    expect(pauseAfter(got, 10_000)).toBeGreaterThanOrEqual(140);
+    // The silence the client saw is the stall within the jitter of two reads (see the stall test above): the stall was 150 ms.
+    expect(pauseAfter(got, 10_000)).toBeGreaterThanOrEqual(100);
     expect(await srv.settled()).toEqual([
       expect.objectContaining({ aborted: true, reason: 'fault-abort', bytesSent: 30_000 }),
     ]);
