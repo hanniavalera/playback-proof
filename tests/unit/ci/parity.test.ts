@@ -236,6 +236,7 @@ describe('the parity of the Jenkinsfile and the GitHub workflows', () => {
       'gate:static',
       'gate:unit',
       'gate:merge',
+      'gate:perf',
       'gate:flake',
       'gate:triage',
     ]);
@@ -243,6 +244,7 @@ describe('the parity of the Jenkinsfile and the GitHub workflows', () => {
       'gate:static',
       'gate:unit',
       'gate:merge',
+      'gate:perf',
       'gate:flake',
       'gate:triage',
     ]);

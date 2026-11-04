@@ -9,10 +9,10 @@
 // `reports/` and `test-results/` cannot clobber each other) and its own service port (the agent's executors share one
 // network namespace).
 //
-// A later gate (perf) is one more block in `stages` with its own `sh 'npm run gate:<name>'` line. None exists here until its
-// script does. `Flake` (gate:flake) judges the run files the engines stashed against the history on the `flake-history` volume,
-// and records the build when it is a build of main (ADR-174 in docs/decisions/ci-flake.md). `Triage` (gate:triage) is the last
-// stage and runs only when the build is not green: it explains the red, it never decides it.
+// `Perf` (gate:perf) measures the head against a control on the same agent, alone after the engines (ADR-179). `Flake` (gate:flake)
+// judges the run files the engines stashed against the history on the `flake-history` volume, and records the build when it is a
+// build of main (ADR-174 in docs/decisions/ci-flake.md). `Triage` (gate:triage) is the last stage and runs only when the build is
+// not green: it explains the red, it never decides it.
 
 // Keeps what the engine runs produced (the failure attachments of docs/CONTRACTS.md 7.2 live in test-results/), then
 // frees the workspace: the next build starts from a clean checkout. The JUnit step is a no-op until a JUnit report exists.
@@ -41,7 +41,7 @@ pipeline {
     options {
         timestamps()
         ansiColor('xterm')
-        timeout(time: 40, unit: 'MINUTES')
+        timeout(time: 60, unit: 'MINUTES')
         disableConcurrentBuilds()
         buildDiscarder(logRotator(numToKeepStr: '15', artifactNumToKeepStr: '5'))
         // Every stage that has an agent checks out explicitly, so that the log says where the sources came from.
@@ -191,6 +191,35 @@ pipeline {
                             script { collectResults('flake-webkit') }
                         }
                     }
+                }
+            }
+        }
+
+        // The performance gate (docs/PERF.md, ADR-179): the head against a control measured on this same agent minutes earlier, so it
+        // runs alone, after the engines and not beside them (a measurement beside another browser measures the neighbour). The
+        // control is the first parent of the commit on main, and the commit itself on any other branch (an A/A: there is nothing
+        // to compare with yet). A red gate does not skip the stages after it: the Flake and Triage stages still run.
+        stage('Perf') {
+            agent { label 'playwright' }
+            environment {
+                PB_PORT = '4605'
+            }
+            steps {
+                script {
+                    def scmVars = checkout scm
+                    sh 'npm ci --no-audit --no-fund'
+                    sh 'npm run build:player'
+                    def control = isMainBranch(scmVars.GIT_BRANCH) ? 'HEAD^1' : 'HEAD'
+                    catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                        withEnv(["CONTROL_REF=${control}"]) {
+                            sh 'npm run gate:perf -- --paired --control-ref "$CONTROL_REF" --profile chromium,chromium-cpu4x'
+                        }
+                    }
+                }
+            }
+            post {
+                always {
+                    script { collectResults() }
                 }
             }
         }
