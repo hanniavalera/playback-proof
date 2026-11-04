@@ -129,6 +129,9 @@ Base URL `http://127.0.0.1:${PB_PORT}` (default 4600). Types: `src/shared/api.ts
 - The request log is the second observation channel for tests: besides asking the player what it did (`window.__qa`) a test can ask the
   server what the player fetched (which segment numbers after a seek, which rung after a throttle, how often a 404 was retried).
 - Everything under `/s/<session>/` is logged (`RequestLogEntry`); `/api` and `/health` are not. The log of a session keeps its last 5000 entries.
+  An entry is listed **from the request's arrival** with `pending: true` and the values so far (status 0 until the response head is sent), and is
+  completed in place. `seq` is assigned at arrival, so the list is always in `seq` order and a cursor (`?since=<last seq seen>`) cannot skip a request that
+  completes late; it also lets a test wait on the server ("a request for segment 7 has started") without sleeping.
 - `GET /player/*` serves the built player (`dist/player`, produced by `npm run build:player`); `HealthInfo.player` says whether it exists.
   Static serving cannot leave that directory (path traversal is rejected, not sanitised). `HEAD` and `OPTIONS` (CORS preflight) work on every path.
 - Programmatic entry: `startServer(options)` in `src/server/index.ts` returns `{ origin, port, close() }` and is what the harnesses and tests use;
@@ -152,8 +155,11 @@ Exact semantics (the service implements them as written and its tests pin them):
 - **throttle** limits the response *body* (headers excluded). One token bucket per rule and session, shared by all the concurrent responses the rule
   matches; a response matched by several throttle rules is limited by all of them (so by the slowest). Burst allowance: at most one chunk (16 KB).
   Contract: measured goodput within +-10 % of `kbps` for transfers of at least 500 KB.
-- **latency** delays the first byte by `ms` plus a repeatable jitter drawn from a PRNG seeded with the session id and the request sequence number.
-- **status** answers with that status and an empty body. **stall** sends `afterBytes`, pauses `ms`, finishes. **abort** sends `afterBytes` (default 0), then destroys the socket.
+- **latency** delays the first byte by `max(0, ms + u * jitterMs)`, where `u` is uniform in [-1, 1) and drawn by a PRNG seeded with (session id, request `seq`,
+  rule id): the same session id and request order give the same delays, and the delay is a pure function that a test can assert without measuring time.
+  Several latency rules that fire on one request add up.
+- **status** answers with that status and an empty body (latency still applies; throttle, stall and abort have no body to act on). **stall** sends `afterBytes`, pauses `ms`, finishes.
+  **abort** sends `afterBytes` (default 0), then destroys the socket. When several `status` (or `stall`, or `abort`) rules fire on one request, the first in rule order wins.
 - **live-stall** (`atNumber`, `ms`) is timed by the live clock: `afterMs` and `forMs` are rejected. It starts at `S = max(AST + atNumber*d, installTime)`
   (the publication instant of segment `atNumber`, or now when installed late) and freezes the edge at `edge(S)` until `S + ms`: manifests keep
   listing the frozen window with the frozen `publishTime`, segments above the frozen edge are 404. At `S + ms` the origin catches up: the edge jumps
@@ -163,7 +169,9 @@ Exact semantics (the service implements them as written and its tests pin them):
   (session, manifest URL), recorded at serve time. A URL that had not been served before the rule became active has nothing to replay: its
   current body is served and becomes the body replayed for the rest of the window.
 - **Validation.** Invalid rules are rejected with 400 and a list of the problems: unknown `type`, non-finite or negative numbers, `kbps <= 0`,
-  `status` outside 100-599, a `live-stall` or `manifest-stale` rule on a VOD session, `status` without `match.kind`.
+  `status` outside 100-599, a `live-stall` or `manifest-stale` rule on a VOD session, `status` without `match.kind`, a malformed `match`, a `times` that is not a
+  positive integer, a duplicate rule id. `live-stall` and `manifest-stale` need `ms > 0`; `live-stall` takes no `match`, `times`, `afterMs` or `forMs`;
+  `manifest-stale` takes no `forMs` or `times`, and its `match.kind`, if present, is `manifest` or `any`.
 
 ## 6. The player page and `window.__qa`
 

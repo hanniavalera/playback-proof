@@ -75,6 +75,8 @@ export interface RequestLogEntry {
   /** ids of the fault rules that fired for this request */
   faults: string[];
   aborted?: boolean;
+  /** true while the response is still being written: status, bytes, ttfbMs and totalMs are then the values so far (status 0 until the head is sent). */
+  pending?: boolean;
 }
 
 export interface HealthInfo {
