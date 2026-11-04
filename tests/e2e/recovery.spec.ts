@@ -63,9 +63,10 @@ test(
     await qa.waitForMediaTime(number * stream.segmentDurationSec + 1);
 
     // The origin's side: the segment was asked for again and delivered, after one refusal. Usually that is the retry of the same
-    // URL; in an engine that starts on a low rung the ABR can move up while the retry waits out its back-off (macOS WebKit, 1 run in
-    // 8), and then the segment is fetched again from the new rung. The annotation says which. The failure path would show as a
-    // second refusal or as an error event (below), whichever rung asked.
+    // URL; in an engine that starts on a low rung the ABR can move up while the retry waits out its back-off (it did in macOS WebKit,
+    // and once in the first 8 runs the retry request was never sent: ADR-102), and then the segment is fetched again from the new
+    // rung. The annotation says which. The failure path would show as a second refusal or as an error event (below), whichever
+    // rung asked.
     const attempts = videoAttemptsAt(await session.service.log(session.id), number);
     const message = `attempts at video segment ${number} (request log): ${describeAttempts(attempts)}`;
     expect(
