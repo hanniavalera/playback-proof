@@ -1,0 +1,3846 @@
+{
+  "schemaVersion": 1,
+  "kind": "perf-threshold-derivation",
+  "generatedAt": "2026-11-04T07:04:42.498Z",
+  "method": {
+    "z": 3,
+    "safety": 1.25,
+    "resamples": 4000,
+    "simulatedBatches": 20000,
+    "seed": 20260717,
+    "maxBaselineCv": 0.15
+  },
+  "baselines": [
+    {
+      "file": "perf/baselines/docker-linux-arm64/chromium.json",
+      "envId": "docker-linux-arm64",
+      "profile": "chromium",
+      "generatedAt": "2026-11-04T06:49:47.171Z",
+      "commit": "0dfbed1"
+    },
+    {
+      "file": "perf/baselines/docker-linux-arm64/firefox.json",
+      "envId": "docker-linux-arm64",
+      "profile": "firefox",
+      "generatedAt": "2026-11-04T06:54:57.984Z",
+      "commit": "58da1b2"
+    },
+    {
+      "file": "perf/baselines/docker-linux-arm64/webkit.json",
+      "envId": "docker-linux-arm64",
+      "profile": "webkit",
+      "generatedAt": "2026-11-04T07:01:02.615Z",
+      "commit": "8661aed"
+    },
+    {
+      "file": "perf/baselines/local-darwin-arm64/chromium-cpu4x.json",
+      "envId": "local-darwin-arm64",
+      "profile": "chromium-cpu4x",
+      "generatedAt": "2026-11-04T06:44:30.100Z",
+      "commit": "90df3a0"
+    },
+    {
+      "file": "perf/baselines/local-darwin-arm64/chromium.json",
+      "envId": "local-darwin-arm64",
+      "profile": "chromium",
+      "generatedAt": "2026-11-04T06:36:11.733Z",
+      "commit": "7389861"
+    },
+    {
+      "file": "perf/baselines/local-darwin-arm64/webkit.json",
+      "envId": "local-darwin-arm64",
+      "profile": "webkit",
+      "generatedAt": "2026-11-04T06:42:01.134Z",
+      "commit": "e8d31c4"
+    }
+  ],
+  "pairs": [
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-001",
+      "metric": "startupMs",
+      "unit": "ms",
+      "rule": "startup",
+      "ruleKind": "relative",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        44,
+        35.40000000000009,
+        31.300000000000182,
+        38.5,
+        40.100000000000364,
+        30.900000000000546,
+        39.20000000000073,
+        41.79999999999927,
+        45.29999999999927,
+        44.5
+      ],
+      "warmup": 78.90000000000009,
+      "warmupRatio": 1.9899117276166205,
+      "median": 39.650000000000546,
+      "tailValue": 44.57999999999993,
+      "min": 30.900000000000546,
+      "max": 45.29999999999927,
+      "sd": 5.185878260558245,
+      "cv": 0.13263115755903424,
+      "robustCv": 0.16078638083227853,
+      "se": {
+        "median": 2.1677596776117474,
+        "tail": 2.375494452720683
+      },
+      "seParametric": {
+        "median": 1.9372251368237976,
+        "tail": 2.375494452720683
+      },
+      "seBootstrap": {
+        "median": 2.1677596776117474,
+        "tail": 1.2476577520137733
+      },
+      "noise": {
+        "median": 9.197025408132186,
+        "tail": 10.07836941713893
+      },
+      "noiseShare": {
+        "median": 0.23195524358466732,
+        "tail": 0.22607378683577717
+      },
+      "gated": true
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-001",
+      "metric": "manifestMs",
+      "unit": "ms",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        12.200000000000273,
+        13.300000000000182,
+        12.800000000000182,
+        11.699999999999818,
+        12.800000000000182,
+        12.600000000000364,
+        12.800000000000182,
+        12.699999999999818,
+        11.5,
+        11.699999999999818
+      ],
+      "warmup": 18.59999999999991,
+      "warmupRatio": 1.4703557312252786,
+      "median": 12.650000000000091,
+      "tailValue": 12.850000000000183,
+      "min": 11.5,
+      "max": 13.300000000000182,
+      "sd": 0.6008327554321016,
+      "cv": 0.04841520994618031,
+      "robustCv": 0.03516047430829481,
+      "se": {
+        "median": 0.29902705419167336,
+        "tail": 0.2752233673507403
+      },
+      "seParametric": {
+        "median": 0.2244457463845047,
+        "tail": 0.2752233673507403
+      },
+      "seBootstrap": {
+        "median": 0.29902705419167336,
+        "tail": 0.21706870674885104
+      },
+      "noise": {
+        "median": 1.268664346663017,
+        "tail": 1.1676738563682285
+      },
+      "noiseShare": {
+        "median": 0.10028967167296504,
+        "tail": 0.09086956080686474
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-001",
+      "metric": "loadedMs",
+      "unit": "ms",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        19.700000000000273,
+        18.700000000000273,
+        19,
+        19,
+        17.900000000000546,
+        19,
+        18,
+        17.899999999999636,
+        17.5,
+        18.199999999999818
+      ],
+      "warmup": 27.199999999999818,
+      "warmupRatio": 1.474254742547412,
+      "median": 18.450000000000045,
+      "tailValue": 19.07000000000003,
+      "min": 17.5,
+      "max": 19.700000000000273,
+      "sd": 0.6903300337922649,
+      "cv": 0.03733531821483303,
+      "robustCv": 0.044196747967475906,
+      "se": {
+        "median": 0.375377953862256,
+        "tail": 0.3215461286068045
+      },
+      "seParametric": {
+        "median": 0.2578781504259296,
+        "tail": 0.31621937180674947
+      },
+      "seBootstrap": {
+        "median": 0.375377953862256,
+        "tail": 0.3215461286068045
+      },
+      "noise": {
+        "median": 1.5925937801035932,
+        "tail": 1.364204688012919
+      },
+      "noiseShare": {
+        "median": 0.08631944607607529,
+        "tail": 0.07153669050932968
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-002",
+      "metric": "fps",
+      "unit": "fps",
+      "rule": "fps",
+      "ruleKind": "relative",
+      "tail": "p10",
+      "n": 10,
+      "values": [
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30
+      ],
+      "warmup": 30,
+      "warmupRatio": 1,
+      "median": 30,
+      "tailValue": 30,
+      "min": 30,
+      "max": 30,
+      "sd": 0,
+      "cv": 0,
+      "robustCv": 0,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": 0,
+        "tail": 0
+      },
+      "gated": true
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-002",
+      "metric": "droppedRatio",
+      "unit": "ratio",
+      "rule": "frameDropped",
+      "ruleKind": "budget",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-002",
+      "metric": "decodedFrames",
+      "unit": "count",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        150,
+        150,
+        150,
+        149,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150
+      ],
+      "warmup": 150,
+      "warmupRatio": 1,
+      "median": 150,
+      "tailValue": 150,
+      "min": 149,
+      "max": 150,
+      "sd": 0.316227766016838,
+      "cv": 0.0021095915011129954,
+      "robustCv": 0,
+      "se": {
+        "median": 0.1181293402023494,
+        "tail": 0.14485440386878434
+      },
+      "seParametric": {
+        "median": 0.1181293402023494,
+        "tail": 0.14485440386878434
+      },
+      "seBootstrap": {
+        "median": 0.020900803474902484,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0.5011803450850435,
+        "tail": 0.6145651875621138
+      },
+      "noiseShare": {
+        "median": 0.0033412023005669565,
+        "tail": 0.004097101250414092
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-002",
+      "metric": "droppedFrames",
+      "unit": "count",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferCount",
+      "unit": "count",
+      "rule": "rebufferCount",
+      "ruleKind": "budget",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferMs",
+      "unit": "ms",
+      "rule": "rebufferMs",
+      "ruleKind": "budget",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferRatio",
+      "unit": "ratio",
+      "rule": "rebufferRatio",
+      "ruleKind": "budget",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-003",
+      "metric": "switches",
+      "unit": "count",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 1,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 1,
+      "min": 0,
+      "max": 1,
+      "sd": 0.48304589153964794,
+      "cv": 1.6101529717988265,
+      "robustCv": null,
+      "se": {
+        "median": 0.25280818419208023,
+        "tail": 0.3220238536825961
+      },
+      "seParametric": {
+        "median": 0.18044554775748534,
+        "tail": 0.22126875682546937
+      },
+      "seBootstrap": {
+        "median": 0.25280818419208023,
+        "tail": 0.3220238536825961
+      },
+      "noise": {
+        "median": 1.0725742882900662,
+        "tail": 1.3662315038567299
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": 1.3662315038567299
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "firefox",
+      "scenario": "PB-PERF-001",
+      "metric": "startupMs",
+      "unit": "ms",
+      "rule": "startup",
+      "ruleKind": "relative",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        47,
+        43,
+        46,
+        59,
+        61,
+        63,
+        41,
+        58,
+        58,
+        50
+      ],
+      "warmup": 72,
+      "warmupRatio": 1.3333333333333333,
+      "median": 54,
+      "tailValue": 61.2,
+      "min": 41,
+      "max": 63,
+      "sd": 8.0718991294215,
+      "cv": 0.1534581583540209,
+      "robustCv": 0.19218888888888888,
+      "se": {
+        "median": 4.769452239897921,
+        "tail": 3.697493585743676
+      },
+      "seParametric": {
+        "median": 3.015320666964166,
+        "tail": 3.697493585743676
+      },
+      "seBootstrap": {
+        "median": 4.769452239897921,
+        "tail": 2.0713309724364004
+      },
+      "noise": {
+        "median": 20.235072128263134,
+        "tail": 15.6871367272387
+      },
+      "noiseShare": {
+        "median": 0.37472355793079876,
+        "tail": 0.2563257635169722
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "firefox",
+      "scenario": "PB-PERF-001",
+      "metric": "manifestMs",
+      "unit": "ms",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        14,
+        16,
+        16,
+        15,
+        17,
+        16,
+        17,
+        19,
+        34,
+        18
+      ],
+      "warmup": 20,
+      "warmupRatio": 1.2121212121212122,
+      "median": 16.5,
+      "tailValue": 20.499999999999993,
+      "min": 14,
+      "max": 34,
+      "sd": 5.7310072800899885,
+      "cv": 0.31489050989505435,
+      "robustCv": 0.08985454545454545,
+      "se": {
+        "median": 2.1408623196479324,
+        "tail": 6.6272917627339485
+      },
+      "seParametric": {
+        "median": 2.1408623196479324,
+        "tail": 2.625201618383173
+      },
+      "seBootstrap": {
+        "median": 0.7004791968904632,
+        "tail": 6.6272917627339485
+      },
+      "noise": {
+        "median": 9.08290958285889,
+        "tail": 28.11721767798554
+      },
+      "noiseShare": {
+        "median": 0.5504793686581146,
+        "tail": 1.3715715940480755
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "firefox",
+      "scenario": "PB-PERF-001",
+      "metric": "loadedMs",
+      "unit": "ms",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        19,
+        22,
+        22,
+        20,
+        23,
+        23,
+        23,
+        30,
+        40,
+        24
+      ],
+      "warmup": 31,
+      "warmupRatio": 1.3478260869565217,
+      "median": 23,
+      "tailValue": 30.999999999999996,
+      "min": 19,
+      "max": 40,
+      "sd": 6.149977416399366,
+      "cv": 0.2499990819674539,
+      "robustCv": 0.06446086956521739,
+      "se": {
+        "median": 2.297371870944196,
+        "tail": 6.169404023961925
+      },
+      "seParametric": {
+        "median": 2.297371870944196,
+        "tail": 2.817119203920828
+      },
+      "seBootstrap": {
+        "median": 1.0408292758158628,
+        "tail": 6.169404023961925
+      },
+      "noise": {
+        "median": 9.746923373111203,
+        "tail": 26.17456452733831
+      },
+      "noiseShare": {
+        "median": 0.4237792770917914,
+        "tail": 0.8443407912044617
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "firefox",
+      "scenario": "PB-PERF-002",
+      "metric": "fps",
+      "unit": "fps",
+      "rule": "fps",
+      "ruleKind": "relative",
+      "tail": "p10",
+      "n": 10,
+      "values": [
+        30,
+        30,
+        30,
+        30,
+        29.999996026490592,
+        29.999996026490592,
+        30,
+        30,
+        30,
+        30
+      ],
+      "warmup": 30,
+      "warmupRatio": 1,
+      "median": 30,
+      "tailValue": 29.999996026490592,
+      "min": 29.999996026490592,
+      "max": 30,
+      "sd": 0.0000016753786710039015,
+      "cv": 5.5845957179492964e-8,
+      "robustCv": 0,
+      "se": {
+        "median": 6.258507261637544e-7,
+        "tail": 0.0000017848690131319048
+      },
+      "seParametric": {
+        "median": 6.258507261637544e-7,
+        "tail": 7.666889853808266e-7
+      },
+      "seBootstrap": {
+        "median": 4.702398783942522e-7,
+        "tail": 0.0000017848690131319048
+      },
+      "noise": {
+        "median": 0.000002655259754885495,
+        "tail": 0.000007572557896291866
+      },
+      "noiseShare": {
+        "median": 8.850865849618317e-8,
+        "tail": 2.524186299759889e-7
+      },
+      "gated": true
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "firefox",
+      "scenario": "PB-PERF-002",
+      "metric": "droppedRatio",
+      "unit": "ratio",
+      "rule": "frameDropped",
+      "ruleKind": "budget",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "firefox",
+      "scenario": "PB-PERF-002",
+      "metric": "decodedFrames",
+      "unit": "count",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        151,
+        150,
+        150,
+        150,
+        151,
+        151,
+        150,
+        151,
+        150,
+        150
+      ],
+      "warmup": 150,
+      "warmupRatio": 1,
+      "median": 150,
+      "tailValue": 151,
+      "min": 150,
+      "max": 151,
+      "sd": 0.5163977794943222,
+      "cv": 0.003433495874297355,
+      "robustCv": 0,
+      "se": {
+        "median": 0.3862658415199037,
+        "tail": 0.23654625098237267
+      },
+      "seParametric": {
+        "median": 0.19290440476493284,
+        "tail": 0.23654625098237267
+      },
+      "seBootstrap": {
+        "median": 0.3862658415199037,
+        "tail": 0.17935847273110497
+      },
+      "noise": {
+        "median": 1.6387871752767131,
+        "tail": 1.0035807488033446
+      },
+      "noiseShare": {
+        "median": 0.010925247835178087,
+        "tail": 0.006646230124525461
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "firefox",
+      "scenario": "PB-PERF-002",
+      "metric": "droppedFrames",
+      "unit": "count",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "firefox",
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferCount",
+      "unit": "count",
+      "rule": "rebufferCount",
+      "ruleKind": "budget",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "firefox",
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferMs",
+      "unit": "ms",
+      "rule": "rebufferMs",
+      "ruleKind": "budget",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "firefox",
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferRatio",
+      "unit": "ratio",
+      "rule": "rebufferRatio",
+      "ruleKind": "budget",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "firefox",
+      "scenario": "PB-PERF-003",
+      "metric": "switches",
+      "unit": "count",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        2,
+        2,
+        2,
+        2,
+        1,
+        1,
+        2,
+        1,
+        2,
+        2
+      ],
+      "warmup": 2,
+      "warmupRatio": 1,
+      "median": 2,
+      "tailValue": 2,
+      "min": 1,
+      "max": 2,
+      "sd": 0.48304589153964794,
+      "cv": 0.28414464208214585,
+      "robustCv": 0,
+      "se": {
+        "median": 0.2549850264543659,
+        "tail": 0.22126875682546937
+      },
+      "seParametric": {
+        "median": 0.18044554775748534,
+        "tail": 0.22126875682546937
+      },
+      "seBootstrap": {
+        "median": 0.2549850264543659,
+        "tail": 0.024641350897291827
+      },
+      "noise": {
+        "median": 1.0818098478414802,
+        "tail": 0.9387638304960395
+      },
+      "noiseShare": {
+        "median": 0.5409049239207401,
+        "tail": 0.46938191524801975
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-001",
+      "metric": "startupMs",
+      "unit": "ms",
+      "rule": "startup",
+      "ruleKind": "relative",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        516,
+        258,
+        154,
+        183,
+        152,
+        148,
+        164,
+        146,
+        148,
+        159
+      ],
+      "warmup": 311,
+      "warmupRatio": 1.987220447284345,
+      "median": 156.5,
+      "tailValue": 283.7999999999999,
+      "min": 146,
+      "max": 516,
+      "sd": 115.06114316599965,
+      "cv": 0.5673626388855998,
+      "robustCv": 0.08052460063897764,
+      "se": {
+        "median": 42.98198446117433,
+        "tail": 133.08979356568662
+      },
+      "seParametric": {
+        "median": 42.98198446117433,
+        "tail": 52.70604005368796
+      },
+      "seBootstrap": {
+        "median": 17.47273576529382,
+        "tail": 133.08979356568662
+      },
+      "noise": {
+        "median": 182.35711608810712,
+        "tail": 564.6521732220885
+      },
+      "noiseShare": {
+        "median": 1.1652211890613873,
+        "tail": 1.9896130134675432
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-001",
+      "metric": "manifestMs",
+      "unit": "ms",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        19,
+        15,
+        18,
+        25,
+        16,
+        15,
+        17,
+        18,
+        14,
+        16
+      ],
+      "warmup": 22,
+      "warmupRatio": 1.3333333333333333,
+      "median": 16.5,
+      "tailValue": 19.599999999999998,
+      "min": 14,
+      "max": 25,
+      "sd": 3.1287200080686173,
+      "cv": 0.18085086751841717,
+      "robustCv": 0.13478181818181817,
+      "se": {
+        "median": 1.1687576802201345,
+        "tail": 2.8247733689884846
+      },
+      "seParametric": {
+        "median": 1.1687576802201345,
+        "tail": 1.4331722901808246
+      },
+      "seBootstrap": {
+        "median": 0.9248112004291058,
+        "tail": 2.8247733689884846
+      },
+      "noise": {
+        "median": 4.958618887485094,
+        "tail": 11.984498427161563
+      },
+      "noiseShare": {
+        "median": 0.3005223568172784,
+        "tail": 0.6114540013857941
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-001",
+      "metric": "loadedMs",
+      "unit": "ms",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        29,
+        25,
+        26,
+        33,
+        24,
+        23,
+        25,
+        25,
+        23,
+        25
+      ],
+      "warmup": 31,
+      "warmupRatio": 1.24,
+      "median": 25,
+      "tailValue": 29.4,
+      "min": 23,
+      "max": 33,
+      "sd": 3.0477678535099892,
+      "cv": 0.11813053695775151,
+      "robustCv": 0.059303999999999996,
+      "se": {
+        "median": 1.1385173736005691,
+        "tail": 2.7947879324551375
+      },
+      "seParametric": {
+        "median": 1.1385173736005691,
+        "tail": 1.3960905492629212
+      },
+      "seBootstrap": {
+        "median": 0.6618469382851417,
+        "tail": 2.7947879324551375
+      },
+      "noise": {
+        "median": 4.830320132229963,
+        "tail": 11.857280994104151
+      },
+      "noiseShare": {
+        "median": 0.19321280528919854,
+        "tail": 0.4033088773504814
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-002",
+      "metric": "fps",
+      "unit": "fps",
+      "rule": "fps",
+      "ruleKind": "relative",
+      "tail": "p10",
+      "n": 10,
+      "values": [
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30
+      ],
+      "warmup": 30,
+      "warmupRatio": 1,
+      "median": 30,
+      "tailValue": 30,
+      "min": 30,
+      "max": 30,
+      "sd": 0,
+      "cv": 0,
+      "robustCv": 0,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": 0,
+        "tail": 0
+      },
+      "gated": true
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-002",
+      "metric": "droppedRatio",
+      "unit": "ratio",
+      "rule": "frameDropped",
+      "ruleKind": "budget",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-002",
+      "metric": "decodedFrames",
+      "unit": "count",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150
+      ],
+      "warmup": 150,
+      "warmupRatio": 1,
+      "median": 150,
+      "tailValue": 150,
+      "min": 150,
+      "max": 150,
+      "sd": 0,
+      "cv": 0,
+      "robustCv": 0,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": 0,
+        "tail": 0
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-002",
+      "metric": "droppedFrames",
+      "unit": "count",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferCount",
+      "unit": "count",
+      "rule": "rebufferCount",
+      "ruleKind": "budget",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferMs",
+      "unit": "ms",
+      "rule": "rebufferMs",
+      "ruleKind": "budget",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferRatio",
+      "unit": "ratio",
+      "rule": "rebufferRatio",
+      "ruleKind": "budget",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-003",
+      "metric": "switches",
+      "unit": "count",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "warmup": 2,
+      "warmupRatio": 1,
+      "median": 2,
+      "tailValue": 2,
+      "min": 2,
+      "max": 2,
+      "sd": 0,
+      "cv": 0,
+      "robustCv": 0,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": 0,
+        "tail": 0
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "chromium-cpu4x",
+      "scenario": "PB-PERF-004",
+      "metric": "startupMs",
+      "unit": "ms",
+      "rule": "lowEndStartup",
+      "ruleKind": "relative",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        104.5,
+        114.5,
+        94.59999996423721,
+        111.19999998807907,
+        112.69999998807907,
+        106.90000003576279,
+        116.60000002384186,
+        111.70000004768372,
+        112.19999998807907,
+        100.30000001192093
+      ],
+      "warmup": 253,
+      "warmupRatio": 2.270076267020259,
+      "median": 111.4500000178814,
+      "tailValue": 114.71000000238419,
+      "min": 94.59999996423721,
+      "max": 116.60000002384186,
+      "sd": 6.907934255630696,
+      "cv": 0.06365586302365611,
+      "robustCv": 0.05055073999627751,
+      "se": {
+        "median": 2.6831555344646607,
+        "tail": 3.164316376035298
+      },
+      "seParametric": {
+        "median": 2.580512540241046,
+        "tail": 3.164316376035298
+      },
+      "seBootstrap": {
+        "median": 2.6831555344646607,
+        "tail": 1.6308734304282506
+      },
+      "noise": {
+        "median": 11.383664840389063,
+        "tail": 13.425057403885205
+      },
+      "noiseShare": {
+        "median": 0.10214145211810347,
+        "tail": 0.11703476073233521
+      },
+      "gated": true
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "chromium-cpu4x",
+      "scenario": "PB-PERF-004",
+      "metric": "manifestMs",
+      "unit": "ms",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        42.19999998807907,
+        46,
+        49,
+        47.69999998807907,
+        50.19999998807907,
+        46.80000001192093,
+        46.90000003576279,
+        49.700000047683716,
+        48.89999997615814,
+        45.30000001192093
+      ],
+      "warmup": 68.5,
+      "warmupRatio": 1.448202959465879,
+      "median": 47.30000001192093,
+      "tailValue": 49.750000041723254,
+      "min": 42.19999998807907,
+      "max": 50.19999998807907,
+      "sd": 2.400948889042492,
+      "cv": 0.05079223373810653,
+      "robustCv": 0.05171860389081454,
+      "se": {
+        "median": 0.9437692372093652,
+        "tail": 1.099802286251966
+      },
+      "seParametric": {
+        "median": 0.8968931213556102,
+        "tail": 1.099802286251966
+      },
+      "seBootstrap": {
+        "median": 0.9437692372093652,
+        "tail": 0.6289199063807147
+      },
+      "noise": {
+        "median": 4.004073765035986,
+        "tail": 4.666065927439402
+      },
+      "noiseShare": {
+        "median": 0.08465272228386568,
+        "tail": 0.09379026981962145
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "chromium-cpu4x",
+      "scenario": "PB-PERF-004",
+      "metric": "loadedMs",
+      "unit": "ms",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        62.39999997615814,
+        66.10000002384186,
+        66.89999997615814,
+        68.80000001192093,
+        72.19999998807907,
+        67,
+        69.80000001192093,
+        70.80000001192093,
+        70,
+        66
+      ],
+      "warmup": 101.20000004768372,
+      "warmupRatio": 1.4904270992459512,
+      "median": 67.90000000596046,
+      "tailValue": 70.94000000953675,
+      "min": 62.39999997615814,
+      "max": 72.19999998807907,
+      "sd": 2.8778850308572874,
+      "cv": 0.042321838689077754,
+      "robustCv": 0.04148659806464956,
+      "se": {
+        "median": 1.2854032309023913,
+        "tail": 1.3182723509659595
+      },
+      "seParametric": {
+        "median": 1.0750563246090399,
+        "tail": 1.3182723509659595
+      },
+      "seBootstrap": {
+        "median": 1.2854032309023913,
+        "tail": 1.0153886962478331
+      },
+      "noise": {
+        "median": 5.453504046781071,
+        "tail": 5.592955912912575
+      },
+      "noiseShare": {
+        "median": 0.08031670171284752,
+        "tail": 0.0788406528356455
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "chromium-cpu4x",
+      "scenario": "PB-PERF-004",
+      "metric": "droppedRatio",
+      "unit": "ratio",
+      "rule": "lowEndDropped",
+      "ruleKind": "budget",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "chromium-cpu4x",
+      "scenario": "PB-PERF-004",
+      "metric": "fps",
+      "unit": "fps",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30
+      ],
+      "warmup": 30,
+      "warmupRatio": 1,
+      "median": 30,
+      "tailValue": 30,
+      "min": 30,
+      "max": 30,
+      "sd": 0,
+      "cv": 0,
+      "robustCv": 0,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": 0,
+        "tail": 0
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "chromium-cpu4x",
+      "scenario": "PB-PERF-004",
+      "metric": "decodedFrames",
+      "unit": "count",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150
+      ],
+      "warmup": 150,
+      "warmupRatio": 1,
+      "median": 150,
+      "tailValue": 150,
+      "min": 150,
+      "max": 150,
+      "sd": 0,
+      "cv": 0,
+      "robustCv": 0,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": 0,
+        "tail": 0
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "chromium-cpu4x",
+      "scenario": "PB-PERF-004",
+      "metric": "droppedFrames",
+      "unit": "count",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-001",
+      "metric": "startupMs",
+      "unit": "ms",
+      "rule": "startup",
+      "ruleKind": "relative",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        37.700000047683716,
+        37.09999996423721,
+        38.89999997615814,
+        38.40000003576279,
+        36.89999997615814,
+        40.19999998807907,
+        36.30000001192093,
+        35.5,
+        35.5,
+        37
+      ],
+      "warmup": 169.10000002384186,
+      "warmupRatio": 4.5641025669488355,
+      "median": 37.04999998211861,
+      "tailValue": 39.029999977350236,
+      "min": 35.5,
+      "max": 40.19999998807907,
+      "sd": 1.4938763886437831,
+      "cv": 0.039996690459003566,
+      "robustCv": 0.042017004545891815,
+      "se": {
+        "median": 0.5580491376742741,
+        "tail": 0.8547966194438803
+      },
+      "seParametric": {
+        "median": 0.5580491376742741,
+        "tail": 0.684299726290086
+      },
+      "seBootstrap": {
+        "median": 0.5429336479322775,
+        "tail": 0.8547966194438803
+      },
+      "noise": {
+        "median": 2.3676019769087073,
+        "tail": 3.6265949168646268
+      },
+      "noiseShare": {
+        "median": 0.06390288739679838,
+        "tail": 0.09291813781627467
+      },
+      "gated": true
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-001",
+      "metric": "manifestMs",
+      "unit": "ms",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        11.300000011920929,
+        11.099999964237213,
+        11.5,
+        10.700000047683716,
+        10.800000011920929,
+        11.800000011920929,
+        11,
+        11.100000023841858,
+        10.800000011920929,
+        10.800000011920929
+      ],
+      "warmup": 16.5,
+      "warmupRatio": 1.493212672099613,
+      "median": 11.049999982118607,
+      "tailValue": 11.530000001192093,
+      "min": 10.700000047683716,
+      "max": 11.800000011920929,
+      "sd": 0.35418136655930954,
+      "cv": 0.03193700326913747,
+      "robustCv": 0.0335429824809839,
+      "se": {
+        "median": 0.14863881350230435,
+        "tail": 0.22970329042545362
+      },
+      "seParametric": {
+        "median": 0.1323072027185301,
+        "tail": 0.16223980379903888
+      },
+      "seBootstrap": {
+        "median": 0.14863881350230435,
+        "tail": 0.22970329042545362
+      },
+      "noise": {
+        "median": 0.6306210778500119,
+        "tail": 0.9745485259242074
+      },
+      "noiseShare": {
+        "median": 0.057069780893257836,
+        "tail": 0.08452285566552023
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-001",
+      "metric": "loadedMs",
+      "unit": "ms",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        15.800000011920929,
+        15.599999964237213,
+        16,
+        15,
+        15.199999988079071,
+        16.399999976158142,
+        15.700000047683716,
+        15.700000047683716,
+        15.300000011920929,
+        15.399999976158142
+      ],
+      "warmup": 25.5,
+      "warmupRatio": 1.6293929706254353,
+      "median": 15.650000005960464,
+      "tailValue": 16.039999997615816,
+      "min": 15,
+      "max": 16.399999976158142,
+      "sd": 0.40947120332054615,
+      "cv": 0.026231339094042648,
+      "robustCv": 0.028420448402847933,
+      "se": {
+        "median": 0.15323013352417475,
+        "tail": 0.24720723853322993
+      },
+      "seParametric": {
+        "median": 0.15296115103802307,
+        "tail": 0.1875664107726494
+      },
+      "seBootstrap": {
+        "median": 0.15323013352417475,
+        "tail": 0.24720723853322993
+      },
+      "noise": {
+        "median": 0.6501003989823847,
+        "tail": 1.0488114883514839
+      },
+      "noiseShare": {
+        "median": 0.04153996158049759,
+        "tail": 0.06538724990694383
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-002",
+      "metric": "fps",
+      "unit": "fps",
+      "rule": "fps",
+      "ruleKind": "relative",
+      "tail": "p10",
+      "n": 10,
+      "values": [
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30
+      ],
+      "warmup": 30,
+      "warmupRatio": 1,
+      "median": 30,
+      "tailValue": 30,
+      "min": 30,
+      "max": 30,
+      "sd": 0,
+      "cv": 0,
+      "robustCv": 0,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": 0,
+        "tail": 0
+      },
+      "gated": true
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-002",
+      "metric": "droppedRatio",
+      "unit": "ratio",
+      "rule": "frameDropped",
+      "ruleKind": "budget",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-002",
+      "metric": "decodedFrames",
+      "unit": "count",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150
+      ],
+      "warmup": 150,
+      "warmupRatio": 1,
+      "median": 150,
+      "tailValue": 150,
+      "min": 150,
+      "max": 150,
+      "sd": 0,
+      "cv": 0,
+      "robustCv": 0,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": 0,
+        "tail": 0
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-002",
+      "metric": "droppedFrames",
+      "unit": "count",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferCount",
+      "unit": "count",
+      "rule": "rebufferCount",
+      "ruleKind": "budget",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferMs",
+      "unit": "ms",
+      "rule": "rebufferMs",
+      "ruleKind": "budget",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferRatio",
+      "unit": "ratio",
+      "rule": "rebufferRatio",
+      "ruleKind": "budget",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-003",
+      "metric": "switches",
+      "unit": "count",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "warmup": 1,
+      "warmupRatio": 1,
+      "median": 1,
+      "tailValue": 1,
+      "min": 1,
+      "max": 1,
+      "sd": 0,
+      "cv": 0,
+      "robustCv": 0,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": 0,
+        "tail": 0
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-001",
+      "metric": "startupMs",
+      "unit": "ms",
+      "rule": "startup",
+      "ruleKind": "relative",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        88,
+        82,
+        74,
+        78,
+        84,
+        78,
+        86,
+        72,
+        87,
+        79
+      ],
+      "warmup": 258,
+      "warmupRatio": 3.2049689440993787,
+      "median": 80.5,
+      "tailValue": 87.1,
+      "min": 72,
+      "max": 88,
+      "sd": 5.493430419854045,
+      "cv": 0.06798800024571838,
+      "robustCv": 0.0828782608695652,
+      "se": {
+        "median": 2.68661598974792,
+        "tail": 2.5163748227606066
+      },
+      "seParametric": {
+        "median": 2.052113636695394,
+        "tail": 2.5163748227606066
+      },
+      "seBootstrap": {
+        "median": 2.68661598974792,
+        "tail": 1.5949378214098227
+      },
+      "noise": {
+        "median": 11.398346308769774,
+        "tail": 10.676074207086732
+      },
+      "noiseShare": {
+        "median": 0.14159436408409656,
+        "tail": 0.1225726085773448
+      },
+      "gated": true
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-001",
+      "metric": "manifestMs",
+      "unit": "ms",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        15,
+        14,
+        13,
+        13,
+        13,
+        13,
+        14,
+        13,
+        14,
+        14
+      ],
+      "warmup": 28,
+      "warmupRatio": 2.074074074074074,
+      "median": 13.5,
+      "tailValue": 14.1,
+      "min": 13,
+      "max": 15,
+      "sd": 0.699205898780101,
+      "cv": 0.05141219843971331,
+      "robustCv": 0.054911111111111105,
+      "se": {
+        "median": 0.439087277097879,
+        "tail": 0.4455189066123228
+      },
+      "seParametric": {
+        "median": 0.2611937987889591,
+        "tail": 0.3202851379089087
+      },
+      "seBootstrap": {
+        "median": 0.439087277097879,
+        "tail": 0.4455189066123228
+      },
+      "noise": {
+        "median": 1.8628895470118814,
+        "tail": 1.890176640074338
+      },
+      "noiseShare": {
+        "median": 0.1379918182971764,
+        "tail": 0.13405508085633602
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-001",
+      "metric": "loadedMs",
+      "unit": "ms",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        42,
+        39,
+        36,
+        38,
+        38,
+        38,
+        40,
+        39,
+        44,
+        39
+      ],
+      "warmup": 75,
+      "warmupRatio": 1.9230769230769231,
+      "median": 39,
+      "tailValue": 42.2,
+      "min": 36,
+      "max": 44,
+      "sd": 2.2632326929023945,
+      "cv": 0.05758861814001004,
+      "robustCv": 0.03801538461538461,
+      "se": {
+        "median": 0.8454481657461751,
+        "tail": 1.6932764020511888
+      },
+      "seParametric": {
+        "median": 0.8454481657461751,
+        "tail": 1.0367186495864615
+      },
+      "seBootstrap": {
+        "median": 0.6339096626216517,
+        "tail": 1.6932764020511888
+      },
+      "noise": {
+        "median": 3.586932786845092,
+        "tail": 7.183963357881328
+      },
+      "noiseShare": {
+        "median": 0.09197263556013056,
+        "tail": 0.17023609852799354
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-002",
+      "metric": "fps",
+      "unit": "fps",
+      "rule": "fps",
+      "ruleKind": "relative",
+      "tail": "p10",
+      "n": 10,
+      "values": [
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30
+      ],
+      "warmup": 30,
+      "warmupRatio": 1,
+      "median": 30,
+      "tailValue": 30,
+      "min": 30,
+      "max": 30,
+      "sd": 0,
+      "cv": 0,
+      "robustCv": 0,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": 0,
+        "tail": 0
+      },
+      "gated": true
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-002",
+      "metric": "droppedRatio",
+      "unit": "ratio",
+      "rule": "frameDropped",
+      "ruleKind": "budget",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-002",
+      "metric": "decodedFrames",
+      "unit": "count",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150
+      ],
+      "warmup": 150,
+      "warmupRatio": 1,
+      "median": 150,
+      "tailValue": 150,
+      "min": 150,
+      "max": 150,
+      "sd": 0,
+      "cv": 0,
+      "robustCv": 0,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": 0,
+        "tail": 0
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-002",
+      "metric": "droppedFrames",
+      "unit": "count",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferCount",
+      "unit": "count",
+      "rule": "rebufferCount",
+      "ruleKind": "budget",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferMs",
+      "unit": "ms",
+      "rule": "rebufferMs",
+      "ruleKind": "budget",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferRatio",
+      "unit": "ratio",
+      "rule": "rebufferRatio",
+      "ruleKind": "budget",
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "warmup": 0,
+      "warmupRatio": null,
+      "median": 0,
+      "tailValue": 0,
+      "min": 0,
+      "max": 0,
+      "sd": 0,
+      "cv": null,
+      "robustCv": null,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": null,
+        "tail": null
+      },
+      "gated": false
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-003",
+      "metric": "switches",
+      "unit": "count",
+      "rule": null,
+      "ruleKind": null,
+      "tail": "p90",
+      "n": 10,
+      "values": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "warmup": 2,
+      "warmupRatio": 1,
+      "median": 2,
+      "tailValue": 2,
+      "min": 2,
+      "max": 2,
+      "sd": 0,
+      "cv": 0,
+      "robustCv": 0,
+      "se": {
+        "median": 0,
+        "tail": 0
+      },
+      "seParametric": {
+        "median": 0,
+        "tail": 0
+      },
+      "seBootstrap": {
+        "median": 0,
+        "tail": 0
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "noiseShare": {
+        "median": 0,
+        "tail": 0
+      },
+      "gated": false
+    }
+  ],
+  "needs": [
+    {
+      "rule": "startup",
+      "gatedPairs": 3,
+      "trackedPairs": 2,
+      "share": {
+        "median": 0.23195524358466732,
+        "tail": 0.22607378683577717
+      },
+      "absolute": {
+        "median": 11.398346308769774,
+        "tail": 10.676074207086732
+      },
+      "quietest": 3.6265949168646268,
+      "suggested": {
+        "medianShare": 0.30000000000000004,
+        "tailShare": 0.30000000000000004,
+        "floor": 5
+      }
+    },
+    {
+      "rule": "fps",
+      "gatedPairs": 5,
+      "trackedPairs": 0,
+      "share": {
+        "median": 8.850865849618317e-8,
+        "tail": 2.524186299759889e-7
+      },
+      "absolute": {
+        "median": 0.000002655259754885495,
+        "tail": 0.000007572557896291866
+      },
+      "quietest": 0,
+      "suggested": {
+        "medianShare": 0.05,
+        "tailShare": 0.05,
+        "floor": 0
+      }
+    },
+    {
+      "rule": "lowEndStartup",
+      "gatedPairs": 1,
+      "trackedPairs": 0,
+      "share": {
+        "median": 0.10214145211810347,
+        "tail": 0.11703476073233521
+      },
+      "absolute": {
+        "median": 11.383664840389063,
+        "tail": 13.425057403885205
+      },
+      "quietest": 13.425057403885205,
+      "suggested": {
+        "medianShare": 0.15000000000000002,
+        "tailShare": 0.15000000000000002,
+        "floor": 20
+      }
+    }
+  ],
+  "budgets": [
+    {
+      "rule": "frameDropped",
+      "metric": "droppedRatio",
+      "unit": "ratio",
+      "runs": 50,
+      "nonZero": 0,
+      "max": 0,
+      "largestTail": 0,
+      "largestMedian": 0,
+      "profiles": [
+        {
+          "envId": "docker-linux-arm64",
+          "profile": "chromium",
+          "median": 0,
+          "tail": 0,
+          "max": 0
+        },
+        {
+          "envId": "docker-linux-arm64",
+          "profile": "firefox",
+          "median": 0,
+          "tail": 0,
+          "max": 0
+        },
+        {
+          "envId": "docker-linux-arm64",
+          "profile": "webkit",
+          "median": 0,
+          "tail": 0,
+          "max": 0
+        },
+        {
+          "envId": "local-darwin-arm64",
+          "profile": "chromium",
+          "median": 0,
+          "tail": 0,
+          "max": 0
+        },
+        {
+          "envId": "local-darwin-arm64",
+          "profile": "webkit",
+          "median": 0,
+          "tail": 0,
+          "max": 0
+        }
+      ]
+    },
+    {
+      "rule": "rebufferCount",
+      "metric": "rebufferCount",
+      "unit": "count",
+      "runs": 50,
+      "nonZero": 0,
+      "max": 0,
+      "largestTail": 0,
+      "largestMedian": 0,
+      "profiles": [
+        {
+          "envId": "docker-linux-arm64",
+          "profile": "chromium",
+          "median": 0,
+          "tail": 0,
+          "max": 0
+        },
+        {
+          "envId": "docker-linux-arm64",
+          "profile": "firefox",
+          "median": 0,
+          "tail": 0,
+          "max": 0
+        },
+        {
+          "envId": "docker-linux-arm64",
+          "profile": "webkit",
+          "median": 0,
+          "tail": 0,
+          "max": 0
+        },
+        {
+          "envId": "local-darwin-arm64",
+          "profile": "chromium",
+          "median": 0,
+          "tail": 0,
+          "max": 0
+        },
+        {
+          "envId": "local-darwin-arm64",
+          "profile": "webkit",
+          "median": 0,
+          "tail": 0,
+          "max": 0
+        }
+      ]
+    },
+    {
+      "rule": "rebufferMs",
+      "metric": "rebufferMs",
+      "unit": "ms",
+      "runs": 50,
+      "nonZero": 0,
+      "max": 0,
+      "largestTail": 0,
+      "largestMedian": 0,
+      "profiles": [
+        {
+          "envId": "docker-linux-arm64",
+          "profile": "chromium",
+          "median": 0,
+          "tail": 0,
+          "max": 0
+        },
+        {
+          "envId": "docker-linux-arm64",
+          "profile": "firefox",
+          "median": 0,
+          "tail": 0,
+          "max": 0
+        },
+        {
+          "envId": "docker-linux-arm64",
+          "profile": "webkit",
+          "median": 0,
+          "tail": 0,
+          "max": 0
+        },
+        {
+          "envId": "local-darwin-arm64",
+          "profile": "chromium",
+          "median": 0,
+          "tail": 0,
+          "max": 0
+        },
+        {
+          "envId": "local-darwin-arm64",
+          "profile": "webkit",
+          "median": 0,
+          "tail": 0,
+          "max": 0
+        }
+      ]
+    },
+    {
+      "rule": "rebufferRatio",
+      "metric": "rebufferRatio",
+      "unit": "ratio",
+      "runs": 50,
+      "nonZero": 0,
+      "max": 0,
+      "largestTail": 0,
+      "largestMedian": 0,
+      "profiles": [
+        {
+          "envId": "docker-linux-arm64",
+          "profile": "chromium",
+          "median": 0,
+          "tail": 0,
+          "max": 0
+        },
+        {
+          "envId": "docker-linux-arm64",
+          "profile": "firefox",
+          "median": 0,
+          "tail": 0,
+          "max": 0
+        },
+        {
+          "envId": "docker-linux-arm64",
+          "profile": "webkit",
+          "median": 0,
+          "tail": 0,
+          "max": 0
+        },
+        {
+          "envId": "local-darwin-arm64",
+          "profile": "chromium",
+          "median": 0,
+          "tail": 0,
+          "max": 0
+        },
+        {
+          "envId": "local-darwin-arm64",
+          "profile": "webkit",
+          "median": 0,
+          "tail": 0,
+          "max": 0
+        }
+      ]
+    },
+    {
+      "rule": "lowEndDropped",
+      "metric": "droppedRatio",
+      "unit": "ratio",
+      "runs": 10,
+      "nonZero": 0,
+      "max": 0,
+      "largestTail": 0,
+      "largestMedian": 0,
+      "profiles": [
+        {
+          "envId": "local-darwin-arm64",
+          "profile": "chromium-cpu4x",
+          "median": 0,
+          "tail": 0,
+          "max": 0
+        }
+      ]
+    }
+  ],
+  "coverage": [
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-001",
+      "metric": "startupMs",
+      "unit": "ms",
+      "rule": "startup",
+      "gated": true,
+      "allowed": {
+        "median": 11.895000000000163,
+        "tail": 13.373999999999977
+      },
+      "noise": {
+        "median": 9.197025408132186,
+        "tail": 10.07836941713893
+      },
+      "margin": {
+        "median": 1.2933529562158625,
+        "tail": 1.3270003754036452
+      }
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-002",
+      "metric": "fps",
+      "unit": "fps",
+      "rule": "fps",
+      "gated": true,
+      "allowed": {
+        "median": 1.5,
+        "tail": 3
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "margin": {
+        "median": null,
+        "tail": null
+      }
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "firefox",
+      "scenario": "PB-PERF-001",
+      "metric": "startupMs",
+      "unit": "ms",
+      "rule": "startup",
+      "gated": false,
+      "allowed": {
+        "median": 16.2,
+        "tail": 18.36
+      },
+      "noise": {
+        "median": 20.235072128263134,
+        "tail": 15.6871367272387
+      },
+      "margin": {
+        "median": 0.8005901781478115,
+        "tail": 1.170385668158308
+      }
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "firefox",
+      "scenario": "PB-PERF-002",
+      "metric": "fps",
+      "unit": "fps",
+      "rule": "fps",
+      "gated": true,
+      "allowed": {
+        "median": 1.5,
+        "tail": 2.9999996026490594
+      },
+      "noise": {
+        "median": 0.000002655259754885495,
+        "tail": 0.000007572557896291866
+      },
+      "margin": {
+        "median": 564916.4821784773,
+        "tail": 396167.27184325666
+      }
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-001",
+      "metric": "startupMs",
+      "unit": "ms",
+      "rule": "startup",
+      "gated": false,
+      "allowed": {
+        "median": 46.949999999999996,
+        "tail": 85.13999999999997
+      },
+      "noise": {
+        "median": 182.35711608810712,
+        "tail": 564.6521732220885
+      },
+      "margin": {
+        "median": 0.2574618474297201,
+        "tail": 0.15078309096760134
+      }
+    },
+    {
+      "envId": "docker-linux-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-002",
+      "metric": "fps",
+      "unit": "fps",
+      "rule": "fps",
+      "gated": true,
+      "allowed": {
+        "median": 1.5,
+        "tail": 3
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "margin": {
+        "median": null,
+        "tail": null
+      }
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "chromium-cpu4x",
+      "scenario": "PB-PERF-004",
+      "metric": "startupMs",
+      "unit": "ms",
+      "rule": "lowEndStartup",
+      "gated": true,
+      "allowed": {
+        "median": 33.435000005364415,
+        "tail": 34.41300000071526
+      },
+      "noise": {
+        "median": 11.383664840389063,
+        "tail": 13.425057403885205
+      },
+      "margin": {
+        "median": 2.9371033383500156,
+        "tail": 2.5633409947845847
+      }
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-001",
+      "metric": "startupMs",
+      "unit": "ms",
+      "rule": "startup",
+      "gated": true,
+      "allowed": {
+        "median": 11.114999994635582,
+        "tail": 11.70899999320507
+      },
+      "noise": {
+        "median": 2.3676019769087073,
+        "tail": 3.6265949168646268
+      },
+      "margin": {
+        "median": 4.694623548654085,
+        "tail": 3.2286484323780194
+      }
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "chromium",
+      "scenario": "PB-PERF-002",
+      "metric": "fps",
+      "unit": "fps",
+      "rule": "fps",
+      "gated": true,
+      "allowed": {
+        "median": 1.5,
+        "tail": 3
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "margin": {
+        "median": null,
+        "tail": null
+      }
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-001",
+      "metric": "startupMs",
+      "unit": "ms",
+      "rule": "startup",
+      "gated": true,
+      "allowed": {
+        "median": 24.15,
+        "tail": 26.13
+      },
+      "noise": {
+        "median": 11.398346308769774,
+        "tail": 10.676074207086732
+      },
+      "margin": {
+        "median": 2.1187283967165684,
+        "tail": 2.447528884976747
+      }
+    },
+    {
+      "envId": "local-darwin-arm64",
+      "profile": "webkit",
+      "scenario": "PB-PERF-002",
+      "metric": "fps",
+      "unit": "fps",
+      "rule": "fps",
+      "gated": true,
+      "allowed": {
+        "median": 1.5,
+        "tail": 3
+      },
+      "noise": {
+        "median": 0,
+        "tail": 0
+      },
+      "margin": {
+        "median": null,
+        "tail": null
+      }
+    }
+  ]
+}

@@ -21,11 +21,15 @@ import type { MetricUnit, PerfProfile } from './types.ts';
 //     runs, but with N = 10 it can only see what happened in those ten.
 //  3. The threshold must cover z standard deviations of the difference (z = 3): `noise = z x sqrt(2) x SE`, in the unit of the metric and
 //     as a share of the baseline statistic.
-//  4. The policy numbers are the smallest round values that cover the noise of every pair (profile, scenario, metric) that the policy
-//     gates, and the A/A check (src/lab/measure/aa.ts) then measures whether they were enough.
+//  4. The policy numbers are the smallest round values that cover SAFETY x the noise of every pair (profile, scenario, metric) that the
+//     policy gates: the noise was estimated from ten runs, and the standard deviation of ten runs is itself uncertain by about
+//     1 / sqrt(2 x 9) = 24 %, so a quarter more room is added. The A/A check (src/lab/measure/aa.ts) then measures whether that was enough.
 
 /** The standard deviations of the difference of two batch statistics that a threshold has to cover. */
 export const DERIVE_Z = 3;
+
+/** More room than the estimated noise, for the uncertainty of a spread estimated from ten runs (a relative standard error of 24 %). */
+export const SAFETY = 1.25;
 
 const BOOTSTRAP_RESAMPLES = 4000;
 const SIMULATED_BATCHES = 20_000;
@@ -242,11 +246,18 @@ export interface RuleNeed {
   gatedPairs: number;
   /** Pairs of this rule left out because their baseline is noisier than the stability limit (tracked, not gated). */
   trackedPairs: number;
-  /** The largest noise, over the gated pairs, as a share of the baseline statistic. */
+  /** The largest noise, over the gated pairs, as a share of the baseline statistic: what the shares of the policy have to cover. */
   share: Record<StatisticName, number>;
-  /** The largest noise in the unit of the metric: what a floor has to be to cover it where the share is too small. */
+  /** The largest noise in the unit of the metric, over the gated pairs. */
   absolute: Record<StatisticName, number>;
-  /** The numbers to put in the policy: shares rounded up to 5 %, the floor to a round number. */
+  /** The noise of the quietest gated pair (the larger of its median and tail noise), in the unit of the metric. */
+  quietest: number;
+  /**
+   * The numbers to put in the policy: SAFETY x the largest share, rounded up to 5 %; the floor is SAFETY x the noise of the quietest pair
+   * rounded up to a round number, because a change smaller than the noise of the quietest profile is not one a share of a small baseline
+   * should fail a build for. (The share already covers every measured pair, so the floor only binds on a baseline smaller than any
+   * measured here.)
+   */
   suggested: { medianShare: number; tailShare: number; floor: number };
 }
 
@@ -269,16 +280,19 @@ export function needs(pairs: readonly PairVariation[]): RuleNeed[] {
       median: largest((pair) => pair.noise.median),
       tail: largest((pair) => pair.noise.tail),
     };
+    const quietest =
+      gated.length === 0 ? 0 : Math.min(...gated.map((pair) => Math.max(pair.noise.median, pair.noise.tail)));
     return {
       rule,
       gatedPairs: gated.length,
       trackedPairs: group.length - gated.length,
       share,
       absolute,
+      quietest,
       suggested: {
-        medianShare: roundUpTo(share.median, 0.05),
-        tailShare: roundUpTo(share.tail, 0.05),
-        floor: roundUpNice(Math.max(absolute.median, absolute.tail)),
+        medianShare: roundUpTo(SAFETY * share.median, 0.05),
+        tailShare: roundUpTo(SAFETY * share.tail, 0.05),
+        floor: roundUpNice(SAFETY * quietest),
       },
     };
   });
@@ -385,7 +399,14 @@ export interface Derivation {
   schemaVersion: 1;
   kind: 'perf-threshold-derivation';
   generatedAt: string;
-  method: { z: number; resamples: number; simulatedBatches: number; seed: number; maxBaselineCv: number };
+  method: {
+    z: number;
+    safety: number;
+    resamples: number;
+    simulatedBatches: number;
+    seed: number;
+    maxBaselineCv: number;
+  };
   baselines: Array<{
     file: string;
     envId: string;
@@ -415,6 +436,7 @@ export function deriveFrom(
     generatedAt,
     method: {
       z: options.z ?? DERIVE_Z,
+      safety: SAFETY,
       resamples: options.resamples ?? BOOTSTRAP_RESAMPLES,
       simulatedBatches: SIMULATED_BATCHES,
       seed: SEED,
@@ -439,7 +461,7 @@ export function renderDerivationMarkdown(derivation: Derivation): string {
   const lines: string[] = [
     '## Threshold derivation',
     '',
-    `Derived from ${derivation.baselines.length} baselines (N runs per metric, the warm-up excluded). Noise = ${method.z} x sqrt(2) x SE, where SE is the larger of a parametric and a bootstrap (${method.resamples} resamples, seed ${method.seed}) estimate of the standard error of the batch median or tail: how far two independent batches of the same code may be apart. A metric gates only while its baseline CV is at most ${pct(method.maxBaselineCv)}.`,
+    `Derived from ${derivation.baselines.length} baselines (N runs per metric, the warm-up excluded). Noise = ${method.z} x sqrt(2) x SE, where SE is the larger of a parametric and a bootstrap (${method.resamples} resamples, seed ${method.seed}) estimate of the standard error of the batch median or tail: how far two independent batches of the same code may be apart. The policy numbers cover ${method.safety} x that noise for every gated pair, rounded up (5 % for shares, a round number for floors). A metric gates only while its baseline CV is at most ${pct(method.maxBaselineCv)}.`,
     '',
     '### Baselines',
     '',
@@ -464,11 +486,11 @@ export function renderDerivationMarkdown(derivation: Derivation): string {
     '',
     '### What each relative rule needs',
     '',
-    '| rule | gated pairs | tracked pairs | noise share: median / tail | noise: median / tail | suggested: median share, tail share, floor |',
-    '| --- | --- | --- | --- | --- | --- |',
+    '| rule | gated pairs | tracked pairs | largest noise share: median / tail | largest noise: median / tail | quietest pair noise | suggested: median share, tail share, floor |',
+    '| --- | --- | --- | --- | --- | --- | --- |',
     ...derivation.needs.map(
       (need) =>
-        `| ${need.rule} | ${need.gatedPairs} | ${need.trackedPairs} | ${pct(need.share.median)} / ${pct(need.share.tail)} | ${fmt(need.absolute.median)} / ${fmt(need.absolute.tail)} | ${pct(need.suggested.medianShare)}, ${pct(need.suggested.tailShare)}, ${fmt(need.suggested.floor)} |`,
+        `| ${need.rule} | ${need.gatedPairs} | ${need.trackedPairs} | ${pct(need.share.median)} / ${pct(need.share.tail)} | ${fmt(need.absolute.median)} / ${fmt(need.absolute.tail)} | ${fmt(need.quietest)} | ${pct(need.suggested.medianShare)}, ${pct(need.suggested.tailShare)}, ${fmt(need.suggested.floor)} |`,
     ),
     '',
     '### Metrics judged by an absolute budget: what the baselines show',

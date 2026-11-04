@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Baseline } from '../../../src/lab/measure/baseline.ts';
 import {
   DERIVE_Z,
+  SAFETY,
   bootstrapStandardError,
   coverage,
   deriveFrom,
@@ -111,6 +112,9 @@ describe('PB-PERF derivation: the variation of the metrics of a baseline', () =>
     expect(startup.noise.median).toBeCloseTo(DERIVE_Z * Math.SQRT2 * startup.se.median, 10);
     expect(startup.noiseShare.median).toBeCloseTo(startup.noise.median / 149, 10);
     expect(startup.noise.tail).toBeGreaterThan(startup.noise.median);
+    // The discarded warm-up (the fixture's is 999 ms) and how many times the median it was.
+    expect(startup.warmup).toBe(999);
+    expect(startup.warmupRatio).toBeCloseTo(999 / 149, 10);
   });
 
   it('gates a pair whose baseline is stable, and tracks one whose baseline is noisier than the limit', () => {
@@ -179,16 +183,37 @@ describe('PB-PERF derivation: what each rule needs, and whether the policy has i
     expect(startup).toMatchObject({ gatedPairs: 1, trackedPairs: 1 });
     expect(startup.share.median).toBeCloseTo(chromium.noiseShare.median!, 10);
     expect(startup.absolute.tail).toBeCloseTo(chromium.noise.tail, 10);
-    // Round up: the suggestion always covers the need.
-    expect(startup.suggested.medianShare).toBeGreaterThanOrEqual(startup.share.median);
-    expect(startup.suggested.tailShare).toBeGreaterThanOrEqual(startup.share.tail);
-    expect(startup.suggested.floor).toBeGreaterThanOrEqual(
-      Math.max(startup.absolute.median, startup.absolute.tail),
-    );
+    // Round up: the suggestion covers SAFETY x the need.
+    expect(startup.suggested.medianShare).toBeGreaterThanOrEqual(SAFETY * startup.share.median);
+    expect(startup.suggested.tailShare).toBeGreaterThanOrEqual(SAFETY * startup.share.tail);
+    expect(startup.suggested.medianShare).toBeLessThan(SAFETY * startup.share.median + 0.05);
+    // The floor is SAFETY x the noise of the quietest gated pair, rounded up to a round number.
+    expect(startup.quietest).toBeCloseTo(Math.max(chromium.noise.median, chromium.noise.tail), 10);
+    expect(startup.suggested.floor).toBe(roundUpNice(SAFETY * startup.quietest));
+    expect(startup.suggested.floor).toBeGreaterThanOrEqual(SAFETY * startup.quietest);
     expect(startup.suggested.medianShare * 100).toBeCloseTo(
       Math.round(startup.suggested.medianShare * 100),
       6,
     );
+  });
+
+  it('takes the shares from the noisiest pair and the floor from the quietest one', () => {
+    // The same relative spread at three times the size: the shares agree, the absolute noise is three times larger.
+    const two = measureVariation([
+      profileOf('chromium', STEADY),
+      profileOf(
+        'webkit',
+        STEADY.map((value) => value * 3),
+      ),
+    ]);
+    const startup = needs(two).find((need) => need.rule === 'startup')!;
+    const small = startupOf(two, 'chromium');
+    const large = startupOf(two, 'webkit');
+    expect(startup.gatedPairs).toBe(2);
+    expect(large.noise.tail / small.noise.tail).toBeCloseTo(3, 6);
+    expect(startup.absolute.tail).toBeCloseTo(large.noise.tail, 10);
+    expect(startup.quietest).toBeCloseTo(Math.max(small.noise.median, small.noise.tail), 10);
+    expect(startup.share.median).toBeCloseTo(small.noiseShare.median!, 6);
   });
 
   it('suggests nothing for a budget rule: a share of zero cannot be derived from variation', () => {

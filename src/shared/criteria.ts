@@ -43,6 +43,8 @@ const arithmetic = (label: string, value: number, unit: PolicyUnit, measure: str
   entry('arithmetic', label, value, unit, measure, basis);
 const assumption = (label: string, value: number, unit: PolicyUnit, measure: string, basis: string): Policy =>
   entry('assumption', label, value, unit, measure, basis);
+const measured = (label: string, value: number, unit: PolicyUnit, measure: string, basis: string): Policy =>
+  entry('measured', label, value, unit, measure, basis);
 
 /** The plain numbers of a policy, for code that enforces it (`LIVE_LIMITS.latencyMaxMs`). */
 export function limitsOf<T extends Record<string, Policy>>(policy: T): { readonly [K in keyof T]: number } {
@@ -433,10 +435,13 @@ export const GATE_LIMITS = limitsOf(GATE_BUDGETS);
 // ---------------------------------------------------------------------------------------------------------------------
 // Performance gate (TEST_STRATEGY.md section 7.1, ADR-004, docs/decisions/perf.md)
 //
-// STATUS: every threshold below is an ASSUMPTION. Phase 5 part 1 built the harness and measured nothing; part 2 records the baselines on a
-// quiet machine, derives each threshold from the run-to-run variation it finds (the coefficient of variation committed with every
-// baseline) and rewrites the entry with the basis `measured` and the artifact it came from. Until then the numbers are defensible
-// arithmetic on an expected noise level, not evidence, and the generated table in TEST_STRATEGY.md says so.
+// STATUS (phase 5 part 2): the baselines were recorded on a quiet machine (six profiles in two environments, perf/baselines) and the
+// thresholds that depend on run-to-run variation were derived from them (docs/results/perf/threshold-derivation.md, produced by
+// `npx tsx perf/derive.ts`): those entries have the basis `measured`. A threshold that cannot be derived from variation stays an
+// `assumption`, with what the measurements say about it: the frame rate, the dropped-frame ratio and the rebuffering counts were exactly
+// the same in every baseline run (no variation to derive a number from), so their budgets are product decisions, with the measurements
+// that support them in the basis. The A/A check of these numbers (the gate against its own baselines) and the sensitivity check (a
+// regression injected on purpose) are in docs/results/perf.
 //
 // How a threshold is applied (src/lab/measure/decide.ts). A metric that gates carries one of two kinds of rule, each against the
 // baseline of the same environment and profile:
@@ -448,46 +453,47 @@ export const GATE_LIMITS = limitsOf(GATE_BUDGETS);
 // A relative metric whose baseline is noisier than `maxBaselineCv` does not gate (it is tracked and reported): the baseline cannot tell a
 // regression of that size from noise.
 
-const PERF_NOISE_NOTE =
-  'About four standard errors of a median of ten runs when the run-to-run coefficient of variation is at the stability limit (4 x 1.2533 x 0.15 / sqrt(10) = 24 %, rounded up), which is three standard errors of the difference between two such medians.';
+const PERF_DERIVATION = 'docs/results/perf/threshold-derivation.md';
+
+const PERF_NOISE_NOTE = `Derived in ${PERF_DERIVATION}: noise = 3 x sqrt(2) x the standard error of the median of ten runs, i.e. how far two batches of the same code may be apart; 6.4 % of the baseline median on local Chromium, 14.2 % on local WebKit, 23.2 % on Chromium in the Playwright container (the noisiest profile that gates). 1.25 x 23.2 % = 29 %, rounded up to 30 %: the extra quarter is the uncertainty of a spread estimated from ten runs.`;
 
 export const PERF_POLICY = {
   runs: GATE_BUDGETS.perfRunsPerScenario,
-  warmupRuns: assumption(
+  warmupRuns: measured(
     'Warm-up runs per batch',
     1,
     'count',
     'The first run of every batch (one scenario, one browser process) is executed like the others, recorded in the baseline and the report, and excluded from the median and p90.',
-    'The first run in a fresh browser process pays for things the later ones do not (cold code and file caches, the first decode, the first connection). One is enough to take that out of a batch of ten; part 2 checks the claim by comparing the first measured run with the rest.',
+    `The first run in a fresh browser process pays for things the later ones do not (cold code and file caches, the first decode, the first connection). Measured in ${PERF_DERIVATION}: the discarded warm-up startup was 4.6x the median of the ten measured runs on local Chromium, 3.2x on local WebKit, 2.3x under the 4x throttle, 2.0x on Chromium and on WebKit in the container and 1.3x on Firefox in the container. Limit of the claim: in the container WebKit's first two measured runs were still slow (516 and 258 ms against 146 to 183 ms for the rest), which is why its startup is tracked and not gated.`,
   ),
-  maxBaselineCv: assumption(
+  maxBaselineCv: measured(
     'Stability limit: baseline CV',
     0.15,
     'ratio',
     'A metric judged by a relative rule gates only while the coefficient of variation of its baseline runs is at or below this; above it the metric is tracked and reported, not gated.',
-    'TEST_STRATEGY.md section 7.1: a metric gates only once its baseline is stable enough to tell a regression from noise. 15 % is the largest noise at which the relative thresholds below are still about four standard errors of a ten-run median.',
+    `TEST_STRATEGY.md section 7.1: a metric gates only once its baseline is stable enough to tell a regression from noise. Startup CV of the recorded baselines (${PERF_DERIVATION}): 4.0 % local Chromium, 6.8 % local WebKit, 6.4 % under the 4x throttle, 13.3 % Chromium in the container, 15.3 % Firefox in the container, 56.7 % WebKit in the container. The thresholds below cover the pairs up to 13.3 %; the limit is that CV rounded up to the next 5 %, so Firefox and WebKit startup in the container are tracked, not gated.`,
   ),
 
-  startupMedianRel: assumption(
+  startupMedianRel: measured(
     'Startup (PB-PERF-001): median, share',
-    0.25,
+    0.3,
     'ratio',
     '`startupMs`: the median of the batch may be worse than the baseline median by at most this share of it (and the floor).',
     PERF_NOISE_NOTE,
   ),
-  startupTailRel: assumption(
+  startupTailRel: measured(
     'Startup (PB-PERF-001): p90, share',
-    0.5,
+    0.3,
     'ratio',
     '`startupMs`: the p90 of the batch may be worse than the baseline p90 by at most this share of it (and the floor).',
-    'Twice the median share: with ten runs the p90 is essentially the second slowest run, a much noisier statistic than the median (for normally distributed runs its standard error is about 0.54 sigma against 0.40 sigma for the median).',
+    `Same derivation for the p90 of ten runs (essentially the second slowest run; the simulated standard error of ten normal runs is 0.46 sigma against 0.37 sigma for the median): noise 9.3 % of the baseline p90 on local Chromium, 12.3 % on local WebKit, 22.6 % in the container; 1.25 x 22.6 % = 28 %, rounded up to 30 % (${PERF_DERIVATION}). The tail share is not wider than the median share because the p90 of the noisiest profile is itself larger than its median.`,
   ),
-  startupFloorMs: assumption(
+  startupFloorMs: measured(
     'Startup (PB-PERF-001): floor',
-    25,
+    5,
     'ms',
     '`startupMs`: a median or p90 that is worse by this much or less never fails, whatever the share.',
-    'Startup on localhost is about 120 to 160 ms in the committed smoke results (docs/results/player-smoke, Chromium on macOS), so 25 % of it is 30 to 40 ms. The floor sits just below that, so that on an environment where startup is 60 ms the share (15 ms) cannot fail a build on its own.',
+    `The noise of the quietest gated pair (local Chromium, 3.6 ms for the p90, ${PERF_DERIVATION}) times 1.25, rounded up: a change that small is within what the quietest profile does by itself. The share covers every measured pair, so the floor binds only on a baseline smaller than 17 ms, which none of the six profiles has.`,
   ),
 
   lowEndStartupMedianRel: assumption(
@@ -495,21 +501,21 @@ export const PERF_POLICY = {
     0.3,
     'ratio',
     '`startupMs` under the 4x CPU throttle: the median share, as for PB-PERF-001.',
-    'A little wider than the unthrottled share: the throttle makes the main thread four times slower, so its scheduling noise is amplified with it.',
+    `The same share as PB-PERF-001 because one stability limit (15 %) applies to both rules and a throttled baseline at the limit needs it. The one throttled baseline measured (local Chromium, CV 6.4 %) needs only 10.2 % (x 1.25 = 15 %, ${PERF_DERIVATION}), so on that profile the margin is 2.9 times; a per-rule limit would allow 15 % there.`,
   ),
   lowEndStartupTailRel: assumption(
     'Low-end startup (PB-PERF-004): p90, share',
-    0.6,
+    0.3,
     'ratio',
     '`startupMs` under the 4x CPU throttle: the p90 share, as for PB-PERF-001.',
-    'Twice the median share, as for the unthrottled profile.',
+    `As for the median: the measured need of the throttled p90 is 11.7 % (x 1.25 = 15 %), the policy uses the startup share.`,
   ),
-  lowEndStartupFloorMs: assumption(
+  lowEndStartupFloorMs: measured(
     'Low-end startup (PB-PERF-004): floor',
-    100,
+    20,
     'ms',
     '`startupMs` under the 4x CPU throttle: the floor, as for PB-PERF-001.',
-    'Four times the unthrottled floor: whatever the unthrottled run does in 25 ms of CPU, the throttled one takes four times as long.',
+    `The noise of the throttled baseline (13.4 ms for the p90, ${PERF_DERIVATION}) times 1.25, rounded up. The throttled median is 111.5 ms, so the share (33 ms) is the larger of the two.`,
   ),
 
   fpsMedianRel: assumption(
