@@ -26,7 +26,8 @@ export const USAGE = `usage: npm run triage -- [options]
   --from-ci         the CI stage: read the artifacts of this run (--from, else $PB_TRIAGE_FROM, else ./artifacts, else ./reports),
                     always exit 0, and say so. Triage explains a red build; it never decides one
   --summarize       ask a language model for a draft of the likely root cause of each cluster, from the redacted evidence.
-                    Needs ANTHROPIC_API_KEY (ANTHROPIC_MODEL, default claude-haiku-5-5; ANTHROPIC_BASE_URL). Without a key: one line, no summary
+                    Needs ANTHROPIC_API_KEY (ANTHROPIC_MODEL, default claude-haiku-5-5; ANTHROPIC_BASE_URL; ANTHROPIC_WORKSPACE_ID
+                    for a key that is not scoped to one workspace). Without a key: one line, no summary
   --refresh         with --summarize: ask again even where a draft is cached (.cache/triage)
   --max-clusters N  with --summarize: summarize at most N clusters, the largest first (default 10)
   --out <dir>       where triage-report.md and triage-report.json are written (default reports/triage)

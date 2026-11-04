@@ -305,6 +305,15 @@ export interface TriageReport {
   summaries: SummaryRecord[];
   /** One line saying why there are no summaries, or why some are missing; null when nothing needs saying. */
   summaryNote: string | null;
-  /** Where the drafts came from, when they were asked for: the model, the endpoint (not the live service when it is not api.anthropic.com), the counts. */
-  summaryRun: { model: string; endpoint: string; requests: number; cacheHits: number } | null;
+  /**
+   * Where the drafts came from, when they were asked for: the model, the endpoint (not the live service when it is not api.anthropic.com),
+   * the counts, and the tokens the service said the drafts of THIS run used (cached drafts are not counted again; null when it said none).
+   */
+  summaryRun: {
+    model: string;
+    endpoint: string;
+    requests: number;
+    cacheHits: number;
+    usage: { inputTokens: number; outputTokens: number } | null;
+  } | null;
 }

@@ -327,6 +327,7 @@ describe('PB-LAB-005 triage CLI: --summarize', () => {
       endpoint: mock.origin,
       requests: 2,
       cacheHits: 0,
+      usage: { inputTokens: expect.any(Number), outputTokens: expect.any(Number) },
     });
     expect(written.summaries.map((s) => s.status)).toStrictEqual(['summarized', 'summarized']);
     const markdown = readFileSync(join(cwd, 'reports/triage/triage-report.md'), 'utf8');

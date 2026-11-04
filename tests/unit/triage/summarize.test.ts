@@ -10,6 +10,7 @@ import {
   DEFAULT_API_VERSION,
   DEFAULT_MODEL,
   NO_KEY_NOTE,
+  NO_WORKSPACE_NOTE,
   optionsFromEnv,
   parseRetryAfter,
   PROMPT_VERSION,
@@ -172,22 +173,51 @@ describe('PB-LAB-005 triage summaries: the request is the one the documentation 
     expect(mock.requests.map((r) => r.body?.model)).toStrictEqual(['claude-haiku-5-5', 'claude-sonnet-5-5']);
   });
 
-  it('reads its three settings from the environment, and an empty value is no value', () => {
-    expect(optionsFromEnv({})).toStrictEqual({ apiKey: undefined, baseUrl: undefined, model: undefined });
+  it('reads its settings from the environment, and an empty value is no value', () => {
+    const none = { apiKey: undefined, baseUrl: undefined, model: undefined, workspaceId: undefined };
+    expect(optionsFromEnv({})).toStrictEqual(none);
     expect(
-      optionsFromEnv({ ANTHROPIC_API_KEY: '', ANTHROPIC_BASE_URL: '  ', ANTHROPIC_MODEL: '' }),
-    ).toStrictEqual({
-      apiKey: undefined,
-      baseUrl: undefined,
-      model: undefined,
-    });
+      optionsFromEnv({
+        ANTHROPIC_API_KEY: '',
+        ANTHROPIC_BASE_URL: '  ',
+        ANTHROPIC_MODEL: '',
+        ANTHROPIC_WORKSPACE_ID: ' ',
+      }),
+    ).toStrictEqual(none);
     expect(
       optionsFromEnv({
         ANTHROPIC_API_KEY: ' k ',
         ANTHROPIC_BASE_URL: 'http://127.0.0.1:4751',
         ANTHROPIC_MODEL: 'm',
+        ANTHROPIC_WORKSPACE_ID: ' wrkspc_test ',
       }),
-    ).toStrictEqual({ apiKey: 'k', baseUrl: 'http://127.0.0.1:4751', model: 'm' });
+    ).toStrictEqual({
+      apiKey: 'k',
+      baseUrl: 'http://127.0.0.1:4751',
+      model: 'm',
+      workspaceId: 'wrkspc_test',
+    });
+  });
+
+  it('sends the workspace header only when a workspace was given: a key scoped to one workspace must omit it', async () => {
+    const [first] = clusters();
+    await summarize([first as Cluster], options());
+    await summarize([first as Cluster], options({ workspaceId: 'wrkspc_01TestTestTest', refresh: true }));
+    expect(mock.requests.map((request) => request.headers['anthropic-workspace-id'])).toStrictEqual([
+      undefined,
+      'wrkspc_01TestTestTest',
+    ]);
+    expect(mock.requests.map((request) => request.problems)).toStrictEqual([[], []]);
+  });
+
+  it('refuses a workspace id that could not be a header value, before it sends anything', async () => {
+    const [first] = clusters();
+    for (const bad of ['wrkspc 1', 'wrkspc"1', 'a\r\nx-evil: 1', 'w'.repeat(200)]) {
+      const result = await summarize([first as Cluster], options({ workspaceId: bad }));
+      expect(result.note).toBe(NO_WORKSPACE_NOTE);
+      expect(result.records).toStrictEqual([]);
+    }
+    expect(mock.requests).toHaveLength(0);
   });
 
   it('puts what a person reads in the prompt, in order, and the instruction that the clustering is authoritative in the system prompt', async () => {

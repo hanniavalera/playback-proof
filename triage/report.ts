@@ -59,8 +59,19 @@ export function buildReport(
           endpoint: result.endpoint,
           requests: result.requests,
           cacheHits: result.cacheHits,
+          usage: usageOf(result.records),
         }
       : null,
+  };
+}
+
+/** The tokens the service reported for the drafts written in this run: what a person reads to learn what the run cost. */
+function usageOf(records: readonly SummaryRecord[]): { inputTokens: number; outputTokens: number } | null {
+  const written = records.filter((record) => record.status === 'summarized' && record.usage !== undefined);
+  if (written.length === 0) return null;
+  return {
+    inputTokens: written.reduce((sum, record) => sum + (record.usage?.inputTokens ?? 0), 0),
+    outputTokens: written.reduce((sum, record) => sum + (record.usage?.outputTokens ?? 0), 0),
   };
 }
 
@@ -323,10 +334,10 @@ export function renderMarkdown(report: TriageReport): string {
   }
   out.push('---', '');
   if (report.summaryRun) {
-    const { model, endpoint, requests, cacheHits } = report.summaryRun;
+    const { model, endpoint, requests, cacheHits, usage } = report.summaryRun;
     const live = endpoint === DEFAULT_BASE_URL;
     out.push(
-      `Model summaries: ${model} through ${endpoint}${live ? '' : ' (**not the live service**: a local test double)'}; ${plural(requests, 'request')} sent, ${plural(cacheHits, 'draft')} from the cache.`,
+      `Model summaries: ${model} through ${endpoint}${live ? '' : ' (**not the live service**: a local test double)'}; ${plural(requests, 'request')} sent, ${plural(cacheHits, 'draft')} from the cache.${usage ? ` The service reported ${usage.inputTokens} input and ${usage.outputTokens} output tokens for the drafts of this run.` : ''}`,
     );
   } else {
     out.push(

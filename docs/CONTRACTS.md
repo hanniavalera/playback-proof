@@ -334,7 +334,7 @@ Decisions: [decisions/flake.md](decisions/flake.md) (ADR-130 to ADR-139); how to
   Baselines are keyed by it and never compared across environments.
 - `PB_ORIGIN`: service origin for the client (default `http://127.0.0.1:${PB_PORT}`).
 - `PB_FLAKE_RUN_FILE`, `PB_RUN_ID`, `PB_FLAKE_QUARANTINE`; `PB_FLAKE_STORE`, `PB_FLAKE_HISTORY_DIR`, `PB_FLAKE_GIT_REMOTE`, `PB_FLAKE_GIT_BRANCH`, `PB_FLAKE_GIT_IDENTITY`: the flake reporter, the gate and the report (the table in [FLAKE.md](FLAKE.md)); all optional.
-- `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`: optional, triage summaries only. Everything works without them.
+- `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` (default `claude-haiku-5-5`), `ANTHROPIC_BASE_URL` (default `https://api.anthropic.com`; a local mock in the tests), `ANTHROPIC_WORKSPACE_ID` (only for a key that is not scoped to one workspace): optional, triage summaries only ([TRIAGE.md](TRIAGE.md)). Everything works without them. `PB_TRIAGE_FROM`: where `npm run gate:triage` reads when `--from` is not given.
 
 ## 9. Commands (names are fixed; implementations arrive with their phase)
 

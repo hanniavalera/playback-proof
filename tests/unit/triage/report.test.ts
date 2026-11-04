@@ -246,6 +246,40 @@ describe('PB-LAB-005 triage report: a model draft is a draft, and a mock is neve
     );
   });
 
+  it('reports the tokens the service said the drafts of this run used, and does not count a cached draft again', () => {
+    const failures = [
+      failure({ id: 'PB-VOD-006', message: wait }),
+      failure({ id: 'PB-ABR-002', message: 'Error: other cause' }),
+      failure({ id: 'PB-VOD-007', message: 'Error: a third cause' }),
+    ];
+    const clusters = cluster(failures);
+    const usage = (inputTokens: number, outputTokens: number) => ({ inputTokens, outputTokens });
+    const r = buildReport(collection(failures), clusters, {
+      from: 'reports',
+      now: NOW,
+      summaries: {
+        records: [
+          { clusterKey: clusters[0]!.key, status: 'summarized', text: 'a', usage: usage(1000, 300) },
+          { clusterKey: clusters[1]!.key, status: 'summarized', text: 'b', usage: usage(200, 40) },
+          { clusterKey: clusters[2]!.key, status: 'cached', text: 'c', usage: usage(5000, 900) },
+        ],
+        note: null,
+        endpoint: DEFAULT_BASE_URL,
+        model: 'claude-haiku-5-5',
+        requests: 2,
+        cacheHits: 1,
+        inputChars: 0,
+      },
+    });
+    expect(r.summaryRun?.usage).toStrictEqual({ inputTokens: 1200, outputTokens: 340 });
+    expect(renderMarkdown(r)).toContain(
+      '2 requests sent, 1 draft from the cache. The service reported 1200 input and 340 output tokens for the drafts of this run.',
+    );
+    expect(
+      draftOf([failure({ message: wait })], 'summarized', DEFAULT_BASE_URL).r.summaryRun?.usage,
+    ).toBeNull();
+  });
+
   it('says in capitals that a draft of another endpoint is not the live service, and a cached one that it is from the cache', () => {
     const mocked = draftOf([failure({ message: wait })], 'summarized', 'http://127.0.0.1:4751');
     expect(mocked.markdown).toContain('endpoint http://127.0.0.1:4751, NOT the live service');

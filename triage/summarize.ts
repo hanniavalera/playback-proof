@@ -22,6 +22,9 @@ export const DEFAULT_API_VERSION = '2026-10-21';
 /** Part of the cache key: a change of the prompt makes the cached drafts stale. */
 export const PROMPT_VERSION = 1;
 export const NO_KEY_NOTE = 'summaries skipped: ANTHROPIC_API_KEY is not set';
+export const NO_WORKSPACE_NOTE =
+  'summaries skipped: ANTHROPIC_WORKSPACE_ID is not a workspace id (letters, digits, _ and - only)';
+const WORKSPACE_ID = /^[A-Za-z0-9_-]{1,128}$/;
 export const CACHE_DIR = '.cache/triage';
 
 export interface SummarizeOptions {
@@ -30,6 +33,11 @@ export interface SummarizeOptions {
   /** Default `https://api.anthropic.com`. Set to a local mock to test; the report then says it is not the live service. */
   baseUrl?: string | undefined;
   model?: string | undefined;
+  /**
+   * Sent as `anthropic-workspace-id`. The authentication page of the documentation says a key that is not scoped to one workspace needs it
+   * on every request, and a key that is scoped must omit it: so it is sent only when the person gave one (`ANTHROPIC_WORKSPACE_ID`).
+   */
+  workspaceId?: string | undefined;
   apiVersion?: string;
   /** Thinking counts toward it (docs): 2000 leaves room for the thinking of a short answer. */
   maxTokens?: number;
@@ -75,16 +83,17 @@ export interface SummaryResult {
   inputChars: number;
 }
 
-/** The three settings that come from the environment: the key, the endpoint and the model. */
+/** The settings that come from the environment: the key, the endpoint, the model and the workspace. */
 export function optionsFromEnv(
   env: NodeJS.ProcessEnv,
-): Pick<SummarizeOptions, 'apiKey' | 'baseUrl' | 'model'> {
+): Pick<SummarizeOptions, 'apiKey' | 'baseUrl' | 'model' | 'workspaceId'> {
   const clean = (value: string | undefined): string | undefined =>
     value !== undefined && value.trim() !== '' ? value.trim() : undefined;
   return {
     apiKey: clean(env.ANTHROPIC_API_KEY),
     baseUrl: clean(env.ANTHROPIC_BASE_URL),
     model: clean(env.ANTHROPIC_MODEL),
+    workspaceId: clean(env.ANTHROPIC_WORKSPACE_ID),
   };
 }
 
@@ -411,6 +420,12 @@ export async function summarize(
     return result;
   }
   const key: string = given;
+  const workspaceId = options.workspaceId;
+  // A header value that is not a plain id (a space, a quote, a line break) would make the request throw before it is sent: say so instead.
+  if (workspaceId !== undefined && !WORKSPACE_ID.test(workspaceId)) {
+    result.note = NO_WORKSPACE_NOTE;
+    return result;
+  }
   const settings = {
     apiVersion: options.apiVersion ?? DEFAULT_API_VERSION,
     maxTokens: options.maxTokens ?? DEFAULTS.maxTokens,
@@ -550,6 +565,7 @@ export async function summarize(
           'x-api-key': key,
           'anthropic-version': settings.apiVersion,
           'content-type': 'application/json',
+          ...(workspaceId === undefined ? {} : { 'anthropic-workspace-id': workspaceId }),
         },
         body,
         signal: AbortSignal.timeout(settings.timeoutMs),
