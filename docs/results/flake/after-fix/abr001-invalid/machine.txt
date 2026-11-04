@@ -1,0 +1,17 @@
+measure: flake-collect, engine webkit, runner macos-15
+label: abr001-invalid
+started: 2026-11-04T21:07:01Z
+commit: 98ecb4f72ca1a52e4435a157f0bb172a4a28363c (abr/forced-downshift)
+environment id: gha-macos-arm64
+runner: macOS ARM64, github-hosted, image macos15 20261028.0489.1
+cpus: 3
+cpu: Apple M1 (Virtual)
+memory: 7168 MiB
+os: macOS 15.8.2
+uptime: 21:07  up 1 min, 1 user, load averages: 93.08 38.49 15.23
+node: v22.23.4, npm: 10.9.9
+playwright: Version 1.64.1
+ffmpeg: not installed (the streams come from the streams job)
+
+finished: 2026-11-04T21:20:42Z
+uptime: 21:20  up 15 mins, 1 user, load averages: 11.50 15.56 14.34
