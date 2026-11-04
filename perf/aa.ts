@@ -59,8 +59,13 @@ function main(argv: string[]): number {
   const base = join(outDir, summary.envId, `${summary.profile}-aa`);
   writeFileSync(`${base}.json`, `${JSON.stringify(summary, null, 2)}\n`);
   writeFileSync(`${base}.md`, renderAaMarkdown(summary));
+  const { cpuModels, passesWithoutCpuModel } = summary.machines;
+  const machines =
+    cpuModels.length === 0
+      ? 'CPU models of the passes: not recorded'
+      : `CPU models of the passes: ${cpuModels.length} distinct (${cpuModels.map(({ model, passes }) => `${model} x ${passes}`).join(', ')})${passesWithoutCpuModel > 0 ? `, ${passesWithoutCpuModel} without one` : ''}`;
   console.log(
-    `A/A ${summary.profile} in ${summary.envId}: ${summary.passes} passes, ${summary.falsePositives} false positives (exit codes: 0 x ${summary.exitCodes['0']}, 1 x ${summary.exitCodes['1']}, 2 x ${summary.exitCodes['2']}), ${summary.firstBatchAlarms} first-batch alarms of which ${summary.notReproduced} did not reproduce\nwrote ${base}.json and .md`,
+    `A/A ${summary.profile} in ${summary.envId}: ${summary.passes} passes, ${summary.falsePositives} false positives (exit codes: 0 x ${summary.exitCodes['0']}, 1 x ${summary.exitCodes['1']}, 2 x ${summary.exitCodes['2']}), ${summary.firstBatchAlarms} first-batch alarms of which ${summary.notReproduced} did not reproduce\n${machines}\nwrote ${base}.json and .md`,
   );
   return 0;
 }

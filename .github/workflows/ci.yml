@@ -10,6 +10,11 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      control_ref:
+        description: The control of the perf gate, a git ref of this checkout (HEAD, the default, makes the run an A/A by construction)
+        type: string
+        default: HEAD
 
 permissions:
   contents: read
@@ -127,6 +132,50 @@ jobs:
           path: |
             reports
             test-results
+          retention-days: 14
+          overwrite: true
+
+  # The performance gate (docs/PERF.md, ADR-120 to ADR-129, ADR-178 and ADR-179): the head is compared with a CONTROL, the base of the
+  # change, measured on this very machine minutes earlier by the control's own harness, and never with a baseline committed from
+  # another machine: GitHub-hosted runners of one label land on different CPU models, and the same code failed a committed baseline
+  # on the slower ones (docs/results/perf/gha-cross-vm.md). The base is the first parent of the commit that was checked out: for a
+  # pull request the merge commit's, for a push to main the previous tip; a manual run takes the input (default HEAD: an A/A, which
+  # is how the false-positive rate of this job is measured). One leg per profile, in parallel. Exit 1 is a regression that
+  # reproduced on a fresh batch; exit 2 is a measurement that cannot be trusted (a failed control, a changed stream), and fails too.
+  perf:
+    name: perf (${{ matrix.profile }})
+    needs: streams
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [chromium, chromium-cpu4x]
+    env:
+      CI: 'true'
+      CONTROL_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.control_ref || 'HEAD^1' }}
+    steps:
+      # The control is another commit: the history it lives in comes with the checkout.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Set up Node, the streams and the browser
+        id: setup
+        uses: ./.github/actions/setup
+        with:
+          streams: 'true'
+          browser: chromium
+      - name: Build the player
+        run: npm run build:player
+      - name: Performance gate (${{ matrix.profile }}, paired with its control)
+        run: npm run gate:perf -- --paired --control-ref "$CONTROL_REF" --profile ${{ matrix.profile }}
+      # Both reports of the profile, the control's summary included. Not `reports-*`: the flake jobs download that pattern.
+      - name: Upload the performance reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: perf-reports-${{ matrix.profile }}
+          path: reports/perf
           retention-days: 14
           overwrite: true
 

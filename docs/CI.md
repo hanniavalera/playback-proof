@@ -20,6 +20,13 @@ pull_request  |  push to main  |  manual run                     (ci.yml)
          each leg: download `streams`, install its one browser, build the player, run the gate,
                    write the job summary, upload the artifact `reports-<leg>`
 
+  alongside the legs, in parallel with them (needs: streams; a measurement on a machine of its own, never beside a leg):
+
+  +-- perf (chromium)         gate:perf -- --paired --profile chromium         ubuntu-24.04
+  +-- perf (chromium-cpu4x)   gate:perf -- --paired --profile chromium-cpu4x   ubuntu-24.04
+         each leg: full history (the control is another commit), the one browser, the player built, then the head is compared
+                   with the control measured on THIS machine minutes earlier; upload `perf-reports-<profile>`
+
   after the five legs (needs: merge-gate; they run when a leg is red, and not when the run was cancelled):
 
   +-- flake          npm run gate:flake -- --store git        judge this build against `ci-data`   ubuntu-24.04
@@ -68,6 +75,7 @@ Budgets are the design numbers of [TEST_STRATEGY.md section 6.3](../TEST_STRATEG
 | `streams` (restore or generate) | same, and the nightly | `ubuntu-24.04` | none in the strategy; about 1 min on a cache hit, 3 to 4 on a miss (generation is about 2 min on 4 cores: expected, not measured on a runner) | 15 min | `streams` (`.cache/streams`, 43 MB, 3 days) | `npm run generate:streams`, or `gh run download <run-id> --name streams --dir .cache/streams` |
 | `merge-gate (chromium)`, `(firefox)`, `(chromium-cpu4x)`, `(webkit-linux, experimental)` | same | `ubuntu-24.04` | 8 min | 15 min (Playwright stops its own run at 11) | `reports-<leg>` (`reports/`, `test-results/`, 14 days) | `CI=true npm run docker:pw -- npm run gate:merge -- --project=<project>` (the streams must be in `.cache/streams`) |
 | `merge-gate (webkit-macos)` | same | `macos-15` | 8 min (a slow 3-CPU runner: unmeasured) | 30 min (Playwright stops at 26) | `reports-webkit-macos` | on a macOS host: `npx playwright install webkit`, then `CI=true npm run gate:merge -- --project=webkit` |
+| `perf (chromium)`, `perf (chromium-cpu4x)` | pull request, push to `main`, manual (input `control_ref`, default `HEAD`: an A/A) | `ubuntu-24.04` | about 12 min of measuring in all (the chromium leg about 9.5, the throttled one about 3; the design budget of one pass is 12 min, TEST_STRATEGY.md section 6.3), setup not measured | 30 min | `perf-reports-<profile>` (`reports/perf/`, 14 days) | `npm run gate:perf -- --paired --control-ref HEAD^1 --profile chromium` (the control is another commit: see [PERF.md](PERF.md)) |
 | `flake` | pull request (forks too), push to `main`, manual; not when the run is cancelled | `ubuntu-24.04` | "seconds" (TEST_STRATEGY.md section 6.1); about a minute with its setup: unmeasured | 10 min | none: the verdict is on the job summary | `gh run download <run-id> --pattern 'reports-*' --dir reports/flake`, then `npm run gate:flake -- --store git --git-identity "me <me@example.invalid>" --runs reports/flake/reports-chromium` (and the other legs of the environment): it reads `ci-data` of `origin` and writes nothing |
 | `flake-record` | push to `main` only | `ubuntu-24.04` | as `flake` | 10 min | none | not against `ci-data`, on purpose; the same runs into a local history: `npm run gate:flake -- --store file --history-dir <dir> --record --runs <dir of run files>` |
 | `streams`, `release (<leg>)` of the nightly | `schedule` (04:41 UTC), manual, and a pull request that changes `nightly.yml` (a schedule and a manual run exist only for a file on the default branch, so a change would otherwise be seen the night after the merge) | as the gate | 15 min per engine (the release budget) | 30 min, stop at 26; 45 on macOS, stop at 41 | `reports-<leg>` (30 days) | `CI=true npm run docker:pw -- npm run test:e2e -- --grep "@merge\|@release" --project=<project>` |

@@ -66,9 +66,28 @@ runs:
       shell: bash
       env:
         BROWSER: ${{ inputs.browser }}
+      # A browser download that stalls holds the job until its timeout (one did, for the whole 15 minutes, on a Firefox leg): every
+      # attempt gets five minutes, in a process group of its own so that the watchdog stops the download and what it started, and
+      # there are three attempts. A failure that is not a stall (a package that does not exist) fails three times and says so.
       run: |
-        if [ "$RUNNER_OS" = "Linux" ]; then
-          npx playwright install --with-deps "$BROWSER"
-        else
-          npx playwright install "$BROWSER"
-        fi
+        install() {
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            npx playwright install --with-deps "$BROWSER"
+          else
+            npx playwright install "$BROWSER"
+          fi
+        }
+        set -m
+        for attempt in 1 2 3; do
+          install &
+          pid=$!
+          ( sleep 300; kill -TERM -- "-$pid" 2>/dev/null ) &
+          watchdog=$!
+          if wait "$pid"; then
+            kill -TERM -- "-$watchdog" 2>/dev/null || true
+            exit 0
+          fi
+          kill -TERM -- "-$watchdog" 2>/dev/null || true
+          echo "::warning::the Playwright install of $BROWSER failed or did not finish in 5 minutes (attempt $attempt of 3)"
+        done
+        exit 1
