@@ -29,8 +29,6 @@ const INPUTS = {
  */
 const PENDING: Readonly<Record<string, string>> = {
   'ab/run.ts': 'p6/ab',
-  'live/readiness.ts': 'p7/live',
-  'live/soak.ts': 'p7/live',
 };
 
 /** How each task is told which engine to use (null: it is not: the A/B plan names its own). */
@@ -377,8 +375,8 @@ describe('the measurement workflow test fails when a promise is broken', () => {
     expect(
       broken((t) => t, { ...world, exists: (f) => f !== 'tools/flake-collect.ts' && world.exists(f) }),
     ).toContain('tools/flake-collect.ts is missing and not listed as pending');
-    expect(broken(replaced('npm run soak', 'npm run flake:gate'))).toContain(
-      'PENDING lists live/soak.ts, which no task runs',
+    expect(broken(replaced('npm run ab', 'npm run flake:gate'))).toContain(
+      'PENDING lists ab/run.ts, which no task runs',
     );
   });
 
