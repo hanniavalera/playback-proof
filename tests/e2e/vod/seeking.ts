@@ -4,7 +4,8 @@ import type { StreamInfo, Track } from '../../../src/shared/streams.ts';
 import type { PlayerHandle } from '../support/player.ts';
 import type { TestSession } from '../support/session.ts';
 import { failure } from './fail.ts';
-import { distinctAscending, middleOfSegment, segmentNumbers } from './segments.ts';
+import { distinctAscending, middleOfSegment, repsOfTrack, segmentNumbers } from './segments.ts';
+import { requestsFor } from '../support/waiting.ts';
 
 /**
  * How far from the target a seek may land, in seconds: measured at 0.000 to 0.001 s in Chromium and WebKit (the clock is where it was
@@ -56,12 +57,29 @@ export async function logAround(
   };
 }
 
-/** The segment numbers of a track that were requested both before and after a point: the refetches (a segment the player already had). */
-export function requestedAgain(
+type Around = { before: readonly RequestLogEntry[]; after: readonly RequestLogEntry[] };
+
+const segmentRequests = (
+  log: readonly RequestLogEntry[],
   info: StreamInfo,
   track: Track,
-  around: { before: readonly RequestLogEntry[]; after: readonly RequestLogEntry[] },
-): number[] {
+): RequestLogEntry[] => requestsFor(log, { kind: 'segment', rep: repsOfTrack(info, track) });
+
+/**
+ * The segments of a track that were requested before a point and again after it from the SAME representation (`['v720#3']`): a
+ * refetch, a segment the player already had. The same number from ANOTHER representation is not one: it is the adaptation (WebKit
+ * climbs a rung about a second in, and Shaka replaces what it had buffered at the lower rung with the higher one).
+ */
+export function refetched(info: StreamInfo, track: Track, around: Around): string[] {
+  const label = (entry: RequestLogEntry): string => `${entry.rep}#${entry.number}`;
+  const had = new Set(segmentRequests(around.before, info, track).map(label));
+  return [...new Set(segmentRequests(around.after, info, track).map(label))].filter((request) =>
+    had.has(request),
+  );
+}
+
+/** The segment numbers of a track requested before a point and again after it, from whichever representation: the buffer did not hold them. */
+export function fetchedAgain(info: StreamInfo, track: Track, around: Around): number[] {
   const had = new Set(segmentNumbers(around.before, info, track));
   return distinctAscending(segmentNumbers(around.after, info, track).filter((number) => had.has(number)));
 }

@@ -9,9 +9,10 @@ import {
   CONTINUE_AFTER_SEEK_SEC,
   SEEK_LANDING_TOLERANCE_SEC,
   farTarget,
+  fetchedAgain,
   logAround,
   rapidTargets,
-  requestedAgain,
+  refetched,
   seekAndRecord,
 } from './vod/seeking.ts';
 
@@ -58,8 +59,8 @@ test(
     // What the origin saw: a seek inside the buffer is served by the buffer, so nothing the player already had is asked for again.
     const around = await logAround(session, logCursor);
     expect(
-      requestedAgain(info, 'video', around),
-      'video segments requested before the seek and again after it (request log): the buffer did not serve the seek',
+      refetched(info, 'video', around),
+      'video segments requested before the seek and again after it from the same representation (request log): the buffer did not serve the seek',
     ).toEqual([]);
   },
 );
@@ -101,8 +102,8 @@ test(
       `video segments requested after the seek (request log): segment ${covering} covers ${target} s`,
     ).toContain(covering);
     expect(
-      requestedAgain(info, 'video', around),
-      'video segments requested before the seek and again after it (request log): segments the player already had',
+      refetched(info, 'video', around),
+      'video segments requested before the seek and again after it from the same representation (request log): segments the player already had',
     ).toEqual([]);
   },
 );
@@ -146,8 +147,8 @@ test(
     const around = await logAround(session, logCursor);
     const covering = segmentCovering(info, early);
     expect(
-      requestedAgain(info, 'video', around),
-      `video segments requested at the start and again after the seek back (request log): segment ${covering} covers ${early} s, and it was not requested again, so the player still had it and the position was not evicted`,
+      fetchedAgain(info, 'video', around),
+      `video segment numbers requested at the start and again after the seek back (request log): segment ${covering} covers ${early} s, and it was not requested again, so the player still had it and the position was not evicted`,
     ).toContain(covering);
   },
 );
