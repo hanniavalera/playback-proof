@@ -9,6 +9,7 @@ import {
   renderSoakReport,
   runVerdict,
 } from '../../../src/lab/readiness/checklist.ts';
+import { defaultInjections } from '../../../src/lab/readiness/args.ts';
 import { candidateById } from '../../../src/lab/readiness/candidates.ts';
 import { runReadinessChecks } from '../../../src/lab/readiness/checks.ts';
 import type { ConfigurationResult, ReadinessReport, SoakReport } from '../../../src/lab/readiness/report.ts';
@@ -125,8 +126,7 @@ function soakReport(
       warmupSec: 60,
       sampleSec: 5,
       heapEverySec: 30,
-      stallAtMinutes: null,
-      staleAtMinutes: null,
+      ...defaultInjections(minutes),
     },
     limits: limitsSnapshot(),
     length: evaluated.kind,
@@ -296,6 +296,63 @@ describe('the checklist of TEST_STRATEGY.md section 8', () => {
     expect(lines.filter((line) => line.includes('configuration A'))).toHaveLength(1);
     expect(lines.filter((line) => line.includes('configuration live-sync'))).toHaveLength(1);
     expect(items.find((item) => item.number === 1)?.status).toBe('done');
+  });
+
+  it('names the protocol of a result that is not DASH on every line that names a result, so that two results of one engine are two lines', async () => {
+    const a = await configuration('A', null);
+    const dash = report('chromium', [a]);
+    const hls = { ...dash, stream: { ...dash.stream, protocol: 'hls' as const } };
+    const items = checklist({ readiness: [dash, hls], soaks: [] });
+    const lines = (number: number): string[] => items.find((item) => item.number === number)?.evidence ?? [];
+    for (const number of [3, 5]) {
+      expect(lines(number).filter((line) => line.startsWith('chromium (local-darwin-arm64):'))).toHaveLength(
+        1,
+      );
+      expect(
+        lines(number).filter((line) => line.startsWith('chromium (local-darwin-arm64, hls):')),
+      ).toHaveLength(1);
+    }
+    const soakOfHls = { ...soakReport('chromium', 5), stream: { ...dash.stream, protocol: 'hls' as const } };
+    const soakItem = checklist({ readiness: [dash], soaks: [soakOfHls] }).find((item) => item.number === 4);
+    expect(soakItem?.evidence.join('\n')).toContain(
+      'chromium (local-darwin-arm64, hls): CI soak only of 5 min',
+    );
+  });
+
+  it('says in the line of a soak that it did not inject the plan its length has, so that a soak with a stale manifest and no outage is not read as the CI soak of the policy', () => {
+    const policy = soakReport('webkit', 5);
+    const stale = {
+      ...policy,
+      options: { ...policy.options, stallAtMinutes: null, staleAtMinutes: 2 },
+      faults: [
+        {
+          kind: 'stale-manifest' as const,
+          startMs: policy.firstFrameMs + 120_000,
+          endMs: policy.firstFrameMs + 130_000,
+        },
+      ],
+    };
+    const nothing = { ...policy, options: { ...policy.options, stallAtMinutes: null }, faults: [] };
+    const item = (soaks: SoakReport[]): string =>
+      (checklist({ readiness: [], soaks }).find((candidate) => candidate.number === 4)?.evidence ?? []).join(
+        '\n',
+      );
+    expect(item([policy])).toContain('CI soak only of 5 min:');
+    expect(item([policy])).not.toContain('not the policy');
+    expect(item([stale])).toContain(
+      "CI soak only of 5 min (not the policy's plan: stale-manifest for 10 s at minute 2.0):",
+    );
+    expect(item([nothing])).toContain("CI soak only of 5 min (not the policy's plan: nothing):");
+    const asCandidate = {
+      ...stale,
+      configuration: { id: 'live-sync', label: 'x', patch: liveSync as never },
+    };
+    expect(item([asCandidate])).toContain(
+      "CI soak of 5 min (not the policy's plan: stale-manifest for 10 s at minute 2.0) of the candidate live-sync:",
+    );
+    // The sheet of the soak says the same thing in its own line, as it did.
+    expect(renderSoakReport(stale)).toContain('injected: stale-manifest for 10 s at minute 2.0');
+    expect(renderSoakReport(nothing)).toContain('injected: nothing');
   });
 
   it("lists a candidate's soak and does not count it: the release soak of the build as it ships is A's", async () => {

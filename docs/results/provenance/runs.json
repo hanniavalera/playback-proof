@@ -146,6 +146,66 @@
       "file": "docs/results/soak/gha-linux-x64-webkit-30m-live-sync.json",
       "uploadedAs": "soak/gha-linux-x64-webkit-30m.json",
       "sha256": "4d96836291bd31207de1e0795ee66e0529872e3f1b18f79d637960c779f7edc7"
+    },
+    {
+      "label": "stale-webkit-ls",
+      "runId": 41892387342,
+      "task": "soak",
+      "file": "docs/results/soak/gha-linux-x64-webkit-8m-nostall-stale2m-live-sync.json",
+      "uploadedAs": "soak/gha-linux-x64-webkit-8m.json",
+      "sha256": "9592e8cd1927c37ce3b6d0d3e5db4438ba33b3701f3556c355dc9416ef3f8c42",
+      "batch": "extra",
+      "args": "--minutes 8 --no-stall --stale-at-minutes 2 --candidate live-sync"
+    },
+    {
+      "label": "stale-webkit-a",
+      "runId": 41892396172,
+      "task": "soak",
+      "file": "docs/results/soak/gha-linux-x64-webkit-8m-nostall-stale2m.json",
+      "uploadedAs": "soak/gha-linux-x64-webkit-8m.json",
+      "sha256": "8d0a448ba7059d46bca3d67b96878625ebeff19fbfa6abc82449418872f3a8a3",
+      "batch": "extra",
+      "args": "--minutes 8 --no-stall --stale-at-minutes 2"
+    },
+    {
+      "label": "stale-chromium-ls",
+      "runId": 41892404014,
+      "task": "soak",
+      "file": "docs/results/soak/gha-linux-x64-chromium-8m-nostall-stale2m-live-sync.json",
+      "uploadedAs": "soak/gha-linux-x64-chromium-8m.json",
+      "sha256": "25be7a6c348e9de41c9829ef08467a92be106512a6eb362ec3b6510fcccac46d",
+      "batch": "extra",
+      "args": "--minutes 8 --no-stall --stale-at-minutes 2 --candidate live-sync"
+    },
+    {
+      "label": "stale-firefox-ls",
+      "runId": 41892411630,
+      "task": "soak",
+      "file": "docs/results/soak/gha-linux-x64-firefox-8m-nostall-stale2m-live-sync.json",
+      "uploadedAs": "soak/gha-linux-x64-firefox-8m.json",
+      "sha256": "009d20e060faf02327ffb688193976610e811ba5925a0bd5f33a12f76e20519f",
+      "batch": "extra",
+      "args": "--minutes 8 --no-stall --stale-at-minutes 2 --candidate live-sync"
+    },
+    {
+      "label": "rdy-hls-chromium",
+      "runId": 41892419140,
+      "task": "readiness",
+      "file": "docs/results/readiness/gha-linux-x64-chromium-hls.json",
+      "uploadedAs": "readiness/gha-linux-x64-chromium.json",
+      "sha256": "7e0691eb73455ebbc2690f525ca70f2203b8c79280d9e204a54d8b01b4e41b07",
+      "batch": "extra",
+      "args": "--candidate live-sync --protocol hls"
+    },
+    {
+      "label": "rdy-hls-webkit",
+      "runId": 41892426392,
+      "task": "readiness",
+      "file": "docs/results/readiness/gha-linux-x64-webkit-hls.json",
+      "uploadedAs": "readiness/gha-linux-x64-webkit.json",
+      "sha256": "aeb786fcf4e2a7ac0c03dc9930b2a79a21c161a74b50d1b92fee5b5161e7fe7d",
+      "batch": "extra",
+      "args": "--candidate live-sync --protocol hls"
     }
   ]
 }

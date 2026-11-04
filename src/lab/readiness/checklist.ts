@@ -1,6 +1,6 @@
 import { LIVE_LIMITS } from '../../shared/criteria.ts';
 import type { CheckResult } from './checks.ts';
-import { isBusy, loadPerCpu, soakVerdictToday } from './report.ts';
+import { injectionPart, isBusy, loadPerCpu, soakVerdictToday } from './report.ts';
 import type { ConfigurationResult, LoadReading, MachineLoad, ReadinessReport, SoakReport } from './report.ts';
 import type { Engine } from './soak-evaluators.ts';
 import { formatLimit, formatValue } from './verdict.ts';
@@ -129,6 +129,26 @@ const busyAtStart = (report: { load?: MachineLoad | undefined }): string =>
     ? ` [busy at the start: load ${report.load.before.load1.toFixed(1)} on ${report.load.before.cpus} CPUs]`
     : '';
 
+/** What a soak did to its origin, as the sheet and the checklist say it: `nothing`, or each fault with its length and its minute. */
+const injectedFaults = (report: SoakReport): string =>
+  report.faults.length === 0
+    ? 'nothing'
+    : report.faults
+        .map(
+          (fault) =>
+            `${fault.kind} for ${Math.round((fault.endMs - fault.startMs) / 1000)} s at minute ${((fault.startMs - report.firstFrameMs) / 60_000).toFixed(1)}`,
+        )
+        .join('; ');
+
+const injectedLine = (report: SoakReport): string => `injected: ${injectedFaults(report)}`;
+
+/**
+ * ` (not the policy's plan: stale-manifest for 10 s at minute 2.0)` for a soak that injected something else than the plan its length has, so
+ * that the line of a soak with a stale manifest and no outage cannot be read as the CI soak of the policy.
+ */
+const planNote = (report: SoakReport): string =>
+  injectionPart(report.options) === '' ? '' : ` (not the policy's plan: ${injectedFaults(report)})`;
+
 /** The whole sheet of a readiness run: where and when it was measured, every configuration, and the comparison when a candidate was evaluated. */
 export function renderReadinessReport(report: ReadinessReport): string {
   const head = [
@@ -157,9 +177,7 @@ export function renderSoakReport(report: SoakReport): string {
     `Soak (PB-RDY-005): ${describeBrowser(report)}, ${report.configuration.id}`,
     `commit ${describeCommit(report.commit)}, stream ${report.stream.id} over ${report.stream.protocol}, ${Number(report.options.minutes.toFixed(2))} min (${lengthText}), warm-up ${report.options.warmupSec} s, measured ${report.generatedAt}`,
     ...describeLoad(report.load),
-    report.faults.length === 0
-      ? 'injected: nothing'
-      : `injected: ${report.faults.map((fault) => `${fault.kind} for ${Math.round((fault.endMs - fault.startMs) / 1000)} s at minute ${((fault.startMs - report.firstFrameMs) / 60_000).toFixed(1)}`).join('; ')}`,
+    injectedLine(report),
     '',
     `${pad('Soak verdict', 64)}${report.verdict}`,
     ...(today.verdict === report.verdict
@@ -241,7 +259,8 @@ const statusOf = (verdicts: readonly Verdict[]): ItemStatus =>
       ? 'open'
       : 'done';
 
-const label = (report: { engine: Engine; envId: string }): string => `${report.engine} (${report.envId})`;
+const label = (report: { engine: Engine; envId: string; stream: { protocol: string } }): string =>
+  `${report.engine} (${report.envId}${report.stream.protocol === 'dash' ? '' : `, ${report.stream.protocol}`})`;
 
 function engineCoverage(have: readonly Engine[]): string[] {
   const missing = ENGINE_ORDER.filter((engine) => !have.includes(engine));
@@ -341,14 +360,14 @@ export function checklist(input: ChecklistInput): ChecklistItem[] {
   const releaseSoaks = input.soaks.filter((report) => report.configuration.id === 'A');
   const soakLines = releaseSoaks.map(
     (report) =>
-      `${label(report)}: ${kindOf(report, 'CI soak only')} of ${Number(report.options.minutes.toFixed(2))} min: ${todayOf(report)}${changedNote(report)}${busyAtStart(report)}`,
+      `${label(report)}: ${kindOf(report, 'CI soak only')} of ${Number(report.options.minutes.toFixed(2))} min${planNote(report)}: ${todayOf(report)}${changedNote(report)}${busyAtStart(report)}`,
   );
   // A candidate's soak is evidence for a decision about the candidate, never for the build as it ships: it is listed and does not count.
   const candidateLines = input.soaks
     .filter((report) => report.configuration.id !== 'A')
     .map(
       (report) =>
-        `${label(report)}: ${kindOf(report, 'CI soak')} of ${Number(report.options.minutes.toFixed(2))} min of the candidate ${report.configuration.id}: ${todayOf(report)} (evidence for a decision about the candidate, not about the build)${changedNote(report)}${busyAtStart(report)}`,
+        `${label(report)}: ${kindOf(report, 'CI soak')} of ${Number(report.options.minutes.toFixed(2))} min${planNote(report)} of the candidate ${report.configuration.id}: ${todayOf(report)} (evidence for a decision about the candidate, not about the build)${changedNote(report)}${busyAtStart(report)}`,
     );
   const releaseVerdicts = ENGINE_ORDER.map((engine): Verdict => {
     const forEngine = releaseSoaks.filter((report) => report.engine === engine);

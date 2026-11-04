@@ -1,5 +1,8 @@
 import { createHash } from 'node:crypto';
 import { basename } from 'node:path';
+import { LIVE_LIMITS } from '../../shared/criteria.ts';
+import { median } from '../measure/stats.ts';
+import { RELATIVE_TOLERANCE_MS } from './evaluators.ts';
 import {
   isBusy,
   parseReadinessReport,
@@ -9,6 +12,7 @@ import {
   soakVerdictToday,
 } from './report.ts';
 import type { ReadinessReport, SoakReport } from './report.ts';
+import type { FaultWindow } from './soak-evaluators.ts';
 import { formatValue } from './verdict.ts';
 import type { Evaluation, ValueUnit } from './verdict.ts';
 
@@ -44,6 +48,14 @@ export interface RunRecord {
   uploadedAs: string;
   /** SHA-256 of the file as the job uploaded it. */
   sha256: string;
+  /**
+   * The set of runs it belongs to: `first` (the evidence of commit 0d62c1d, and what an entry without a `batch` is) or `extra` (the runs made to
+   * answer what that evidence left open). The tables of docs/READINESS.md are built per batch, so that a sentence about the first evidence stays
+   * about it when more runs are added.
+   */
+  batch: string;
+  /** What the job was given after `--engine` (`--minutes 8 --no-stall ...`); null when the dispatch was not written down. */
+  args: string | null;
 }
 
 export interface RunsFile {
@@ -96,11 +108,24 @@ export function parseRunsFile(source: string, file = 'runs.json'): RunsFile {
     const sha256 = text(entry, 'sha256', where);
     if (!/^[0-9a-f]{64}$/.test(sha256))
       throw new EvidenceError(`${where}: sha256 must be 64 lower-case hex digits`);
+    const batch = entry['batch'] === undefined ? 'first' : text(entry, 'batch', where);
+    if (!/^[a-z][a-z0-9-]*$/.test(batch))
+      throw new EvidenceError(`${where}: batch must be lower-case words (letters, digits, dashes)`);
+    const args = entry['args'] === undefined || entry['args'] === null ? null : text(entry, 'args', where);
     if (labels.has(label)) throw new EvidenceError(`${where}: the label ${label} is used twice`);
     if (files.has(path)) throw new EvidenceError(`${where}: the file ${path} is used twice`);
     labels.add(label);
     files.add(path);
-    return { label, runId, task, file: path, uploadedAs: text(entry, 'uploadedAs', where), sha256 };
+    return {
+      label,
+      runId,
+      task,
+      file: path,
+      uploadedAs: text(entry, 'uploadedAs', where),
+      sha256,
+      batch,
+      args,
+    };
   });
   return { schemaVersion: 1, repository, workflow, runs };
 }
@@ -229,13 +254,14 @@ const engineRank = (engine: string): number => {
   return at === -1 ? ENGINES.length : at;
 };
 
-/** Environments alphabetically; in one, the readiness runs before the soaks, then by engine, protocol, length, A before its candidates. */
+/** Environments alphabetically; in one, the first batch before the others, then the readiness runs before the soaks, then by engine, protocol, length, A before its candidates. */
 function orderOf(a: EvidenceEntry, b: EvidenceEntry): number {
   const key = (entry: EvidenceEntry): Array<string | number> => {
     const report = entry.report;
     const soak = report.kind === 'soak' ? report : null;
     return [
       report.envId,
+      entry.run.batch === 'first' ? '' : entry.run.batch,
       soak === null ? 0 : 1,
       engineRank(report.engine),
       report.stream.protocol,
@@ -334,8 +360,8 @@ function loadCell(report: ReadinessReport | SoakReport): string {
   return `${load.before.load1.toFixed(2)} to ${load.after.load1.toFixed(2)} (${load.before.cpus} CPUs${busy})`;
 }
 
-const engineText = (report: ReadinessReport | SoakReport): string =>
-  `${report.browser.name} ${report.browser.version}${report.stream.protocol === 'dash' ? '' : ` (${report.stream.protocol})`}`;
+const engineText = (report: ReadinessReport | SoakReport, alwaysProtocol = false): string =>
+  `${report.browser.name} ${report.browser.version}${alwaysProtocol || report.stream.protocol !== 'dash' ? ` (${report.stream.protocol})` : ''}`;
 
 const link = (repository: string, runId: number): string => `[${runId}](${runUrl(repository, runId)})`;
 
@@ -379,6 +405,19 @@ function soakVerdictText(report: SoakReport): string {
 const commitText = (report: ReadinessReport | SoakReport): string =>
   `${report.commit.hash ?? 'unknown'}${report.commit.dirty ? ' (dirty)' : ''}`;
 
+const FAULT_WORDS: Record<string, string> = { 'origin-stall': 'outage', 'stale-manifest': 'stale manifest' };
+
+/** `outage at minute 2.5`, or `stale manifest at minute 2.0` or `nothing injected`: what a soak did to its origin, from the file. */
+function injectedText(report: SoakReport): string {
+  if (report.faults.length === 0) return 'nothing injected';
+  return report.faults
+    .map(
+      (fault) =>
+        `${FAULT_WORDS[fault.kind] ?? fault.kind} at minute ${((fault.startMs - report.firstFrameMs) / 60_000).toFixed(1)}`,
+    )
+    .join(' and ');
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // The manifest of docs/results/readiness/README.md
 
@@ -392,7 +431,7 @@ export function renderManifest(entries: readonly EvidenceEntry[], repository: st
         'Task',
         'Engine',
         'Configuration',
-        'Length',
+        'Size, and what a soak injected',
         'Verdict',
         'Duration',
         'Runner image',
@@ -423,7 +462,7 @@ export function renderManifest(entries: readonly EvidenceEntry[], repository: st
               'soak',
               engineText(report),
               report.configuration.id,
-              `${report.options.minutes} min (${report.length})`,
+              `${report.options.minutes} min (${report.length}); ${injectedText(report)}`,
               soakVerdictText(report),
               clock(report.durationMs),
               ...where,
@@ -456,12 +495,20 @@ export function renderManifest(entries: readonly EvidenceEntry[], repository: st
     ),
   );
   const names = table(
-    ['File', 'Uploaded as', 'SHA-256 of the file as the job uploaded it'],
+    [
+      'File',
+      'Batch',
+      'Uploaded as',
+      'Dispatched with (after --engine)',
+      'SHA-256 of the file as the job uploaded it',
+    ],
     entries.map(({ run }) => [
       `\`${basename(run.file)}\``,
+      run.batch,
       basename(run.file) === basename(run.uploadedAs)
         ? 'the same name'
         : `\`${run.uploadedAs}\` (renamed when it was copied)`,
+      run.args === null ? 'not written down' : `\`${run.args}\``,
       `\`${run.sha256}\``,
     ]),
   );
@@ -580,7 +627,7 @@ export function renderSoaks(entries: readonly EvidenceEntry[]): string {
       return [
         engineText(report),
         report.configuration.id,
-        `${report.options.minutes} min`,
+        `${report.options.minutes} min; ${injectedText(report)}`,
         report.verdict,
         soakVerdictToday(report).verdict,
         value('soak.rebuffer-ratio', percent),
@@ -602,7 +649,7 @@ export function renderSoaks(entries: readonly EvidenceEntry[]): string {
           [
             'Engine',
             'Configuration',
-            'Length',
+            'Length, and what was injected',
             'Verdict as measured',
             "Verdict by today's criteria",
             'Rebuffer ratio',
@@ -637,7 +684,7 @@ const SOAK_LINES: ReadonlyArray<readonly [string, string]> = [
   ['soak.dropped-frames', 'Dropped frames'],
 ];
 
-/** The room each line had, per engine and configuration, from the value and the limit of the file: a margin is a measurement (ADR-159b). */
+/** Where the player stood when the observation of each run ended, against the maximum: the number that says how thin a NO-GO of the absolute reading is. */
 function finalLatencyCell(report: ReadinessReport, configurationId: string): string {
   const configuration = report.configurations.find((candidate) => candidate.id === configurationId);
   const restore = line(configuration?.checks.flatMap((check) => check.evaluations) ?? [], 'stall.restore');
@@ -646,11 +693,19 @@ function finalLatencyCell(report: ReadinessReport, configurationId: string): str
   if (typeof maximum !== 'number' || runs.length === 0) return 'not run';
   const finals = runs.map((run) => run.finalLatencyMs);
   const margins = finals.map((final) => maximum - final);
-  const over = margins.every((margin) => margin < 0);
-  return `${secondsRange(finals)} (${over ? `over by ${secondsRange(margins.map((margin) => -margin))}` : `margin ${secondsRange(margins)}`})`;
+  const over = margins.filter((margin) => margin < 0).map((margin) => -margin);
+  const under = margins.filter((margin) => margin >= 0);
+  if (over.length === 0) return `${secondsRange(finals)} (margin ${secondsRange(under)})`;
+  if (under.length === 0) return `${secondsRange(finals)} (over by ${secondsRange(over)})`;
+  // Some runs ended over the maximum and some under it: say how many, because the worst run decides the line.
+  return `${secondsRange(finals)} (over by ${secondsRange(over)} in ${over.length} of ${runs.length} runs, margin ${secondsRange(under)} in the other${under.length === 1 ? '' : 's'})`;
 }
 
-export function renderMargins(entries: readonly EvidenceEntry[]): string {
+/** The room each line had, per engine and configuration, from the value and the limit of the file: a margin is a measurement (ADR-159b). */
+export function renderMargins(
+  entries: readonly EvidenceEntry[],
+  options: { protocols?: boolean } = {},
+): string {
   const readiness = perEnvironment(entries, (_id, mine) => {
     const reports = readinessOf(mine).map(({ report }) => report);
     if (reports.length === 0) return null;
@@ -677,7 +732,10 @@ export function renderMargins(entries: readonly EvidenceEntry[]): string {
           ])
         : []),
     ]);
-    return table(['Line', 'Configuration', ...reports.map(engineText)], rows);
+    return table(
+      ['Line', 'Configuration', ...reports.map((report) => engineText(report, options.protocols))],
+      rows,
+    );
   });
   const soak = perEnvironment(entries, (_id, mine) => {
     const reports = soaksOf(mine).map(({ report }) => report);
@@ -685,27 +743,267 @@ export function renderMargins(entries: readonly EvidenceEntry[]): string {
     const rows = reports.map((report) => [
       engineText(report),
       report.configuration.id,
-      `${report.options.minutes} min`,
+      `${report.options.minutes} min; ${injectedText(report)}`,
       ...SOAK_LINES.map(([id]) => valueWithMargin(line(report.evaluations, id))),
     ]);
-    return table(['Engine', 'Configuration', 'Length', ...SOAK_LINES.map(([, label]) => label)], rows);
+    return table(
+      ['Engine', 'Configuration', 'Length, and what was injected', ...SOAK_LINES.map(([, label]) => label)],
+      rows,
+    );
   });
   return [readiness, soak].filter((part) => part !== '').join('\n\n');
 }
 
 export type EvidenceBlock =
-  'EVIDENCE_MANIFEST' | 'READINESS_VERDICTS' | 'READINESS_RESTORE' | 'READINESS_SOAKS' | 'READINESS_MARGINS';
+  | 'EVIDENCE_MANIFEST'
+  | 'READINESS_VERDICTS'
+  | 'READINESS_RESTORE'
+  | 'READINESS_SOAKS'
+  | 'READINESS_MARGINS'
+  | 'EXTRA_STALE_RECOVERY'
+  | 'EXTRA_STALE_STALLS'
+  | 'EXTRA_SOAKS'
+  | 'EXTRA_VERDICTS'
+  | 'EXTRA_RESTORE'
+  | 'EXTRA_MARGINS';
 
-/** Every generated block, by the name of its markers: `tools/results-docs.ts` puts each between its `<!-- BEGIN:NAME -->` and `<!-- END:NAME -->`. */
+// ---------------------------------------------------------------------------------------------------------------------
+// What a fault did to the latency of a soak
+
+/**
+ * What one injected fault did to the latency of a soak, read from the series the file stores. The series is sampled every few seconds
+ * (`sampleSec`, 5 s in the soaks), which is the resolution of the two times: a time is the first sample of the stretch that stays within the
+ * line to the end of the soak, not the instant of the crossing.
+ */
+export interface FaultRecovery {
+  fault: FaultWindow;
+  /** The median of the reads from the end of the warm-up to the start of the fault: the level the session had before it. */
+  levelBeforeMs: number | null;
+  /** The longest stall that began in the window the fault explains (its own seconds and the stall-recovery limit after them). */
+  stallMs: number | null;
+  /** The highest read from the start of the fault to the end of the soak. */
+  highestMs: number | null;
+  /** Seconds after the end of the fault from which every read is within the maximum latency; null when the last read is not. */
+  underMaximumAfterSec: number | null;
+  /** Seconds after the end of the fault from which every read is within a segment of the level before it; null when the last read is not. */
+  atOwnLevelAfterSec: number | null;
+  /** The median of the last minute of reads. */
+  levelAtEndMs: number | null;
+  sampleSec: number;
+}
+
+/** From which sample on every later read satisfies `within`, as seconds after `from`; null when the last read does not. */
+function stayedWithinAfter(
+  reads: ReadonlyArray<{ atMs: number; latencyMs: number }>,
+  from: number,
+  within: (latencyMs: number) => boolean,
+): number | null {
+  const after = reads.filter((read) => read.atMs >= from);
+  const last = after.at(-1);
+  if (last === undefined || !within(last.latencyMs)) return null;
+  const lastOutside = after.findLastIndex((read) => !within(read.latencyMs));
+  const first = after[lastOutside + 1];
+  return first === undefined ? null : Math.max(0, (first.atMs - from) / 1000);
+}
+
+/**
+ * The recovery of a soak from one of its faults, or null when it cannot be read: the series is thinned (the stored samples are not the ones
+ * the evaluations were computed from), nothing was injected, or no read is left to judge. The criterion of ADR-159c is not this: it is the
+ * stored `soak.latency-p95` and `soak.latency-max`, which this explains.
+ */
+export function faultRecovery(
+  report: SoakReport,
+  fault: FaultWindow | undefined = report.faults[0],
+  limits: Pick<typeof LIVE_LIMITS, 'latencyMaxMs' | 'stallRecoveryMaxMs'> = LIVE_LIMITS,
+): FaultRecovery | null {
+  if (fault === undefined || report.series.sampleCount !== report.series.samples.length) return null;
+  const reads = report.series.samples.flatMap((sample) =>
+    sample.latencyMs === null ? [] : [{ atMs: sample.atMs, latencyMs: sample.latencyMs }],
+  );
+  const warmedUpAt = report.firstFrameMs + report.options.warmupSec * 1000;
+  const before = reads.filter((read) => read.atMs >= warmedUpAt && read.atMs < fault.startMs);
+  const levelBeforeMs = before.length === 0 ? null : median(before.map((read) => read.latencyMs));
+  const stalls = report.episodes.filter(
+    (episode) =>
+      episode.startMs >= fault.startMs && episode.startMs <= fault.endMs + limits.stallRecoveryMaxMs,
+  );
+  const afterStart = reads.filter((read) => read.atMs >= fault.startMs);
+  const lastMinute = reads.filter((read) => read.atMs >= report.endMs - 60_000);
+  return {
+    fault,
+    levelBeforeMs,
+    stallMs: stalls.length === 0 ? null : Math.max(...stalls.map((episode) => episode.durationMs)),
+    highestMs: afterStart.length === 0 ? null : Math.max(...afterStart.map((read) => read.latencyMs)),
+    underMaximumAfterSec: stayedWithinAfter(reads, fault.endMs, (value) => value <= limits.latencyMaxMs),
+    atOwnLevelAfterSec:
+      levelBeforeMs === null
+        ? null
+        : stayedWithinAfter(reads, fault.endMs, (value) => value <= levelBeforeMs + RELATIVE_TOLERANCE_MS),
+    levelAtEndMs: lastMinute.length === 0 ? null : median(lastMinute.map((read) => read.latencyMs)),
+    sampleSec: report.options.sampleSec,
+  };
+}
+
+/** What each soak that had one fault did to the latency after it, and whether the player came back (ADR-159c reads the same series from the end). */
+export function renderStaleRecovery(entries: readonly EvidenceEntry[]): string {
+  return perEnvironment(entries, (_id, mine) => {
+    const rows = soaksOf(mine).flatMap(({ report }) => {
+      const recovery = report.faults.length === 1 ? faultRecovery(report) : null;
+      if (recovery === null) return [];
+      const after = (value: number | null): string =>
+        value === null ? 'not by the end of the soak' : `${Math.round(value)} s`;
+      const level = (value: number | null): string => (value === null ? 'not measured' : seconds(value));
+      return [
+        [
+          engineText(report),
+          report.configuration.id,
+          injectedText(report),
+          level(recovery.levelBeforeMs),
+          recovery.stallMs === null ? 'no stall' : seconds(recovery.stallMs),
+          level(recovery.highestMs),
+          after(recovery.underMaximumAfterSec),
+          after(recovery.atOwnLevelAfterSec),
+          level(recovery.levelAtEndMs),
+        ],
+      ];
+    });
+    return rows.length === 0
+      ? null
+      : table(
+          [
+            'Engine',
+            'Configuration',
+            'Injected',
+            'Latency before the fault',
+            'Stall',
+            'Highest latency after the fault began',
+            `Back under ${LIVE_LIMITS.latencyMaxMs / 1000} s after the fault ended`,
+            `Within ${RELATIVE_TOLERANCE_MS / 1000} s of its own level after the fault ended`,
+            'Latency in the last minute',
+          ],
+          rows,
+        );
+  });
+}
+
+/** How far behind the edge a session was, and how much media it had buffered, in the 25 s before a fault began: the reads of that stretch. */
+const BEFORE_FAULT_MS = 25_000;
+
+/** The stall that a stale manifest caused, with the latency and the buffer the session had when it began (the medians of the reads before it). */
+export interface StaleStall {
+  fault: FaultWindow;
+  levelBeforeMs: number | null;
+  bufferedAheadSec: number | null;
+  /** The longest stall that began in the window the fault explains; null when there was none. */
+  stallMs: number | null;
+}
+
+export function staleStall(
+  report: SoakReport,
+  fault: FaultWindow,
+  stallRecoveryMaxMs: number = LIVE_LIMITS.stallRecoveryMaxMs,
+): StaleStall {
+  const before = report.series.samples.filter(
+    (sample) =>
+      sample.latencyMs !== null &&
+      sample.atMs >= fault.startMs - BEFORE_FAULT_MS &&
+      sample.atMs < fault.startMs,
+  );
+  const stalls = report.episodes.filter(
+    (episode) => episode.startMs >= fault.startMs && episode.startMs <= fault.endMs + stallRecoveryMaxMs,
+  );
+  return {
+    fault,
+    levelBeforeMs: before.length === 0 ? null : median(before.map((sample) => sample.latencyMs ?? 0)),
+    bufferedAheadSec: before.length === 0 ? null : median(before.map((sample) => sample.bufferedAheadSec)),
+    stallMs: stalls.length === 0 ? null : Math.max(...stalls.map((episode) => episode.durationMs)),
+  };
+}
+
+/**
+ * Every stale manifest of the soaks, by how far behind the edge the session was when it began. The stall is what the buffer does not cover: the
+ * series of a 30-minute soak is thinned, which changes how many reads the medians are over and nothing else, so no verdict is read from it.
+ */
+export function renderStaleStalls(entries: readonly EvidenceEntry[]): string {
+  return perEnvironment(entries, (_id, mine) => {
+    const rows = soaksOf(mine)
+      .flatMap(({ report }) =>
+        report.faults
+          .filter((fault) => fault.kind === 'stale-manifest')
+          .map((fault) => ({ report, stall: staleStall(report, fault) })),
+      )
+      .sort((a, b) => (a.stall.levelBeforeMs ?? Infinity) - (b.stall.levelBeforeMs ?? Infinity))
+      .map(({ report, stall }) => {
+        const covered =
+          stall.stallMs !== null && stall.bufferedAheadSec !== null
+            ? seconds(stall.stallMs + stall.bufferedAheadSec * 1000)
+            : 'not measured';
+        return [
+          engineText(report),
+          report.configuration.id,
+          injectedText(report),
+          stall.levelBeforeMs === null ? 'not measured' : seconds(stall.levelBeforeMs),
+          stall.bufferedAheadSec === null ? 'not measured' : `${stall.bufferedAheadSec.toFixed(1)} s`,
+          stall.stallMs === null ? 'no stall' : seconds(stall.stallMs),
+          covered,
+        ];
+      });
+    return rows.length === 0
+      ? null
+      : table(
+          [
+            'Engine',
+            'Configuration',
+            'Injected',
+            'Latency before the stale manifest',
+            'Media buffered ahead',
+            'Stall',
+            'Stall plus buffered ahead',
+          ],
+          rows,
+        );
+  });
+}
+
+/** In the order of the engines, and in one engine the protocols in order: the columns of a table that puts DASH and HLS side by side. */
+function byEngineThenProtocol(a: EvidenceEntry, b: EvidenceEntry): number {
+  return (
+    a.report.envId.localeCompare(b.report.envId) ||
+    engineRank(a.report.engine) - engineRank(b.report.engine) ||
+    a.report.stream.protocol.localeCompare(b.report.stream.protocol)
+  );
+}
+
+/**
+ * Every generated block, by the name of its markers: `tools/results-docs.ts` puts each between its `<!-- BEGIN:NAME -->` and
+ * `<!-- END:NAME -->`. The first evidence and the extra runs are tables of their own: a sentence about the first one stays about it.
+ */
 export function renderEvidenceBlocks(
   entries: readonly EvidenceEntry[],
   repository: string,
 ): Record<EvidenceBlock, string> {
+  const first = entries.filter((entry) => entry.run.batch === 'first');
+  const extra = entries.filter((entry) => entry.run.batch === 'extra');
+  const extraReadiness = readinessOf(extra);
+  // The extra readiness runs next to the first evidence of the same engine in the same environment, to read one protocol against the other.
+  const sameEngines = readinessOf(first).filter((entry) =>
+    extraReadiness.some(
+      (other) => other.report.envId === entry.report.envId && other.report.engine === entry.report.engine,
+    ),
+  );
   return {
     EVIDENCE_MANIFEST: renderManifest(entries, repository),
-    READINESS_VERDICTS: renderVerdicts(entries),
-    READINESS_RESTORE: renderRestore(entries),
-    READINESS_SOAKS: renderSoaks(entries),
-    READINESS_MARGINS: renderMargins(entries),
+    READINESS_VERDICTS: renderVerdicts(first),
+    READINESS_RESTORE: renderRestore(first),
+    READINESS_SOAKS: renderSoaks(first),
+    READINESS_MARGINS: renderMargins(first),
+    EXTRA_STALE_RECOVERY: renderStaleRecovery(extra),
+    EXTRA_STALE_STALLS: renderStaleStalls(entries),
+    EXTRA_SOAKS: renderSoaks(extra),
+    EXTRA_VERDICTS: renderVerdicts(extraReadiness),
+    EXTRA_RESTORE: renderRestore(extraReadiness),
+    EXTRA_MARGINS: renderMargins([...sameEngines, ...extraReadiness].sort(byEngineThenProtocol), {
+      protocols: true,
+    }),
   };
 }
