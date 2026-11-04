@@ -5,7 +5,10 @@
 // in-memory fake store. The two servers run in their own processes and are driven by the same client in this one, so the difference
 // between them is what the service adds. Not a gate: it needs a quiet machine, so run it alone.
 //
-//   npm run bench:server -- [--requests 2000] [--concurrency 20] [--bytes 450000]
+//   npm run bench:server -- [--requests 2000] [--concurrency 20] [--bytes 450000] [--node-arg <flag> ...]
+//
+// `--node-arg` passes a flag to node for both servers (an experiment: `--node-arg --max-semi-space-size=1` shows how much of the
+// memory a server holds is the young generation of V8 growing to its limit and not a leak).
 
 import { fork } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
@@ -14,6 +17,7 @@ import type { AddressInfo } from 'node:net';
 import { arch, cpus, loadavg, platform, release } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { getHeapStatistics } from 'node:v8';
 import { ServiceClient } from '../src/lab/service-client.ts';
 import { startServer } from '../src/server/index.ts';
 import { segmentPath } from '../src/shared/urls.ts';
@@ -32,7 +36,10 @@ const HEADERS = {
 
 interface Memory {
   rss: number;
+  /** What V8 has committed for its heap (used or not), and what it holds in malloc'd memory of its own. */
+  heapTotal: number;
   heapUsed: number;
+  malloced: number;
   external: number;
 }
 
@@ -52,8 +59,11 @@ async function runChild(role: string, bytes: number): Promise<void> {
   }
   process.on('message', (message: { type: string }) => {
     if (message.type === 'gc') globalThis.gc?.();
-    const { rss, heapUsed, external } = process.memoryUsage();
-    process.send?.({ type: 'memory', rss, heapUsed, external } satisfies Memory & { type: string });
+    const { rss, heapTotal, heapUsed, external } = process.memoryUsage();
+    const malloced = getHeapStatistics().malloced_memory;
+    process.send?.({ type: 'memory', rss, heapTotal, heapUsed, malloced, external } satisfies Memory & {
+      type: string;
+    });
   });
   process.send?.({ type: 'ready', port });
 }
@@ -65,9 +75,9 @@ interface Target {
   stop(): Promise<void>;
 }
 
-function startTarget(role: 'baseline' | 'service', bytes: number): Promise<Target> {
+function startTarget(role: 'baseline' | 'service', bytes: number, nodeArgs: string[]): Promise<Target> {
   const child = fork(SELF, ['--child', role, '--bytes', String(bytes)], {
-    execArgv: ['--import', 'tsx', '--expose-gc'],
+    execArgv: ['--import', 'tsx', '--expose-gc', ...nodeArgs],
     stdio: ['ignore', 'inherit', 'inherit', 'ipc'],
   });
   return new Promise((resolve, reject) => {
@@ -167,6 +177,7 @@ async function main(): Promise<void> {
       requests: { type: 'string', default: '2000' },
       concurrency: { type: 'string', default: '20' },
       bytes: { type: 'string', default: '450000' },
+      'node-arg': { type: 'string', multiple: true, default: [] },
       child: { type: 'string' },
       help: { type: 'boolean', default: false },
     },
@@ -175,9 +186,12 @@ async function main(): Promise<void> {
   const bytes = Number(values.bytes);
   if (values.child) return runChild(values.child, bytes);
   if (values.help) {
-    console.log('usage: npm run bench:server -- [--requests 2000] [--concurrency 20] [--bytes 450000]');
+    console.log(
+      'usage: npm run bench:server -- [--requests 2000] [--concurrency 20] [--bytes 450000] [--node-arg --max-semi-space-size=1 ...]',
+    );
     return;
   }
+  const nodeArgs = values['node-arg'] ?? [];
   const count = Number(values.requests);
   const concurrency = Number(values.concurrency);
   const warmup = Math.min(300, count);
@@ -189,7 +203,7 @@ async function main(): Promise<void> {
   const measured: Array<{ name: string; run: Run; before?: Memory; after?: Memory; collected?: Memory }> = [];
 
   for (const role of ['baseline', 'service'] as const) {
-    const target = await startTarget(role, bytes);
+    const target = await startTarget(role, bytes, nodeArgs);
     try {
       let paths = ['/segment'];
       if (role === 'service') {
@@ -248,12 +262,15 @@ async function main(): Promise<void> {
       )
       .join('\n'),
   );
-  if (service?.before && service.after && service.collected) {
-    const change = service.after.rss - service.before.rss;
+  // the bare server is measured the same way: whatever Node and the allocator do under this load, the service is not blamed for it
+  for (const entry of measured) {
+    if (!entry.before || !entry.after || !entry.collected) continue;
+    const change = entry.after.rss - entry.before.rss;
     console.log(
-      `service RSS: ${mib(service.before.rss)} before (after ${warmup} warm-up requests), ${mib(service.after.rss)} after ${count} requests ` +
-        `(${change >= 0 ? '+' : '-'}${mib(Math.abs(change))}), ${mib(service.collected.rss)} after a garbage collection; ` +
-        `heap ${mib(service.before.heapUsed)} -> ${mib(service.collected.heapUsed)}, external ${mib(service.before.external)} -> ${mib(service.collected.external)}`,
+      `${entry.name} RSS: ${mib(entry.before.rss)} before (after ${warmup} warm-up requests), ${mib(entry.after.rss)} after ${count} requests ` +
+        `(${change >= 0 ? '+' : '-'}${mib(Math.abs(change))}), ${mib(entry.collected.rss)} after a garbage collection; ` +
+        `heap ${mib(entry.before.heapUsed)} used -> ${mib(entry.collected.heapUsed)}, committed ${mib(entry.before.heapTotal)} -> ${mib(entry.collected.heapTotal)}, ` +
+        `V8 malloc ${mib(entry.before.malloced)} -> ${mib(entry.collected.malloced)}, external ${mib(entry.before.external)} -> ${mib(entry.collected.external)}`,
     );
   }
 }
