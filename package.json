@@ -32,6 +32,9 @@
     "perf": "tsx perf/run.ts",
     "perf:gate": "tsx perf/gate.ts",
     "perf:baseline": "tsx perf/run.ts --write-baseline",
+    "perf:aa": "tsx perf/aa.ts",
+    "perf:derive": "tsx perf/derive.ts",
+    "perf:quiet": "tsx perf/quiet.ts",
     "flake:report": "tsx flake/report.ts",
     "flake:gate": "tsx flake/gate.ts",
     "flake:collect": "tsx tools/flake-collect.ts",
@@ -42,7 +45,7 @@
     "gate:static": "npm run typecheck && npm run lint && npm run format:check && npm run docs:check && npm run specs:check -- --complete && npm run codec-matrix -- --check",
     "gate:unit": "npm run test:unit",
     "gate:merge": "tsx tools/gate-merge.ts",
-    "gate:perf": "npm run perf:gate",
+    "gate:perf": "tsx perf/gate.ts",
     "gate:flake": "tsx flake/gate.ts",
     "gate:triage": "npm run triage -- --from-ci"
   },
