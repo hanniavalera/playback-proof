@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -509,10 +509,6 @@ export default defineConfig({
     });
     const file = join(scratch, 'reports/flake/collect/run-1.json');
     run = parseRun(JSON.parse(readFileSync(file, 'utf8')), file);
-    // Kept (in the git-ignored cache) so that the real shape can be looked at after the run.
-    const kept = join(ROOT, '.cache/flake-reporter-fixture');
-    mkdirSync(kept, { recursive: true });
-    copyFileSync(file, join(kept, 'run.json'));
     outcomes = JSON.parse(readFileSync(join(scratch, 'outcomes.json'), 'utf8'));
   }, 120_000);
 
