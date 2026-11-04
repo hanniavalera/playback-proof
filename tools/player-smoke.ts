@@ -136,6 +136,7 @@ const SESSION_STREAM: Record<SmokeSession, { kind: StreamKind; protocol: Protoco
   'live-hls': { kind: 'live', protocol: 'hls' },
   actions: { kind: 'vod', protocol: 'dash' },
   recovery: { kind: 'vod', protocol: 'dash' },
+  ended: { kind: 'vod', protocol: 'dash' },
 };
 
 /** The capabilities this environment's committed codec matrix records per engine, or null when it has none. */
@@ -417,6 +418,104 @@ async function recoveryScenario(
 
 // ---------------------------------------------------------------------------------------------------------- one run
 
+/** Seeks to three seconds before the end and plays to it: the `ended` event, the state, and that the end is not a stall. */
+async function endedScenario(
+  page: Page,
+  stream: StreamInfo,
+  timeoutMs: number,
+): Promise<{ checks: Check[]; excerpt: string[] }> {
+  const checks = new Checks();
+  await page.evaluate((ms) => window.__qa.waitFor('firstframe', { timeoutMs: ms }), timeoutMs);
+  const cursor = await page.evaluate(() => window.__qa.cursor());
+  await page.evaluate((seconds) => window.__qa.seek(seconds), Math.max(1, stream.durationSec - 3));
+  const ended = await page.evaluate(
+    ([since, ms]) => window.__qa.waitFor('ended', { since: since as number, timeoutMs: ms as number }),
+    [cursor, timeoutMs],
+  );
+  const metrics = await page.evaluate(() => window.__qa.metrics());
+  const events = await eventsSince(page, cursor);
+  checks.add(
+    'the ended event is on the timeline, after the seek',
+    ended.index > cursor,
+    `index ${ended.index}`,
+  );
+  checks.add(
+    'the element and the state say ended',
+    metrics.playback.ended && metrics.state === 'ended',
+    `ended=${metrics.playback.ended} state=${metrics.state}`,
+  );
+  checks.add(
+    'the media time reached the end of the stream',
+    metrics.playback.currentTime >= stream.durationSec - 0.5,
+    `currentTime=${metrics.playback.currentTime.toFixed(2)} duration=${stream.durationSec}`,
+  );
+  checks.add(
+    'the end is not a stall',
+    metrics.rebuffer.count === 0 && !metrics.rebuffer.events.some((event) => event.ongoing),
+    `rebuffers=${metrics.rebuffer.count}`,
+  );
+  checks.add(
+    'no error event',
+    metrics.errors.length === 0,
+    metrics.errors.map((error) => error.codeName ?? error.code).join(', '),
+  );
+  return { checks: checks.list, excerpt: ['-- seeking to the end and playing to it', ...excerptOf(events)] };
+}
+
+/**
+ * Does the page's content-security policy hold? Three things it has to stop, tried from inside the page once the measurements are
+ * taken: an inline script, code from a string (`setTimeout` with a string: `new Function` would prove nothing, because the
+ * automation evaluates this very function with an allowance for code generation that page code does not have), and a request that
+ * is not to the page's own origin (`data:` needs no network to try). The browser reports each refusal on the console; the caller
+ * drops those lines and keeps the verdicts. The string timer is judged by the violation event the policy raises, so nothing waits
+ * for a duration: the limit only ends the wait when nothing was refused.
+ */
+async function cspProbe(page: Page, limitMs: number): Promise<Check[]> {
+  const outcome = await page.evaluate(async (limit) => {
+    const probe = window as Window & { __cspProbe?: string };
+    const evalRefused = new Promise<boolean>((resolve) => {
+      document.addEventListener('securitypolicyviolation', (event) => {
+        if (event.blockedURI === 'eval') resolve(true);
+      });
+      setTimeout(() => resolve(false), limit);
+    });
+
+    const script = document.createElement('script');
+    script.textContent = "window.__cspProbe = 'inline'";
+    document.head.appendChild(script);
+    const inlineScriptRan = probe.__cspProbe === 'inline';
+
+    // The point of the probe: a string, not a function.
+    setTimeout("window.__cspProbe = 'eval'", 0);
+
+    let dataRequestBlocked = false;
+    try {
+      await fetch('data:text/plain,probe');
+    } catch {
+      dataRequestBlocked = true;
+    }
+    const refused = await evalRefused;
+    return {
+      inlineScriptRan,
+      evalRefused: refused,
+      stringRan: probe.__cspProbe === 'eval',
+      dataRequestBlocked,
+    };
+  }, limitMs);
+  return [
+    { name: 'CSP: an inline script does not run', ok: !outcome.inlineScriptRan },
+    {
+      name: 'CSP: code from a string is refused (no unsafe-eval)',
+      ok: outcome.evalRefused && !outcome.stringRan,
+      detail: `violation event ${outcome.evalRefused ? 'seen' : 'not seen'}, code ${outcome.stringRan ? 'ran' : 'did not run'}`,
+    },
+    {
+      name: "CSP: a request outside the page's own origin is blocked (connect-src)",
+      ok: outcome.dataRequestBlocked,
+    },
+  ];
+}
+
 /** What a browser build offers that the lab depends on, read once per engine from a page: the facts behind a result, not a verdict. */
 interface BrowserFacts {
   /** `navigator.connection.downlink` in Mbit/s. Shaka replaces `abr.defaultBandwidthEstimate` with it where it exists. */
@@ -579,9 +678,30 @@ async function runSession(
       metrics,
     });
 
+    if (name === 'vod-dash') {
+      // After the measurements: the probe injects a script and provokes refusals, and the console lines they cause are expected.
+      const before = consoleErrors.length;
+      checks.push(...(await cspProbe(page, Math.min(options.timeoutMs, 5000))));
+      consoleErrors.splice(before);
+    }
+
     if (name === 'actions') {
       stage.set('actions');
       const outcome = await actionsScenario(page, streamInfo, options.mediaSeconds, options.timeoutMs);
+      checks.push(...outcome.checks);
+      excerpt = outcome.excerpt;
+      metrics = await page.evaluate(() => window.__qa.metrics());
+      // judgeBasic looked at the errors when the first seconds had played; the scenario went on for a while after that.
+      checks.push({
+        name: 'no error events by the end of the scenario',
+        ok: metrics.errors.length === 0,
+        ...(metrics.errors.length > 0
+          ? { detail: metrics.errors.map((error) => error.codeName ?? error.code).join(', ') }
+          : {}),
+      });
+    } else if (name === 'ended') {
+      stage.set('ended');
+      const outcome = await endedScenario(page, streamInfo, options.timeoutMs);
       checks.push(...outcome.checks);
       excerpt = outcome.excerpt;
       metrics = await page.evaluate(() => window.__qa.metrics());
@@ -612,7 +732,10 @@ async function runSession(
         ? { status: 'pass' as const }
         : {
             status: 'fail' as const,
-            stage: name === 'actions' || name === 'recovery' ? stage.current : ('checks' as const),
+            stage:
+              name === 'actions' || name === 'recovery' || name === 'ended'
+                ? stage.current
+                : ('checks' as const),
             error: failures
               .map((check) => `${check.name}${check.detail ? ` (${check.detail})` : ''}`)
               .join('; '),

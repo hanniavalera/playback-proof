@@ -21,7 +21,7 @@ describe('the command line', () => {
     expect(parseSmokeArgs([], 'linux').browsers).toEqual(['chromium', 'firefox', 'webkit']);
   });
 
-  it('has the defaults the brief names: one repeat, muted, all six sessions, configuration A, 3 media seconds', () => {
+  it('has the defaults the brief names: one repeat, muted, all seven sessions, configuration A, 3 media seconds', () => {
     expect(parseSmokeArgs([], 'linux')).toMatchObject({
       repeat: 1,
       muted: true,

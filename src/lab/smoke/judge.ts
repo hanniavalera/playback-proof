@@ -22,6 +22,7 @@ export const SMOKE_STAGES = [
   'checks',
   'actions',
   'recovery',
+  'ended',
   'evaluate',
 ] as const;
 export type SmokeStage = (typeof SMOKE_STAGES)[number];
