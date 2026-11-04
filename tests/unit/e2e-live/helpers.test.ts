@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { ServiceClient } from '../../../src/lab/service-client.ts';
 import type { LiveClockInfo, RequestLogEntry, SessionDetail } from '../../../src/shared/api.ts';
-import { edgeAt, firstVideoSegmentRequest, liveClockOf, publishedEndSec } from '../../e2e/live/edge.ts';
+import {
+  deliveredVideoSegments,
+  edgeAt,
+  firstVideoSegmentRequest,
+  liveClockOf,
+  publishedEndSec,
+  refusedRequests,
+} from '../../e2e/live/edge.ts';
 import {
   advanceProblems,
   answeredManifest,
@@ -90,16 +97,37 @@ describe('firstVideoSegmentRequest', () => {
   });
 });
 
+describe('what the origin refused and what it delivered', () => {
+  const log = [
+    entry(1, { number: 8 }),
+    entry(2, { number: 9, status: 404 }),
+    entry(3, { number: 10, aborted: true, bytes: 0 }),
+    entry(4, { number: 11, status: 0, pending: true }),
+    entry(5, { rep: 'a-aac', number: 12 }),
+    entry(6, { number: 13, status: 503 }),
+  ];
+
+  it('counts an answer with an error status as a refusal, not a request the player abandoned or one still in flight', () => {
+    expect(refusedRequests(log).map((request) => request.seq)).toEqual([2, 6]);
+  });
+
+  it('counts a video segment as delivered when it was answered with a 2xx and not abandoned', () => {
+    expect(deliveredVideoSegments(log, ['v720'])).toEqual([8]);
+    expect(deliveredVideoSegments(log, ['a-aac'])).toEqual([12]);
+  });
+});
+
 describe('what counts as a refresh', () => {
   const manifest = (seq: number, overrides: Partial<RequestLogEntry> = {}): RequestLogEntry =>
     entry(seq, { kind: 'manifest', rep: undefined, number: undefined, ...overrides });
 
-  it('is a manifest the origin has answered with a 200: not a pending one, not a refusal, not a segment', () => {
+  it('is a manifest the origin has answered with a 200: not a pending one, not an abandoned one, not a refusal, not a segment', () => {
     const isRefresh = answeredManifest();
     expect(isRefresh(manifest(1))).toBe(true);
     expect(isRefresh(manifest(2, { pending: true, status: 0 }))).toBe(false);
     expect(isRefresh(manifest(3, { status: 503 }))).toBe(false);
     expect(isRefresh(entry(4))).toBe(false);
+    expect(isRefresh(manifest(5, { aborted: true, bytes: 0 }))).toBe(false);
   });
 
   it('for HLS is a media playlist of the representations asked for, never the master playlist', () => {
@@ -183,7 +211,17 @@ describe('playback going on between refreshes', () => {
 
   it('flags the interval in which the clock did not advance enough, naming the refresh', () => {
     expect(advanceProblems([point(1, 2000, 26), point(2, 4000, 26.9)], 24, 0.5)).toEqual([
-      expect.stringContaining('refresh 2: the media clock advanced 0.90 s in the 2.00 s'),
+      expect.stringContaining('refresh 2: the media clock advanced 0.90 s in the 2.00 s since refresh 1'),
+    ]);
+  });
+
+  it('does not judge a few hundred milliseconds on their own: a burst of refreshes is folded into the next interval', () => {
+    const burst = [point(1, 2000, 26), point(2, 2500, 26.5), point(3, 3000, 27), point(4, 4000, 28)];
+    expect(advanceProblems(burst, 24, 0.5)).toEqual([]);
+    // a stall inside a burst is still seen, over the folded interval
+    const stalled = [point(1, 2000, 26), point(2, 2400, 26), point(3, 3000, 26.1)];
+    expect(advanceProblems(stalled, 24, 0.5)).toEqual([
+      expect.stringContaining('refresh 3: the media clock advanced 0.10 s in the 1.00 s since refresh 1'),
     ]);
   });
 
@@ -191,6 +229,7 @@ describe('playback going on between refreshes', () => {
     expect(advanceProblems([point(1, 2000, 24)], 24, 0.5)).toEqual([
       expect.stringContaining('still at the first frame'),
     ]);
+    expect(advanceProblems([], 24, 0.5)).toEqual([]);
   });
 });
 
@@ -269,30 +308,59 @@ describe('readCheckpoints', () => {
     }
   }
 
-  it('reads the player and the origin after each answered refresh, and ignores the answer that came with the load', async () => {
-    const manifests = [90, 2092, 4094, 6096].map((ms, index) =>
-      entry(index + 1, { kind: 'manifest', rep: undefined, number: undefined, msSinceStart: ms }),
+  // The answers of the origin, as `t`: the load at +90 ms after the stream had been on air for 30 s, then the given arrival times.
+  const manifests = (arrivals: number[]): RequestLogEntry[] =>
+    arrivals.map((ms, index) =>
+      entry(index + 1, {
+        kind: 'manifest',
+        rep: undefined,
+        number: undefined,
+        msSinceStart: ms,
+        t: at(30_000 + ms),
+      }),
     );
-    const session = {
-      id: 's1',
-      stream: 'live-cmaf',
-      live,
-      service: new FakeClient(manifests, 18),
-    } as unknown as TestSession;
+  const readerOf = (arrivals: number[]) => {
     let time = 24;
-    const qa = {
-      metrics: () =>
-        Promise.resolve({ playback: { currentTime: (time += 2) }, live: { latencyMs: 6200 } }) as never,
+    return {
+      session: {
+        id: 's1',
+        stream: 'live-cmaf',
+        live,
+        service: new FakeClient(manifests(arrivals), 18),
+      } as unknown as TestSession,
+      qa: {
+        metrics: () =>
+          Promise.resolve({ playback: { currentTime: (time += 2) }, live: { latencyMs: 6200 } }) as never,
+      },
     };
-    const { checkpoints, answered } = await readCheckpoints(session, qa, {
+  };
+
+  it('reads the player and the origin after each answered refresh, and ignores the answer that came with the load', async () => {
+    const { session, qa } = readerOf([90, 2092, 4094, 6096]);
+    const { checkpoints, answered, loadEdge } = await readCheckpoints(session, qa, {
       isRefresh: answeredManifest(),
       refreshes: 3,
+      slideSegments: 3,
+      live,
     });
     expect(answered).toHaveLength(4);
+    expect(loadEdge).toBe(15);
     expect(checkpoints).toEqual([
       { refresh: 1, arrivedMs: 2092, mediaTime: 26, latencyMs: 6200, edge: 18 },
       { refresh: 2, arrivedMs: 4094, mediaTime: 28, latencyMs: 6200, edge: 18 },
       { refresh: 3, arrivedMs: 6096, mediaTime: 30, latencyMs: 6200, edge: 18 },
     ]);
+  });
+
+  it('goes on reading until the window has slid as far as it was asked to, when the refreshes came in a burst', async () => {
+    // Five refreshes in the time of three segments: the fifth is at +6096 ms, which lists segment 18, three beyond the load's 15.
+    const { session, qa } = readerOf([90, 2092, 4094, 4600, 5100, 6096]);
+    const { checkpoints } = await readCheckpoints(session, qa, {
+      isRefresh: answeredManifest(),
+      refreshes: 3,
+      slideSegments: 3,
+      live,
+    });
+    expect(checkpoints.map((point) => point.refresh)).toEqual([1, 2, 3, 4, 5]);
   });
 });

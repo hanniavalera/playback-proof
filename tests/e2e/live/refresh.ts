@@ -3,11 +3,13 @@ import { DEFAULT_WAIT_MS } from '../support/player.ts';
 import type { PlayerHandle } from '../support/player.ts';
 import type { TestSession } from '../support/session.ts';
 import { waitForRequests } from '../support/waiting.ts';
-import { publishedEdge, publishedEndSec } from './edge.ts';
+import { edgeAt, publishedEdge, publishedEndSec } from './edge.ts';
 
 // What a live spec reads at each refresh of the manifest (or of the HLS media playlist): the origin's log says WHEN the refresh was
-// answered, and only then are the player and the origin asked where the playhead is. Five refreshes means five reads, each after the
-// window has slid by one more segment, and nothing in between that depends on a timer.
+// answered, and only then are the player and the origin asked where the playhead is. Each read comes after a refresh, and the
+// observation lasts until the window has also slid by as many segments as the row asks for refreshes (a player that refreshes in
+// bursts, as Firefox did once in the Playwright image, would otherwise count five refreshes in the time of three segments), and
+// nothing in between depends on a timer.
 
 /**
  * A manifest or playlist request that the origin has answered with a 200: one refresh (the first one is the load). For DASH there is one
@@ -17,6 +19,7 @@ export function answeredManifest(reps?: readonly string[]): (entry: RequestLogEn
   return (entry) =>
     entry.kind === 'manifest' &&
     !entry.pending &&
+    entry.aborted !== true &&
     entry.status === 200 &&
     (reps === undefined || (entry.rep !== undefined && reps.includes(entry.rep)));
 }
@@ -52,35 +55,45 @@ export interface Checkpoint {
 }
 
 /**
- * Waits for `refreshes` refreshes on the origin's log (those that `isRefresh` accepts; the answer that comes with the load is the first
- * entry and is not counted) and reads the player and the origin after each. Resolves with the readings and with every answered entry.
+ * Waits on the origin's log for refreshes (those that `isRefresh` accepts; the answer that comes with the load is the first entry and
+ * is not counted) and reads the player and the origin after each one, until there were `refreshes` of them AND the origin's edge, as of
+ * the last refresh, is `slideSegments` beyond the one the load listed. Resolves with the readings, every answered entry, and that
+ * first edge (`loadEdge`): the newest segment the manifest the player loaded listed, which is where "only a refresh can tell" begins.
  */
 export async function readCheckpoints(
   session: TestSession,
   qa: Pick<PlayerHandle, 'metrics'>,
-  options: { isRefresh: (entry: RequestLogEntry) => boolean; refreshes: number },
-): Promise<{ checkpoints: Checkpoint[]; answered: RequestLogEntry[] }> {
+  options: {
+    isRefresh: (entry: RequestLogEntry) => boolean;
+    refreshes: number;
+    slideSegments: number;
+    live: LiveClockInfo;
+  },
+): Promise<{ checkpoints: Checkpoint[]; answered: RequestLogEntry[]; loadEdge: number }> {
+  const { isRefresh, refreshes, slideSegments, live } = options;
   const checkpoints: Checkpoint[] = [];
-  let answered = await waitForRequests(session, options.isRefresh, { count: 1 });
-  for (let refresh = 1; refresh <= options.refreshes; refresh++) {
-    answered = await waitForRequests(session, options.isRefresh, { count: 1 + refresh }).catch(
-      (error: Error) => {
-        throw new Error(
-          `the origin answered ${answered.length - 1} refreshes with a 200 and then no more within ${DEFAULT_WAIT_MS / 1000} s, so refresh ${refresh} of ${options.refreshes} never happened: the player stopped tracking the window, or what it asked for was refused.\n${error.message}`,
-        );
-      },
-    );
+  let answered = await waitForRequests(session, isRefresh, { count: 1 });
+  const loadEdge = edgeAt(live, (answered[0] as RequestLogEntry).t);
+  let slid = 0;
+  for (let refresh = 1; refresh <= refreshes || slid < slideSegments; refresh++) {
+    answered = await waitForRequests(session, isRefresh, { count: 1 + refresh }).catch((error: Error) => {
+      throw new Error(
+        `the origin answered ${answered.length - 1} refreshes with a 200 and then no more within ${DEFAULT_WAIT_MS / 1000} s, so refresh ${refresh} of ${refreshes} (and a window that has slid ${slideSegments} segments) never happened: the player stopped tracking the window, or what it asked for was refused.\n${error.message}`,
+      );
+    });
+    const refreshed = answered[refresh] as RequestLogEntry;
     const metrics = await qa.metrics();
     const edge = await publishedEdge(session);
     checkpoints.push({
       refresh,
-      arrivedMs: answered[refresh]?.msSinceStart ?? Number.NaN,
+      arrivedMs: refreshed.msSinceStart,
       mediaTime: metrics.playback.currentTime,
       latencyMs: metrics.live.latencyMs,
       edge,
     });
+    slid = edgeAt(live, refreshed.t) - loadEdge;
   }
-  return { checkpoints, answered };
+  return { checkpoints, answered, loadEdge };
 }
 
 /**
@@ -117,29 +130,40 @@ export function rangeProblems(point: Checkpoint, live: LiveClockInfo): string[] 
 }
 
 /**
- * Where playback did not go on: between two refreshes the media clock must have moved at least `minShare` of the time that passed (the
- * time is the origin's, from the arrival of the two refreshes), and after the first refresh it must have left the first frame.
+ * An interval between two refreshes shorter than this is not judged on its own: the media clock moves in steps of a frame or a
+ * timeupdate, so over a few milliseconds "it did not advance" is a rounding and not a stall. It is judged together with the next one.
+ */
+export const MIN_JUDGED_INTERVAL_SEC = 1;
+
+/**
+ * Where playback did not go on: between two judged refreshes the media clock must have moved at least `minShare` of the time that passed
+ * (the time is the origin's, from the arrival of the two refreshes), and after the first refresh it must have left the first frame.
+ * Refreshes closer than `MIN_JUDGED_INTERVAL_SEC` to the last judged one (a burst of them) are folded into the next interval.
  */
 export function advanceProblems(
   checkpoints: readonly Checkpoint[],
   joinedAt: number,
   minShare: number,
 ): string[] {
-  return checkpoints.flatMap((point, index) => {
-    const previous = checkpoints[index - 1];
-    if (!previous) {
-      return point.mediaTime > joinedAt
-        ? []
-        : [`refresh 1: the media clock is still at the first frame, ${joinedAt.toFixed(2)} s`];
+  const first = checkpoints[0];
+  if (!first) return [];
+  const problems: string[] = [];
+  if (!(first.mediaTime > joinedAt)) {
+    problems.push(`refresh 1: the media clock is still at the first frame, ${joinedAt.toFixed(2)} s`);
+  }
+  let judged = first;
+  for (const point of checkpoints.slice(1)) {
+    const elapsedSec = (point.arrivedMs - judged.arrivedMs) / 1000;
+    if (elapsedSec < MIN_JUDGED_INTERVAL_SEC) continue;
+    const advancedSec = point.mediaTime - judged.mediaTime;
+    if (!(advancedSec >= elapsedSec * minShare)) {
+      problems.push(
+        `refresh ${point.refresh}: the media clock advanced ${advancedSec.toFixed(2)} s in the ${elapsedSec.toFixed(2)} s since refresh ${judged.refresh}`,
+      );
     }
-    const elapsedSec = (point.arrivedMs - previous.arrivedMs) / 1000;
-    const advancedSec = point.mediaTime - previous.mediaTime;
-    return advancedSec >= elapsedSec * minShare
-      ? []
-      : [
-          `refresh ${point.refresh}: the media clock advanced ${advancedSec.toFixed(2)} s in the ${elapsedSec.toFixed(2)} s since the previous refresh`,
-        ];
-  });
+    judged = point;
+  }
+  return problems;
 }
 
 /** One line per checkpoint, for a failure message. */

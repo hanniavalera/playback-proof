@@ -1,11 +1,13 @@
 import { LIVE_LIMITS } from '../../src/shared/criteria.ts';
 import { profile } from '../../src/shared/profiles.ts';
 import {
+  deliveredVideoSegments,
   edgeAt,
   firstVideoSegmentRequest,
   liveClockOf,
   publishedEdge,
   publishedEndSec,
+  refusedRequests,
   seconds,
 } from './live/edge.ts';
 import { recordMeasured } from './live/measured.ts';
@@ -115,7 +117,9 @@ test(
     ).toBeLessThanOrEqual(limitMs);
 
     // Channel 2, the origin: how far behind the edge the OTHER side says the playhead is. The edge it has published is the end of segment
-    // `edge`; a player that misreads the live clock can agree with itself and still be far from this number (or past it).
+    // `edge`; a player that misreads the live clock can agree with itself and still be far from this number (or past it). The origin
+    // publishes whole segments while Shaka's edge is continuous, so this reading differs from the player's by up to a segment either
+    // way (5.8 to 7.5 s against 6.2 to 7.1 s in the runs of ADR-100): it is held to the maximum limit, not to the p95 one.
     const publishedContext = `the origin had published segment ${edge}, which ends at ${publishedEndSec(live, edge)} s of the stream; the playhead was at ${joinedAt.toFixed(2)} s`;
     expect(
       behindPublishedMs,
@@ -123,18 +127,15 @@ test(
     ).toBeGreaterThanOrEqual(0);
     expect(
       behindPublishedMs,
-      `distance behind the edge the origin had published (${publishedContext}); the p95 limit is ${seconds(limitMs)}`,
-    ).toBeLessThanOrEqual(limitMs);
+      `distance behind the edge the origin had published (${publishedContext}); the limit is ${seconds(LIVE_LIMITS.latencyMaxMs)} (LIVE_LIMITS.latencyMaxMs: the p95 limit and a segment of publication granularity)`,
+    ).toBeLessThanOrEqual(LIVE_LIMITS.latencyMaxMs);
 
     // Which request the join made first, and whether the origin could serve everything it asked for: a join that arrives in the
     // future (or before the window) is refused with a 404 long before a member sees it.
-    expect(
-      requestsFor(log, { status: 'error' }),
-      'requests the origin refused or aborted during the join (request log)',
-    ).toEqual([]);
+    expect(refusedRequests(log), 'requests the origin refused during the join (request log)').toEqual([]);
     expect(segmentsBehind, 'the join requested no video segment (request log)').not.toBeNull();
-    // Shaka asks for the segment BEFORE the one that holds the playhead (the buffer must reach behind it), so the first request is the
-    // presentation delay plus one segment behind the edge at most; the p95 limit is the allowance on top of the delay.
+    // The first request is for the segment that holds the playhead or, in Chromium and Firefox, the one before it (the buffer must reach
+    // behind the playhead); the p95 limit in segments is the allowance on top of the presentation delay, plus that one segment.
     const allowedSegments = Math.ceil(limitMs / (live.segmentDurationSec * 1000)) + 1;
     expect(
       segmentsBehind as number,
@@ -227,13 +228,14 @@ test(
     const joinedAt = (await qa.metrics()).playback.currentTime;
 
     // Each refresh is awaited on the origin's log (the load is the first answer), and only then the player and the origin are asked
-    // where the playhead is: five reads, each of them after the window has slid by one more segment.
-    const { checkpoints, answered } = await readCheckpoints(session, qa, {
+    // where the playhead is. The observation lasts until there were five refreshes AND the window has slid five segments.
+    const { checkpoints, answered, loadEdge } = await readCheckpoints(session, qa, {
       isRefresh: answeredManifest(),
       refreshes: REFRESHES,
+      slideSegments: REFRESHES,
+      live,
     });
     const cadenceMs = gapsBetween(answered);
-    const loadEdge = edgeAt(live, (answered[0] as { t: string }).t);
     recordMeasured(testInfo, {
       refreshesAnswered: answered.length - 1,
       refreshGapsMs: cadenceMs,
@@ -269,8 +271,8 @@ test(
     });
     // Nothing the player asked for was outside what the origin held: a segment older than its window or not yet published is a 404.
     expect(
-      requestsFor(await session.service.log(session.id), { status: 'error' }),
-      'requests the origin refused or aborted while the window slid (request log)',
+      refusedRequests(await session.service.log(session.id)),
+      'requests the origin refused while the window slid (request log)',
     ).toEqual([]);
 
     const metrics = await qa.metrics();
@@ -305,9 +307,11 @@ test(
     // The refresh that is counted is the one of the audio playlist: the player reloads the playlists of the variant it plays together
     // and the audio has a single representation, whereas the video playlist is another file each time ABR changes rung (a switch
     // would be one more request that is not a refresh). The video playlist is held to the same count below.
-    const { checkpoints, answered } = await readCheckpoints(session, qa, {
+    const { checkpoints, answered, loadEdge } = await readCheckpoints(session, qa, {
       isRefresh: answeredManifest(audioReps),
       refreshes: REFRESHES,
+      slideSegments: REFRESHES,
+      live,
     });
     await waitForRequests(session, answeredManifest(videoReps), { count: 1 + REFRESHES }).catch(
       (error: Error) => {
@@ -317,8 +321,6 @@ test(
       },
     );
     const log = await session.service.log(session.id);
-    const firstPlaylist = requestsFor(log, { kind: 'manifest' }).find((entry) => entry.rep !== undefined);
-    const loadEdge = edgeAt(live, (firstPlaylist as { t: string }).t);
     const cadenceMs = gapsBetween(answered);
     recordMeasured(testInfo, {
       refreshesAnswered: answered.length - 1,
@@ -352,8 +354,8 @@ test(
       );
     });
     expect(
-      requestsFor(await session.service.log(session.id), { status: 'error' }),
-      'requests the origin refused or aborted while the window slid (request log)',
+      refusedRequests(await session.service.log(session.id)),
+      'requests the origin refused while the window slid (request log)',
     ).toEqual([]);
 
     const metrics = await qa.metrics();
@@ -416,16 +418,14 @@ test(
 
     const returnLatencyMs = settled.live.latencyMs;
     const targetSegment = Math.floor(target / live.segmentDurationSec) + 1;
-    const rewoundSegments = requestsFor(rewindLog, { kind: 'segment', rep: videoReps, status: 'ok' }).map(
-      (entry) => entry.number,
-    );
+    const rewoundSegments = deliveredVideoSegments(rewindLog, videoReps);
     recordMeasured(testInfo, {
       joinLatencyMs,
       rewindTarget: target,
       rewindLandedAt: rewound.playback.currentTime,
       latencyAfterRewindMs: rewound.live.latencyMs,
       targetSegment,
-      segmentsFetchedForRewind: rewoundSegments.filter((n): n is number => n !== undefined),
+      segmentsFetchedForRewind: rewoundSegments,
       returnedAt: returned.playback.currentTime,
       latencyAfterReturnMs: returnLatencyMs,
       edgeSeeks: settled.live.edgeSeeks,
@@ -446,14 +446,15 @@ test(
       `latency after the rewind (metrics.live.latencyMs): ${seconds(rewoundLatencyMs)} behind the edge, and the DVR window is ${seconds(windowMs)}`,
     ).toBeLessThanOrEqual(windowMs);
 
-    // 2. The origin served the rewound region: a video segment that covers the target, answered, and nothing refused.
+    // 2. The origin served the rewound region: a video segment that covers the target, delivered whole, and nothing refused. (A request
+    // the player abandoned is not a refusal: after the jump back to the edge Shaka cancels what it had asked for in the rewound region.)
     expect(
       rewoundSegments,
       `video segments the origin delivered after the rewind to ${target.toFixed(2)} s (request log): the segment that covers it is #${targetSegment}`,
     ).toContain(targetSegment);
     expect(
-      requestsFor(await session.service.log(session.id), { status: 'error' }),
-      'requests the origin refused or aborted (request log)',
+      refusedRequests(await session.service.log(session.id)),
+      'requests the origin refused (request log)',
     ).toEqual([]);
 
     // 3. Back at the edge: the latency is that of the join, within the positioning granularity of one segment, and within the p95 limit.

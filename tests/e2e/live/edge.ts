@@ -47,4 +47,24 @@ export function firstVideoSegmentRequest(log: readonly RequestLogEntry[]): Reque
   return requestsFor(log, { kind: 'segment', rep: rungs })[0];
 }
 
+/**
+ * What the origin REFUSED: requests it answered with an error status (a segment outside its window is a 404, one not yet published too).
+ * A request that the client abandoned is not one: a player cancels the segments it no longer needs when the viewer seeks or the
+ * rung changes, and the log shows them as `aborted` with the status they had when the socket closed (a 200 with no body). The
+ * support library's `status: 'error'` filter counts both, which is what a recovery spec wants and a seeking spec must not.
+ */
+export function refusedRequests(log: readonly RequestLogEntry[]): RequestLogEntry[] {
+  return log.filter((entry) => !entry.pending && entry.status >= 400);
+}
+
+/** The video segment numbers the origin delivered whole (answered with a 2xx and not abandoned by the player), in arrival order. */
+export function deliveredVideoSegments(
+  log: readonly RequestLogEntry[],
+  videoReps: readonly string[],
+): number[] {
+  return requestsFor(log, { kind: 'segment', rep: videoReps, status: 'ok' })
+    .filter((entry) => entry.aborted !== true)
+    .flatMap((entry) => (entry.number === undefined ? [] : [entry.number]));
+}
+
 export const seconds = (ms: number): string => `${(ms / 1000).toFixed(2)} s`;
