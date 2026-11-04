@@ -202,6 +202,13 @@ the defaults on Chromium (0.62 s over the maximum). A reviewer who reads "huge m
 and the day a real regression came it would fail for the noise of a runner. So the limits are the requirements, the margins are in a table made from the files, and the one line that fails is the one that
 shows a defect."
 
+**Addendum (the extra runs, commit `e0a5be3`; the decision above is unchanged).** Decision (6) said that the absolute reading depends on the healthy level, and that the two readings must be compared again if the level
+changes. The HLS runs show the same dependence without a change of the healthy level (6.07 s on Chromium in both protocols), through the length of the stall: 3.97 to 4.10 s on HLS against 4.96 s on DASH. A's latency after the
+outage lands on the limit (its first reads are 9.99, 10.11 and 9.98 s), the three runs end at 8.96, 10.15 and 10.02 s, and the NO-GO of the line rests on runs 2 and 3, which end 0.15 and 0.02 s over the maximum; run 1 was
+judged restored at 56.05 s from reads that cross the limit by 0.04 s and then alternate by a second (cause unknown). The relative reading is NO-GO in all three runs, by 0.89 s at least. So the sentence "neither separates the two
+configurations better" holds for the DASH data it was written about and not for HLS in Chromium, where the relative reading separates better. Nothing was changed: no limit, no criterion, no verdict (the line is the worst of three
+runs and stays NO-GO). Whether the relative reading, or both, should decide the line is left to the owner; [docs/READINESS.md](../READINESS.md), "Extra runs", has the numbers.
+
 ## ADR-159d: The readiness result of a candidate is evidence for a decision, not the decision: the A/B decision of TEST_STRATEGY section 8 is not made
 
 **Context.** The candidate `live-sync` is GO on every readiness check on every engine, and the defaults are NO-GO. TEST_STRATEGY section 8 has an item on its go/no-go checklist that says
@@ -230,6 +237,14 @@ the effect to expect (4 to 5 s against about 1.4 s) and the guard metric to watc
 
 **Defending it.** "A candidate that passes a check the defaults fail is a reason to run the decision, not the decision. The strategy defines what a decision is, and this is not that, so the sheet says
 'evidence for a decision' and the item stays open."
+
+**Addendum (the extra runs, commit `e0a5be3`): the stall at a stale manifest is not a side effect of the candidate.** The Decision above counts, among the candidate's side effects found in the soaks, a stall at a stale
+manifest 3.3 to 5.8 s longer than the defaults'. Four 8-minute soaks with a stale manifest and no outage before it show that the stall follows the media buffered ahead when the fault begins and not the configuration: A
+stalls 6.49 s (WebKit) at 6.13 s behind the edge, the candidate 6.44 to 6.64 s at 6.10 to 6.23 s (three engines). Across the ten soaks of both batches that had a stale manifest, the stall plus the media buffered ahead was
+10.44 to 11.51 s in every one. The longer stall of the candidate in the 30-minute soaks was that of a session about 7 s behind the edge compared with one at 10.6 to 10.9 s, which is where the outage had left the defaults.
+What stays true is the trade-off: a session closer to the edge has less buffered when the origin falters, so the stall at a stale manifest remains a guard metric of the pre-registration, as a cost of latency and not as a
+defect of this candidate. The other side effects: that it settles 0.6 to 0.9 s above its level before the first fault stands (the extra runs agree, 0.76 to 0.89 s), and the WebKit non-return after the stale manifest was
+seen once and not reproduced by an isolated run, so it is an open observation and not a property of the candidate on that engine ([docs/READINESS.md](../READINESS.md), "Extra runs").
 
 ## ADR-159e: A run that starts on a busy machine says so; nothing waits for it and nothing is excluded
 
