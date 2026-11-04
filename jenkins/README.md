@@ -79,7 +79,8 @@ Jenkinsfile only calls scripts and projects that exist).
 | `gate:merge`, throttled Chrome | the merge job of the project             | `Merge gate` > `chromium-cpu4x`                  | `npm run gate:merge -- --project=chromium-cpu4x`                  |
 | `gate:merge`, WebKit           | the **macOS** job (the WebKit that ships) | `Merge gate` > `webkit` (Linux, **experimental**) | `npm run gate:merge -- --project=webkit`                         |
 | `gate:flake`                   | `flake` (the judge) and `flake-record` (a push to `main`) | `Flake`, after `Merge gate`      | `npm run gate:flake -- --store file --runs reports/flake`, plus `--record` for a build of `main` (ADR-174) |
-| `gate:perf`, `gate:triage`     | their jobs, as they are added            | one block each, when their scripts exist         | not in the Jenkinsfile yet: a stage for something that cannot run would be a stub |
+| `gate:perf`                    | `perf (chromium)` and `perf (chromium-cpu4x)` | `Perf`, after `Merge gate`                  | `npm run gate:perf -- --paired --control-ref "$CONTROL_REF" --profile chromium,chromium-cpu4x`: the control is `HEAD^1` on `main`, and `HEAD` itself (an A/A) on any other branch |
+| `gate:triage`                  | `triage` (`if: failure()`, not a required check) | `Triage`, last, only when the build is not green | `npm run gate:triage -- --from artifacts --out reports/triage` |
 
 The GitHub jobs are defined by the other half of the setup, in `.github/workflows`; the rows are the intent of
 [TEST_STRATEGY.md](../TEST_STRATEGY.md) section 6.1, and the jobs that do not exist there yet are marked by their absence from that
@@ -93,8 +94,14 @@ judges them against the history of this environment, `jenkins-linux-arm64`: a fi
 history, whatever its result, as the gate does by design; a build of any other branch (`PB_BRANCH`, the negative run below) is judged
 and forgotten. With a handful of builds the gate says "not enough data": a verdict on a rate needs 20 builds of an engine, which a
 laptop rarely has. What the stage shows at once is the plumbing and the rules that need no history (an expired quarantine, an invalid
-list, no run file at all). See ADR-174 in [docs/decisions/ci-flake.md](../docs/decisions/ci-flake.md), which also says what
-a real build still has to prove. To see the history: `docker compose exec agent ls -l /history`.
+list, no run file at all). See ADR-174 in [docs/decisions/ci-flake.md](../docs/decisions/ci-flake.md), whose amendment says what the
+real builds proved of it. To see the history: `docker compose exec agent ls -l /history`.
+
+**The `Perf` and `Triage` stages.** `Perf` runs alone, after the engines, because a measurement needs the machine to itself
+(ADR-179): it builds the control (`HEAD^1` on `main`, `HEAD` itself on another branch) next to the head and judges the head against it,
+the same command as the GitHub legs, in both profiles. `Triage` is the last stage and runs only when the build is not green: it
+unstashes the Playwright reports of the four engines and clusters their failures; it decides nothing and exits 0 whatever it finds.
+Both run after a red engine (`catchError`), so a red build still has them. What they showed in real builds is below.
 
 ## Evidence: what the builds of this setup showed
 
@@ -110,20 +117,78 @@ numbers are single runs on a Docker VM that other work shared; they are not a be
 | 4     | The second full build: warm cache, **one** executor, so the engines run one after the other  | green                                  | 10.2, 14.6, 120.2, 0.7, 104.5; 260.6                                          |
 | 5     | The first try at the negative run (below)                                                    | **red in `Unit`** (not where planned)  | 6.1, 19.3, 118.7 (failed), skipped, skipped; 149.4                            |
 | 6     | The negative run                                                                             | **red in `Merge gate`**, as planned    | 8.5, 9.6, 109.1, 0.7, 81.9; 211.9                                             |
+| 7     | The first build of the whole pipeline, with `Perf`, `Flake` and `Triage` in the Jenkinsfile (`main` at `9df85d8`) | **red in `Unit`** (not planned) | 13.4, 16.6, 115.9 (failed), skipped, skipped; 154.9 |
+| 8     | The same pipeline on `main` at `d333c1f`, after the two tests that failed in build 7 were made independent of the environment (pull request #26) | green | 10.7, 15.9, 117.9, 0.6, 184.0; 1082.1 |
+| 9     | The negative run again, now with the stages after the merge gate (a throwaway branch of a copy, as in build 6) | **red in `Merge gate`**, as planned | 4.7, 15.0, 115.9, 0.3, 181.5 (failed); 1064.6 |
+| 10    | A second build of `main`, the same commit as build 8: the history gets its second build, `Perf` and `Flake` run again | green | 8.6, 15.5, 115.8, 0.6, 180.3; 1071.6 |
 
 Per engine, in seconds (the time a stage waited for an executor is inside its duration in the stage view; `waited` is taken out of it
 here). Build 3, two executors: `chromium` 27.4, `firefox` 29.4, `chromium-cpu4x` 19.5 (and 27.7 waited), `webkit` 24.7 (29.7 waited).
 Build 4, one executor: 19.7, 28.7, 24.5 and 30.1, each after the one before it. Build 6: `chromium`, `firefox` and `webkit` red,
-`chromium-cpu4x` green.
+`chromium-cpu4x` green. Build 8, two executors: `chromium` 80.4, `firefox` 96.0, `chromium-cpu4x` 20.4 (and 80.6 waited), `webkit`
+87.7 (96.2 waited); 15, 15, 3 and 15 tests, all passed, none flaky. Build 9: `chromium`, `firefox` and `webkit` red (one failed
+test in each, PB-VOD-002), `chromium-cpu4x` green. Build 10: `chromium` 88.3, `firefox` 91.0, `chromium-cpu4x` 19.7 (88.5 waited),
+`webkit` 88.9 (91.2 waited), the same tests, all passed, none flaky.
 
-Two things these builds found that are not about the pipeline. **Two unit tests depend on how busy the machine is.** Build 2 failed in
-`tests/unit/probe/media.test.ts` ("generates the same bytes every time": the first of two generations of the probe media produced a
+Three things these builds found that are not about the pipeline. **Two unit tests depended on how busy the machine is.** Build 2 failed
+in `tests/unit/probe/media.test.ts` ("generates the same bytes every time": the first of two generations of the probe media produced a
 different VP8 file), and build 5 failed in `tests/unit/server/static.test.ts` ("releases the file of every download that the client
 abandons": 84 open descriptors counted where 120 were expected). Both passed alone on an idle agent and in builds 3, 4 and 6; the host
-had a load average of about 18 on 12 cores while they failed. They are reported to the owner of the unit suite, not changed here
-(ADR-116). **PB-ENV-001 has nothing to compare with**: the committed codec matrix has no result for `jenkins-linux-arm64`, so the
-`environment` annotation of each engine in the JSON reports says `no committed probe result for jenkins-linux-arm64`, and Linux WebKit
-runs because of the `RUN_SPECS_IN_LINUX_WEBKIT` override.
+had a load average of about 18 on 12 cores while they failed. The second one had a cause, found afterwards and fixed in pull request #22:
+the helper that waits for pending file operations did not count the close of a file handle, so the baseline was taken while
+closes were still queued ([`docs/results/flake/README.md`](../docs/results/flake/README.md), section 5). The first has none that is
+known: it failed once on a GitHub runner too, and a diagnostic could not make it fail again (same section). **Two more unit tests
+depended on the environment of the agent, not on its load.** Build 7 failed in `tests/unit/measure/paired-real.test.ts`, which expects
+the control of the paired gate to get the checkout's own stream cache while the agent sets `PB_CACHE_DIR`, which the control honours
+on purpose, and in `tests/unit/triage/committed-files.test.ts`, which looks for the name of the machine's user in the committed files
+while the user of the agent is `jenkins`, a word that these documents use. Both are fixed in pull request #26 (test code only: the
+first test no longer inherits the variable, the second takes the account of a CI service for no one's name), and build 8 is the re-run.
+A GitHub runner has neither the variable nor that user, which is why the second CI system found what the first could not.
+**PB-ENV-001 has nothing to compare with**: the committed codec matrix has no result for `jenkins-linux-arm64`, so the `environment`
+annotation of each engine in the JSON reports says `no committed probe result for jenkins-linux-arm64`, and Linux WebKit runs because
+of the `RUN_SPECS_IN_LINUX_WEBKIT` override.
+
+### The stages after the merge gate
+
+Build 7 was meant to be the first run of the whole pipeline and stopped in `Unit` (above), so every stage after it is `NOT_EXECUTED` in
+its evidence, not a second failure. **Build 8**, the same pipeline on `main` at `d333c1f`, ran all of them and was green in 18 minutes
+(1082 s), inside the 60-minute timeout of the build:
+
+- **`Perf` ran in Jenkins for the first time and passed, in both profiles** (743 s, two thirds of the build). It created the control,
+  the first parent of the commit (`4f794701c8ac`), in a checkout of its own on the same agent, linked the node modules (the lock files
+  are the same), built the control's player page, measured the control and then the head, and judged the head against it: `chromium`
+  startup 42.3 ms for the control and 41.7 ms for the head (-1.4 %), 30 fps for both, no dropped frame, no rebuffer; `chromium-cpu4x`
+  startup 134.9 and 133.9 ms (-0.7 %); exit code 0 for both. The change between the two commits was two tests, so this shows that the
+  stage runs and passes. **No regression was injected in Jenkins**: that the paired gate fails on one is shown on GitHub
+  ([`paired-sensitivity.md`](../docs/results/perf/paired-sensitivity.md)), not here. The agent's CPU model is `unknown` in the gate's
+  report: a Linux arm64 container in Docker Desktop's VM exposes none.
+- **`Flake` ran and passed** (7 s). It laid the run files of the four engines side by side (`4 runs in this build`: stash and unstash
+  work across the parallel workspaces), judged them against the history on the `flake-history` volume and, because the branch is
+  `main`, recorded them: `/history/jenkins-linux-arm64.jsonl` holds the four runs of build 8 (run id `jenkins-playback-proof-8`). With
+  one build in the history every verdict is `not-enough-data`: a rate is judged from 20 builds, which a laptop rarely has.
+- **`Triage` did not run**, as designed: its condition is a build that is not green.
+
+**Build 9**, on a throwaway branch of a copy of the repository ([the negative run](#the-negative-run), below), showed what a red build
+does to the stages after it. `Merge gate` went red in `chromium`, `firefox` and `webkit`; then `Perf` ran anyway and passed (the
+control of a branch other than `main` is its own `HEAD`: an A/A); `Flake` judged the four runs of the build with the eight now in the
+history, passed (a failed test is the business of the merge gate, and every verdict is still `not-enough-data`) and **recorded
+nothing**: the file still had the four lines of build 8. `Triage` ran, because the build was red, and read the Playwright reports of
+the four engines: **3 failures in 4 reports became 1 cluster** (PB-VOD-002, in three engines), category `unknown`, rule
+`no-rule-matched`, class "Needs a person": the rule table has no rule for a false assertion about the request log, and it says so
+instead of guessing.
+
+**Build 10**, a second build of `main` on the same commit as build 8, was green again (1071.6 s) and answered what one build cannot.
+`Flake` **appended** its four runs to the file (eight lines, the run ids `jenkins-playback-proof-8` and `jenkins-playback-proof-10`; the
+file had survived the recreation of the containers in between) and judged the build against the eight runs (`4 runs in this build,
+8 runs judged`; two builds are too few for a rate, so every verdict was `not-enough-data` again). `Perf` passed again in both
+profiles: `chromium` startup 39.05 ms for the control and 40.6 ms for the head (+4.0 %), `chromium-cpu4x` 142.1 and 129.4 ms (-9.0 %).
+The two commits differ in two test files only, so that is the same code measured twice, and the control of build 10 (39.05 ms) is 8 %
+faster than the control of build 8 (42.3 ms) at the same commit: on a shared laptop a number from another build is not comparable,
+which is why the head is judged against a control measured minutes before it on the same machine.
+
+What these builds do not show: that `Perf` fails on a regression in Jenkins (see above); a rate judged by the flake gate (the history
+of `main` is two builds deep, and a rate is judged from 20); a triage cluster with a root cause (the one cluster it made is of a
+made-up failure, and is `unknown`); the CPU model of the agent.
 
 ### The negative run
 
@@ -136,7 +201,10 @@ twice (one retry, as in CI), and the archived `reports/<engine>/playwright.json`
 [docs/CONTRACTS.md](../docs/CONTRACTS.md) section 7.2 for both attempts (`qa-events.json`, `qa-metrics.json`, `qa-info.json`,
 `page-console.json`, `session-detail.json`, `request-log.json`), next to the screenshot, the error context and the trace in
 `test-results/`. [`build-6.json`](../docs/results/jenkins/build-6.json) says `failure.stage: chromium`, `group: Merge gate` and
-`asExpected: true`, which the evidence tool computes: a build that is red anywhere else (build 5) is `asExpected: false`.
+`asExpected: true`, which the evidence tool computes: a build that is red anywhere else (build 5) is `asExpected: false`. Build 9 repeated
+the run on a copy of `main` at `d333c1f` (the branch commit is `7a51c8a`), now that the stages after the merge gate exist:
+[`build-9.json`](../docs/results/jenkins/build-9.json) says the same, and what `Perf`, `Flake` and `Triage` did with the red build is
+in the section above.
 
 To repeat it, from the repository root (`<copy>` is a scratch bare repository, which is also where `PB_REPO` points):
 
@@ -146,6 +214,8 @@ git clone ../<copy>.git ../<copy>-work && cd ../<copy>-work && git checkout -b n
 # edit tests/e2e/vod-start.spec.ts: in expectStartsAndPlays, .toBeGreaterThan(0) -> .toBe(0) for the HLS playlists
 git commit -am "make an expectation false on purpose" && git push origin negative/false-expectation && cd -
 # in .env: PB_REPO=../<copy>.git and PB_BRANCH=negative/false-expectation, then recreate the controller so that the job reads them
+# (or without touching .env: PB_REPO=../<copy>.git PB_BRANCH=negative/false-expectation docker compose up -d; a later
+# `docker compose up -d` without them points the job back at main)
 docker compose up -d
 npx tsx tools/jenkins-evidence.ts --trigger --expect FAILURE --expect-stage "Merge gate" --label "negative run"
 # restore: remove both lines from .env, docker compose up -d, and delete ../<copy>.git and ../<copy>-work
@@ -186,10 +256,12 @@ delete it to get a new password the next time.
 - **Production concerns.** One controller, one agent, one admin, plain HTTP on the loopback interface, no backup of the Jenkins home,
   no agent autoscaling. It is a lab for the pipeline definition, the stage parity and the failure behaviour (ADR-119), not a CI
   service.
-- **Environment evidence.** The environment id of a build here is `jenkins-linux-arm64`. No codec matrix and no performance baseline
-  is committed for it, so the specs run without a documented gap and the performance gate (when it exists) has no baseline to compare
-  with: both need a probe and a baseline run on this agent first. The flake history of this id is the one on the `flake-history`
-  volume, filled by the builds of `main` that ran here and by nothing else.
+- **Environment evidence.** The environment id of a build here is `jenkins-linux-arm64`. No codec matrix is committed for it, so the
+  specs run without a documented gap, and no performance baseline is committed for it, and none is needed: the `Perf` stage is paired
+  and measures its control on this agent, minutes before the head. What it cannot say is what the agent is: a Linux arm64 container
+  in Docker Desktop's VM on a Mac exposes no CPU model, so the gate prints `this machine: unknown` and the evidence names the
+  machine only as that. The flake history of this id is the one on the `flake-history` volume, filled by the builds of `main` that
+  ran here and by nothing else.
 
 ## If something does not start
 
