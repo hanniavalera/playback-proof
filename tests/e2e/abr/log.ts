@@ -26,3 +26,29 @@ export function describeSegments(entries: readonly RequestLogEntry[], last = 12)
   const shown = entries.slice(-last).map((entry) => `${entry.rep} #${entry.number}`);
   return `${entries.length > last ? `... ${shown.join(', ')}` : shown.join(', ')}`;
 }
+
+/**
+ * The responses that are the origin's failure and not the player's doing: a status of 400 or more, or a response the origin cut or could
+ * not write. A request the player cancelled (it does so whenever it switches rung: `abortReason` `client-closed`) is not one.
+ */
+export function originFailures(log: readonly RequestLogEntry[]): RequestLogEntry[] {
+  return log.filter(
+    (entry) => entry.status >= 400 || (entry.aborted === true && entry.abortReason !== 'client-closed'),
+  );
+}
+
+/**
+ * The media time at which the first segment of `rep` that was asked for starts, or null when none was: segment `n` of a stream of
+ * segments of `segmentDurationSec` covers [(n - 1) d, n d), so the playhead enters the rung the player stepped down to at that time.
+ */
+export function firstSegmentStart(
+  log: readonly RequestLogEntry[],
+  rep: string,
+  segmentDurationSec: number,
+): number | null {
+  const numbers = videoSegmentRequests(log)
+    .filter((entry) => entry.rep === rep && entry.number !== undefined)
+    .map((entry) => entry.number as number);
+  if (numbers.length === 0) return null;
+  return (Math.min(...numbers) - 1) * segmentDurationSec;
+}

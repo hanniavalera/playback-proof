@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import type { QAEvent } from '../../../src/shared/qa.ts';
 import {
   DECISION_JITTER_S,
   DROPPED_FRAME_PROTECTION,
@@ -8,43 +7,20 @@ import {
   banNote,
   describeForcedChanges,
   forcedChanges,
+  forcedClimb,
+  invalidRunReason,
   upshiftBound,
   upshiftWaitMs,
 } from '../../../tests/e2e/abr/bans.ts';
 import { SHAKA_SWITCH_INTERVAL_S, upshiftBoundSeconds } from '../../../tests/e2e/abr/conditions.ts';
-import { variantChanges } from '../../../tests/e2e/abr/variants.ts';
 import type { VariantChange } from '../../../tests/e2e/abr/variants.ts';
+import { FORCED_CLIMB_RUNS, timeline } from './fixtures.ts';
+import type { ForcedClimbRun, Row } from './fixtures.ts';
 
 // The bound of the first step up after a recovery (PB-ABR-003) and the evidence that chooses it. The timelines are the ones the
 // specs read: the numbers of the failed attempts of the nightly run 41793007785 (GitHub macOS runner, WebKit, 3 CPUs, one worker), the
 // pass of Chromium on the same run, and the machine of the author, which dropped no frame (docs/decisions/e2e-abr.md, ADR-095).
-
-type Row = readonly [
-  pageSeconds: number,
-  mediaSeconds: number,
-  height: 240 | 360 | 720,
-  reason: 'start' | 'abr' | 'manual',
-];
-
-const VARIANT_ID = { 240: 0, 360: 1, 720: 2 } as const;
-const VARIANT_BANDWIDTH = { 240: 342376, 360: 746360, 720: 1844448 } as const;
-
-/** The hook's `variant-changed` events for rows of (page clock, media time, rung entered, reason), read the way the specs read them. */
-function timeline(rows: readonly Row[]): VariantChange[] {
-  let left: number | null = null;
-  const events = rows.map(([page, media, height, reason], index): QAEvent => {
-    const event: QAEvent = {
-      index,
-      t: page * 1000,
-      name: 'variant-changed',
-      mediaTime: media,
-      detail: { from: left, to: VARIANT_ID[height], bandwidth: VARIANT_BANDWIDTH[height], height, reason },
-    };
-    left = VARIANT_ID[height];
-    return event;
-  });
-  return variantChanges(events);
-}
+// Then the classifier of ADR-106, on the four attempts of PB-ABR-002 that failed on the same kind of runner (fixtures.ts).
 
 // What the timeline shows before the link recovers, and the recovery's media time; the step up is a row of its own.
 const CI_ATTEMPT_0 = {
@@ -294,5 +270,213 @@ describe('the note in the message of a rung change', () => {
     expect(note).toMatch(
       /they were forced \(a ban\): 240p at media time 21\.91 s, 4\.9 s after the change before it$/,
     );
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// A climb that the protection forced (ADR-106), on the four attempts of PB-ABR-002 that failed in the 40 repetitions on the GitHub macOS
+// runner (fixtures.ts): in each the player stepped down to 240p, and 4.0 to 6.0 s later it climbed to 360p, a rung that the 600 kbps link
+// cannot carry.
+
+/** The step down to 240p is the fourth change of each run (index 3). */
+const STEP_DOWN = 3;
+const CARRIED = 240;
+
+function climbOf(
+  run: Pick<ForcedClimbRun, 'rows' | 'frames'>,
+  override: Partial<Parameters<typeof forcedClimb>[0]> = {},
+) {
+  return forcedClimb({
+    changes: timeline(run.rows),
+    afterIndex: STEP_DOWN,
+    carriedHeight: CARRIED,
+    frames: run.frames,
+    originFailures: 0,
+    ...override,
+  });
+}
+
+/** Run 20 up to its step down, then a climb to 360p `gap` seconds later (the page clock of the step down is 20.5 s, so the sums are exact). */
+function climbAfterGap(gap: number, frames = { decoded: 974, dropped: 10 }) {
+  const rows: Row[] = [
+    [0.25, 0, 360, 'start'],
+    [0.75, 0.25, 720, 'abr'],
+    [12.5, 11.75, 360, 'abr'],
+    [20.5, 19.75, 240, 'abr'],
+    [20.5 + gap, 19.75 + gap, 360, 'abr'],
+  ];
+  return climbOf({ rows, frames });
+}
+
+describe('forcedClimb: the four attempts that failed on the macOS runner', () => {
+  it.each(Object.entries(FORCED_CLIMB_RUNS))(
+    '%s: the climb to 360p, a rung the link cannot carry, is found, with the gap its message printed',
+    (_name, run) => {
+      const climb = climbOf(run);
+      expect(climb).not.toBeNull();
+      expect(climb?.change.height).toBe(360);
+      expect(climb?.after.height).toBe(240);
+      expect(climb?.gapSeconds).toBeCloseTo(run.gap, 3);
+      expect(climb?.gapSeconds).toBeLessThan(SHAKA_SWITCH_INTERVAL_S - DECISION_JITTER_S);
+    },
+  );
+
+  it.each(Object.entries(FORCED_CLIMB_RUNS))(
+    '%s: is not found when the link carries 360p, because the change is then to a rung the link can carry',
+    (_name, run) => {
+      expect(climbOf(run, { carriedHeight: 360 })).toBeNull();
+    },
+  );
+});
+
+describe('forcedClimb: what must still fail', () => {
+  it('a change 8.1 s after the one before it is a decision of the adaptation, whatever the frames (a real flap)', () => {
+    expect(climbAfterGap(8.1)).toBeNull();
+    expect(climbAfterGap(8.1, { decoded: 974, dropped: 400 })).toBeNull();
+  });
+
+  it('the jitter of the clocks is allowed and not more: 7.75 s is a decision, 7.74 s is not', () => {
+    expect(climbAfterGap(7.75)).toBeNull();
+    expect(climbAfterGap(7.74)).not.toBeNull();
+    expect(climbAfterGap(0.5)).not.toBeNull();
+  });
+
+  it('a climb that looks forced on a load that dropped no frame is not: the protection has nothing to act on', () => {
+    const run = FORCED_CLIMB_RUNS['run 20'] as ForcedClimbRun;
+    expect(climbOf(run, { frames: { decoded: 974, dropped: 0 } })).toBeNull();
+  });
+
+  it('a climb on a load in which the origin failed a request is not: a failed request disables a rung as well', () => {
+    const run = FORCED_CLIMB_RUNS['run 20'] as ForcedClimbRun;
+    expect(climbOf(run, { originFailures: 1 })).toBeNull();
+  });
+
+  it('a change the page asked for is not, on either side of the gap', () => {
+    const run = FORCED_CLIMB_RUNS['run 20'] as ForcedClimbRun;
+    const manualClimb = [...run.rows];
+    manualClimb[4] = [26.497, 25.888, 360, 'manual'];
+    expect(climbOf({ ...run, rows: manualClimb })).toBeNull();
+    const manualStepDown = [...run.rows];
+    manualStepDown[3] = [20.636, 20.027, 240, 'manual'];
+    expect(climbOf({ ...run, rows: manualStepDown })).toBeNull();
+  });
+
+  it('the first change after the step down decides: a real flap that comes first is never hidden by a forced climb after it', () => {
+    const run = FORCED_CLIMB_RUNS['run 20'] as ForcedClimbRun;
+    const rows: Row[] = [
+      ...run.rows.slice(0, 4),
+      // 8.1 s after the step down: the adaptation's own decision, to a rung the link cannot carry
+      [28.736, 28.127, 360, 'abr'],
+      // 3 s after that one, inside the interval, with frames dropped: it looks forced, but the real flap came first
+      [31.736, 31.127, 720, 'abr'],
+    ];
+    expect(climbOf({ ...run, rows })).toBeNull();
+  });
+
+  it('a change before the step down is not looked at, and neither is a timeline with nothing after it', () => {
+    const run = FORCED_CLIMB_RUNS['run 20'] as ForcedClimbRun;
+    expect(climbOf(run, { afterIndex: 4 })).toBeNull();
+    expect(climbOf(run, { afterIndex: 99 })).toBeNull();
+    expect(climbOf({ rows: [], frames: run.frames })).toBeNull();
+    // the early step down of the same run (720p to 360p, 11.6 s after the climb to 720p) is a change before the step down to 240p
+    expect(climbOf(run, { afterIndex: 1 })).toBeNull();
+  });
+
+  it('a change to a rung the link carries is not a climb: the link of 1500 kbps carries 360p, so a change down to 240p is not one', () => {
+    const rows: Row[] = [
+      [0.206, 0, 360, 'start'],
+      [0.878, 0.269, 720, 'abr'],
+      [12.503, 11.894, 360, 'abr'],
+      [15.5, 14.9, 240, 'abr'],
+    ];
+    expect(
+      forcedClimb({
+        changes: timeline(rows),
+        afterIndex: 2,
+        carriedHeight: 360,
+        frames: { decoded: 974, dropped: 10 },
+        originFailures: 0,
+      }),
+    ).toBeNull();
+  });
+
+  it('the first change after the initial selection is exempt from the interval: a step down right after the start is not forced', () => {
+    const rows: Row[] = [
+      [0.05, 0, 360, 'start'],
+      [2, 0.2, 240, 'abr'],
+      [4.2, 2.4, 360, 'abr'],
+    ];
+    // the step down is the change at index 1; the climb after it is 2.2 s later (the Firefox shape of PB-ABR-006): it IS found
+    expect(
+      forcedClimb({
+        changes: timeline(rows),
+        afterIndex: 1,
+        carriedHeight: 240,
+        frames: { decoded: 366, dropped: 13 },
+        originFailures: 0,
+      }),
+    ).not.toBeNull();
+    // but a first change after the start (a start on 240p, so no change before it of the adaptation's own) is exempt
+    expect(
+      forcedClimb({
+        changes: timeline([
+          [0.05, 0, 240, 'start'],
+          [2.2, 2, 360, 'abr'],
+        ]),
+        afterIndex: 0,
+        carriedHeight: 240,
+        frames: { decoded: 366, dropped: 13 },
+        originFailures: 0,
+      }),
+    ).toBeNull();
+  });
+});
+
+describe('invalidRunReason', () => {
+  const run = FORCED_CLIMB_RUNS['run 20'] as ForcedClimbRun;
+  const climb = climbOf(run);
+
+  it('starts with the numbers, inside the 90 characters that the flake report keeps of a cell', () => {
+    if (!climb) throw new Error('run 20 must be a forced climb');
+    const reason = invalidRunReason({
+      climb,
+      frames: run.frames,
+      carriedHeight: 240,
+      linkKbps: 600,
+      boundaryMedia: 24,
+    });
+    expect(reason.slice(0, 89)).toMatch(
+      /^invalid run: forced climb to 360p 5\.9 s after the step down, 10 of 974 frames dropped/,
+    );
+  });
+
+  it('says how long after the playhead entered the first segment of the rung the climb came, when the log shows it', () => {
+    if (!climb) throw new Error('run 20 must be a forced climb');
+    const reason = invalidRunReason({
+      climb,
+      frames: run.frames,
+      carriedHeight: 240,
+      linkKbps: 600,
+      boundaryMedia: 24,
+    });
+    expect(reason).toContain(
+      "Shaka's dropped-frame protection, which bans the rung that plays for 30 s, fits, and it leaves only rungs above the 240p that the 600 kbps link carries",
+    );
+    expect(reason).toContain(
+      'The climb is at media time 25.89 s, 1.9 s after the playhead entered the first 240p segment (media time 24.0 s).',
+    );
+  });
+
+  it('leaves the boundary out when the log has no segment of the rung', () => {
+    if (!climb) throw new Error('run 20 must be a forced climb');
+    const reason = invalidRunReason({
+      climb,
+      frames: run.frames,
+      carriedHeight: 240,
+      linkKbps: 600,
+      boundaryMedia: null,
+    });
+    expect(reason).toMatch(/The climb is at media time 25\.89 s\.$/);
+    expect(reason).not.toMatch(/playhead entered/);
   });
 });
