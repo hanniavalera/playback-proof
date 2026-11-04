@@ -140,6 +140,8 @@ export interface SessionResult {
   switches: number | null;
   latencyMs: number | null;
   info: QAInfo | null;
+  /** The last metrics snapshot of the session: the rebuffer events, the rung history, the errors, the live numbers. */
+  metrics: QAMetrics | null;
   errors: QAError[];
   checks: Check[];
   /** Console errors and uncaught page errors seen by the browser. */
@@ -273,4 +275,43 @@ export function summarize(results: readonly SessionResult[]): SessionSummary[] {
     }
   }
   return [...byKey.values()];
+}
+
+/**
+ * What a failed run is called when runs are grouped: the stage it failed at and the error events the page recorded (code names,
+ * with Shaka's own data: for a media error, the MediaError code and message), or, when the page recorded none, the first line of
+ * the failure (a timeout names what it waited for). Two runs with the same signature failed the same way.
+ */
+export function failureSignature(result: SessionResult): string {
+  const recorded = [
+    ...new Set(
+      result.errors.map((error) => {
+        const data = error.data && error.data.length > 0 ? `(${error.data.map(String).join(', ')})` : '';
+        return `${error.codeName ?? error.code}${data}${error.source ? ` via ${error.source}` : ''}`;
+      }),
+    ),
+  ].sort();
+  const what = recorded.length > 0 ? recorded.join(' + ') : (result.error ?? 'failed').split('\n')[0];
+  return `[${result.stage ?? '?'}] ${what}`;
+}
+
+export interface FailureGroup {
+  engine: string;
+  session: SmokeSession;
+  signature: string;
+  count: number;
+}
+
+/** The failed runs grouped by engine, session and signature, most frequent first. */
+export function summarizeFailures(results: readonly SessionResult[]): FailureGroup[] {
+  const groups = new Map<string, FailureGroup>();
+  for (const r of results) {
+    if (r.status !== 'fail') continue;
+    const signature = failureSignature(r);
+    const key = `${r.engine}\u0000${r.session}\u0000${signature}`;
+    const group = groups.get(key);
+    if (group) group.count += 1;
+    else groups.set(key, { engine: r.engine, session: r.session, signature, count: 1 });
+  }
+  return [...groups.values()].sort((a, b) => b.count - a.count);
 }

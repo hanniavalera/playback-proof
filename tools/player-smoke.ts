@@ -24,6 +24,7 @@ import {
   mediaTargetSec,
   renderTable,
   summarize,
+  summarizeFailures,
   summarizeMetrics,
 } from '../src/lab/smoke/judge.ts';
 import type { Check, SessionResult, SmokeStage } from '../src/lab/smoke/judge.ts';
@@ -416,6 +417,31 @@ async function recoveryScenario(
 
 // ---------------------------------------------------------------------------------------------------------- one run
 
+/** What a browser build offers that the lab depends on, read once per engine from a page: the facts behind a result, not a verdict. */
+interface BrowserFacts {
+  /** `navigator.connection.downlink` in Mbit/s. Shaka replaces `abr.defaultBandwidthEstimate` with it where it exists. */
+  downlinkMbps: number | null;
+  requestVideoFrameCallback: boolean;
+  getVideoPlaybackQuality: boolean;
+  mediaSource: 'MediaSource' | 'ManagedMediaSource' | 'none';
+  /** `canPlayType('application/vnd.apple.mpegurl')`: whether the engine would play HLS by itself (the lab's player does not let it). */
+  hlsCanPlayType: string;
+}
+
+function readBrowserFacts(page: Page): Promise<BrowserFacts> {
+  return page.evaluate(() => {
+    const nav = navigator as Navigator & { connection?: { downlink?: number } };
+    const win = window as Window & { MediaSource?: unknown; ManagedMediaSource?: unknown };
+    return {
+      downlinkMbps: nav.connection?.downlink ?? null,
+      requestVideoFrameCallback: 'requestVideoFrameCallback' in HTMLVideoElement.prototype,
+      getVideoPlaybackQuality: 'getVideoPlaybackQuality' in HTMLVideoElement.prototype,
+      mediaSource: win.MediaSource ? 'MediaSource' : win.ManagedMediaSource ? 'ManagedMediaSource' : 'none',
+      hlsCanPlayType: document.createElement('video').canPlayType('application/vnd.apple.mpegurl'),
+    } as const;
+  });
+}
+
 interface RunContext {
   options: SmokeOptions;
   service: RunningService;
@@ -425,6 +451,7 @@ interface RunContext {
   browserTypes: Record<EngineName, BrowserType>;
   engineVersions: Map<string, string>;
   userAgents: Map<string, string>;
+  engineFacts: Map<string, BrowserFacts>;
 }
 
 async function runSession(
@@ -453,6 +480,7 @@ async function runSession(
     switches: null,
     latencyMs: null,
     info: null,
+    metrics: null,
     errors: [],
     checks: [],
     consoleErrors: [],
@@ -520,6 +548,7 @@ async function runSession(
     );
     info = await page.evaluate(() => window.__qa.info());
     context.userAgents.set(engine, info.userAgent);
+    if (!context.engineFacts.has(engine)) context.engineFacts.set(engine, await readBrowserFacts(page));
 
     stage.set('load');
     await page.evaluate((ms) => window.__qa.waitFor('loaded', { timeoutMs: ms }), options.timeoutMs);
@@ -595,6 +624,7 @@ async function runSession(
       ...summarizeMetrics(metrics),
       mediaTime,
       info,
+      metrics,
       errors: metrics?.errors ?? [],
       checks,
       consoleErrors: consoleErrors.map(clean),
@@ -635,6 +665,7 @@ async function runSession(
       ...summarizeMetrics(metrics),
       mediaTime,
       info,
+      metrics,
       errors: metrics?.errors ?? [],
       checks,
       consoleErrors: consoleErrors.map(clean),
@@ -660,8 +691,12 @@ interface SmokeResultFile {
   service: { origin: string; health: HealthInfo };
   options: Omit<SmokeOptions, 'help' | 'out' | 'origin'>;
   capabilities: string;
-  engines: Record<string, { browserVersion: string | null; userAgent: string | null }>;
+  engines: Record<
+    string,
+    { browserVersion: string | null; userAgent: string | null; facts: BrowserFacts | null }
+  >;
   summary: ReturnType<typeof summarize>;
+  failures: ReturnType<typeof summarizeFailures>;
   results: SessionResult[];
 }
 
@@ -716,6 +751,7 @@ async function main(argv: string[]): Promise<number> {
       browserTypes: { chromium, firefox, webkit },
       engineVersions: new Map(),
       userAgents: new Map(),
+      engineFacts: new Map(),
     };
 
     const results: SessionResult[] = [];
@@ -738,11 +774,18 @@ async function main(argv: string[]): Promise<number> {
 
     console.log(renderTable(results));
     const summary = summarize(results);
+    const failures = summarizeFailures(results);
     if (options.repeat > 1) {
       console.log('');
       for (const row of summary) {
         if (row.runs > 0)
           console.log(`${row.engine} ${row.session}: ${describeEvidence(row.passes, row.runs)}`);
+      }
+    }
+    if (failures.length > 0) {
+      console.log('\nfailure signatures:');
+      for (const group of failures) {
+        console.log(`  ${group.count}x ${group.engine} ${group.session} ${group.signature}`);
       }
     }
 
@@ -770,10 +813,12 @@ async function main(argv: string[]): Promise<number> {
             {
               browserVersion: context.engineVersions.get(engine) ?? null,
               userAgent: context.userAgents.get(engine) ?? null,
+              facts: context.engineFacts.get(engine) ?? null,
             },
           ]),
         ),
         summary,
+        failures,
         results,
       };
       const out = resolve(options.out);

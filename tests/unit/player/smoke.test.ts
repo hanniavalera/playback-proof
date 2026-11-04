@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { SMOKE_SESSIONS, SmokeUsageError, parseSmokeArgs } from '../../../src/lab/smoke/args.ts';
 import {
   failedChecks,
+  failureSignature,
   judgeBasic,
   mediaTargetSec,
   noteOf,
   renderTable,
   summarize,
+  summarizeFailures,
   summarizeMetrics,
 } from '../../../src/lab/smoke/judge.ts';
 import type { BasicObservation, SessionResult } from '../../../src/lab/smoke/judge.ts';
@@ -251,6 +253,7 @@ function result(change: Partial<SessionResult> = {}): SessionResult {
     ...summarizeMetrics(metricsOf(healthyEvents)),
     mediaTime: 3.2,
     info: INFO,
+    metrics: null,
     errors: [],
     checks: [],
     consoleErrors: [],
@@ -358,5 +361,70 @@ describe('the table and the summary', () => {
       { engine: 'chromium', session: 'vod-dash', runs: 3, passes: 2, failures: 1, skips: 0 },
       { engine: 'webkit', session: 'vod-dash', runs: 0, passes: 0, failures: 0, skips: 1 },
     ]);
+  });
+
+  describe('failure signatures', () => {
+    const mediaError = {
+      t: 5,
+      code: 3016,
+      codeName: 'VIDEO_ERROR',
+      category: 3,
+      severity: 2,
+      message: 'MEDIA.VIDEO_ERROR',
+      data: [4, 'Failed to push buffer'],
+      source: 'shaka',
+    };
+
+    it('names a failure by its stage and the error events the page recorded, with Shaka data such as the MediaError', () => {
+      const failed = result({
+        status: 'fail',
+        stage: 'firstframe',
+        error: 'timed out',
+        errors: [mediaError],
+      });
+      expect(failureSignature(failed)).toBe('[firstframe] VIDEO_ERROR(4, Failed to push buffer) via shaka');
+    });
+
+    it('falls back to the first line of the failure when the page recorded no error, and ignores the detail lines', () => {
+      const failed = result({
+        status: 'fail',
+        stage: 'playback',
+        error:
+          'qa.waitForMediaTime(3) timed out after 20000 ms: the media clock is at 0.000 s.\n12 events so far',
+      });
+      expect(failureSignature(failed)).toBe(
+        '[playback] qa.waitForMediaTime(3) timed out after 20000 ms: the media clock is at 0.000 s.',
+      );
+    });
+
+    it('sorts and de-duplicates several error events, so the same failure has one name whatever order it happened in', () => {
+      const a = { ...mediaError, code: 1001, codeName: 'BAD_HTTP_STATUS', data: [] };
+      const b = result({ status: 'fail', stage: 'checks', errors: [mediaError, a, mediaError] });
+      const c = result({ status: 'fail', stage: 'checks', errors: [a, mediaError] });
+      expect(failureSignature(b)).toBe(failureSignature(c));
+      expect(failureSignature(b)).toBe(
+        '[checks] BAD_HTTP_STATUS via shaka + VIDEO_ERROR(4, Failed to push buffer) via shaka',
+      );
+    });
+
+    it('groups the failed runs, most frequent first, and leaves passes and skips out', () => {
+      const same = { status: 'fail' as const, stage: 'firstframe' as const, errors: [mediaError] };
+      const groups = summarizeFailures([
+        result(),
+        result({ ...same, repeat: 2 }),
+        result({ status: 'fail', stage: 'playback', error: 'stalled', repeat: 3 }),
+        result({ ...same, repeat: 4 }),
+        result({ status: 'skip', stream: null, skipReason: 'gap', repeat: 5 }),
+      ]);
+      expect(groups).toEqual([
+        {
+          engine: 'chromium',
+          session: 'vod-dash',
+          signature: '[firstframe] VIDEO_ERROR(4, Failed to push buffer) via shaka',
+          count: 2,
+        },
+        { engine: 'chromium', session: 'vod-dash', signature: '[playback] stalled', count: 1 },
+      ]);
+    });
   });
 });
