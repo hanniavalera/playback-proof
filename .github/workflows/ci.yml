@@ -100,7 +100,8 @@ jobs:
       CI: 'true'
     steps:
       - uses: actions/checkout@v7
-      - id: setup
+      - name: Set up Node, the streams and the browser
+        id: setup
         uses: ./.github/actions/setup
         with:
           streams: 'true'

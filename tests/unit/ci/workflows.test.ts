@@ -337,7 +337,7 @@ describe('the reports that later phases read', () => {
       expect(summary?.[1], 'the step that writes the summary').toContain(
         '--artifact reports-${{ matrix.leg }}',
       );
-      expect(job).toMatch(/^ {6}- id: setup\n {8}uses: \.\/\.github\/actions\/setup$/m);
+      expect(job).toMatch(/^ {6}- name: [^\n]+\n {8}id: setup\n {8}uses: \.\/\.github\/actions\/setup$/m);
     }
   });
 });
