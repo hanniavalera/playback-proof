@@ -10,7 +10,7 @@ import {
   waitedMs,
   waitForFault,
 } from './rec/faults.ts';
-import { LONGEST_FIRST_RETRY_WAIT_MS } from './rec/shaka.ts';
+import { LONGEST_FIRST_RETRY_WAIT_MS, RETRY } from './rec/shaka.ts';
 import {
   describeError,
   expectAtMostRebuffers,
@@ -19,6 +19,7 @@ import {
 } from './support/assertions.ts';
 import { expect, test } from './support/fixtures.ts';
 import { streamInfoOf } from './support/session.ts';
+import { describeEntry, requestsFor, waitForRequest } from './support/waiting.ts';
 
 // Shaka Player 5.3.3 with the lab's configuration A (its defaults): a failed HTTP request is retried by the networking layer
 // (`streaming.retryParameters`: 2 attempts, 1 s base delay, fuzz 0.5), and only when the attempts run out does the streaming engine
@@ -157,6 +158,97 @@ test(
           ? 'no error reached the application'
           : `errors: ${metrics.errors.map(describeError).join('; ')}`
       }`,
+    });
+  },
+);
+
+/**
+ * The most requests the failing rung may be asked for once it is down. Two fetches of it can be in flight when it goes (its
+ * initialization segment and a media segment) and each is attempted twice by the default retry policy; after that the player gives
+ * up on the rung for `streaming.maxDisabledTime` (30 s), longer than this spec runs, so a request beyond the four is hammering.
+ */
+const OUTAGE_REQUESTS_MAX = RETRY.maxAttempts * 2;
+
+/** The retry wait, then the streaming engine's own back-off before it gives up on the rung, each at its longest, doubled for late timers. */
+const FAILOVER_BOUND_MS = 2 * 2 * LONGEST_FIRST_RETRY_WAIT_MS;
+
+test(
+  'PB-REC-003 persistent failure of one rung: the player moves to another rung and continues, and the failed requests to the rung stay bounded',
+  { tag: ['@release', '@dash'] },
+  async ({ newSession, streamFor, player }, testInfo) => {
+    const session = await newSession({ stream: streamFor('vod', 'dash'), protocol: 'dash' });
+    const outage = profile('rung-outage');
+    const rung = outage[0]?.match?.rep;
+    const stream = await streamInfoOf(session);
+    const height = stream.reps.find((rep) => rep.id === rung)?.height;
+    if (rung === undefined || height === undefined)
+      throw new Error(`the rung-outage profile names ${String(rung)}, which the stream does not have`);
+    const qa = await player(session).open();
+    await qa.waitFor('firstframe');
+
+    // The outage must find the player on the rung. Chromium starts there; WebKit and Firefox start on a lower one and only climb
+    // after about a second, so the spec puts the player there (a pin, then the ABR is given back: a failover needs it) and waits
+    // until the rung has delivered a segment. Only then does the rung go down, mid-title, for good.
+    await qa.selectVariantByHeight(height);
+    await qa.setAbr(true);
+    await waitForRequest(
+      session,
+      (entry) => entry.kind === 'segment' && entry.rep === rung && entry.status === 200 && !entry.pending,
+    );
+    const since = await qa.cursor();
+    const [rule] = await session.service.addFaults(session.id, outage);
+
+    // The fault fired: the origin refused the rung's requests with the rule's 503 (a media segment, as the rung's init was served).
+    const fired = await waitForFault(session, (rule as { id: string }).id);
+    const [first] = fired as [(typeof fired)[0]];
+    expect(first.status, 'status of the first request the rule fired on (request log)').toBe(503);
+    expect(first.rep, 'rung of the first request the rule fired on (request log)').toBe(rung);
+    const number = segmentOf(first);
+
+    // The player moves on its own: a change of rung that the ABR made (nobody asked for it), to a rung below the one that failed.
+    const moved = await qa.waitFor('variant-changed', { since, detail: { reason: 'abr' } });
+    expect(moved.detail?.height, 'height of the rung the player moved to (variant-changed)').toBeLessThan(
+      height,
+    );
+
+    // And it continues: the media clock passes the end of the segment the rung could not deliver.
+    await qa.waitForMediaTime(number * stream.segmentDurationSec + 1);
+
+    // The origin's side: that segment came from another rung, soon, and after the first refusal the rung was asked for nothing
+    // that the origin delivered and only a bounded number of times.
+    const log = await session.service.log(session.id);
+    const attempts = videoAttemptsAt(log, number);
+    const message = `attempts at video segment ${number} (request log): ${describeAttempts(attempts)}`;
+    const delivered = deliveryAfter(attempts, first);
+    if (!delivered) throw new Error(`the segment was never delivered by another rung, ${message}`);
+    expect(delivered.rep, `rung that delivered segment ${number}, ${message}`).not.toBe(rung);
+    const movedAfterMs = waitedMs(first, delivered);
+    expect(
+      movedAfterMs,
+      `time from the first 503 to the delivery by another rung, ${message}`,
+    ).toBeLessThanOrEqual(FAILOVER_BOUND_MS);
+    const toRung = requestsFor(log, { rep: rung }).filter((entry) => entry.seq >= first.seq);
+    const delivering = toRung.filter((entry) => entry.status >= 200 && entry.status < 300);
+    expect(
+      delivering.map(describeEntry),
+      `requests to ${rung} after the outage began that the origin delivered (request log)`,
+    ).toEqual([]);
+    expect(
+      toRung.length,
+      `requests to ${rung} after the outage began (request log): ${toRung.map(describeEntry).join('; ')}`,
+    ).toBeLessThanOrEqual(OUTAGE_REQUESTS_MAX);
+
+    // The player's side: nothing critical, at most one stall, and every error it surfaced is the outage (the rung it names).
+    const metrics = await qa.metrics();
+    expectHealthyPlayback(metrics);
+    expectAtMostRebuffers(metrics, 1);
+    expect(
+      metrics.errors.filter((error) => rungOfError(error) !== rung).map(describeError),
+      `errors that do not name ${rung} (metrics.errors): expected none`,
+    ).toEqual([]);
+    testInfo.annotations.push({
+      type: 'recovery',
+      description: `${toRung.length} requests to ${rung} after the outage began (${summariseAttempts(toRung)}); segment ${number} delivered by ${delivered.rep} ${Math.round(movedAfterMs)} ms after the first 503; ${metrics.errors.length} errors`,
     });
   },
 );
