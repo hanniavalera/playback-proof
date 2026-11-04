@@ -8,7 +8,7 @@ import {
   throttleOf,
   upshiftBoundSeconds,
 } from '../../../tests/e2e/abr/conditions.ts';
-import { orExplain } from '../../../tests/e2e/abr/explain.ts';
+import { orExplain, withExplanation } from '../../../tests/e2e/abr/explain.ts';
 import { describeSegments, fromFirstOf, videoSegmentRequests } from '../../../tests/e2e/abr/log.ts';
 import { describeVariantChanges, variantChanges } from '../../../tests/e2e/abr/variants.ts';
 
@@ -160,5 +160,50 @@ describe('orExplain', () => {
     const error = await orExplain(Promise.reject(new Error('boom')), 'explained').catch((e: Error) => e);
     expect(error).toBeInstanceOf(Error);
     expect((error as Error).stack).not.toMatch(/tests[\\/]e2e[\\/]abr[\\/]explain\.ts/);
+  });
+
+  it('explains a synchronous check the same way: the sentence first, the check\u2019s own message after it', () => {
+    expect(() => withExplanation(() => undefined, 'never shown')).not.toThrow();
+    expect(() =>
+      withExplanation(() => {
+        throw new Error('rebuffers (metrics.rebuffer.count): expected at most 1, saw 2');
+      }, 'rung changes: 360p at 16.65 s.'),
+    ).toThrow(
+      'rung changes: 360p at 16.65 s.\nrebuffers (metrics.rebuffer.count): expected at most 1, saw 2',
+    );
+    let thrown: unknown;
+    try {
+      withExplanation(() => {
+        throw new Error('boom');
+      }, 'explained');
+    } catch (error) {
+      thrown = error;
+    }
+    expect((thrown as Error).stack).not.toMatch(/tests[\\/]e2e[\\/]abr[\\/]explain\.ts/);
+  });
+
+  it('asks the page for its addendum only when the wait failed, and puts it after the sentence', async () => {
+    let asked = 0;
+    const addendum = async () => {
+      asked += 1;
+      return '37 of 1271 frames were dropped.';
+    };
+    await expect(orExplain(Promise.resolve(1), 'never shown', addendum)).resolves.toBe(1);
+    expect(asked).toBe(0);
+    await expect(
+      orExplain(Promise.reject(new Error('timed out')), 'stayed on 240p.', addendum),
+    ).rejects.toThrow('stayed on 240p. 37 of 1271 frames were dropped.\ntimed out');
+    expect(asked).toBe(1);
+  });
+
+  it('reports the wait\u2019s failure even when the page cannot give its addendum', async () => {
+    const addendum = async () => {
+      throw new Error('Target page, context or browser has been closed');
+    };
+    await expect(
+      orExplain(Promise.reject(new Error('timed out')), 'stayed on 240p.', addendum),
+    ).rejects.toThrow(
+      /^stayed on 240p\. \(what the page could add to this could not be read: Target page, context or browser has been closed\)\ntimed out$/,
+    );
   });
 });
