@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { ShakaConfigPatch } from '../../player/configs.ts';
 import { LIVE_LIMITS } from '../../shared/criteria.ts';
 import type { Protocol, StreamId } from '../../shared/streams.ts';
@@ -56,6 +57,15 @@ export interface MachineLoad {
   after: LoadReading;
 }
 
+/**
+ * A machine is busy when its 1-minute load average is above its CPU count: more work is runnable than there are processors to run it,
+ * so a latency, a stall or a start that is measured then is partly the machine's. A fresh macOS runner of GitHub started its jobs at 60 to
+ * 80 on 3 CPUs (docs/READINESS.md); a quiet Linux one at 0.3 to 2.4 on 4.
+ */
+export const BUSY_LOAD_PER_CPU = 1;
+export const loadPerCpu = (reading: LoadReading): number => reading.load1 / Math.max(1, reading.cpus);
+export const isBusy = (reading: LoadReading): boolean => loadPerCpu(reading) > BUSY_LOAD_PER_CPU;
+
 export interface ReadinessReport {
   schemaVersion: 1;
   kind: 'readiness';
@@ -74,7 +84,61 @@ export interface ReadinessReport {
   configurations: ConfigurationResult[];
 }
 
-export const readinessFileName = (envId: string, engine: Engine): string => `${envId}-${engine}.json`;
+export const readinessFileName = (envId: string, engine: Engine, protocol: Protocol = 'dash'): string =>
+  `${envId}-${engine}${protocolPart(protocol)}.json`;
+
+// What distinguishes one result file from another is in its name, because two runs that differ in it must be able to be committed side
+// by side: the environment, the engine, the protocol of the stream (DASH is the default and is not named), for a soak its length, and for
+// a soak of a candidate the candidate. A readiness file holds the configurations of ONE run (A and the candidates named on its command
+// line), so the candidates are not in its name; two runs of one environment, engine and protocol replace each other. What a file IS is
+// read from its content, never from its name (`loadResults`); the name only says where a writer puts it (ADR-159a, readiness-evidence.md).
+
+const protocolPart = (protocol: Protocol): string => (protocol === 'dash' ? '' : `-${protocol}`);
+
+/** The same JSON text for the same value whatever the order of its keys: what a digest of a patch must be made of. */
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+  if (typeof value === 'object' && value !== null) {
+    const record = value as Record<string, unknown>;
+    return `{${Object.keys(record)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key])}`)
+      .join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+/**
+ * What names a configuration: `A` for the defaults, the id for a candidate, and for `custom` (any patch of `--config-json`) the id with a
+ * short digest of the patch, so that two different patches never share a name.
+ */
+export function configurationKey(configuration: { id: string; patch: unknown } | null | undefined): string {
+  if (!configuration || configuration.id === 'A') return 'A';
+  const slug = configuration.id.replace(/[^A-Za-z0-9.]+/g, '-').toLowerCase();
+  if (configuration.id !== 'custom') return slug;
+  const digest = createHash('sha256')
+    .update(canonicalJson(configuration.patch ?? null))
+    .digest('hex');
+  return `${slug}-${digest.slice(0, 8)}`;
+}
+
+/** How a configuration is named in a file name: nothing for A, which keeps the name it always had. */
+export const configurationPart = (
+  configuration: { id: string; patch: unknown } | null | undefined,
+): string => {
+  const key = configurationKey(configuration);
+  return key === 'A' ? '' : `-${key}`;
+};
+
+/** The identity of a result: the parts of a file name that say what the run was, so that two files that claim the same one can be told. */
+export const readinessIdentity = (report: ReadinessReport): string =>
+  `${report.envId}|${report.engine}|${report.stream?.protocol ?? 'dash'}`;
+export const soakIdentity = (report: SoakReport): string =>
+  `${report.envId}|${report.engine}|${report.stream?.protocol ?? 'dash'}|${Number(report.options.minutes.toFixed(2))}m|${configurationKey(report.configuration)}`;
+
+/** The name a readiness file gets from what it holds. */
+export const readinessFileNameOf = (report: ReadinessReport): string =>
+  readinessFileName(report.envId, report.engine, report.stream?.protocol ?? 'dash');
 
 export function limitsSnapshot(
   limits: Readonly<Record<string, number>> = LIVE_LIMITS,
@@ -156,8 +220,20 @@ export interface SoakReport {
   };
 }
 
-export const soakFileName = (envId: string, engine: Engine, minutes: number): string =>
-  `${envId}-${engine}-${Number(minutes.toFixed(2))}m.json`;
+export const soakFileName = (
+  envId: string,
+  engine: Engine,
+  minutes: number,
+  what: { configuration?: { id: string; patch: unknown } | null; protocol?: Protocol } = {},
+): string =>
+  `${envId}-${engine}-${Number(minutes.toFixed(2))}m${protocolPart(what.protocol ?? 'dash')}${configurationPart(what.configuration)}.json`;
+
+/** The name a soak file gets from what it holds: A's is the name it always had, a candidate's carries the candidate. */
+export const soakFileNameOf = (report: SoakReport): string =>
+  soakFileName(report.envId, report.engine, report.options.minutes, {
+    configuration: report.configuration,
+    protocol: report.stream?.protocol ?? 'dash',
+  });
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Reading a file back
@@ -247,6 +323,8 @@ export function parseSoakReport(text: string, file: string): SoakReport {
   if (typeof raw.length !== 'string' || !['release', 'ci', 'short'].includes(raw.length))
     problems.push('length is not release, ci or short');
   if (!isRecord(raw.options) || typeof raw.options.minutes !== 'number') problems.push('no options.minutes');
+  if (!isRecord(raw.configuration) || typeof raw.configuration.id !== 'string')
+    problems.push('no configuration.id: what was soaked');
   if (!Array.isArray(raw.evaluations)) problems.push('no evaluations');
   else
     raw.evaluations.forEach((evaluation: unknown, e: number) =>

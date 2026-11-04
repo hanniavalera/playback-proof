@@ -1,5 +1,6 @@
 import { LIVE_LIMITS } from '../../shared/criteria.ts';
 import type { CheckResult } from './checks.ts';
+import { isBusy, loadPerCpu } from './report.ts';
 import type { ConfigurationResult, LoadReading, MachineLoad, ReadinessReport, SoakReport } from './report.ts';
 import type { Engine } from './soak-evaluators.ts';
 import { formatLimit, formatValue } from './verdict.ts';
@@ -102,15 +103,31 @@ const describeBrowser = (report: { browser: { name: string; version: string }; e
 const describeCommit = (commit: { hash: string | null; dirty: boolean | null }): string =>
   `${commit.hash ?? 'unknown commit'}${commit.dirty === null ? '' : commit.dirty ? ', modified' : ', clean'}`;
 
-/** `machine load average (1, 5, 15 min) before 4.89 3.43 2.29, after 5.12 3.9 2.6, on 12 CPUs`, or nothing for a file that has none. */
+/**
+ * `machine load average (1, 5, 15 min) before 4.89 3.43 2.29, after 5.12 3.9 2.6, on 12 CPUs`, or nothing for a file that has none; and a
+ * line when the machine was busy at the start (a 1-minute load above the number of CPUs), because what is measured then is partly the
+ * machine's. Only the start is judged: at the end the load includes the run's own browser, service and harness, which is no reason to doubt
+ * the run. The harness records the load and says so; it does not wait for the machine to be quiet and no verdict depends on it.
+ */
 function describeLoad(load: MachineLoad | undefined): string[] {
   if (!load) return [];
   const averages = (reading: LoadReading): string =>
     [reading.load1, reading.load5, reading.load15].map((value) => value.toFixed(2)).join(' ');
   return [
     `machine load average (1, 5, 15 min): ${averages(load.before)} before, ${averages(load.after)} after, on ${load.after.cpus} CPUs`,
+    ...(isBusy(load.before)
+      ? [
+          `the machine was busy when the run started: a 1-minute load of ${load.before.load1.toFixed(1)} on ${load.before.cpus} CPUs (${loadPerCpu(load.before).toFixed(1)} per CPU), so what was measured in its first minutes was measured under load`,
+        ]
+      : []),
   ];
 }
+
+/** ` [busy at the start: load 66.4 on 3 CPUs]` for a result whose run started on a busy machine, for the lines of the checklist. */
+const busyAtStart = (report: { load?: MachineLoad | undefined }): string =>
+  report.load && isBusy(report.load.before)
+    ? ` [busy at the start: load ${report.load.before.load1.toFixed(1)} on ${report.load.before.cpus} CPUs]`
+    : '';
 
 /** The whole sheet of a readiness run: where and when it was measured, every configuration, and the comparison when a candidate was evaluated. */
 export function renderReadinessReport(report: ReadinessReport): string {
@@ -280,7 +297,7 @@ export function checklist(input: ChecklistInput): ChecklistItem[] {
   };
   const lines3 = input.readiness.map(
     (report) =>
-      `${label(report)}: ${four.map((id) => `${id.slice(-3)} ${shipped(report)?.checks.some((c) => c.id === id) ? verdictsOf(report, id) : 'not run'}`).join(', ')}`,
+      `${label(report)}: ${four.map((id) => `${id.slice(-3)} ${shipped(report)?.checks.some((c) => c.id === id) ? verdictsOf(report, id) : 'not run'}`).join(', ')}${busyAtStart(report)}`,
   );
   const verdicts3 = input.readiness.flatMap((report) => four.map((id) => verdictsOf(report, id)));
   const covered = ENGINE_ORDER.every((engine) => input.readiness.some((report) => report.engine === engine));
@@ -296,8 +313,15 @@ export function checklist(input: ChecklistInput): ChecklistItem[] {
   const releaseSoaks = input.soaks.filter((report) => report.configuration.id === 'A');
   const soakLines = releaseSoaks.map(
     (report) =>
-      `${label(report)}: ${report.length === 'release' ? 'release soak' : report.length === 'ci' ? 'CI soak only' : 'short run'} of ${Number(report.options.minutes.toFixed(2))} min: ${report.verdict}`,
+      `${label(report)}: ${report.length === 'release' ? 'release soak' : report.length === 'ci' ? 'CI soak only' : 'short run'} of ${Number(report.options.minutes.toFixed(2))} min: ${report.verdict}${busyAtStart(report)}`,
   );
+  // A candidate's soak is evidence for a decision about the candidate, never for the build as it ships: it is listed and does not count.
+  const candidateLines = input.soaks
+    .filter((report) => report.configuration.id !== 'A')
+    .map(
+      (report) =>
+        `${label(report)}: ${report.length === 'release' ? 'release soak' : report.length === 'ci' ? 'CI soak' : 'short run'} of ${Number(report.options.minutes.toFixed(2))} min of the candidate ${report.configuration.id}: ${report.verdict} (evidence for a decision about the candidate, not about the build)${busyAtStart(report)}`,
+    );
   const releaseVerdicts = ENGINE_ORDER.map((engine): Verdict => {
     const forEngine = releaseSoaks.filter((report) => report.engine === engine);
     const release = forEngine.filter((report) => report.length === 'release');
@@ -314,6 +338,7 @@ export function checklist(input: ChecklistInput): ChecklistItem[] {
       ...ENGINE_ORDER.filter(
         (engine) => !releaseSoaks.some((report) => report.engine === engine && report.length === 'release'),
       ).map((engine) => `no release soak (${LIVE_LIMITS.soakMinutesRelease} min) on record for ${engine}`),
+      ...candidateLines,
     ],
     owner: false,
   });

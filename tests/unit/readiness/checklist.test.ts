@@ -14,11 +14,16 @@ import { runReadinessChecks } from '../../../src/lab/readiness/checks.ts';
 import type { ConfigurationResult, ReadinessReport, SoakReport } from '../../../src/lab/readiness/report.ts';
 import {
   ResultFileError,
+  isBusy,
   limitsSnapshot,
+  loadPerCpu,
   parseReadinessReport,
   parseSoakReport,
   readinessFileName,
+  readinessFileNameOf,
   soakFileName,
+  soakFileNameOf,
+  soakIdentity,
 } from '../../../src/lab/readiness/report.ts';
 import type { Engine } from '../../../src/lab/readiness/soak-evaluators.ts';
 import { evaluateSoak } from '../../../src/lab/readiness/soak-evaluators.ts';
@@ -254,6 +259,106 @@ describe('the checklist of TEST_STRATEGY.md section 8', () => {
     );
   });
 
+  it("lists a candidate's soak and does not count it: the release soak of the build as it ships is A's", async () => {
+    const good = await configuration('A', liveSync);
+    const three = (['chromium', 'firefox', 'webkit'] as const).map((engine) => report(engine, [good]));
+    const asCandidate = (engine: Engine): SoakReport => ({
+      ...soakReport(engine, 30),
+      configuration: {
+        id: 'live-sync',
+        label: 'A plus streaming.liveSync.enabled',
+        patch: liveSync as never,
+      },
+    });
+    const onlyCandidates = checklist({
+      readiness: three,
+      soaks: (['chromium', 'firefox', 'webkit'] as const).map(asCandidate),
+    });
+    const item = onlyCandidates.find((candidate) => candidate.number === 4);
+    expect(item?.status).toBe('open');
+    expect(item?.evidence.join('\n')).toContain('no release soak (30 min) on record for chromium');
+    expect(item?.evidence.join('\n')).toContain(
+      'release soak of 30 min of the candidate live-sync: GO (evidence for a decision about the candidate, not about the build)',
+    );
+    // With A's soaks as well the item is done, and the candidate's soaks are still listed beside them.
+    const both = checklist({
+      readiness: three,
+      soaks: (['chromium', 'firefox', 'webkit'] as const).flatMap((engine) => [
+        soakReport(engine, 30),
+        asCandidate(engine),
+      ]),
+    });
+    expect(both.find((candidate) => candidate.number === 4)?.status).toBe('done');
+    expect(both.find((candidate) => candidate.number === 4)?.evidence.join('\n')).toContain(
+      'the candidate live-sync',
+    );
+    // A failed candidate soak does not block the build.
+    const failedCandidate = {
+      ...asCandidate('chromium'),
+      verdict: 'NO-GO' as const,
+    };
+    const stillDone = checklist({
+      readiness: three,
+      soaks: [
+        soakReport('chromium', 30),
+        soakReport('firefox', 30),
+        soakReport('webkit', 30),
+        failedCandidate,
+      ],
+    });
+    expect(stillDone.find((candidate) => candidate.number === 4)?.status).toBe('done');
+  });
+
+  it('says on the sheet and in the checklist that a run started on a busy machine was measured under load, and says nothing of a quiet one', async () => {
+    const reading = (load1: number, cpus: number) => ({
+      at: '2030-01-01T00:00:00.000Z',
+      load1,
+      load5: 20,
+      load15: 5,
+      cpus,
+    });
+    const busy = {
+      ...soakReport('webkit', 5),
+      load: { before: reading(66.4, 3), after: reading(3.07, 3) },
+    };
+    const text = renderSoakReport(busy);
+    expect(text).toContain(
+      'the machine was busy when the run started: a 1-minute load of 66.4 on 3 CPUs (22.1 per CPU)',
+    );
+    expect(text).not.toContain('busy when the run ended');
+    expect(
+      checklist({ readiness: [], soaks: [busy] })
+        .find((item) => item.number === 4)
+        ?.evidence.join('\n'),
+    ).toContain('[busy at the start: load 66.4 on 3 CPUs]');
+    const good = await configuration('A', liveSync);
+    const loaded = {
+      ...report('webkit', [good]),
+      load: { before: reading(66.4, 3), after: reading(3.07, 3) },
+    };
+    expect(renderReadinessReport(loaded)).toContain('the machine was busy when the run started');
+    expect(
+      checklist({ readiness: [loaded], soaks: [] })
+        .find((item) => item.number === 3)
+        ?.evidence.join('\n'),
+    ).toContain('[busy at the start: load 66.4 on 3 CPUs]');
+    const quiet = { ...busy, load: { before: reading(0.5, 4), after: reading(1.0, 4) } };
+    expect(renderSoakReport(quiet)).not.toContain('busy');
+    // Only the start is judged: at the end the load is the run's own browser and service, which is no reason to doubt the run.
+    const endsLoaded = { ...busy, load: { before: reading(0.5, 4), after: reading(9, 4) } };
+    expect(renderSoakReport(endsLoaded)).not.toContain('busy');
+  });
+
+  it('calls a machine busy only when its 1-minute load is above its number of CPUs', () => {
+    const at = (load1: number, cpus: number) => ({ at: 'x', load1, load5: 0, load15: 0, cpus });
+    expect(isBusy(at(3, 3))).toBe(false);
+    expect(isBusy(at(3.01, 3))).toBe(true);
+    expect(isBusy(at(0.2, 4))).toBe(false);
+    expect(isBusy(at(2.36, 4))).toBe(false);
+    expect(isBusy(at(66.39, 3))).toBe(true);
+    expect(loadPerCpu(at(8, 4))).toBe(2);
+  });
+
   it('is blocked by a soak that failed, even a short one', () => {
     const failed = soakReport('chromium', 2, { errors: [error(60, 2)] });
     expect(failed.verdict).toBe('NO-GO');
@@ -342,6 +447,68 @@ describe('the result files', () => {
     expect(readinessFileName('local-darwin-arm64', 'webkit')).toBe('local-darwin-arm64-webkit.json');
     expect(soakFileName('docker-linux-arm64', 'firefox', 30)).toBe('docker-linux-arm64-firefox-30m.json');
     expect(soakFileName('local-darwin-arm64', 'chromium', 2.5)).toBe('local-darwin-arm64-chromium-2.5m.json');
+  });
+
+  it("carry the candidate in a soak's name, and A keeps the name it always had (two soaks of one engine must not overwrite each other)", () => {
+    const a = { id: 'A', patch: null };
+    const liveSync = { id: 'live-sync', patch: { streaming: { liveSync: { enabled: true } } } };
+    expect(soakFileName('gha-linux-x64', 'chromium', 30, { configuration: a })).toBe(
+      'gha-linux-x64-chromium-30m.json',
+    );
+    expect(soakFileName('gha-linux-x64', 'chromium', 30, { configuration: null })).toBe(
+      'gha-linux-x64-chromium-30m.json',
+    );
+    expect(soakFileName('gha-linux-x64', 'chromium', 30, { configuration: liveSync })).toBe(
+      'gha-linux-x64-chromium-30m-live-sync.json',
+    );
+    expect(soakFileName('gha-linux-x64', 'chromium', 30, { configuration: liveSync })).not.toBe(
+      soakFileName('gha-linux-x64', 'chromium', 30, { configuration: a }),
+    );
+  });
+
+  it('carry the protocol when it is not DASH, in a readiness file and in a soak, and the order of the parts is fixed', () => {
+    expect(readinessFileName('gha-linux-x64', 'webkit', 'dash')).toBe('gha-linux-x64-webkit.json');
+    expect(readinessFileName('gha-linux-x64', 'webkit', 'hls')).toBe('gha-linux-x64-webkit-hls.json');
+    expect(soakFileName('gha-linux-x64', 'webkit', 5, { protocol: 'hls' })).toBe(
+      'gha-linux-x64-webkit-5m-hls.json',
+    );
+    expect(
+      soakFileName('gha-linux-x64', 'webkit', 5, {
+        protocol: 'hls',
+        configuration: { id: 'live-sync', patch: {} },
+      }),
+    ).toBe('gha-linux-x64-webkit-5m-hls-live-sync.json');
+  });
+
+  it('tell two custom patches apart by a digest of the patch, which does not depend on the order of its keys', () => {
+    const one = {
+      id: 'custom',
+      patch: { streaming: { liveSync: { enabled: false } }, abr: { enabled: false } },
+    };
+    const reordered = {
+      id: 'custom',
+      patch: { abr: { enabled: false }, streaming: { liveSync: { enabled: false } } },
+    };
+    const other = { id: 'custom', patch: { streaming: { liveSync: { enabled: true } } } };
+    const name = (configuration: { id: string; patch: unknown }): string =>
+      soakFileName('x', 'chromium', 5, { configuration });
+    expect(name(one)).toMatch(/^x-chromium-5m-custom-[0-9a-f]{8}\.json$/);
+    expect(name(reordered)).toBe(name(one));
+    expect(name(other)).not.toBe(name(one));
+  });
+
+  it('are named from what they hold: the name of a file is a function of its content', async () => {
+    const a = await configuration('A', null);
+    const candidate = await configuration('live-sync', liveSync);
+    const both = report('chromium', [a, candidate]);
+    expect(readinessFileNameOf(both)).toBe(readinessFileName(both.envId, 'chromium'));
+    const ofA = soakReport('webkit', 30);
+    expect(soakFileNameOf(ofA)).toBe(
+      soakFileName(ofA.envId, 'webkit', 30, { configuration: ofA.configuration }),
+    );
+    const ofCandidate = { ...ofA, configuration: { id: 'live-sync', label: 'x', patch: liveSync } };
+    expect(soakFileNameOf(ofCandidate)).toBe(`${soakFileNameOf(ofA).replace(/\.json$/, '')}-live-sync.json`);
+    expect(soakIdentity(ofCandidate)).not.toBe(soakIdentity(ofA));
   });
 
   it('are read back as written, and refused with the list of what is wrong when they are not valid', async () => {

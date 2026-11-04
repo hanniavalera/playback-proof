@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, renameSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { HostInfo } from '../../../src/lab/probe/host-info.ts';
@@ -247,6 +247,25 @@ describe('npm run readiness', () => {
     expect(await runReadinessCommand(['--from-results'], empty.deps)).toBe(2);
     expect(empty.err.join('\n')).toContain('no result files under');
   });
+
+  it('reads a soak of a candidate that carries the name of the soak of A, as the candidate, and says what to rename it to (--from-results)', async () => {
+    const r = rig();
+    await runSoakCommand(['--minutes', 'ci', '--candidate', 'live-sync'], r.deps);
+    // Put the file under A's name, as the first soaks of a candidate were written, and read the directory back.
+    renameSync(
+      join(r.root, 'soak', 'test-env-chromium-5m-live-sync.json'),
+      join(r.root, 'soak', 'test-env-chromium-5m.json'),
+    );
+    const again = rig();
+    again.deps.resultsRoot = r.root;
+    await runReadinessCommand(['--from-results'], again.deps);
+    const notes = again.err.filter((line) => line.startsWith('note: '));
+    expect(notes).toHaveLength(1);
+    expect(notes[0]).toContain('soak/test-env-chromium-5m.json: holds the 5-minute soak of live-sync');
+    expect(notes[0]).toContain('rename it, or the next soak of A overwrites it');
+    // It is not A's soak: the checklist does not count it for the build.
+    expect(again.out.join('\n')).toContain('of the candidate live-sync: GO');
+  });
 });
 
 describe('npm run soak', () => {
@@ -313,12 +332,33 @@ describe('npm run soak', () => {
     expect(existsSync(join(r.root, 'soak'))).toBe(false);
   });
 
-  it('soaks a candidate configuration when it is asked to, and the file says which', async () => {
+  it('soaks a candidate configuration when it is asked to, and the file says which, in its content and in its name', async () => {
     const r = rig();
     await runSoakCommand(['--minutes', 'ci', '--candidate', 'live-sync'], r.deps);
     expect(r.fp.observed.runs[0]?.configured).toHaveLength(1);
-    const file = join(r.root, 'soak', 'test-env-chromium-5m.json');
+    expect(readdirSync(join(r.root, 'soak'))).toEqual(['test-env-chromium-5m-live-sync.json']);
+    const file = join(r.root, 'soak', 'test-env-chromium-5m-live-sync.json');
     expect(parseSoakReport(readFileSync(file, 'utf8'), file).configuration.id).toBe('live-sync');
+  });
+
+  it('leaves the soak of A and the soak of a candidate side by side, and a soak of another patch in a file of its own (the second used to overwrite the first)', async () => {
+    const r = rig();
+    await runSoakCommand(['--minutes', 'ci'], r.deps);
+    await runSoakCommand(['--minutes', 'ci', '--candidate', 'live-sync'], r.deps);
+    const control = '{"streaming":{"liveSync":{"enabled":false}}}';
+    await runSoakCommand(['--minutes', 'ci', '--config-json', control], r.deps);
+    const names = readdirSync(join(r.root, 'soak')).sort();
+    expect(names).toHaveLength(3);
+    expect(names).toContain('test-env-chromium-5m.json');
+    expect(names).toContain('test-env-chromium-5m-live-sync.json');
+    const custom = names.find((name) => name.includes('-custom-')) ?? '';
+    expect(custom).toMatch(/^test-env-chromium-5m-custom-[0-9a-f]{8}\.json$/);
+    const configurationOf = (name: string): string => {
+      const file = join(r.root, 'soak', name);
+      return parseSoakReport(readFileSync(file, 'utf8'), file).configuration.id;
+    };
+    expect(names.map(configurationOf).sort()).toEqual(['A', 'custom', 'live-sync']);
+    expect(configurationOf('test-env-chromium-5m.json')).toBe('A');
   });
 
   it('asks for no heap outside Chromium, and says the criterion does not apply', async () => {
