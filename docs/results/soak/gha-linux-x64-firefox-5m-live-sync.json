@@ -1,0 +1,1359 @@
+{
+  "schemaVersion": 1,
+  "kind": "soak",
+  "envId": "gha-linux-x64",
+  "engine": "firefox",
+  "generatedAt": "2026-11-04T17:23:13.340Z",
+  "durationMs": 301162,
+  "commit": {
+    "hash": "0d62c1d",
+    "dirty": false
+  },
+  "host": {
+    "os": {
+      "platform": "linux",
+      "arch": "x64",
+      "release": "7.0.0-1017-azure",
+      "name": "Ubuntu 24.04.5 LTS"
+    },
+    "cpus": 4,
+    "memoryGiB": 15.6,
+    "node": "v22.23.4",
+    "playwright": "1.64.1",
+    "git": {
+      "commit": "0d62c1d",
+      "dirty": false
+    }
+  },
+  "load": {
+    "before": {
+      "at": "2026-11-04T17:18:11.974Z",
+      "load1": 0.81,
+      "load5": 0.33,
+      "load15": 0.13,
+      "cpus": 4
+    },
+    "after": {
+      "at": "2026-11-04T17:23:13.340Z",
+      "load1": 0.27,
+      "load5": 0.31,
+      "load15": 0.18,
+      "cpus": 4
+    }
+  },
+  "browser": {
+    "name": "firefox",
+    "version": "157.0",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:157.0) Gecko/20100101 Firefox/157.0"
+  },
+  "stream": {
+    "id": "live-cmaf",
+    "protocol": "dash",
+    "contentHash": "3588aee3b15c6fabc9fbe3548b8d62ee55c1e6e64439932b7a6edb62e56d82a3"
+  },
+  "configuration": {
+    "id": "live-sync",
+    "label": "A plus streaming.liveSync.enabled",
+    "patch": {
+      "streaming": {
+        "liveSync": {
+          "enabled": true
+        }
+      }
+    }
+  },
+  "player": {
+    "shakaVersion": "v5.3.3",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:157.0) Gecko/20100101 Firefox/157.0",
+    "config": "A",
+    "configured": [
+      {
+        "streaming": {
+          "liveSync": {
+            "enabled": true
+          }
+        }
+      }
+    ],
+    "loadMode": null
+  },
+  "options": {
+    "minutes": 5,
+    "warmupSec": 60,
+    "sampleSec": 5,
+    "heapEverySec": 30,
+    "stallAtMinutes": 2.5,
+    "staleAtMinutes": null
+  },
+  "limits": {
+    "startSamples": 5,
+    "startMaxMs": 5000,
+    "latencyTargetMs": 6000,
+    "latencyP95MaxMs": 8000,
+    "latencyMaxMs": 10000,
+    "injectedStallMs": 10000,
+    "stallRecoveryMaxMs": 14000,
+    "latencyRestoreMaxMs": 60000,
+    "manifestPeriodMs": 2000,
+    "manifestMaxGapMs": 4000,
+    "manifestMedianGapMinMs": 1000,
+    "warmupSec": 60,
+    "soakMinutesCi": 5,
+    "soakMinutesRelease": 30,
+    "maxUnrecoveredStalls": 0,
+    "maxCriticalErrors": 0,
+    "maxUnexplainedCriticalErrors": 0,
+    "maxRebufferRatio": 0.005,
+    "maxLatencyDriftMs": 1000,
+    "maxHeapGrowthMb": 20,
+    "maxDroppedFrameRatio": 0.01
+  },
+  "length": "ci",
+  "verdict": "GO",
+  "evaluations": [
+    {
+      "id": "soak.length",
+      "check": "PB-RDY-005",
+      "label": "Soak length",
+      "value": 5.00115,
+      "unit": "min",
+      "limit": 5,
+      "bound": "at-least",
+      "limitKey": "soakMinutesCi",
+      "verdict": "GO",
+      "sentence": "The soak watched 5 min: a CI soak (5 min). It is not the release soak (30 min).",
+      "scope": "criterion",
+      "detail": {
+        "kind": "ci",
+        "requestedMinutes": 5,
+        "releaseMinutes": 30
+      }
+    },
+    {
+      "id": "soak.stalls",
+      "check": "PB-RDY-005",
+      "label": "Unrecovered stalls",
+      "value": 0,
+      "unit": "count",
+      "limit": 0,
+      "bound": "at-most",
+      "limitKey": "maxUnrecoveredStalls",
+      "verdict": "GO",
+      "sentence": "1 stall in the soak, none longer than the 14.00 s the player is allowed to take to get going again, none still open at the end (0 unrecovered; the limit is <= 0).",
+      "scope": "criterion",
+      "detail": {
+        "stallRecoveryMaxMs": 14000,
+        "episodes": 1,
+        "longestEpisodeMs": 4972,
+        "unrecovered": []
+      }
+    },
+    {
+      "id": "soak.critical-errors",
+      "check": "PB-RDY-005",
+      "label": "Critical errors",
+      "value": 0,
+      "unit": "count",
+      "limit": 0,
+      "bound": "at-most",
+      "limitKey": "maxCriticalErrors",
+      "verdict": "GO",
+      "sentence": "No critical error in the soak (the limit is <= 0): nothing ended a viewing session.",
+      "scope": "criterion",
+      "detail": {
+        "critical": []
+      }
+    },
+    {
+      "id": "soak.unexplained-critical-errors",
+      "check": "PB-RDY-005",
+      "label": "Unexplained critical errors",
+      "value": 0,
+      "unit": "count",
+      "limit": 0,
+      "bound": "at-most",
+      "limitKey": "maxUnexplainedCriticalErrors",
+      "verdict": "GO",
+      "sentence": "No critical error that no injected fault explains (the limit is <= 0).",
+      "scope": "criterion",
+      "detail": {
+        "critical": 0,
+        "explainedByFaults": 0,
+        "graceMs": 14000,
+        "first": []
+      }
+    },
+    {
+      "id": "soak.rebuffer-ratio",
+      "check": "PB-RDY-005",
+      "label": "Rebuffer ratio",
+      "value": 0,
+      "unit": "ratio",
+      "limit": 0.005,
+      "bound": "at-most",
+      "limitKey": "maxRebufferRatio",
+      "verdict": "GO",
+      "sentence": "0 stalls outside the injected faults, 0 ms in 216.07 s observed after the warm-up: a rebuffer ratio of 0.00 %; the limit is <= 0.50 %.",
+      "scope": "criterion",
+      "detail": {
+        "observedMs": 216069,
+        "stalledMs": 0,
+        "episodesCounted": 0,
+        "episodesInWarmupOrExplained": 1,
+        "warmupMs": 60000
+      }
+    },
+    {
+      "id": "soak.latency-drift",
+      "check": "PB-RDY-005",
+      "label": "Latency drift",
+      "value": 11.809032993624157,
+      "unit": "ms",
+      "limit": 1000,
+      "bound": "at-most",
+      "limitKey": "maxLatencyDriftMs",
+      "verdict": "GO",
+      "sentence": "Latency changed by 12 ms over the 240.07 s after the warm-up (a Theil-Sen slope of +177 ms/h from a level of 6.12 s; least squares reads -2 ms); the limit is <= 1.00 s.",
+      "scope": "criterion",
+      "detail": {
+        "estimator": "theil-sen",
+        "slopeMsPerHour": 177.08458308672493,
+        "fittedChangeMs": 11.809032993624157,
+        "pairwiseSlopes": 231,
+        "thinned": false,
+        "spanMs": 240069,
+        "evidenceMs": 145007,
+        "samples": 31,
+        "minimumSamples": 12,
+        "minimumEvidenceMs": 120000,
+        "stretches": [
+          {
+            "fromMs": 1793812753121,
+            "toMs": 1793812838125,
+            "samples": 18,
+            "levelAtStartMs": 6119.419758007944,
+            "medianMs": 6120.861900726318,
+            "scatterMs": 14.681502165123938,
+            "ownSlopeMsPerHour": 275.84752077700904
+          },
+          {
+            "fromMs": 1793812928152,
+            "toMs": 1793812988155,
+            "samples": 13,
+            "levelAtStartMs": 7026.897747766575,
+            "medianMs": 7028.373501815793,
+            "scatterMs": 10.032827129368858,
+            "ownSlopeMsPerHour": -150.47004364099848
+          }
+        ],
+        "leastSquares": {
+          "slopeMsPerHour": -24.842760833130015,
+          "fittedChangeMs": -1.6566602084579694,
+          "stretches": [
+            {
+              "levelAtStartMs": 6121.635164717699,
+              "residualSdMs": 13.750859942245208,
+              "ownSlopeMsPerHour": 68.51736130798531
+            },
+            {
+              "levelAtStartMs": 7025.648100847972,
+              "residualSdMs": 10.902074946843944,
+              "ownSlopeMsPerHour": -273.3755389914876
+            }
+          ]
+        },
+        "estimators": {
+          "gapMs": 13.465693202082127,
+          "marginMs": 1000,
+          "verdictsDiffer": false,
+          "disagree": false
+        },
+        "quartileShiftMs": null,
+        "rSquared": null
+      }
+    },
+    {
+      "id": "soak.heap-growth",
+      "check": "PB-RDY-005",
+      "label": "JS heap growth",
+      "value": null,
+      "unit": "MB",
+      "limit": 20,
+      "bound": "at-most",
+      "limitKey": "maxHeapGrowthMb",
+      "verdict": "N/A",
+      "sentence": "Not measured in firefox: only Chromium can force a collection and read the JS heap (DevTools protocol). The soak is judged on the other signals here.",
+      "scope": "criterion",
+      "detail": {
+        "engine": "firefox"
+      }
+    },
+    {
+      "id": "soak.dropped-frames",
+      "check": "PB-RDY-005",
+      "label": "Dropped frame ratio",
+      "value": 0,
+      "unit": "ratio",
+      "limit": 0.01,
+      "bound": "at-most",
+      "limitKey": "maxDroppedFrameRatio",
+      "verdict": "GO",
+      "sentence": "0 frames dropped of 8,974 decoded, a ratio of 0.00 %; the limit is <= 1.00 %.",
+      "scope": "criterion",
+      "detail": {
+        "decoded": 8974,
+        "dropped": 0
+      }
+    },
+    {
+      "id": "soak.unexplained-recoverable-errors",
+      "check": "PB-RDY-005",
+      "label": "Unexplained recoverable errors",
+      "value": 0,
+      "unit": "count",
+      "limit": 0,
+      "bound": "at-most",
+      "limitKey": "maxUnexplainedCriticalErrors",
+      "verdict": "GO",
+      "sentence": "0 recoverable errors in the soak.",
+      "scope": "advisory",
+      "detail": {
+        "recoverable": 0,
+        "explainedByFaults": 0,
+        "graceMs": 14000,
+        "counts": "",
+        "first": []
+      }
+    },
+    {
+      "id": "soak.latency-p95",
+      "check": "PB-RDY-005",
+      "label": "Latency, p95",
+      "value": 7035.933418846156,
+      "unit": "ms",
+      "limit": 8000,
+      "bound": "at-most",
+      "limitKey": "latencyP95MaxMs",
+      "verdict": "GO",
+      "sentence": "Latency at the 95th percentile over the soak: 7.04 s (<= 8.00 s). Judged by PB-RDY-002; here as evidence.",
+      "scope": "advisory",
+      "detail": {
+        "reads": 31,
+        "note": "after the warm-up, outside the injected faults and the time the player is given to settle after them"
+      }
+    },
+    {
+      "id": "soak.latency-max",
+      "check": "PB-RDY-005",
+      "label": "Latency, maximum",
+      "value": 7036.682335876492,
+      "unit": "ms",
+      "limit": 10000,
+      "bound": "at-most",
+      "limitKey": "latencyMaxMs",
+      "verdict": "GO",
+      "sentence": "The largest latency outside the faults: 7.04 s (<= 10.00 s). Judged by PB-RDY-002; here as evidence.",
+      "scope": "advisory",
+      "detail": {
+        "reads": 31,
+        "note": "after the warm-up, outside the injected faults and the time the player is given to settle after them"
+      }
+    },
+    {
+      "id": "cadence.median",
+      "check": "PB-RDY-005",
+      "label": "Manifest refresh, median gap",
+      "value": 2001,
+      "unit": "ms",
+      "limit": 1000,
+      "bound": "at-least",
+      "limitKey": "manifestMedianGapMinMs",
+      "verdict": "GO",
+      "sentence": "The player asked for the manifest every 2.00 s at the median over 136 gaps (the origin advertises 2.00 s); the limit is >= 1.00 s.",
+      "scope": "advisory",
+      "detail": {
+        "requests": 150,
+        "gaps": 136,
+        "minimumGaps": 10,
+        "periodMs": 2000,
+        "excludedWindows": 1
+      }
+    },
+    {
+      "id": "cadence.longest",
+      "check": "PB-RDY-005",
+      "label": "Manifest refresh, longest gap",
+      "value": 2016,
+      "unit": "ms",
+      "limit": 4000,
+      "bound": "at-most",
+      "limitKey": "manifestMaxGapMs",
+      "verdict": "GO",
+      "sentence": "The longest wait between two manifest requests was 2.02 s; the limit is <= 4.00 s.",
+      "scope": "advisory",
+      "detail": {
+        "requests": 150,
+        "gaps": 136,
+        "minimumGaps": 10,
+        "periodMs": 2000,
+        "excludedWindows": 1
+      }
+    }
+  ],
+  "firstFrameMs": 1793812693067,
+  "endMs": 1793812993136,
+  "faults": [
+    {
+      "kind": "origin-stall",
+      "startMs": 1793812841980,
+      "endMs": 1793812851980
+    }
+  ],
+  "series": {
+    "sampleCount": 60,
+    "samples": [
+      {
+        "atMs": 1793812693099,
+        "mediaTime": 24.02941,
+        "latencyMs": 6114.923362579347,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 3.9705900000000014,
+        "decodedFrames": 1,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812698099,
+        "mediaTime": 29.033433,
+        "latencyMs": 6110.900362579347,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.966567000000001,
+        "decodedFrames": 151,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812703099,
+        "mediaTime": 34.019629,
+        "latencyMs": 6124.704362579344,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 3.980370999999998,
+        "decodedFrames": 301,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812708100,
+        "mediaTime": 39.015892,
+        "latencyMs": 6128.441362579345,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.984107999999999,
+        "decodedFrames": 451,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812713102,
+        "mediaTime": 44.007505,
+        "latencyMs": 6140.828311080931,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 3.992494999999998,
+        "decodedFrames": 601,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812718103,
+        "mediaTime": 49.04198,
+        "latencyMs": 6106.35331108093,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.958019999999998,
+        "decodedFrames": 751,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812723103,
+        "mediaTime": 54.040199,
+        "latencyMs": 6108.134311080931,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 3.959800999999999,
+        "decodedFrames": 901,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812728103,
+        "mediaTime": 59.032283,
+        "latencyMs": 6116.050311080933,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.967717,
+        "decodedFrames": 1051,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812733103,
+        "mediaTime": 64.02457,
+        "latencyMs": 6123.763311080936,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 3.975430000000003,
+        "decodedFrames": 1201,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812738112,
+        "mediaTime": 69.017022,
+        "latencyMs": 6139.311446502688,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.982978000000003,
+        "decodedFrames": 1351,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812743121,
+        "mediaTime": 74.050005,
+        "latencyMs": 6115.328271026612,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 3.9499950000000013,
+        "decodedFrames": 1502,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812748120,
+        "mediaTime": 79.056123,
+        "latencyMs": 6109.210271026612,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.9438770000000005,
+        "decodedFrames": 1652,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812753121,
+        "mediaTime": 84.047363,
+        "latencyMs": 6117.970271026607,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 3.9526369999999957,
+        "decodedFrames": 1802,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812758121,
+        "mediaTime": 89.049444,
+        "latencyMs": 6116.889436965948,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.950556000000006,
+        "decodedFrames": 1952,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812763121,
+        "mediaTime": 94.046429,
+        "latencyMs": 6119.904436965939,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 3.9535709999999966,
+        "decodedFrames": 2102,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812768122,
+        "mediaTime": 99.041892,
+        "latencyMs": 6124.441436965938,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.958107999999996,
+        "decodedFrames": 2252,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812773122,
+        "mediaTime": 104.034202,
+        "latencyMs": 6132.1314369659485,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 3.9657980000000066,
+        "decodedFrames": 2402,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812778122,
+        "mediaTime": 109.066795,
+        "latencyMs": 6100.538364486695,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.933205000000001,
+        "decodedFrames": 2552,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812783122,
+        "mediaTime": 114.02323,
+        "latencyMs": 6144.103364486697,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 3.976770000000002,
+        "decodedFrames": 2702,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812788122,
+        "mediaTime": 119.05419,
+        "latencyMs": 6112.143436965936,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.9458099999999945,
+        "decodedFrames": 2852,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812793122,
+        "mediaTime": 124.052524,
+        "latencyMs": 6114.809364486689,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 3.9474759999999947,
+        "decodedFrames": 3002,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812798122,
+        "mediaTime": 129.045514,
+        "latencyMs": 6121.819364486697,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.954486000000003,
+        "decodedFrames": 3152,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812803123,
+        "mediaTime": 134.04021,
+        "latencyMs": 6127.1233644866925,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 3.959789999999998,
+        "decodedFrames": 3302,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812808123,
+        "mediaTime": 139.034401,
+        "latencyMs": 6132.932364486692,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.965598999999997,
+        "decodedFrames": 3452,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812813123,
+        "mediaTime": 144.024702,
+        "latencyMs": 6142.631364486704,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 3.9752980000000093,
+        "decodedFrames": 3602,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812818123,
+        "mediaTime": 149.062986,
+        "latencyMs": 6105.347292007451,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.937014000000005,
+        "decodedFrames": 3752,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812823123,
+        "mediaTime": 154.066797,
+        "latencyMs": 6100.536364486687,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 3.933202999999992,
+        "decodedFrames": 3902,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812828123,
+        "mediaTime": 159.059743,
+        "latencyMs": 6108.590292007449,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.940257000000003,
+        "decodedFrames": 4052,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812833123,
+        "mediaTime": 164.044971,
+        "latencyMs": 6123.362292007442,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 3.955028999999996,
+        "decodedFrames": 4202,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812838125,
+        "mediaTime": 169.030454,
+        "latencyMs": 6138.879457946786,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.969546000000008,
+        "decodedFrames": 4352,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812843125,
+        "mediaTime": 174.061878,
+        "latencyMs": 6107.45545794677,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 3.938121999999993,
+        "decodedFrames": 4502,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812848125,
+        "mediaTime": 179.046339,
+        "latencyMs": 6123.99438546754,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 0.953661000000011,
+        "decodedFrames": 4652,
+        "droppedFrames": 0,
+        "rebufferCount": 0,
+        "rebufferMs": 0,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812853125,
+        "mediaTime": 179.969644,
+        "latencyMs": 10200.689385467542,
+        "state": "buffering",
+        "playbackRate": 1,
+        "bufferedAheadSec": 0.030356000000011818,
+        "decodedFrames": 4679,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4100,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812858124,
+        "mediaTime": 184.490517,
+        "latencyMs": 10678.816457946767,
+        "state": "playing",
+        "playbackRate": 1.1,
+        "bufferedAheadSec": 9.509482999999989,
+        "decodedFrames": 4815,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812863125,
+        "mediaTime": 189.966854,
+        "latencyMs": 10203.479385467517,
+        "state": "playing",
+        "playbackRate": 1.1,
+        "bufferedAheadSec": 8.033145999999988,
+        "decodedFrames": 4980,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812868141,
+        "mediaTime": 195.483952,
+        "latencyMs": 9702.381417892468,
+        "state": "playing",
+        "playbackRate": 1.1,
+        "bufferedAheadSec": 8.516048000000012,
+        "decodedFrames": 5145,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812873142,
+        "mediaTime": 201.016929,
+        "latencyMs": 9170.404345413204,
+        "state": "playing",
+        "playbackRate": 1.1,
+        "bufferedAheadSec": 6.983070999999995,
+        "decodedFrames": 5310,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812878141,
+        "mediaTime": 206.502423,
+        "latencyMs": 8683.910417892463,
+        "state": "playing",
+        "playbackRate": 1.1,
+        "bufferedAheadSec": 7.497577000000007,
+        "decodedFrames": 5475,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812883142,
+        "mediaTime": 211.990396,
+        "latencyMs": 8196.937345413204,
+        "state": "playing",
+        "playbackRate": 1.1,
+        "bufferedAheadSec": 6.009603999999996,
+        "decodedFrames": 5640,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812888149,
+        "mediaTime": 217.51385,
+        "latencyMs": 7680.483314895639,
+        "state": "playing",
+        "playbackRate": 1.1,
+        "bufferedAheadSec": 6.486150000000009,
+        "decodedFrames": 5806,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812893149,
+        "mediaTime": 223.001213,
+        "latencyMs": 7193.120314895623,
+        "state": "playing",
+        "playbackRate": 1.1,
+        "bufferedAheadSec": 4.998786999999993,
+        "decodedFrames": 5971,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812898151,
+        "mediaTime": 228.155956,
+        "latencyMs": 7039.377480834957,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 5.844043999999997,
+        "decodedFrames": 6126,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812903151,
+        "mediaTime": 233.157021,
+        "latencyMs": 7039.312408355727,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.842979000000014,
+        "decodedFrames": 6276,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812908152,
+        "mediaTime": 238.19524,
+        "latencyMs": 7001.0934083557,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 5.8047599999999875,
+        "decodedFrames": 6425,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812913151,
+        "mediaTime": 243.196153,
+        "latencyMs": 7001.1803358764555,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.80384699999999,
+        "decodedFrames": 6576,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812918152,
+        "mediaTime": 248.187651,
+        "latencyMs": 7008.682408355725,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 5.812349000000012,
+        "decodedFrames": 6726,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812923152,
+        "mediaTime": 253.18139,
+        "latencyMs": 7015.943335876472,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.818610000000007,
+        "decodedFrames": 6876,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812928152,
+        "mediaTime": 258.170368,
+        "latencyMs": 7025.965408355716,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 5.829632000000004,
+        "decodedFrames": 7026,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812933153,
+        "mediaTime": 263.160651,
+        "latencyMs": 7036.682335876492,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.839349000000027,
+        "decodedFrames": 7175,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812938153,
+        "mediaTime": 268.160853,
+        "latencyMs": 7036.48033587649,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 5.839147000000025,
+        "decodedFrames": 7326,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812943153,
+        "mediaTime": 273.18486,
+        "latencyMs": 7013.473501815781,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.815139999999985,
+        "decodedFrames": 7476,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812948154,
+        "mediaTime": 278.178702,
+        "latencyMs": 7019.631501815809,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 5.821298000000013,
+        "decodedFrames": 7626,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812953153,
+        "mediaTime": 283.176497,
+        "latencyMs": 7021.836501815813,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.8235030000000165,
+        "decodedFrames": 7776,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812958153,
+        "mediaTime": 288.16996,
+        "latencyMs": 7028.373501815793,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 5.830039999999997,
+        "decodedFrames": 7926,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812963153,
+        "mediaTime": 293.162947,
+        "latencyMs": 7035.386501815821,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.837053000000026,
+        "decodedFrames": 8076,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812968154,
+        "mediaTime": 298.166806,
+        "latencyMs": 7031.527501815788,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 5.833193999999992,
+        "decodedFrames": 8226,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812973154,
+        "mediaTime": 303.1978,
+        "latencyMs": 7001.533429336576,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.802200000000028,
+        "decodedFrames": 8376,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812978154,
+        "mediaTime": 308.181825,
+        "latencyMs": 7016.508501815792,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 5.8181749999999965,
+        "decodedFrames": 8526,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812983154,
+        "mediaTime": 313.167789,
+        "latencyMs": 7031.54442933652,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 4.8322109999999725,
+        "decodedFrames": 8676,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      },
+      {
+        "atMs": 1793812988155,
+        "mediaTime": 318.167543,
+        "latencyMs": 7031.7904293365245,
+        "state": "playing",
+        "playbackRate": 1,
+        "bufferedAheadSec": 5.832456999999977,
+        "decodedFrames": 8826,
+        "droppedFrames": 0,
+        "rebufferCount": 1,
+        "rebufferMs": 4972,
+        "edgeSeeks": 0,
+        "errors": 0
+      }
+    ],
+    "heap": null,
+    "harness": [
+      {
+        "atMs": 1793812693129,
+        "heapUsedMb": 51.5562744140625,
+        "rssMb": 192.4296875,
+        "serviceRssMb": 100.41796875
+      },
+      {
+        "atMs": 1793812723168,
+        "heapUsedMb": 52.08343505859375,
+        "rssMb": 157.0859375,
+        "serviceRssMb": 93.4921875
+      },
+      {
+        "atMs": 1793812753118,
+        "heapUsedMb": 52.399757385253906,
+        "rssMb": 157.9609375,
+        "serviceRssMb": 93.82421875
+      },
+      {
+        "atMs": 1793812783163,
+        "heapUsedMb": 52.607086181640625,
+        "rssMb": 158.3359375,
+        "serviceRssMb": 94.9296875
+      },
+      {
+        "atMs": 1793812813166,
+        "heapUsedMb": 52.662315368652344,
+        "rssMb": 158.8359375,
+        "serviceRssMb": 90.9140625
+      },
+      {
+        "atMs": 1793812843154,
+        "heapUsedMb": 52.775299072265625,
+        "rssMb": 159.0859375,
+        "serviceRssMb": 90.8203125
+      },
+      {
+        "atMs": 1793812873152,
+        "heapUsedMb": 52.824981689453125,
+        "rssMb": 159.3359375,
+        "serviceRssMb": 91.1796875
+      },
+      {
+        "atMs": 1793812903154,
+        "heapUsedMb": 52.89276123046875,
+        "rssMb": 159.7109375,
+        "serviceRssMb": 92.77734375
+      },
+      {
+        "atMs": 1793812933153,
+        "heapUsedMb": 52.880340576171875,
+        "rssMb": 159.97265625,
+        "serviceRssMb": 92.03515625
+      },
+      {
+        "atMs": 1793812963151,
+        "heapUsedMb": 52.98023223876953,
+        "rssMb": 160.09765625,
+        "serviceRssMb": 91.40625
+      },
+      {
+        "atMs": 1793812993126,
+        "heapUsedMb": 53.00152587890625,
+        "rssMb": 160.72265625,
+        "serviceRssMb": 91.58203125
+      }
+    ]
+  },
+  "episodes": [
+    {
+      "startMs": 1793812849024,
+      "durationMs": 4972,
+      "ongoing": false,
+      "mediaTime": 179.969644
+    }
+  ],
+  "errors": [],
+  "consoleProblems": [],
+  "requests": {
+    "total": 460,
+    "refusedCount": 0,
+    "byKind": {
+      "manifest": 150,
+      "init": 3,
+      "segment": 307
+    },
+    "refused": [],
+    "repeated": [
+      {
+        "rep": "v360",
+        "number": 12,
+        "times": 2
+      }
+    ]
+  },
+  "harness": {
+    "firstHeapMb": 51.5562744140625,
+    "lastHeapMb": 53.00152587890625,
+    "firstServiceRssMb": 100.41796875,
+    "lastServiceRssMb": 91.58203125
+  }
+}

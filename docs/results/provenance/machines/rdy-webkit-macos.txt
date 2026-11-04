@@ -1,0 +1,18 @@
+measure: readiness, engine webkit, runner macos-15
+label: rdy-webkit-macos
+started: 2026-11-04T17:17:49Z
+commit: 0d62c1d0d480ecb0c18b3daaad49cc61b1527f89 (main)
+environment id: gha-macos-arm64
+runner: macOS ARM64, github-hosted, image macos15 20261028.0489.1
+uname: Darwin iad20-fj924-f8529e83-4a8f-4719-8168-1334c969f589-A6D56195BA39.local 24.6.0 Darwin Kernel Version 24.6.0: Sun Oct 11 23:44:11 PDT 2026; root:xnu-11417.140.69.713.47~2/RELEASE_ARM64_VMAPPLE arm64
+cpus: 3
+cpu: Apple M1 (Virtual)
+memory: 7168 MiB
+os: macOS 15.8.2
+uptime: 17:17  up 1 min, 1 user, load averages: 71.82 28.63 11.25
+node: v22.23.4, npm: 10.9.9
+playwright: Version 1.64.1
+ffmpeg: not installed (the streams come from the streams job)
+
+finished: 2026-11-04T17:29:02Z
+uptime: 17:29  up 13 mins, 1 user, load averages: 3.07 9.42 9.59
