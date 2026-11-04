@@ -1,0 +1,312 @@
+{
+  "schemaVersion": 1,
+  "kind": "perf-aa",
+  "envId": "local-darwin-arm64",
+  "profile": "chromium",
+  "passes": 2,
+  "scenarios": [
+    "PB-PERF-001",
+    "PB-PERF-002"
+  ],
+  "baseline": {
+    "file": "/Users/hannia/repos/_worktrees/pb-perf/perf/baselines/local-darwin-arm64/chromium.json",
+    "generatedAt": "2026-11-04T06:36:11.733Z",
+    "commit": "7389861",
+    "browserVersion": "156.0.8078.4",
+    "runsPerScenario": 10
+  },
+  "exitCodes": {
+    "0": 2,
+    "1": 0,
+    "2": 0
+  },
+  "falsePositives": 0,
+  "firstBatchAlarms": 0,
+  "notReproduced": 0,
+  "host": {
+    "cpus": 12,
+    "memoryGiB": 16,
+    "node": "v22.11.0",
+    "playwright": "1.64.1",
+    "invokedVia": "direct",
+    "dockerCpus": null
+  },
+  "runs": [
+    {
+      "file": "reports/aa-fix/local-chromium/1/local-darwin-arm64/chromium.json",
+      "generatedAt": "2026-11-04T08:31:19.408Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 1.7880859375,
+        "after": 1.275390625
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa-fix/local-chromium/2/local-darwin-arm64/chromium.json",
+      "generatedAt": "2026-11-04T08:32:42.786Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 1.275390625,
+        "after": 2.2939453125
+      },
+      "problems": []
+    }
+  ],
+  "metrics": [
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "startupMs",
+      "unit": "ms",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 37.04999998211861,
+        "tail": 39.029999977350236,
+        "cv": 0.03999669045900356,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 11.114999994635582,
+        "tail": 11.70899999320507
+      },
+      "passes": 2,
+      "medians": [
+        25.94999998807907,
+        35.55000001192093
+      ],
+      "tails": [
+        41.12000002264976,
+        41.840000009536745
+      ],
+      "worst": {
+        "median": -1.4999999701976776,
+        "tail": 2.810000032186508
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 6.7882251162495955,
+        "relativeSd": 0.18321795194401586
+      }
+    },
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "manifestMs",
+      "unit": "ms",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 11.049999982118607,
+        "tail": 11.530000001192093,
+        "cv": 0.03193700326913747,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 2,
+      "medians": [
+        9.749999970197678,
+        10.050000011920929
+      ],
+      "tails": [
+        10.4400000333786,
+        11.390000039339064
+      ],
+      "worst": {
+        "median": -0.9999999701976776,
+        "tail": -0.13999996185302876
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0.2121320638587582,
+        "relativeSd": 0.019197471873487398
+      }
+    },
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "loadedMs",
+      "unit": "ms",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 15.650000005960464,
+        "tail": 16.039999997615816,
+        "cv": 0.026231339094042648,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 2,
+      "medians": [
+        15.100000023841858,
+        15.25
+      ],
+      "tails": [
+        15.400000035762787,
+        16.450000017881393
+      ],
+      "worst": {
+        "median": -0.4000000059604645,
+        "tail": 0.4100000202655778
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0.10606600031924272,
+        "relativeSd": 0.0067773802095109515
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "fps",
+      "unit": "fps",
+      "gated": true,
+      "tailStatistic": "p10",
+      "baseline": {
+        "median": 30,
+        "tail": 30,
+        "cv": 0,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 1.5,
+        "tail": 3
+      },
+      "passes": 2,
+      "medians": [
+        30,
+        30
+      ],
+      "tails": [
+        30,
+        30
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": 0
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "droppedRatio",
+      "unit": "ratio",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 0.01,
+        "tail": 0.03
+      },
+      "passes": 2,
+      "medians": [
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "decodedFrames",
+      "unit": "count",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 150,
+        "tail": 150,
+        "cv": 0,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 2,
+      "medians": [
+        150,
+        150
+      ],
+      "tails": [
+        150,
+        150
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": 0
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "droppedFrames",
+      "unit": "count",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 2,
+      "medians": [
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    }
+  ]
+}

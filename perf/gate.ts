@@ -19,6 +19,7 @@ import type { Baseline } from '../src/lab/measure/baseline.ts';
 import { combineExitCodes, compareEnvironment } from '../src/lab/measure/decide.ts';
 import type { ExitCode, Problem } from '../src/lab/measure/decide.ts';
 import { runGate } from '../src/lab/measure/gate.ts';
+import { loadAround, machineFacts } from '../src/lab/measure/machine.ts';
 import {
   buildGateReport,
   busyWarning,
@@ -86,9 +87,18 @@ async function gateProfile(harness: Harness, profile: PerfProfile, options: Perf
     setupProblems.push(...environment.problems);
     warnings.push(...environment.warnings);
   }
+  const scope =
+    options.injectOn === 'first'
+      ? 'the FIRST batch of each scenario only (the fresh batch is clean)'
+      : 'every session';
   if (options.injectFaults.length > 0) {
     warnings.push(
-      `FAULTS WERE INJECTED ON PURPOSE into every session (${JSON.stringify(options.injectFaults)}): this is a sensitivity check of the gate, not a measurement of the build`,
+      `FAULTS WERE INJECTED ON PURPOSE into ${scope} (${JSON.stringify(options.injectFaults)}): this is a sensitivity check of the gate, not a measurement of the build`,
+    );
+  }
+  if (options.injectCpuThrottle !== null) {
+    warnings.push(
+      `THE CPU THROTTLE WAS REPLACED ON PURPOSE by ${options.injectCpuThrottle}x in ${scope}: this is a sensitivity check of the gate, not a measurement of the build`,
     );
   }
 
@@ -114,7 +124,7 @@ async function gateProfile(harness: Harness, profile: PerfProfile, options: Perf
       log(
         `${attempt === 'first' ? 'measuring' : 're-measuring with a fresh browser'} ${scenario.id} ${scenario.name} on ${profile}`,
       );
-      return harness.measure(profile, scenario);
+      return harness.measure(profile, scenario, attempt);
     },
     onScenario: ({ spec, outcome }) =>
       log(`${spec.id} ${spec.name}: ${outcome.status}${outcome.remeasured ? ' (after a fresh batch)' : ''}`),
@@ -132,7 +142,15 @@ async function gateProfile(harness: Harness, profile: PerfProfile, options: Perf
   const busy = busyWarning(batches, harness.host.cpus);
   if (busy) warnings.push(busy);
 
-  const report = buildGateReport({ ...common, result, baseline: withBaseline, browser, warnings });
+  const machine = machineFacts(process.env, loadAround(batches));
+  const report = buildGateReport({
+    ...common,
+    result,
+    baseline: withBaseline,
+    machine,
+    browser,
+    warnings,
+  });
   console.log(renderGateText(report, result.scenarios));
   log(`wrote ${writeReports(reportsDir, report)}`);
   return report.exitCode;

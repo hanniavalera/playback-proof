@@ -1,0 +1,681 @@
+{
+  "schemaVersion": 1,
+  "kind": "perf-aa",
+  "envId": "local-darwin-arm64",
+  "profile": "chromium",
+  "passes": 10,
+  "scenarios": [
+    "PB-PERF-001",
+    "PB-PERF-002",
+    "PB-PERF-003"
+  ],
+  "baseline": {
+    "file": "/Users/hannia/repos/_worktrees/pb-perf/perf/baselines/local-darwin-arm64/chromium.json",
+    "generatedAt": "2026-11-04T06:36:11.733Z",
+    "commit": "7389861",
+    "browserVersion": "156.0.8078.4",
+    "runsPerScenario": 10
+  },
+  "exitCodes": {
+    "0": 10,
+    "1": 0,
+    "2": 0
+  },
+  "falsePositives": 0,
+  "firstBatchAlarms": 0,
+  "notReproduced": 0,
+  "host": {
+    "cpus": 12,
+    "memoryGiB": 16,
+    "node": "v22.11.0",
+    "playwright": "1.64.1",
+    "invokedVia": "direct",
+    "dockerCpus": null
+  },
+  "runs": [
+    {
+      "file": "reports/aa/local-chromium/1/local-darwin-arm64/chromium.json",
+      "generatedAt": "2026-11-04T07:05:28.695Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 2.98974609375,
+        "after": 2.2353515625
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa/local-chromium/2/local-darwin-arm64/chromium.json",
+      "generatedAt": "2026-11-04T07:10:12.483Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 2.2353515625,
+        "after": 2.61767578125
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa/local-chromium/3/local-darwin-arm64/chromium.json",
+      "generatedAt": "2026-11-04T07:14:55.659Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 2.61767578125,
+        "after": 2.85302734375
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa/local-chromium/4/local-darwin-arm64/chromium.json",
+      "generatedAt": "2026-11-04T07:19:39.023Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 2.70458984375,
+        "after": 3.07275390625
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa/local-chromium/5/local-darwin-arm64/chromium.json",
+      "generatedAt": "2026-11-04T07:24:22.331Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 3.07275390625,
+        "after": 3.11181640625
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa/local-chromium/6/local-darwin-arm64/chromium.json",
+      "generatedAt": "2026-11-04T07:29:05.618Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 3.11181640625,
+        "after": 2.1005859375
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa/local-chromium/7/local-darwin-arm64/chromium.json",
+      "generatedAt": "2026-11-04T07:30:28.311Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 2.1005859375,
+        "after": 2.2001953125
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa/local-chromium/8/local-darwin-arm64/chromium.json",
+      "generatedAt": "2026-11-04T07:31:51.122Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 2.2001953125,
+        "after": 3.00439453125
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa/local-chromium/9/local-darwin-arm64/chromium.json",
+      "generatedAt": "2026-11-04T07:33:13.915Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 3.00439453125,
+        "after": 1.87060546875
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa/local-chromium/10/local-darwin-arm64/chromium.json",
+      "generatedAt": "2026-11-04T07:34:36.722Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 1.87060546875,
+        "after": 2.07421875
+      },
+      "problems": []
+    }
+  ],
+  "metrics": [
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "startupMs",
+      "unit": "ms",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 37.04999998211861,
+        "tail": 39.029999977350236,
+        "cv": 0.03999669045900356,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 11.114999994635582,
+        "tail": 11.70899999320507
+      },
+      "passes": 10,
+      "medians": [
+        36.44999995827675,
+        38.95000001788139,
+        37.5,
+        36.75,
+        37.599999994039536,
+        35.900000005960464,
+        39.25000002980232,
+        38.400000005960464,
+        39.349999994039536,
+        37.5
+      ],
+      "tails": [
+        39.25999999046326,
+        40.729999989271164,
+        38.69999998807907,
+        37.560000002384186,
+        38.95999997854233,
+        38.05,
+        40.82999995350838,
+        40.030000030994415,
+        40.51000000238419,
+        38.14999996423721
+      ],
+      "worst": {
+        "median": 2.300000011920929,
+        "tail": 1.7999999761581407
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 1.1986219035502346,
+        "relativeSd": 0.03235146839753641
+      }
+    },
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "manifestMs",
+      "unit": "ms",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 11.049999982118607,
+        "tail": 11.530000001192093,
+        "cv": 0.03193700326913747,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 10,
+      "medians": [
+        11.149999976158142,
+        10.799999982118607,
+        11.099999994039536,
+        11.300000011920929,
+        11.099999994039536,
+        11.199999988079071,
+        10.549999982118607,
+        10.949999988079071,
+        10.449999988079071,
+        11.25
+      ],
+      "tails": [
+        11.399999982118606,
+        11.630000019073487,
+        11.330000007152558,
+        11.519999998807908,
+        11.300000011920929,
+        11.610000020265579,
+        11.060000002384186,
+        11.320000010728837,
+        11.420000010728836,
+        11.510000002384185
+      ],
+      "worst": {
+        "median": 0.2500000298023224,
+        "tail": 0.10000001788139379
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0.2944392085034696,
+        "relativeSd": 0.026646082260627934
+      }
+    },
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "loadedMs",
+      "unit": "ms",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 15.650000005960464,
+        "tail": 16.039999997615816,
+        "cv": 0.026231339094042648,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 10,
+      "medians": [
+        15.849999994039536,
+        15.250000029802322,
+        15.700000017881393,
+        16.000000029802322,
+        15.600000023841858,
+        15.900000005960464,
+        15.25,
+        15.549999982118607,
+        15.250000029802322,
+        16
+      ],
+      "tails": [
+        16.160000020265578,
+        16.41999997496605,
+        15.950000029802322,
+        16.629999965429306,
+        15.899999976158142,
+        16.409999978542327,
+        15.700000023841858,
+        16,
+        16.119999998807906,
+        16.450000035762788
+      ],
+      "worst": {
+        "median": 0.3500000238418579,
+        "tail": 0.5899999678134904
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0.30555050139991513,
+        "relativeSd": 0.019523993692239172
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "fps",
+      "unit": "fps",
+      "gated": true,
+      "tailStatistic": "p10",
+      "baseline": {
+        "median": 30,
+        "tail": 30,
+        "cv": 0,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 1.5,
+        "tail": 3
+      },
+      "passes": 10,
+      "medians": [
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30
+      ],
+      "tails": [
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30,
+        30
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": 0
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "droppedRatio",
+      "unit": "ratio",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 0.01,
+        "tail": 0.03
+      },
+      "passes": 10,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "decodedFrames",
+      "unit": "count",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 150,
+        "tail": 150,
+        "cv": 0,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 10,
+      "medians": [
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150
+      ],
+      "tails": [
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150,
+        150
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": 0
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "droppedFrames",
+      "unit": "count",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 10,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferCount",
+      "unit": "count",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 0,
+        "tail": 1
+      },
+      "passes": 5,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferMs",
+      "unit": "ms",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 250,
+        "tail": 1000
+      },
+      "passes": 5,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-003",
+      "metric": "rebufferRatio",
+      "unit": "ratio",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 0.01,
+        "tail": 0.05
+      },
+      "passes": 5,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-003",
+      "metric": "switches",
+      "unit": "count",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 1,
+        "tail": 1,
+        "cv": 0,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 5,
+      "medians": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "tails": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": 0
+      }
+    }
+  ]
+}

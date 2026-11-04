@@ -1,0 +1,1282 @@
+{
+  "schemaVersion": 1,
+  "kind": "perf-baseline",
+  "envId": "docker-linux-arm64",
+  "profile": "firefox",
+  "generatedAt": "2026-11-04T06:54:57.984Z",
+  "runsPerScenario": 10,
+  "warmupRuns": 1,
+  "host": {
+    "os": {
+      "platform": "linux",
+      "arch": "arm64",
+      "release": "6.5.11-linuxkit",
+      "name": "Ubuntu 24.04.5 LTS"
+    },
+    "cpus": 12,
+    "memoryGiB": 7.7,
+    "node": "v24.22.1",
+    "playwright": "1.64.1",
+    "git": {
+      "commit": "58da1b2",
+      "dirty": false
+    }
+  },
+  "machine": {
+    "invokedVia": "docker:pw",
+    "dockerCpus": 4,
+    "quiet": {
+      "maxLoad": 3,
+      "hostLoad": 2.53,
+      "waitedMs": 0
+    },
+    "loadBeforeProfile": 0.36,
+    "loadAfterProfile": 0.5
+  },
+  "browser": {
+    "name": "firefox",
+    "version": "157.0",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:157.0) Gecko/20100101 Firefox/157.0",
+    "cpuThrottleRate": null
+  },
+  "ffmpeg": "9.0.2",
+  "streams": {
+    "vod-cmaf": "66738540703f45d7ccfb51c91b8ccd40fe53bec59cb7bbef41fde9d03270ec06"
+  },
+  "scenarios": {
+    "PB-PERF-001": {
+      "title": "Startup baseline (vod-cmaf, clean): load-requested to the first frame presented",
+      "stream": "vod-cmaf",
+      "protocol": "dash",
+      "faultProfile": "clean",
+      "pinnedHeight": null,
+      "startRungHeight": 360,
+      "loadAverage": {
+        "before": 0.36,
+        "after": 0.81
+      },
+      "warmup": {
+        "values": {
+          "startupMs": 72,
+          "manifestMs": 20,
+          "loadedMs": 31
+        },
+        "startRungHeight": 360,
+        "rungs": [
+          {
+            "t": 186,
+            "from": null,
+            "to": 1,
+            "height": 360,
+            "reason": "start"
+          },
+          {
+            "t": 208,
+            "from": 1,
+            "to": 2,
+            "height": 720,
+            "reason": "abr"
+          }
+        ],
+        "errors": [],
+        "durationMs": 578
+      },
+      "runs": [
+        {
+          "values": {
+            "startupMs": 47,
+            "manifestMs": 14,
+            "loadedMs": 19
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 99,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 106,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 231
+        },
+        {
+          "values": {
+            "startupMs": 43,
+            "manifestMs": 16,
+            "loadedMs": 22
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 103,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 113,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 230
+        },
+        {
+          "values": {
+            "startupMs": 46,
+            "manifestMs": 16,
+            "loadedMs": 22
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 112,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 132,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 247
+        },
+        {
+          "values": {
+            "startupMs": 59,
+            "manifestMs": 15,
+            "loadedMs": 20
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 104,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 113,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 248
+        },
+        {
+          "values": {
+            "startupMs": 61,
+            "manifestMs": 17,
+            "loadedMs": 23
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 104,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 115,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 247
+        },
+        {
+          "values": {
+            "startupMs": 63,
+            "manifestMs": 16,
+            "loadedMs": 23
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 109,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 120,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 273
+        },
+        {
+          "values": {
+            "startupMs": 41,
+            "manifestMs": 17,
+            "loadedMs": 23
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 114,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 264
+        },
+        {
+          "values": {
+            "startupMs": 58,
+            "manifestMs": 19,
+            "loadedMs": 30
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 115,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 124,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 282
+        },
+        {
+          "values": {
+            "startupMs": 58,
+            "manifestMs": 34,
+            "loadedMs": 40
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 127,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 135,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 280
+        },
+        {
+          "values": {
+            "startupMs": 50,
+            "manifestMs": 18,
+            "loadedMs": 24
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 108,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "durationMs": 228
+        }
+      ],
+      "metrics": {
+        "startupMs": {
+          "summary": {
+            "n": 10,
+            "median": 54,
+            "p10": 42.8,
+            "p90": 61.2,
+            "min": 41,
+            "max": 63,
+            "mad": 7,
+            "cv": 0.1534581583540209
+          },
+          "values": [
+            47,
+            43,
+            46,
+            59,
+            61,
+            63,
+            41,
+            58,
+            58,
+            50
+          ]
+        },
+        "manifestMs": {
+          "summary": {
+            "n": 10,
+            "median": 16.5,
+            "p10": 14.9,
+            "p90": 20.499999999999993,
+            "min": 14,
+            "max": 34,
+            "mad": 1,
+            "cv": 0.3148905098950543
+          },
+          "values": [
+            14,
+            16,
+            16,
+            15,
+            17,
+            16,
+            17,
+            19,
+            34,
+            18
+          ]
+        },
+        "loadedMs": {
+          "summary": {
+            "n": 10,
+            "median": 23,
+            "p10": 19.9,
+            "p90": 30.999999999999996,
+            "min": 19,
+            "max": 40,
+            "mad": 1,
+            "cv": 0.2499990819674539
+          },
+          "values": [
+            19,
+            22,
+            22,
+            20,
+            23,
+            23,
+            23,
+            30,
+            40,
+            24
+          ]
+        }
+      }
+    },
+    "PB-PERF-002": {
+      "title": "Steady-state frame rate and dropped frames (vod-cmaf, clean, pinned 720p, a 5 s window)",
+      "stream": "vod-cmaf",
+      "protocol": "dash",
+      "faultProfile": "clean",
+      "pinnedHeight": 720,
+      "startRungHeight": 360,
+      "loadAverage": {
+        "before": 0.81,
+        "after": 1.04
+      },
+      "warmup": {
+        "values": {
+          "fps": 30,
+          "droppedRatio": 0,
+          "decodedFrames": 150,
+          "droppedFrames": 0
+        },
+        "startRungHeight": 360,
+        "rungs": [
+          {
+            "t": 212,
+            "from": null,
+            "to": 1,
+            "height": 360,
+            "reason": "start"
+          },
+          {
+            "t": 218,
+            "from": 1,
+            "to": 2,
+            "height": 720,
+            "reason": "manual"
+          }
+        ],
+        "errors": [],
+        "durationMs": 7703
+      },
+      "runs": [
+        {
+          "values": {
+            "fps": 30,
+            "droppedRatio": 0,
+            "decodedFrames": 151,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 112,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 116,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "manual"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7336
+        },
+        {
+          "values": {
+            "fps": 30,
+            "droppedRatio": 0,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 116,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 120,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "manual"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7323
+        },
+        {
+          "values": {
+            "fps": 30,
+            "droppedRatio": 0,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 119,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 122,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "manual"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7336
+        },
+        {
+          "values": {
+            "fps": 30,
+            "droppedRatio": 0,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 128,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 133,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "manual"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7377
+        },
+        {
+          "values": {
+            "fps": 29.999996026490592,
+            "droppedRatio": 0,
+            "decodedFrames": 151,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 123,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 127,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "manual"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7381
+        },
+        {
+          "values": {
+            "fps": 29.999996026490592,
+            "droppedRatio": 0,
+            "decodedFrames": 151,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 119,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 123,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "manual"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7384
+        },
+        {
+          "values": {
+            "fps": 30,
+            "droppedRatio": 0,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 117,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 121,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "manual"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7368
+        },
+        {
+          "values": {
+            "fps": 30,
+            "droppedRatio": 0,
+            "decodedFrames": 151,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 116,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 119,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "manual"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7383
+        },
+        {
+          "values": {
+            "fps": 30,
+            "droppedRatio": 0,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 114,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 117,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "manual"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7314
+        },
+        {
+          "values": {
+            "fps": 30,
+            "droppedRatio": 0,
+            "decodedFrames": 150,
+            "droppedFrames": 0
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 115,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 119,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "manual"
+            }
+          ],
+          "errors": [],
+          "durationMs": 7344
+        }
+      ],
+      "metrics": {
+        "fps": {
+          "summary": {
+            "n": 10,
+            "median": 30,
+            "p10": 29.999996026490592,
+            "p90": 30,
+            "min": 29.999996026490592,
+            "max": 30,
+            "mad": 0,
+            "cv": 5.584595717949296e-8
+          },
+          "values": [
+            30,
+            30,
+            30,
+            30,
+            29.999996026490592,
+            29.999996026490592,
+            30,
+            30,
+            30,
+            30
+          ]
+        },
+        "droppedRatio": {
+          "summary": {
+            "n": 10,
+            "median": 0,
+            "p10": 0,
+            "p90": 0,
+            "min": 0,
+            "max": 0,
+            "mad": 0,
+            "cv": null
+          },
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "decodedFrames": {
+          "summary": {
+            "n": 10,
+            "median": 150,
+            "p10": 150,
+            "p90": 151,
+            "min": 150,
+            "max": 151,
+            "mad": 0,
+            "cv": 0.003433495874297355
+          },
+          "values": [
+            151,
+            150,
+            150,
+            150,
+            151,
+            151,
+            150,
+            151,
+            150,
+            150
+          ]
+        },
+        "droppedFrames": {
+          "summary": {
+            "n": 10,
+            "median": 0,
+            "p10": 0,
+            "p90": 0,
+            "min": 0,
+            "max": 0,
+            "mad": 0,
+            "cv": null
+          },
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "PB-PERF-003": {
+      "title": "Rebuffering on a changing network (bandwidth-drop): count, duration and ratio over 18 s of media",
+      "stream": "vod-cmaf",
+      "protocol": "dash",
+      "faultProfile": "bandwidth-drop",
+      "pinnedHeight": null,
+      "startRungHeight": 360,
+      "loadAverage": {
+        "before": 1.04,
+        "after": 0.5
+      },
+      "warmup": {
+        "values": {
+          "rebufferCount": 0,
+          "rebufferMs": 0,
+          "rebufferRatio": 0,
+          "switches": 2
+        },
+        "startRungHeight": 360,
+        "rungs": [
+          {
+            "t": 189,
+            "from": null,
+            "to": 1,
+            "height": 360,
+            "reason": "start"
+          },
+          {
+            "t": 204,
+            "from": 1,
+            "to": 2,
+            "height": 720,
+            "reason": "abr"
+          },
+          {
+            "t": 16665,
+            "from": 2,
+            "to": 1,
+            "height": 360,
+            "reason": "abr"
+          }
+        ],
+        "errors": [],
+        "durationMs": 18679
+      },
+      "runs": [
+        {
+          "values": {
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 108,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 117,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 16553,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 18298
+        },
+        {
+          "values": {
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 106,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 117,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 16549,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 18270
+        },
+        {
+          "values": {
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 107,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 115,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 16555,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 18288
+        },
+        {
+          "values": {
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 109,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 1151,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 17414,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 18280
+        },
+        {
+          "values": {
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 1
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 102,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 2145,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 18292
+        },
+        {
+          "values": {
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 1
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 100,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 2158,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 18277
+        },
+        {
+          "values": {
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 102,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 112,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 16595,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 18289
+        },
+        {
+          "values": {
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 1
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 101,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 2141,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 18273
+        },
+        {
+          "values": {
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 108,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 119,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 16300,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 18281
+        },
+        {
+          "values": {
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2
+          },
+          "startRungHeight": 360,
+          "rungs": [
+            {
+              "t": 105,
+              "from": null,
+              "to": 1,
+              "height": 360,
+              "reason": "start"
+            },
+            {
+              "t": 116,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            },
+            {
+              "t": 16542,
+              "from": 2,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "durationMs": 18292
+        }
+      ],
+      "metrics": {
+        "rebufferCount": {
+          "summary": {
+            "n": 10,
+            "median": 0,
+            "p10": 0,
+            "p90": 0,
+            "min": 0,
+            "max": 0,
+            "mad": 0,
+            "cv": null
+          },
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "rebufferMs": {
+          "summary": {
+            "n": 10,
+            "median": 0,
+            "p10": 0,
+            "p90": 0,
+            "min": 0,
+            "max": 0,
+            "mad": 0,
+            "cv": null
+          },
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "rebufferRatio": {
+          "summary": {
+            "n": 10,
+            "median": 0,
+            "p10": 0,
+            "p90": 0,
+            "min": 0,
+            "max": 0,
+            "mad": 0,
+            "cv": null
+          },
+          "values": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "switches": {
+          "summary": {
+            "n": 10,
+            "median": 2,
+            "p10": 1,
+            "p90": 2,
+            "min": 1,
+            "max": 2,
+            "mad": 0,
+            "cv": 0.28414464208214585
+          },
+          "values": [
+            2,
+            2,
+            2,
+            2,
+            1,
+            1,
+            2,
+            1,
+            2,
+            2
+          ]
+        }
+      }
+    }
+  }
+}

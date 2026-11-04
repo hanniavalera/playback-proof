@@ -1,0 +1,387 @@
+{
+  "schemaVersion": 1,
+  "kind": "perf-aa",
+  "envId": "docker-linux-arm64",
+  "profile": "firefox",
+  "passes": 5,
+  "scenarios": [
+    "PB-PERF-001",
+    "PB-PERF-002"
+  ],
+  "baseline": {
+    "file": "/work/perf/baselines/docker-linux-arm64/firefox.json",
+    "generatedAt": "2026-11-04T06:54:57.984Z",
+    "commit": "58da1b2",
+    "browserVersion": "157.0",
+    "runsPerScenario": 10
+  },
+  "exitCodes": {
+    "0": 5,
+    "1": 0,
+    "2": 0
+  },
+  "falsePositives": 0,
+  "firstBatchAlarms": 0,
+  "notReproduced": 0,
+  "host": {
+    "cpus": 12,
+    "memoryGiB": 7.7,
+    "node": "v24.22.1",
+    "playwright": "1.64.1",
+    "invokedVia": "docker:pw",
+    "dockerCpus": 4
+  },
+  "runs": [
+    {
+      "file": "reports/aa-fix/docker-firefox/1/docker-linux-arm64/firefox.json",
+      "generatedAt": "2026-11-04T08:24:01.685Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.36,
+        "after": 0.55
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa-fix/docker-firefox/2/docker-linux-arm64/firefox.json",
+      "generatedAt": "2026-11-04T08:25:29.827Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.58,
+        "after": 0.92
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa-fix/docker-firefox/3/docker-linux-arm64/firefox.json",
+      "generatedAt": "2026-11-04T08:26:57.393Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.92,
+        "after": 0.75
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa-fix/docker-firefox/4/docker-linux-arm64/firefox.json",
+      "generatedAt": "2026-11-04T08:28:25.141Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.77,
+        "after": 0.42
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa-fix/docker-firefox/5/docker-linux-arm64/firefox.json",
+      "generatedAt": "2026-11-04T08:29:52.608Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.42,
+        "after": 0.68
+      },
+      "problems": []
+    }
+  ],
+  "metrics": [
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "startupMs",
+      "unit": "ms",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 54,
+        "tail": 61.2,
+        "cv": 0.1534581583540209,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 16.2,
+        "tail": 18.36
+      },
+      "passes": 5,
+      "medians": [
+        56,
+        49,
+        40,
+        47,
+        40
+      ],
+      "tails": [
+        60.3,
+        57.19999999999999,
+        51.599999999999994,
+        54.39999999999999,
+        46.599999999999994
+      ],
+      "worst": {
+        "median": 2,
+        "tail": -0.9000000000000057
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 6.730527468185536,
+        "relativeSd": 0.12463939755899141
+      }
+    },
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "manifestMs",
+      "unit": "ms",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 16.5,
+        "tail": 20.499999999999993,
+        "cv": 0.3148905098950543,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 5,
+      "medians": [
+        16.5,
+        15,
+        16,
+        16,
+        16
+      ],
+      "tails": [
+        18.4,
+        16.1,
+        16.1,
+        16,
+        16
+      ],
+      "worst": {
+        "median": 0,
+        "tail": -2.0999999999999943
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0.5477225575051662,
+        "relativeSd": 0.033195306515464616
+      }
+    },
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "loadedMs",
+      "unit": "ms",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 23,
+        "tail": 30.999999999999996,
+        "cv": 0.2499990819674539,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 5,
+      "medians": [
+        23,
+        21,
+        22,
+        21,
+        21
+      ],
+      "tails": [
+        25.2,
+        23.2,
+        22.1,
+        22,
+        22
+      ],
+      "worst": {
+        "median": 0,
+        "tail": -5.799999999999997
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0.8944271909999159,
+        "relativeSd": 0.038888138739126776
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "fps",
+      "unit": "fps",
+      "gated": true,
+      "tailStatistic": "p10",
+      "baseline": {
+        "median": 30,
+        "tail": 29.999996026490592,
+        "cv": 5.584595717949296e-8,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 1.5,
+        "tail": 2.9999996026490594
+      },
+      "passes": 5,
+      "medians": [
+        30,
+        30,
+        30,
+        30,
+        30
+      ],
+      "tails": [
+        30,
+        29.99999960264906,
+        29.99999960264906,
+        30,
+        29.999996026490592
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": 0
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "droppedRatio",
+      "unit": "ratio",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 0.01,
+        "tail": 0.03
+      },
+      "passes": 5,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0.0013333333333333287
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0.0013333333333333287
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "decodedFrames",
+      "unit": "count",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 150,
+        "tail": 151,
+        "cv": 0.003433495874297355,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 5,
+      "medians": [
+        150.5,
+        150,
+        150.5,
+        150,
+        150
+      ],
+      "tails": [
+        151,
+        150,
+        151,
+        151,
+        151
+      ],
+      "worst": {
+        "median": 0.5,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0.2738612787525831,
+        "relativeSd": 0.001825741858350554
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "droppedFrames",
+      "unit": "count",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 5,
+      "medians": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0,
+        0,
+        0,
+        0.1999999999999993
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0.1999999999999993
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    }
+  ]
+}

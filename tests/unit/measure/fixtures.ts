@@ -132,13 +132,14 @@ export const HASH = 'a'.repeat(64);
 
 export function baselineOf(
   scenarios: ReadonlyArray<{ spec: ScenarioSpec; batch: BatchMeasurement }>,
-  overrides: Partial<Pick<Baseline, 'envId' | 'profile'>> = {},
+  overrides: Partial<Pick<Baseline, 'envId' | 'profile' | 'machine'>> = {},
 ): Baseline {
   return buildBaseline({
     envId: overrides.envId ?? 'local-darwin-arm64',
     profile: overrides.profile ?? 'chromium',
     generatedAt: '2026-11-04T09:10:00.000Z',
     host: HOST,
+    ...(overrides.machine ? { machine: overrides.machine } : {}),
     browser: { name: 'chromium', version: '156.0.0.0', userAgent: 'UA', cpuThrottleRate: null },
     ffmpeg: '9.0',
     streams: { 'vod-cmaf': HASH },

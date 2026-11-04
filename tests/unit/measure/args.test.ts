@@ -4,6 +4,7 @@ import {
   DEFAULT_PROFILES,
   PERF_USAGE,
   PerfUsageError,
+  injectionFor,
   parsePerfArgs,
 } from '../../../src/lab/measure/args.ts';
 import { PERF_LIMITS } from '../../../src/shared/criteria.ts';
@@ -25,7 +26,8 @@ describe('PB-PERF command line: defaults', () => {
       reportsDir: null,
       runTimeoutMs: 120_000,
       injectFaults: [],
-      allowMissingBaseline: false,
+      injectCpuThrottle: null,
+      injectOn: 'all',
       writeBaseline: false,
       help: false,
     });
@@ -50,6 +52,8 @@ describe('PB-PERF command line: defaults', () => {
       '--reports-dir',
       '--timeout-ms',
       '--inject-faults',
+      '--inject-cpu-throttle',
+      '--inject-on',
       '--allow-missing-baseline',
       '--write-baseline',
     ]) {
@@ -129,6 +133,71 @@ describe('PB-PERF command line: injecting a regression on purpose', () => {
     expect(() => run('--write-baseline', '--inject-faults', latency)).toThrow(
       /a baseline is the condition without the fault/,
     );
+    expect(() => run('--write-baseline', '--inject-cpu-throttle', '8')).toThrow(
+      /a baseline is the condition without the injection/,
+    );
+  });
+
+  it('replaces the CPU slowdown of a Chromium profile by a rate of at least 1', () => {
+    expect(gate('--inject-cpu-throttle', '8').injectCpuThrottle).toBe(8);
+    expect(gate('--inject-cpu-throttle', '1.5', '--profile', 'chromium-cpu4x').injectCpuThrottle).toBe(1.5);
+    expect(gate().injectCpuThrottle).toBeNull();
+  });
+
+  it.each([
+    ['a rate below 1', ['--inject-cpu-throttle', '0.5'], /number >= 1/],
+    ['a rate that is not a number', ['--inject-cpu-throttle', 'heavy'], /number >= 1/],
+    ['an empty rate', ['--inject-cpu-throttle', ' '], /number >= 1/],
+    [
+      'a profile that cannot be throttled',
+      ['--inject-cpu-throttle', '4', '--profile', 'chromium,webkit'],
+      /Chromium DevTools command: webkit cannot be given one/,
+    ],
+  ])('refuses %s', (_name, argv, message) => {
+    expect(() => gate(...argv)).toThrow(PerfUsageError);
+    expect(() => gate(...argv)).toThrow(message);
+  });
+
+  it('can scope the injection to the first batch, so that the fresh batch of the gate is clean', () => {
+    expect(gate().injectOn).toBe('all');
+    expect(gate('--inject-faults', latency, '--inject-on', 'first').injectOn).toBe('first');
+    expect(gate('--inject-cpu-throttle', '6', '--inject-on', 'all').injectOn).toBe('all');
+    expect(() => gate('--inject-faults', latency, '--inject-on', 'second')).toThrow(
+      /--inject-on must be all or first/,
+    );
+    expect(() => gate('--inject-on', 'first')).toThrow(/needs --inject-faults or --inject-cpu-throttle/);
+  });
+
+  it('gives a batch what it was told to inject, in every batch or only in the first one of a scenario', () => {
+    const rule = { type: 'latency' as const, ms: 150, match: { kind: 'manifest' as const } };
+    const both = (injectOn: string) =>
+      gate(
+        '--inject-faults',
+        JSON.stringify([rule]),
+        '--inject-cpu-throttle',
+        '6',
+        '--inject-on',
+        injectOn,
+        '--profile',
+        'chromium',
+      );
+    // Every batch: the first and the fresh one.
+    for (const attempt of ['first', 'remeasure'] as const)
+      expect(injectionFor(both('all'), attempt)).toStrictEqual({ extraFaults: [rule], cpuThrottleRate: 6 });
+    // The first batch only: the fresh batch of the gate sees a clean condition, so that a one-off disturbance does not reproduce.
+    expect(injectionFor(both('first'), 'first')).toStrictEqual({ extraFaults: [rule], cpuThrottleRate: 6 });
+    expect(injectionFor(both('first'), 'remeasure')).toStrictEqual({});
+  });
+
+  it('injects only what was asked for: faults without a throttle, a throttle without faults, and nothing in a normal run', () => {
+    const rule = { type: 'latency' as const, ms: 150 };
+    expect(injectionFor(gate('--inject-faults', JSON.stringify([rule])), 'first')).toStrictEqual({
+      extraFaults: [rule],
+    });
+    expect(injectionFor(gate('--inject-cpu-throttle', '8'), 'first')).toStrictEqual({ cpuThrottleRate: 8 });
+    for (const attempt of ['first', 'remeasure'] as const) {
+      expect(injectionFor(gate(), attempt)).toStrictEqual({});
+    }
   });
 });
 

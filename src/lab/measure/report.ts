@@ -1,7 +1,7 @@
 import { PERF_LIMITS } from '../../shared/criteria.ts';
 import type { HostInfo } from '../probe/host-info.ts';
 import { startRungOf } from './baseline.ts';
-import type { Baseline, BaselineBrowser } from './baseline.ts';
+import type { Baseline, BaselineBrowser, BaselineMachine } from './baseline.ts';
 import { formatAmount } from './decide.ts';
 import type { ExitCode, FinalMetric, MetricComparison, Problem, ScenarioOutcome } from './decide.ts';
 import type { GateResult, MeasuredBatch, ScenarioResult } from './gate.ts';
@@ -189,7 +189,12 @@ export interface GateReport {
     browserVersion: string;
     runsPerScenario: number;
   } | null;
-  current: { host: HostInfo; browser: BaselineBrowser | null; ffmpeg: string | null };
+  current: {
+    host: HostInfo;
+    machine: BaselineMachine | null;
+    browser: BaselineBrowser | null;
+    ffmpeg: string | null;
+  };
   policy: { limits: PerfLimits; rules: Record<RuleKey, MetricRule> };
   /** What differs from the machine of the baseline besides the code: a reader's hint, never a failure. */
   warnings: string[];
@@ -222,6 +227,8 @@ export interface ReportInput {
   result: GateResult;
   baseline: { file: string; baseline: Baseline } | null;
   host: HostInfo;
+  /** How the profile was started and the load around it (`machineFacts`); null when it is not known. */
+  machine?: BaselineMachine | null;
   browser: BaselineBrowser | null;
   ffmpeg: string | null;
   warnings: string[];
@@ -252,7 +259,12 @@ export function buildGateReport(input: ReportInput): GateReport {
           runsPerScenario: input.baseline.baseline.runsPerScenario,
         }
       : null,
-    current: { host: input.host, browser: input.browser, ffmpeg: input.ffmpeg },
+    current: {
+      host: input.host,
+      machine: input.machine ?? null,
+      browser: input.browser,
+      ffmpeg: input.ffmpeg,
+    },
     policy: { limits, rules: rulesFrom(limits) },
     warnings: input.warnings,
     problems: [...setupProblems, ...input.result.problems],
@@ -313,6 +325,16 @@ const worthExplaining = (metric: FinalMetric): boolean =>
 
 const indent = (text: string): string => text.replace(/^/gm, '  ');
 
+/**
+ * What the fresh batch said about a metric that failed in the first one, in words. A failure that came back is a REGRESSION; one that
+ * did not is "not reproduced": the first measurement is discarded and the metric passes. Null for a metric the first batch did not fail.
+ */
+function freshBatchSentence(metric: FinalMetric): string | null {
+  if (!metric.remeasure || metric.first.verdict !== 'fail') return null;
+  if (metric.verdict === 'regression') return `${VERDICT_TEXT[metric.verdict]}: ${metric.remeasure.reason}`;
+  return `${VERDICT_TEXT[metric.verdict]}: the fresh batch passed, ${metric.remeasure.reason}; the first measurement is discarded and the build passes`;
+}
+
 function scenarioText(result: ScenarioResult): string {
   const { spec, first, remeasure, outcome } = result;
   const lines: string[] = [
@@ -340,8 +362,8 @@ function scenarioText(result: ScenarioResult): string {
     lines.push(`  fresh batch (a new browser, new runs): ${batchFacts(spec, remeasure.batch)}`);
     lines.push(indent(textTable([...GATE_COLUMNS], gateRows(remeasure.judgement.comparisons, []))));
     for (const metric of outcome.metrics) {
-      if (metric.remeasure && metric.first.verdict === 'fail')
-        lines.push(`  ${metric.metric}: ${VERDICT_TEXT[metric.verdict]}: ${metric.remeasure.reason}`);
+      const sentence = freshBatchSentence(metric);
+      if (sentence) lines.push(`  ${metric.metric}: ${sentence}`);
     }
   }
   for (const problem of outcome.problems) lines.push(`  PROBLEM: ${problem.message}`);
@@ -385,7 +407,11 @@ export function renderGateMarkdown(report: GateReport): string {
       for (const metric of scenario.metrics.filter(worthExplaining)) {
         lines.push(`- \`${metric.metric}\`: ${metric.first.reason}`);
         if (metric.remeasure && metric.first.verdict === 'fail')
-          lines.push(`  - fresh batch: ${metric.remeasure.reason}`);
+          lines.push(
+            metric.verdict === 'regression'
+              ? `  - fresh batch: ${metric.remeasure.reason}`
+              : `  - fresh batch passed, ${metric.remeasure.reason}: not reproduced, so the first measurement is discarded and the build passes`,
+          );
       }
       lines.push('');
     }

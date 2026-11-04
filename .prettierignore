@@ -6,6 +6,7 @@ test-results
 coverage
 package-lock.json
 docs/results
+perf/baselines
 perf/results
 flake/history
 playwright-report

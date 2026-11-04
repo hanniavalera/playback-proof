@@ -56,6 +56,22 @@ export interface BaselineBrowser {
   cpuThrottleRate: number | null;
 }
 
+/**
+ * How and on what the profile was measured, besides the host facts: started on the host or in the Playwright container (with its CPU
+ * limit), what `perf/quiet.ts` did before the command started, and the load average at both ends of the profile. Optional: a file recorded
+ * without it is still valid, and the A/A and the derivation say so when it is missing.
+ */
+export interface BaselineMachine {
+  invokedVia: 'direct' | 'docker:pw';
+  /** The CPU limit of the container (`docker:pw --cpus`), or null on the host. */
+  dockerCpus: number | null;
+  /** The wait for a quiet machine: the limit, the load average when the command started, how long it waited. Null when the command was not started through perf/quiet.ts. */
+  quiet: { maxLoad: number; hostLoad: number; waitedMs: number } | null;
+  /** The 1-minute load average when the first batch of the profile started and when its last batch ended, as the harness saw it (inside a container: the Docker VM's, which is why `quiet.hostLoad` exists). */
+  loadBeforeProfile: number;
+  loadAfterProfile: number;
+}
+
 export interface Baseline {
   schemaVersion: typeof BASELINE_SCHEMA_VERSION;
   kind: 'perf-baseline';
@@ -68,6 +84,7 @@ export interface Baseline {
   runsPerScenario: number;
   warmupRuns: number;
   host: HostInfo;
+  machine?: BaselineMachine;
   browser: BaselineBrowser;
   /** The ffmpeg that generated the streams, as the service reports it. */
   ffmpeg: string;
@@ -113,6 +130,7 @@ export interface BaselineInput {
   profile: PerfProfile;
   generatedAt: string;
   host: HostInfo;
+  machine?: BaselineMachine;
   browser: BaselineBrowser;
   ffmpeg: string;
   streams: Partial<Record<StreamId, string>>;
@@ -159,6 +177,10 @@ export function buildBaseline(input: BaselineInput): Baseline {
       problems.push(
         `${spec.id}: faults were injected on purpose in this batch, so it is not the condition a baseline records`,
       );
+    if (batch.injectedCpuThrottle !== undefined)
+      problems.push(
+        `${spec.id}: the CPU throttle was overridden on purpose (${batch.injectedCpuThrottle}x) in this batch, so it is not the condition a baseline records`,
+      );
     for (const metric of spec.metrics) {
       if (metric.rule === null) continue;
       batch.runs.forEach((run, index) => {
@@ -200,6 +222,7 @@ export function buildBaseline(input: BaselineInput): Baseline {
     runsPerScenario: Math.max(0, ...input.scenarios.map(({ batch }) => batch.runs.length)),
     warmupRuns: input.warmupRuns,
     host: input.host,
+    ...(input.machine ? { machine: input.machine } : {}),
     browser: input.browser,
     ffmpeg: input.ffmpeg,
     streams: input.streams,
@@ -382,6 +405,25 @@ function readScenario(r: Reader, value: unknown, path: string): ScenarioBaseline
   };
 }
 
+function readMachine(r: Reader, value: unknown, path: string): BaselineMachine {
+  const machine = r.object(value, path);
+  const quiet = machine.quiet === null ? null : r.object(machine.quiet, `${path}.quiet`);
+  return {
+    invokedVia: r.oneOf(machine.invokedVia, ['direct', 'docker:pw'], `${path}.invokedVia`),
+    dockerCpus: r.nullableNumber(machine.dockerCpus, `${path}.dockerCpus`),
+    quiet:
+      quiet === null
+        ? null
+        : {
+            maxLoad: r.number(quiet.maxLoad, `${path}.quiet.maxLoad`),
+            hostLoad: r.number(quiet.hostLoad, `${path}.quiet.hostLoad`),
+            waitedMs: r.number(quiet.waitedMs, `${path}.quiet.waitedMs`),
+          },
+    loadBeforeProfile: r.number(machine.loadBeforeProfile, `${path}.loadBeforeProfile`),
+    loadAfterProfile: r.number(machine.loadAfterProfile, `${path}.loadAfterProfile`),
+  };
+}
+
 function readHost(r: Reader, value: unknown, path: string): HostInfo {
   const host = r.object(value, path);
   const os = r.object(host.os, `${path}.os`);
@@ -448,6 +490,7 @@ export function parseBaseline(text: string, source: string): Baseline {
     runsPerScenario: r.number(file.runsPerScenario, '$.runsPerScenario'),
     warmupRuns: r.number(file.warmupRuns, '$.warmupRuns'),
     host: readHost(r, file.host, '$.host'),
+    ...(file.machine === undefined ? {} : { machine: readMachine(r, file.machine, '$.machine') }),
     browser: {
       name: r.oneOf(browser.name, ['chromium', 'firefox', 'webkit'], '$.browser.name'),
       version: r.string(browser.version, '$.browser.version'),

@@ -97,6 +97,8 @@ export interface BatchMeasurement {
   loadAverage: { before: number; after: number };
   /** Fault rules added to every session of the batch ON PURPOSE (the sensitivity check). Absent in every normal batch: a batch that has them is not a baseline. */
   injectedFaults?: FaultRule[];
+  /** A CPU throttle rate that replaced the profile's own, ON PURPOSE (the sensitivity check: a page that does more main-thread work). Absent in every normal batch. */
+  injectedCpuThrottle?: number;
   startedAt: string;
   finishedAt: string;
 }

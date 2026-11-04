@@ -30,10 +30,12 @@ describe('PB-PERF thresholds: the policy numbers drive the rules', () => {
     }
   });
 
-  it('keeps the tail looser than the median in every rule, as ADR-004 says (the p90 gets the wider threshold)', () => {
+  it('never makes the tail tighter than the median, and the tail threshold is the wider one in absolute terms (it is a share of the larger p90)', () => {
     for (const key of RULE_KEYS) {
       const rule = rules[key];
-      if (rule.kind === 'relative') expect(rule.tailShare, key).toBeGreaterThan(rule.medianShare);
+      // Measured noise (docs/results/perf/threshold-derivation.md) asked for the same share on the p90 as on the median, not a wider one:
+      // the p90 of a skewed baseline is itself larger, so the same share already allows more.
+      if (rule.kind === 'relative') expect(rule.tailShare, key).toBeGreaterThanOrEqual(rule.medianShare);
       else expect(rule.tailBudget, key).toBeGreaterThanOrEqual(rule.medianBudget);
     }
   });

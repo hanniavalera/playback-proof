@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Launcher, LaunchedBrowser, RunPage } from '../../../src/lab/measure/browser.ts';
+import type { LaunchOptions, Launcher, LaunchedBrowser, RunPage } from '../../../src/lab/measure/browser.ts';
 import { HarnessError, runBatch } from '../../../src/lab/measure/runner.ts';
 import type { BatchProgress, Driver, SessionApi } from '../../../src/lab/measure/runner.ts';
 import type { Scenario } from '../../../src/lab/measure/scenarios.ts';
@@ -22,6 +22,8 @@ const ENVIRONMENT = resolveEnvironment({
 interface World {
   log: string[];
   sessions: SessionRequest[];
+  /** The options each launch was given, in order. */
+  launches: Array<LaunchOptions | undefined>;
   launcher: Launcher;
   service: { origin: string; client: SessionApi };
   driverFor: (run: RunPage) => Driver;
@@ -30,11 +32,13 @@ interface World {
 function world(options: { failLaunch?: boolean } = {}): World {
   const log: string[] = [];
   const sessions: SessionRequest[] = [];
+  const launches: Array<LaunchOptions | undefined> = [];
   let contexts = 0;
   let nextSession = 0;
-  const launcher: Launcher = async (profileName) => {
+  const launcher: Launcher = async (profileName, launchOptions) => {
     if (options.failLaunch) throw new Error("Executable doesn't exist at /nowhere");
     log.push(`launch ${profileName}`);
+    launches.push(launchOptions);
     const browser: LaunchedBrowser = {
       profile: profileName,
       engine: 'chromium',
@@ -72,6 +76,7 @@ function world(options: { failLaunch?: boolean } = {}): World {
   return {
     log,
     sessions,
+    launches,
     launcher,
     service: { origin: 'http://127.0.0.1:1', client },
     driverFor: () => ({ diagnostics: async () => 'the last events of the player: ...' }) as unknown as Driver,
@@ -177,6 +182,18 @@ describe('PB-PERF runner: warm-up, contexts and sessions', () => {
   it('does not mention injected faults in a normal batch', async () => {
     const batch = await runBatch(request(world(), counting().scenario, { runs: 1 }));
     expect('injectedFaults' in batch).toBe(false);
+    expect('injectedCpuThrottle' in batch).toBe(false);
+  });
+
+  it('launches the browser with a replaced CPU throttle and records it in the batch; otherwise with no options', async () => {
+    const heavy = world();
+    const batch = await runBatch(request(heavy, counting().scenario, { runs: 1, cpuThrottleRate: 8 }));
+    expect(heavy.launches).toStrictEqual([{ cpuThrottleRate: 8 }]);
+    expect(batch.injectedCpuThrottle).toBe(8);
+
+    const normal = world();
+    await runBatch(request(normal, counting().scenario, { runs: 1 }));
+    expect(normal.launches).toStrictEqual([undefined]);
   });
 
   it('labels the warm-up as such in the service log', async () => {

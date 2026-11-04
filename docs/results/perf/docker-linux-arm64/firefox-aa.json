@@ -1,0 +1,369 @@
+{
+  "schemaVersion": 1,
+  "kind": "perf-aa",
+  "envId": "docker-linux-arm64",
+  "profile": "firefox",
+  "passes": 5,
+  "scenarios": [
+    "PB-PERF-001",
+    "PB-PERF-002"
+  ],
+  "baseline": {
+    "file": "/work/perf/baselines/docker-linux-arm64/firefox.json",
+    "generatedAt": "2026-11-04T06:54:57.984Z",
+    "commit": "58da1b2",
+    "browserVersion": "157.0",
+    "runsPerScenario": 10
+  },
+  "exitCodes": {
+    "0": 2,
+    "1": 0,
+    "2": 3
+  },
+  "falsePositives": 0,
+  "firstBatchAlarms": 0,
+  "notReproduced": 0,
+  "host": {
+    "cpus": 12,
+    "memoryGiB": 7.7,
+    "node": "v24.22.1",
+    "playwright": "1.64.1",
+    "invokedVia": "docker:pw",
+    "dockerCpus": 4
+  },
+  "runs": [
+    {
+      "file": "reports/aa/docker-firefox/1/docker-linux-arm64/firefox.json",
+      "generatedAt": "2026-11-04T08:09:49.190Z",
+      "exitCode": 2,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.73,
+        "after": 0.75
+      },
+      "problems": [
+        "PB-PERF-002 on firefox, run 1 of 10: qa.waitFor('firstframe'): qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n14 events so far, the last 14:\n  #0 t=87.0 media=0.000 load-requested {\"uri\":\"/s/d91166609edf/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=87.0 media=0.000 buffering-start\n  #2 t=102.0 media=0.000 manifest-loaded\n  #3 t=107.0 media=0.000 load-requested {\"uri\":\"/s/d91166609edf/vod-cmaf/dash/manifest.mpd\"}\n  #4 t=108.0 media=0.000 error {\"code\":7000,\"codeName\":\"LOAD_INTERRUPTED\",\"category\":7,\"severity\":2,\"message\":\"PLAYER.LOAD_INTERRUPTED: Shaka Error 7000\",\"source\":\"load\"}\n  #5 t=108.0 media=0.000 buffering-end\n  #6 t=109.0 media=0.000 buffering-start\n  #7 t=113.0 media=0.000 manifest-loaded\n  #8 t=115.0 media=0.000 buffering-start\n  #9 t=115.0 media=0.000 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}\n  #10 t=116.0 media=0.000 loaded\n  #11 t=119.0 media=0.000 variant-changed {\"from\":1,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"manual\"}\n  #12 t=138.0 media=0.000 playing\n  #13 t=139.0 media=0.000 buffering-end\nthe last events of the player:\n  #2 +15 ms media 0.00 manifest-loaded\n  #3 +20 ms media 0.00 load-requested {\"uri\":\"/s/d91166609edf/vod-cmaf/dash/manifest.mpd\"}\n  #4 +21 ms media 0.00 error {\"code\":7000,\"codeName\":\"LOAD_INTERRUPTED\",\"category\":7,\"severity\":2,\"message\":\"PLAYER.LOAD_INTERRUPTED: Shaka Error 7000\",\"source\":\"load\"}\n  #5 +21 ms media 0.00 buffering-end\n  #6 +22 ms media 0.00 buffering-start\n  #7 +26 ms media 0.00 manifest-loaded\n  #8 +28 ms media 0.00 buffering-start\n  #9 +28 ms media 0.00 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}\n  #10 +29 ms media 0.00 loaded\n  #11 +32 ms media 0.00 variant-changed {\"from\":1,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"manual\"}\n  #12 +51 ms media 0.00 playing\n  #13 +52 ms media 0.00 buffering-end"
+      ]
+    },
+    {
+      "file": "reports/aa/docker-firefox/2/docker-linux-arm64/firefox.json",
+      "generatedAt": "2026-11-04T08:10:19.076Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.85,
+        "after": 0.51
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa/docker-firefox/3/docker-linux-arm64/firefox.json",
+      "generatedAt": "2026-11-04T08:11:47.166Z",
+      "exitCode": 2,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.51,
+        "after": 0.95
+      },
+      "problems": [
+        "PB-PERF-002 on firefox, run 8 of 10: qa.waitFor('firstframe'): qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n14 events so far, the last 14:\n  #0 t=91.0 media=0.000 load-requested {\"uri\":\"/s/1865411bc2ca/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=93.0 media=0.000 buffering-start\n  #2 t=110.0 media=0.000 manifest-loaded\n  #3 t=120.0 media=0.000 load-requested {\"uri\":\"/s/1865411bc2ca/vod-cmaf/dash/manifest.mpd\"}\n  #4 t=127.0 media=0.000 error {\"code\":7000,\"codeName\":\"LOAD_INTERRUPTED\",\"category\":7,\"severity\":2,\"message\":\"PLAYER.LOAD_INTERRUPTED: Shaka Error 7000\",\"source\":\"load\"}\n  #5 t=127.0 media=0.000 buffering-end\n  #6 t=128.0 media=0.000 buffering-start\n  #7 t=133.0 media=0.000 manifest-loaded\n  #8 t=136.0 media=0.000 buffering-start\n  #9 t=136.0 media=0.000 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}\n  #10 t=137.0 media=0.000 loaded\n  #11 t=141.0 media=0.000 variant-changed {\"from\":1,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"manual\"}\n  #12 t=163.0 media=0.000 playing\n  #13 t=163.0 media=0.000 buffering-end\nthe last events of the player:\n  #2 +19 ms media 0.00 manifest-loaded\n  #3 +29 ms media 0.00 load-requested {\"uri\":\"/s/1865411bc2ca/vod-cmaf/dash/manifest.mpd\"}\n  #4 +36 ms media 0.00 error {\"code\":7000,\"codeName\":\"LOAD_INTERRUPTED\",\"category\":7,\"severity\":2,\"message\":\"PLAYER.LOAD_INTERRUPTED: Shaka Error 7000\",\"source\":\"load\"}\n  #5 +36 ms media 0.00 buffering-end\n  #6 +37 ms media 0.00 buffering-start\n  #7 +42 ms media 0.00 manifest-loaded\n  #8 +45 ms media 0.00 buffering-start\n  #9 +45 ms media 0.00 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}\n  #10 +46 ms media 0.00 loaded\n  #11 +50 ms media 0.00 variant-changed {\"from\":1,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"manual\"}\n  #12 +72 ms media 0.00 playing\n  #13 +72 ms media 0.00 buffering-end"
+      ]
+    },
+    {
+      "file": "reports/aa/docker-firefox/4/docker-linux-arm64/firefox.json",
+      "generatedAt": "2026-11-04T08:13:08.199Z",
+      "exitCode": 0,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 0.61,
+        "after": 1.02
+      },
+      "problems": []
+    },
+    {
+      "file": "reports/aa/docker-firefox/5/docker-linux-arm64/firefox.json",
+      "generatedAt": "2026-11-04T08:14:36.167Z",
+      "exitCode": 2,
+      "alarmedScenarios": [],
+      "load": {
+        "before": 1.02,
+        "after": 1.02
+      },
+      "problems": [
+        "PB-PERF-002 on firefox, run 6 of 10: qa.waitFor('firstframe'): qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n14 events so far, the last 14:\n  #0 t=84.0 media=0.000 load-requested {\"uri\":\"/s/cf3fbb0b6009/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=85.0 media=0.000 buffering-start\n  #2 t=102.0 media=0.000 manifest-loaded\n  #3 t=107.0 media=0.000 load-requested {\"uri\":\"/s/cf3fbb0b6009/vod-cmaf/dash/manifest.mpd\"}\n  #4 t=107.0 media=0.000 error {\"code\":7000,\"codeName\":\"LOAD_INTERRUPTED\",\"category\":7,\"severity\":2,\"message\":\"PLAYER.LOAD_INTERRUPTED: Shaka Error 7000\",\"source\":\"load\"}\n  #5 t=108.0 media=0.000 buffering-end\n  #6 t=108.0 media=0.000 buffering-start\n  #7 t=113.0 media=0.000 manifest-loaded\n  #8 t=116.0 media=0.000 buffering-start\n  #9 t=116.0 media=0.000 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}\n  #10 t=117.0 media=0.000 loaded\n  #11 t=120.0 media=0.000 variant-changed {\"from\":1,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"manual\"}\n  #12 t=141.0 media=0.000 playing\n  #13 t=141.0 media=0.000 buffering-end\nthe last events of the player:\n  #2 +18 ms media 0.00 manifest-loaded\n  #3 +23 ms media 0.00 load-requested {\"uri\":\"/s/cf3fbb0b6009/vod-cmaf/dash/manifest.mpd\"}\n  #4 +23 ms media 0.00 error {\"code\":7000,\"codeName\":\"LOAD_INTERRUPTED\",\"category\":7,\"severity\":2,\"message\":\"PLAYER.LOAD_INTERRUPTED: Shaka Error 7000\",\"source\":\"load\"}\n  #5 +24 ms media 0.00 buffering-end\n  #6 +24 ms media 0.00 buffering-start\n  #7 +29 ms media 0.00 manifest-loaded\n  #8 +32 ms media 0.00 buffering-start\n  #9 +32 ms media 0.00 variant-changed {\"from\":null,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"start\"}\n  #10 +33 ms media 0.00 loaded\n  #11 +36 ms media 0.00 variant-changed {\"from\":1,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"manual\"}\n  #12 +57 ms media 0.00 playing\n  #13 +57 ms media 0.00 buffering-end"
+      ]
+    }
+  ],
+  "metrics": [
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "startupMs",
+      "unit": "ms",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 54,
+        "tail": 61.2,
+        "cv": 0.1534581583540209,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 16.2,
+        "tail": 18.36
+      },
+      "passes": 5,
+      "medians": [
+        56,
+        45,
+        48,
+        51.5,
+        49.5
+      ],
+      "tails": [
+        62.1,
+        57.5,
+        56.4,
+        54.1,
+        62.3
+      ],
+      "worst": {
+        "median": 2,
+        "tail": 1.0999999999999943
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 4.107919181288746,
+        "relativeSd": 0.07607257743127306
+      }
+    },
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "manifestMs",
+      "unit": "ms",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 16.5,
+        "tail": 20.499999999999993,
+        "cv": 0.3148905098950543,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 5,
+      "medians": [
+        16.5,
+        16,
+        16,
+        16,
+        16
+      ],
+      "tails": [
+        18.4,
+        17.5,
+        17,
+        17,
+        17.2
+      ],
+      "worst": {
+        "median": 0,
+        "tail": -2.0999999999999943
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0.22360679774997896,
+        "relativeSd": 0.01355192713636236
+      }
+    },
+    {
+      "scenario": "PB-PERF-001",
+      "metric": "loadedMs",
+      "unit": "ms",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 23,
+        "tail": 30.999999999999996,
+        "cv": 0.2499990819674539,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 5,
+      "medians": [
+        23,
+        21.5,
+        21.5,
+        22,
+        22
+      ],
+      "tails": [
+        24.5,
+        23.999999999999996,
+        23.1,
+        23,
+        23.2
+      ],
+      "worst": {
+        "median": 0,
+        "tail": -6.4999999999999964
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0.6123724356957945,
+        "relativeSd": 0.026624888508512804
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "fps",
+      "unit": "fps",
+      "gated": true,
+      "tailStatistic": "p10",
+      "baseline": {
+        "median": 30,
+        "tail": 29.999996026490592,
+        "cv": 5.584595717949296e-8,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 1.5,
+        "tail": 2.9999996026490594
+      },
+      "passes": 2,
+      "medians": [
+        30,
+        29.999998013245296
+      ],
+      "tails": [
+        29.99999960264906,
+        29.999996026490592
+      ],
+      "worst": {
+        "median": 0.000001986754703864335,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0.0000014048477236567426,
+        "relativeSd": 4.6828257455224755e-8
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "droppedRatio",
+      "unit": "ratio",
+      "gated": true,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": 0.01,
+        "tail": 0.03
+      },
+      "passes": 2,
+      "medians": [
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "decodedFrames",
+      "unit": "count",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 150,
+        "tail": 151,
+        "cv": 0.003433495874297355,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 2,
+      "medians": [
+        150.5,
+        150.5
+      ],
+      "tails": [
+        151,
+        151
+      ],
+      "worst": {
+        "median": 0.5,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": 0
+      }
+    },
+    {
+      "scenario": "PB-PERF-002",
+      "metric": "droppedFrames",
+      "unit": "count",
+      "gated": false,
+      "tailStatistic": "p90",
+      "baseline": {
+        "median": 0,
+        "tail": 0,
+        "cv": null,
+        "runs": 10
+      },
+      "allowed": {
+        "median": null,
+        "tail": null
+      },
+      "passes": 2,
+      "medians": [
+        0,
+        0
+      ],
+      "tails": [
+        0,
+        0
+      ],
+      "worst": {
+        "median": 0,
+        "tail": 0
+      },
+      "firstBatchAlarms": 0,
+      "reproduced": 0,
+      "betweenBatch": {
+        "sd": 0,
+        "relativeSd": null
+      }
+    }
+  ]
+}

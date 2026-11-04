@@ -28,7 +28,6 @@ const INPUTS = {
  * is missing; the day the branch merges, the test says that the entry has to go, and from then on it checks the file like any other.
  */
 const PENDING: Readonly<Record<string, string>> = {
-  'perf/aa.ts': 'p5/perf',
   'ab/run.ts': 'p6/ab',
   'live/readiness.ts': 'p7/live',
   'live/soak.ts': 'p7/live',
@@ -373,7 +372,7 @@ describe('the measurement workflow test fails when a promise is broken', () => {
       'perf/aaa.ts is missing and not listed as pending',
     );
     expect(broken((t) => t, { ...world, exists: () => true })).toContain(
-      'exists now (p5/perf has merged): remove it from PENDING',
+      'exists now (p6/ab has merged): remove it from PENDING',
     );
     expect(
       broken((t) => t, { ...world, exists: (f) => f !== 'tools/flake-collect.ts' && world.exists(f) }),
