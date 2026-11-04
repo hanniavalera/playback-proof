@@ -22,6 +22,11 @@ import { expect, test } from './support/fixtures.ts';
 import { streamInfoOf } from './support/session.ts';
 import { requestLogCursor, requestsFor, waitForRequest } from './support/waiting.ts';
 
+// The seven ABR specs (PB-ABR-001 to PB-ABR-007). Their decisions are ADR-095 to ADR-097 (docs/decisions/e2e-abr.md): a condition is
+// a finite link derived from the ladder (a recovery replaces the throttle, it does not remove it), every claim about a rung is made
+// twice, in the player's events and in the origin's log, and no spec asserts the rung an engine starts on (Shaka's defaults start on
+// a different one in each).
+//
 // ABR tests are the slowest of the lab: the player's adaptation runs on seconds (Shaka's `abr.switchInterval` is 8 s, its buffering
 // goal 10 s), so a test is 20 to 40 s of real playback. They need their own budget (the longest wait path of a test is under 120 s,
 // the most a spec may ask for); every wait inside has its own, generous bound, so a failure is reported by the wait and not by the timeout.
@@ -596,7 +601,7 @@ test(
     });
     testInfo.annotations.push({
       type: 'measured',
-      description: `player: ${history.map((entry) => `${entry.height}p ${entry.reason}`).join(' > ')}; origin: ${runs.map((run) => `${run.height}p x ${run.requests}`).join(' > ')}; first request of a new rung after the player's switch: ${comparison.lags.map((lag) => `${lag.height}p ${lag.lagMs} ms`).join(', ')} (bound ${stream.segmentDurationSec * 1000} ms)`,
+      description: `player: ${history.map((entry) => `${entry.height}p ${entry.reason}`).join(' > ')}; origin: ${runs.map((run) => `${run.height}p x ${run.requests}`).join(' > ')}; first request of a new rung after the player's switch: ${comparison.lags.map((lag) => `${lag.height}p ${lag.lagMs} ms`).join(', ')} (bound ${stream.segmentDurationSec * 1000} ms); manifest round trip ${manifestMs.toFixed(0)} ms`,
     });
 
     expect(
