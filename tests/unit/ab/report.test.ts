@@ -140,7 +140,7 @@ describe('PB-AB report: a pre-registered experiment that ships B', () => {
         bootstrapResamples: 5000,
         seed: 20261104,
       },
-      calibration: null,
+      calibrations: [],
     });
     expect(json.conditions[0]?.analysis.decision?.outcome).toBe('ship-b');
     expect(json.conditions[0]?.analysis.metrics[0]?.effect?.kind).toBe('hodges-lehmann');
@@ -261,13 +261,15 @@ describe('PB-AB report: the other kinds of run', () => {
       aaPool(generator(9), 60),
       { splits: 200, seed: 1 },
     );
-    const { markdown, json } = report(raw, { calibration });
+    const { markdown, json } = report(raw, {
+      calibrations: [{ condition: 'high-latency', result: calibration }],
+    });
     expect(markdown).toContain('> A/A run (PB-AB-001): both arms ran configuration A.');
     expect(markdown).toContain('**A/A reading.**');
     expect(markdown).toContain('reads "no difference"');
     expect(markdown).toContain('## A/A calibration (PB-AB-001): the false-positive rate of the harness');
     expect(markdown).toContain('**One A/A run.**');
-    expect(json.calibration?.splits).toBe(200);
+    expect(json.calibrations[0]).toMatchObject({ condition: 'high-latency', result: { splits: 200 } });
     expect(json.conditions[0]?.aa).toMatchObject({ ideal: true, acceptable: true });
   });
 });

@@ -108,8 +108,8 @@ function limitations(
 export interface ReportOptions {
   /** Where the raw results file lives (a path relative to the repository), for the "files" line. */
   rawFile?: string;
-  /** The A/A calibration of the pool of this run, if it was computed. */
-  calibration?: CalibrationResult;
+  /** The A/A calibration of the pool of each condition of this run, if it was computed. */
+  calibrations?: ReadonlyArray<{ condition: string; result: CalibrationResult }>;
 }
 
 export interface ConditionReport {
@@ -136,7 +136,7 @@ export interface ReportJson {
   };
   warnings: string[];
   conditions: ConditionReport[];
-  calibration: CalibrationResult | null;
+  calibrations: Array<{ condition: string; result: CalibrationResult }>;
 }
 
 function conditionSection(
@@ -484,7 +484,13 @@ export function renderReport(
   );
   if (analysis.warnings.length > 0)
     md.push('Warnings of the plan:', '', ...analysis.warnings.map((warning) => `- ${warning}`), '');
-  if (options.calibration) md.push(renderCalibration(options.calibration));
+  for (const { condition, result } of options.calibrations ?? []) {
+    md.push(
+      prereg.conditions.length > 1
+        ? `### Condition ${condition}\n\n${renderCalibration(result)}`
+        : renderCalibration(result),
+    );
+  }
   md.push(
     '## Files',
     '',
@@ -520,7 +526,7 @@ export function renderReport(
       analysis: entry.analysis,
       aa: aaEvaluations[index] ?? null,
     })),
-    calibration: options.calibration ?? null,
+    calibrations: [...(options.calibrations ?? [])],
   };
   return { markdown: `${md.join('\n')}\n`, json };
 }
