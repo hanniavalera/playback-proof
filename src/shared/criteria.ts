@@ -13,7 +13,7 @@
 //
 // Code that enforces a policy imports the plain numbers (`LIVE_LIMITS.latencyMaxMs`); the documents render the whole entry.
 
-export type PolicyUnit = 'ms' | 's' | 'min' | 'days' | 'count' | 'score' | 'ratio' | 'MB' | 'x';
+export type PolicyUnit = 'ms' | 's' | 'min' | 'days' | 'count' | 'score' | 'ratio' | 'MB' | 'x' | 'fps';
 export type BasisKind = 'fact' | 'arithmetic' | 'assumption' | 'measured';
 
 export interface Policy {
@@ -429,6 +429,186 @@ export const GATE_BUDGETS = {
 } satisfies Record<string, Policy>;
 
 export const GATE_LIMITS = limitsOf(GATE_BUDGETS);
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Performance gate (TEST_STRATEGY.md section 7.1, ADR-004, docs/decisions/perf.md)
+//
+// STATUS: every threshold below is an ASSUMPTION. Phase 5 part 1 built the harness and measured nothing; part 2 records the baselines on a
+// quiet machine, derives each threshold from the run-to-run variation it finds (the coefficient of variation committed with every
+// baseline) and rewrites the entry with the basis `measured` and the artifact it came from. Until then the numbers are defensible
+// arithmetic on an expected noise level, not evidence, and the generated table in TEST_STRATEGY.md says so.
+//
+// How a threshold is applied (src/lab/measure/decide.ts). A metric that gates carries one of two kinds of rule, each against the
+// baseline of the same environment and profile:
+//   relative  worse than the baseline by more than a SHARE of the baseline value AND by more than an absolute FLOOR (one floor per metric,
+//             for both statistics, so a few milliseconds on a small metric can never fail a build). It is judged twice: on the median
+//             (the typical run) and, with a wider share, on the tail of the worse side: the p90 where higher is worse, the p10 where lower is.
+//   budget    worse than the baseline by more than an ABSOLUTE amount, for the median and (with a larger amount) the tail. Counts and
+//             ratios whose baseline is usually zero use it: a share of zero is zero, and every run would fail.
+// A relative metric whose baseline is noisier than `maxBaselineCv` does not gate (it is tracked and reported): the baseline cannot tell a
+// regression of that size from noise.
+
+const PERF_NOISE_NOTE =
+  'About four standard errors of a median of ten runs when the run-to-run coefficient of variation is at the stability limit (4 x 1.2533 x 0.15 / sqrt(10) = 24 %, rounded up), which is three standard errors of the difference between two such medians.';
+
+export const PERF_POLICY = {
+  runs: GATE_BUDGETS.perfRunsPerScenario,
+  warmupRuns: assumption(
+    'Warm-up runs per batch',
+    1,
+    'count',
+    'The first run of every batch (one scenario, one browser process) is executed like the others, recorded in the baseline and the report, and excluded from the median and p90.',
+    'The first run in a fresh browser process pays for things the later ones do not (cold code and file caches, the first decode, the first connection). One is enough to take that out of a batch of ten; part 2 checks the claim by comparing the first measured run with the rest.',
+  ),
+  maxBaselineCv: assumption(
+    'Stability limit: baseline CV',
+    0.15,
+    'ratio',
+    'A metric judged by a relative rule gates only while the coefficient of variation of its baseline runs is at or below this; above it the metric is tracked and reported, not gated.',
+    'TEST_STRATEGY.md section 7.1: a metric gates only once its baseline is stable enough to tell a regression from noise. 15 % is the largest noise at which the relative thresholds below are still about four standard errors of a ten-run median.',
+  ),
+
+  startupMedianRel: assumption(
+    'Startup (PB-PERF-001): median, share',
+    0.25,
+    'ratio',
+    '`startupMs`: the median of the batch may be worse than the baseline median by at most this share of it (and the floor).',
+    PERF_NOISE_NOTE,
+  ),
+  startupTailRel: assumption(
+    'Startup (PB-PERF-001): p90, share',
+    0.5,
+    'ratio',
+    '`startupMs`: the p90 of the batch may be worse than the baseline p90 by at most this share of it (and the floor).',
+    'Twice the median share: with ten runs the p90 is essentially the second slowest run, a much noisier statistic than the median (for normally distributed runs its standard error is about 0.54 sigma against 0.40 sigma for the median).',
+  ),
+  startupFloorMs: assumption(
+    'Startup (PB-PERF-001): floor',
+    25,
+    'ms',
+    '`startupMs`: a median or p90 that is worse by this much or less never fails, whatever the share.',
+    'Startup on localhost is about 120 to 160 ms in the committed smoke results (docs/results/player-smoke, Chromium on macOS), so 25 % of it is 30 to 40 ms. The floor sits just below that, so that on an environment where startup is 60 ms the share (15 ms) cannot fail a build on its own.',
+  ),
+
+  lowEndStartupMedianRel: assumption(
+    'Low-end startup (PB-PERF-004): median, share',
+    0.3,
+    'ratio',
+    '`startupMs` under the 4x CPU throttle: the median share, as for PB-PERF-001.',
+    'A little wider than the unthrottled share: the throttle makes the main thread four times slower, so its scheduling noise is amplified with it.',
+  ),
+  lowEndStartupTailRel: assumption(
+    'Low-end startup (PB-PERF-004): p90, share',
+    0.6,
+    'ratio',
+    '`startupMs` under the 4x CPU throttle: the p90 share, as for PB-PERF-001.',
+    'Twice the median share, as for the unthrottled profile.',
+  ),
+  lowEndStartupFloorMs: assumption(
+    'Low-end startup (PB-PERF-004): floor',
+    100,
+    'ms',
+    '`startupMs` under the 4x CPU throttle: the floor, as for PB-PERF-001.',
+    'Four times the unthrottled floor: whatever the unthrottled run does in 25 ms of CPU, the throttled one takes four times as long.',
+  ),
+
+  fpsMedianRel: assumption(
+    'Frame rate (PB-PERF-002): median, share',
+    0.05,
+    'ratio',
+    '`fps` (frames presented per media second): the median may be below the baseline median by at most this share of it (and the floor). Lower is worse; a higher rate never fails.',
+    'The content is 30 fps and a healthy run reads about 30 (docs/METRICS.md), so a spread of a few percent is already a visible drop: 5 % is 1.5 fps.',
+  ),
+  fpsTailRel: assumption(
+    'Frame rate (PB-PERF-002): p10, share',
+    0.1,
+    'ratio',
+    '`fps`: the p10 (the worse tail, since lower is worse) may be below the baseline p10 by at most this share of it (and the floor).',
+    'Twice the median share, for the same reason as the startup tail.',
+  ),
+  fpsFloor: assumption(
+    'Frame rate (PB-PERF-002): floor',
+    1,
+    'fps',
+    '`fps`: a median or p10 that is lower by this much or less never fails.',
+    'One frame per second of 30 (3 %): over the five-second window (150 frames) that is five frames, far more than the one or two by which where the window starts and ends can change the count.',
+  ),
+
+  frameDroppedMedianBudget: assumption(
+    'Dropped frames (PB-PERF-002): median, budget',
+    0.01,
+    'ratio',
+    '`droppedRatio` (dropped / decoded over the measured window): the median may be above the baseline median by at most this much, in absolute ratio.',
+    'One percent: the lab policy for a dropped-frame ratio over a whole soak (LIVE_READINESS.maxDroppedFrameRatio), applied here to the increase over the baseline of a five-second window. The baseline is expected to be zero or a frame or two.',
+  ),
+  frameDroppedTailBudget: assumption(
+    'Dropped frames (PB-PERF-002): p90, budget',
+    0.03,
+    'ratio',
+    '`droppedRatio`: the p90 may be above the baseline p90 by at most this much.',
+    'Three times the median budget: the p90 of ten runs is essentially the second worst run, so one unlucky run moves it.',
+  ),
+
+  lowEndDroppedMedianBudget: assumption(
+    'Low-end dropped frames (PB-PERF-004): median, budget',
+    0.02,
+    'ratio',
+    '`droppedRatio` under the 4x CPU throttle: the median budget, as for PB-PERF-002.',
+    'Twice the unthrottled budget: the throttle exists to magnify per-frame cost, so the same regression shows as more dropped frames and the same noise as more too.',
+  ),
+  lowEndDroppedTailBudget: assumption(
+    'Low-end dropped frames (PB-PERF-004): p90, budget',
+    0.05,
+    'ratio',
+    '`droppedRatio` under the 4x CPU throttle: the p90 budget.',
+    'The tail of the throttled profile: wider than its median budget, for the reason given for PB-PERF-002.',
+  ),
+
+  rebufferCountMedianBudget: assumption(
+    'Rebuffering (PB-PERF-003): count, median budget',
+    0,
+    'count',
+    '`rebufferCount` under `bandwidth-drop`: the median may be above the baseline median by at most this many rebuffers.',
+    'Zero: the median count may not rise. With ten runs that means at least half of them now rebuffer more than the typical baseline run, a shift of the whole distribution and not one slow run (the median ignores one run). A batch that got there by chance is absorbed by the re-measure.',
+  ),
+  rebufferCountTailBudget: assumption(
+    'Rebuffering (PB-PERF-003): count, p90 budget',
+    1,
+    'count',
+    '`rebufferCount`: the p90 may be above the baseline p90 by at most this many rebuffers.',
+    'One extra rebuffer in the tail of the batch: the tail of ten integer counts moves by a whole rebuffer when one slow run happens, which is noise at this size.',
+  ),
+  rebufferMsMedianBudget: assumption(
+    'Rebuffering (PB-PERF-003): duration, median budget',
+    250,
+    'ms',
+    '`rebufferMs` (total stalled time): the median may be above the baseline median by at most this long.',
+    'A quarter of a second, an eighth of a 2 s segment: small enough to catch one more short stall, large enough to sit above timer granularity.',
+  ),
+  rebufferMsTailBudget: assumption(
+    'Rebuffering (PB-PERF-003): duration, p90 budget',
+    1000,
+    'ms',
+    '`rebufferMs`: the p90 may be above the baseline p90 by at most this long.',
+    'One second: half a segment of 2 s, and four times the median budget for the wider spread of a tail.',
+  ),
+  rebufferRatioMedianBudget: assumption(
+    'Rebuffering (PB-PERF-003): ratio, median budget',
+    0.01,
+    'ratio',
+    '`rebufferRatio` (stalled time over stalled plus playing time since the first frame): the median may be above the baseline median by at most this much.',
+    'One percent: about a fifth of a second over the 18 s of media the scenario plays, consistent with the duration budget.',
+  ),
+  rebufferRatioTailBudget: assumption(
+    'Rebuffering (PB-PERF-003): ratio, p90 budget',
+    0.05,
+    'ratio',
+    '`rebufferRatio`: the p90 may be above the baseline p90 by at most this much.',
+    'Five percent: about one second over the 18 s of media the scenario plays, consistent with the duration budget of the tail.',
+  ),
+} satisfies Record<string, Policy>;
+
+export const PERF_LIMITS = limitsOf(PERF_POLICY);
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Flake policy (TEST_STRATEGY.md section 7, ADR-022)

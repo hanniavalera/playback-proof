@@ -6,6 +6,7 @@ import {
   GATE_BUDGETS,
   LANE_TIER,
   LIVE_READINESS,
+  PERF_POLICY,
   PERF_SECONDS_PER_RUN,
   RISK_LIMITS,
   RISK_TIERING,
@@ -49,6 +50,8 @@ export function formatLimit(policy: Policy): string {
         : `${formatNumber(value)} ms`;
     case 'x':
       return `${value}x`;
+    case 'fps':
+      return `${formatNumber(value)} fps`;
     case 'count':
     case 'score':
       return formatNumber(value);
@@ -88,6 +91,10 @@ export function renderLiveCriteria(): string {
 
 export function renderFlakePolicy(): string {
   return renderPolicyTable(FLAKE_POLICY, { first: 'Policy number', value: 'Value' });
+}
+
+export function renderPerfPolicy(): string {
+  return renderPolicyTable(PERF_POLICY, { first: 'Threshold or parameter', value: 'Value' });
 }
 
 export function renderRiskTiers(): string {

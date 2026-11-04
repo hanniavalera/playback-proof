@@ -9,6 +9,7 @@ import {
   LIVE_FACTS,
   LIVE_LIMITS,
   LIVE_READINESS,
+  PERF_POLICY,
   PERF_SECONDS_PER_RUN,
   RISK_LIMITS,
   RISK_TIERING,
@@ -24,6 +25,7 @@ const policies: Record<string, Record<string, Policy>> = {
   GATE_BUDGETS,
   TEST_SECONDS_BY_AREA,
   PERF_SECONDS_PER_RUN,
+  PERF_POLICY,
   FLAKE_POLICY,
   RISK_TIERING,
 };

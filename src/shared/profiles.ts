@@ -23,7 +23,7 @@ const DEFINITIONS = {
   clean: {
     purpose:
       'The control condition: no faults. Functional tests that must not be disturbed, and the baseline of the startup and frame-rate scenarios.',
-    usedBy: ['PB-VOD-001', 'PB-PERF-001', 'PB-PERF-002'],
+    usedBy: ['PB-VOD-001', 'PB-PERF-001', 'PB-PERF-002', 'PB-PERF-004'],
     rules: [],
   },
   'constrained-1500': {

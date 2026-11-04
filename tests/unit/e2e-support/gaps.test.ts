@@ -326,7 +326,7 @@ describe('explainUndocumentedGap: the failure text of PB-ENV-001', () => {
     );
     expect(text).toContain('a failure of the experiment, not a change of the environment');
     expect(text).toContain(
-      'RUN_SPECS_IN_LINUX_WEBKIT in tests/e2e/support/gaps.ts goes back to the committed matrix when it is false',
+      'RUN_SPECS_IN_LINUX_WEBKIT in src/lab/gaps.ts goes back to the committed matrix when it is false',
     );
     expect(text).not.toContain('do not retry the specs');
     expect(text).not.toContain('npm run codec-matrix');
