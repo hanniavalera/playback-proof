@@ -480,6 +480,30 @@ describe('smoothness: a rate is a steady stream, not bursts', () => {
   });
 });
 
+describe('a busy event loop', () => {
+  it('holds the rate when the loop is blocked for 80 ms every 200 ms: late timers must not lower it', async () => {
+    const srv = await throttledServer([createBucket(3000)], Buffer.alloc(450_000, 8));
+    // Timers fire late after each stall (a busy machine, a long garbage collection). A bucket that discarded the credit that
+    // accrued meanwhile would lose (80 - 29) ms of 3000 kbps in every cycle, a quarter of the rate.
+    const blocker = setInterval(() => {
+      const until = performance.now() + 80;
+      while (performance.now() < until) {
+        // busy on purpose
+      }
+    }, 200);
+    const got = await download(srv.port, '/');
+    clearInterval(blocker);
+    await srv.close();
+    const { steadyKbps, spanMs } = goodput(got.chunks);
+    console.info(
+      `[throttle] 3000 kbps with the event loop blocked 80 ms in every 200 ms: ${steadyKbps.toFixed(1)} kbps (${(steadyKbps / 3000).toFixed(3)} of configured) over ${spanMs.toFixed(0)} ms, longest silence ${Math.max(...gapsMs(got.chunks)).toFixed(0)} ms`,
+    );
+    expect(got.bytes).toBe(450_000);
+    expect(steadyKbps).toBeGreaterThan(3000 * 0.9);
+    expect(steadyKbps).toBeLessThan(3000 * 1.1);
+  });
+});
+
 describe('the process can exit', () => {
   it('an idle bucket, or a consumer that joined and never asks, keeps nothing alive', () => {
     const root = fileURLToPath(new URL('../../../', import.meta.url));

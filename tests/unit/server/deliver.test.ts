@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { activeDeliveries, deliver } from '../../../src/server/deliver.ts';
 import type { DeliverOutcome } from '../../../src/server/deliver.ts';
 import { CHUNK_BYTES, bucketState, createBucket } from '../../../src/server/throttle.ts';
-import { deliveryServer, download, patterned, prng } from '../support/delivery.ts';
+import { deliveryServer, download, patterned, prng, until } from '../support/delivery.ts';
 import type { Download } from '../support/delivery.ts';
 
 // Real localhost HTTP, a real client that timestamps every read. The numbers printed with console.info are the measurements
@@ -394,6 +394,38 @@ describe('back-pressure', () => {
 });
 
 describe('clients that leave', () => {
+  it('releases a response waiting for its turn in a throttled queue as soon as its client leaves', async () => {
+    // At 100 kbps a slice takes 117 ms, so six consumers wait about 700 ms between their turns: a delivery that only noticed the
+    // departure when its turn came would settle long after the client was gone.
+    const bucket = createBucket(100);
+    const srv = await deliveryServer(() => ({
+      input: { status: 200, headers: {}, body: BODY, plan: { buckets: [bucket] } },
+    }));
+    const requests = [1, 2, 3, 4, 5, 6].map((i) => {
+      const req = request({ host: '127.0.0.1', port: srv.port, agent: false, path: `/${i}` }, (res) =>
+        res.resume(),
+      );
+      req.on('error', () => {});
+      req.end();
+      return req;
+    });
+    await until(() => bucketState(bucket).consumers === 6 && bucketState(bucket).waiting >= 5);
+    const leaving = srv.outcomeOf('/6');
+    const left = performance.now();
+    requests[5]?.destroy();
+    const outcome = await leaving;
+    const settledAfter = performance.now() - left;
+    console.info(
+      `[delivery] a client at the back of a queue of 6 on a 100 kbps bucket left: its delivery settled ${settledAfter.toFixed(1)} ms later`,
+    );
+    expect(outcome).toMatchObject({ aborted: true, reason: 'client-closed' });
+    expect(settledAfter).toBeLessThan(100);
+    expect(bucketState(bucket).consumers).toBe(5);
+    for (const req of requests) req.destroy();
+    await srv.settled();
+    expect(bucketState(bucket)).toMatchObject({ waiting: 0, consumers: 0, timerArmed: false });
+    await srv.close();
+  });
   it('leaves nothing behind when 50 clients disconnect at random points of throttled, stalled and delayed responses', async () => {
     const bucket = createBucket(800);
     const big = patterned(300_000);

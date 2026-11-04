@@ -12,6 +12,8 @@ export interface TestServer {
   server: Server;
   /** The outcome of every `deliver()` call so far (await it to know they have all settled). */
   settled(): Promise<DeliverOutcome[]>;
+  /** The outcome of the delivery that answered this request URL. */
+  outcomeOf(url: string): Promise<DeliverOutcome> | undefined;
   /** Number of requests the handler has received. */
   requests(): number;
   close(): Promise<void>;
@@ -21,9 +23,12 @@ export async function deliveryServer(
   make: (req: IncomingMessage, res: ServerResponse) => { input: DeliverInput; hooks?: DeliverHooks },
 ): Promise<TestServer> {
   const pending: Promise<DeliverOutcome>[] = [];
+  const byUrl = new Map<string, Promise<DeliverOutcome>>();
   const server = createServer((req, res) => {
     const { input, hooks } = make(req, res);
-    pending.push(deliver(req, res, input, hooks));
+    const outcome = deliver(req, res, input, hooks);
+    pending.push(outcome);
+    byUrl.set(req.url ?? '', outcome);
   });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   const port = (server.address() as AddressInfo).port;
@@ -31,6 +36,7 @@ export async function deliveryServer(
     port,
     server,
     settled: () => Promise.all(pending),
+    outcomeOf: (url) => byUrl.get(url),
     requests: () => pending.length,
     close: () =>
       new Promise<void>((resolve) => {
@@ -140,6 +146,15 @@ export function patterned(bytes: number): Buffer {
   const buf = Buffer.alloc(bytes);
   for (let i = 0; i < bytes; i++) buf[i] = (i * 31 + (i >> 8)) & 0xff;
   return buf;
+}
+
+/** Polls until `condition` holds (for state a test cannot subscribe to, such as how many consumers a bucket has). */
+export async function until(condition: () => boolean, timeoutMs = 5000): Promise<void> {
+  const deadline = performance.now() + timeoutMs;
+  while (!condition()) {
+    if (performance.now() > deadline) throw new Error(`condition not reached within ${timeoutMs} ms`);
+    await new Promise((resolve) => setTimeout(resolve, 2));
+  }
 }
 
 /** Small deterministic PRNG (mulberry32): the "random" disconnect points of a test are the same on every run. */
