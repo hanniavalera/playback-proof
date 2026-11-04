@@ -22,7 +22,7 @@ import { describeSeries, measuredLatencies, percentile, sampleLatency } from './
 import { expectHealthyPlayback, expectNoErrors, expectNoRebuffer } from './support/assertions.ts';
 import { expect, test } from './support/fixtures.ts';
 import { streamInfoOf } from './support/session.ts';
-import { requestsFor, waitForRequest, waitForRequests } from './support/waiting.ts';
+import { requestLogCursor, requestsFor, waitForRequest, waitForRequests } from './support/waiting.ts';
 
 // A join plays this much media before the health of the instrument is read: a first frame alone proves the instrument little
 // (the frame counters of some engines lag it), one segment of playing proves the join was not a single picture.
@@ -46,6 +46,14 @@ const REFRESHES = 5;
  * at 1x advances all of it (the refreshes are 2 s apart), one that has stalled for half of it has not kept playing. A margin, not a rate.
  */
 const MIN_ADVANCE_SHARE = 0.5;
+
+/** PB-LIVE-005: how far the viewer rewinds (the row's ten seconds), and how much is played before and after each seek so that it is a seek of a player that plays. */
+const REWIND_SEC = 10;
+const PLAYED_BEFORE_REWIND_SEC = 2;
+const PLAYED_AFTER_SEEK_SEC = 2;
+
+/** A seek lands within half a segment of its target: a clip to the start of the window is seconds away, a frame of slack is not. */
+const LANDING_TOLERANCE_SEC = 1;
 
 test(
   'PB-LIVE-001 joins near the live edge: first frame, and latency at the first frame within the p95 limit',
@@ -352,5 +360,103 @@ test(
     ).toBeGreaterThan(publishedEndSec(live, loadEdge));
     expectHealthyPlayback(metrics);
     expectNoErrors(metrics);
+  },
+);
+
+test(
+  'PB-LIVE-005 seek back into the DVR window, then return to the live edge',
+  { tag: ['@release', '@live', '@dash'] },
+  async ({ newSession, streamFor, player }, testInfo) => {
+    test.setTimeout(60_000);
+    const session = await newSession({
+      stream: streamFor('live', 'dash'),
+      protocol: 'dash',
+      faults: profile('clean'),
+    });
+    const live = liveClockOf(session);
+    const windowMs = live.windowSegments * live.segmentDurationSec * 1000;
+    const segmentMs = live.segmentDurationSec * 1000;
+    const { reps } = await streamInfoOf(session);
+    const videoReps = reps.filter((rep) => rep.track === 'video').map((rep) => rep.id);
+    const qa = await player(session).open();
+    await qa.waitFor('firstframe');
+    const joined = await qa.metrics();
+    // A member rewinds after watching for a while, not in the first frame: one segment of playing first.
+    await qa.waitForMediaTime(joined.playback.currentTime + PLAYED_BEFORE_REWIND_SEC);
+    const before = await qa.metrics();
+    const joinLatencyMs = before.live.latencyMs;
+    expect(joinLatencyMs, 'latency before the rewind (metrics.live.latencyMs) is null').not.toBeNull();
+
+    // The rewind: ten seconds back, well inside the 30 s window (the playhead sits about 6 s behind the edge, so the target is about
+    // 16 s behind it). `seek` resolves on the `seeked` of its own `seeking`.
+    const target = before.playback.currentTime - REWIND_SEC;
+    const logBeforeRewind = await requestLogCursor(session);
+    await qa.seek(target);
+    const rewound = await qa.metrics();
+    const edgeAtRewind = await publishedEdge(session);
+    await qa.waitForMediaTime(rewound.playback.currentTime + PLAYED_AFTER_SEEK_SEC);
+    const rewindLog = await session.service.log(session.id, logBeforeRewind);
+
+    // The return: `seekToLiveEdge` resolves on its `seeked`; then the live edge has to be playing, not only reached.
+    await qa.seekToLiveEdge();
+    const returned = await qa.metrics();
+    await qa.waitForMediaTime(returned.playback.currentTime + PLAYED_AFTER_SEEK_SEC);
+    const settled = await qa.metrics();
+
+    const returnLatencyMs = settled.live.latencyMs;
+    const targetSegment = Math.floor(target / live.segmentDurationSec) + 1;
+    const rewoundSegments = requestsFor(rewindLog, { kind: 'segment', rep: videoReps, status: 'ok' }).map(
+      (entry) => entry.number,
+    );
+    recordMeasured(testInfo, {
+      joinLatencyMs,
+      rewindTarget: target,
+      rewindLandedAt: rewound.playback.currentTime,
+      latencyAfterRewindMs: rewound.live.latencyMs,
+      targetSegment,
+      segmentsFetchedForRewind: rewoundSegments.filter((n): n is number => n !== undefined),
+      returnedAt: returned.playback.currentTime,
+      latencyAfterReturnMs: returnLatencyMs,
+      edgeSeeks: settled.live.edgeSeeks,
+    });
+
+    // 1. The rewind lands where it was asked, inside the window: the seek range has not clipped it to its start.
+    expect(
+      Math.abs(rewound.playback.currentTime - target),
+      `media time after seek(${target.toFixed(2)}) (metrics.playback.currentTime = ${rewound.playback.currentTime.toFixed(2)} s): the rewind did not land where it was asked; the origin's window starts at ${Math.max(0, edgeAtRewind - live.windowSegments) * live.segmentDurationSec} s`,
+    ).toBeLessThanOrEqual(LANDING_TOLERANCE_SEC);
+    expect(
+      rewound.live.latencyMs,
+      'latency after the rewind (metrics.live.latencyMs) is null: it was never measured',
+    ).not.toBeNull();
+    const rewoundLatencyMs = rewound.live.latencyMs as number;
+    expect(
+      rewoundLatencyMs,
+      `latency after the rewind (metrics.live.latencyMs): ${seconds(rewoundLatencyMs)} behind the edge, and the DVR window is ${seconds(windowMs)}`,
+    ).toBeLessThanOrEqual(windowMs);
+
+    // 2. The origin served the rewound region: a video segment that covers the target, answered, and nothing refused.
+    expect(
+      rewoundSegments,
+      `video segments the origin delivered after the rewind to ${target.toFixed(2)} s (request log): the segment that covers it is #${targetSegment}`,
+    ).toContain(targetSegment);
+    expect(
+      requestsFor(await session.service.log(session.id), { status: 'error' }),
+      'requests the origin refused or aborted (request log)',
+    ).toEqual([]);
+
+    // 3. Back at the edge: the latency is that of the join, within the positioning granularity of one segment, and within the p95 limit.
+    expect(returnLatencyMs, 'latency after the return (metrics.live.latencyMs) is null').not.toBeNull();
+    const returnMs = returnLatencyMs as number;
+    expect(
+      returnMs,
+      `latency after seekToLiveEdge() (metrics.live.latencyMs): ${seconds(returnMs)} behind the edge, the p95 limit is ${seconds(LIVE_LIMITS.latencyP95MaxMs)} (LIVE_LIMITS.latencyP95MaxMs); before the rewind it was ${seconds(joinLatencyMs as number)}`,
+    ).toBeLessThanOrEqual(LIVE_LIMITS.latencyP95MaxMs);
+    expect(
+      Math.abs(returnMs - (joinLatencyMs as number)),
+      `difference between the latency after seekToLiveEdge() (${seconds(returnMs)}) and before the rewind (${seconds(joinLatencyMs as number)}), limit one segment`,
+    ).toBeLessThanOrEqual(segmentMs);
+    expectHealthyPlayback(settled);
+    expectNoErrors(settled);
   },
 );
