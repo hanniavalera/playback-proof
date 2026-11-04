@@ -38,7 +38,9 @@ every night 04:41 UTC  |  manual run  |  a pull request that changes nightly.yml
 
   streams ---- the same workflow, the same cache
   |
-  +-- release (<the same five legs>)   npm run test:e2e -- --grep "@merge|@release" --project=<project>
+  +-- release (<the same five legs>)   npm run test:e2e -- --grep "@merge|@release" --grep-invert "@readiness" --project=<project>
+  |                                    (the readiness specs of tests/live take minutes each and are red for configuration A by design,
+  |                                    ADR-153: they run on demand, `npx playwright test tests/live`, and through `npm run readiness`)
   |
   +-- flake (nightly)          the judge of ci.yml, for these runs (it runs on the pull request too)
   +-- flake-record (nightly)   the recorder of ci.yml; schedule and manual runs on main only

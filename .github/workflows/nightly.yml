@@ -95,7 +95,7 @@ jobs:
       # No npm script runs both tiers (`test:merge` and `test:release` select one tag each, and two runs would overwrite each
       # other's report), so one run selects both tags.
       - name: '@merge and @release tests (${{ matrix.project }})'
-        run: npm run test:e2e -- --grep "@merge|@release" --project=${{ matrix.project }} --global-timeout=${{ matrix.limit }}
+        run: npm run test:e2e -- --grep "@merge|@release" --grep-invert "@readiness" --project=${{ matrix.project }} --global-timeout=${{ matrix.limit }}
       - name: Summarise the run
         if: ${{ always() && steps.setup.outcome == 'success' }}
         run: npx tsx tools/ci-summary.ts --title "${{ github.job }} (${{ matrix.leg }})" --artifact reports-${{ matrix.leg }}
