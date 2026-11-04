@@ -209,8 +209,12 @@ export type Restore =
  * it, provided that tail lasts `RESTORE_HOLD_MS`. A series that is within the maximum from the first read is restored at that read;
  * one that never gets there, or that ends too soon after getting there to say it stayed, is not.
  */
-export function restoreOf(run: StallRun, limits: Limits = LIVE_LIMITS): Restore {
-  const reads = run.after.filter((sample) => sample.latencyMs !== null);
+export function restoreFrom(
+  after: readonly RestoreSample[],
+  observedMs: number,
+  limits: Limits = LIVE_LIMITS,
+): Restore {
+  const reads = after.filter((sample) => sample.latencyMs !== null);
   let start = reads.length;
   while (start > 0 && (reads[start - 1]?.latencyMs as number) <= limits.latencyMaxMs) start -= 1;
   const first = reads[start];
@@ -218,7 +222,11 @@ export function restoreOf(run: StallRun, limits: Limits = LIVE_LIMITS): Restore 
   const held =
     first !== undefined && last !== undefined && last.sinceResumeMs - first.sinceResumeMs >= RESTORE_HOLD_MS;
   if (first !== undefined && held) return { restored: true, atMs: first.sinceResumeMs };
-  return { restored: false, observedMs: run.observedMs, finalLatencyMs: last?.latencyMs ?? null };
+  return { restored: false, observedMs, finalLatencyMs: last?.latencyMs ?? null };
+}
+
+export function restoreOf(run: StallRun, limits: Limits = LIVE_LIMITS): Restore {
+  return restoreFrom(run.after, run.observedMs, limits);
 }
 
 export function evaluateStallRecovery(runs: readonly StallRun[], limits: Limits = LIVE_LIMITS): Evaluation[] {
