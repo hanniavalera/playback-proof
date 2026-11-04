@@ -57,6 +57,15 @@ export interface BaselineBrowser {
 }
 
 /**
+ * The host facts of every probe, and the CPU model. The model is optional: the baselines recorded before it was added do not have it and
+ * stay valid, and a machine that does not name its CPU (a container on a host of another architecture) has none to record.
+ */
+export interface PerfHost extends HostInfo {
+  /** `os.cpus()[0].model`, trimmed and with its whitespace collapsed (`cpuModelOf`). A runner class such as `gha-linux-x64` is not one CPU model. */
+  cpuModel?: string;
+}
+
+/**
  * How and on what the profile was measured, besides the host facts: started on the host or in the Playwright container (with its CPU
  * limit), what `perf/quiet.ts` did before the command started, and the load average at both ends of the profile. Optional: a file recorded
  * without it is still valid, and the A/A and the derivation say so when it is missing.
@@ -83,7 +92,7 @@ export interface Baseline {
   /** Measured runs per scenario (the warm-up not counted). */
   runsPerScenario: number;
   warmupRuns: number;
-  host: HostInfo;
+  host: PerfHost;
   machine?: BaselineMachine;
   browser: BaselineBrowser;
   /** The ffmpeg that generated the streams, as the service reports it. */
@@ -129,7 +138,7 @@ export interface BaselineInput {
   envId: string;
   profile: PerfProfile;
   generatedAt: string;
-  host: HostInfo;
+  host: PerfHost;
   machine?: BaselineMachine;
   browser: BaselineBrowser;
   ffmpeg: string;
@@ -424,7 +433,7 @@ function readMachine(r: Reader, value: unknown, path: string): BaselineMachine {
   };
 }
 
-function readHost(r: Reader, value: unknown, path: string): HostInfo {
+function readHost(r: Reader, value: unknown, path: string): PerfHost {
   const host = r.object(value, path);
   const os = r.object(host.os, `${path}.os`);
   const git = r.object(host.git, `${path}.git`);
@@ -448,6 +457,7 @@ function readHost(r: Reader, value: unknown, path: string): HostInfo {
             ? git.dirty
             : r.bad(`${path}.git.dirty`, 'expected a boolean or null'),
     },
+    ...(host.cpuModel === undefined ? {} : { cpuModel: r.string(host.cpuModel, `${path}.cpuModel`) }),
   };
 }
 
