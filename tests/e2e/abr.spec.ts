@@ -1,5 +1,10 @@
 import { profile } from '../../src/shared/profiles.ts';
-import { settleWindowSeconds, throttleOf, upshiftBoundSeconds } from './abr/conditions.ts';
+import {
+  SHAKA_SWITCH_INTERVAL_S,
+  settleWindowSeconds,
+  throttleOf,
+  upshiftBoundSeconds,
+} from './abr/conditions.ts';
 import { bestRungCarriedBy, ladderOf, rungOf } from './abr/ladder.ts';
 import { describeSegments, fromFirstOf, videoSegmentRequests } from './abr/log.ts';
 import { startupBound } from './abr/startup.ts';
@@ -27,6 +32,96 @@ const DOWNSHIFT_WAIT_MS = 45_000;
 const RECOVERED_LINK_KBPS = 6000;
 // "The first 10 s" of PB-ABR-006, counted in media time: seconds of playback, not seconds since the page asked for the title.
 const EARLY_PLAYBACK_S = 10;
+// What PB-ABR-001 calls an unconstrained network: 10.8 times the top rung's declared 1,845 kbps. No link of the lab is infinite, and
+// an infinite one would be wrong for this test: a segment that arrives in under 5 ms is taken by Shaka (`abr.cacheLoadThreshold`) for a
+// cache hit and not counted, so on the unthrottled origin whether an engine climbs at all depends on how fast its fetch is.
+// On this link the 164 kB segment of 360p takes 65 ms.
+const UNCONSTRAINED_LINK_KBPS = 20_000;
+
+test(
+  'PB-ABR-001 climbs to the top rung on an unconstrained network and stays there',
+  { tag: ['@release', '@dash'] },
+  async ({ newSession, streamFor, player }, testInfo) => {
+    test.setTimeout(ABR_TEST_TIMEOUT_MS);
+    const session = await newSession({
+      stream: streamFor('vod', 'dash'),
+      protocol: 'dash',
+      faults: [{ type: 'throttle', kbps: UNCONSTRAINED_LINK_KBPS }],
+    });
+    const stream = await streamInfoOf(session);
+    const ladder = ladderOf(stream);
+    expect(
+      bestRungCarriedBy(ladder, UNCONSTRAINED_LINK_KBPS).rep,
+      `the rung a ${UNCONSTRAINED_LINK_KBPS} kbps link carries (the ladder): the top one, or the link is not unconstrained`,
+    ).toBe(ladder.top.rep);
+
+    const qa = await player(session).open();
+    await qa.waitFor('firstframe');
+    // Where the start rung matters: Chromium starts on the top rung (Shaka takes `navigator.connection.downlink` for its first
+    // estimate), so for it "climbs" is satisfied by the initial selection and the claim that counts is "stays"; WebKit and Firefox start
+    // on 360p and climb as soon as Shaka has sampled 128 kB. The wait takes either: the first time the active rung is the top one.
+    const top = await qa.waitFor('variant-changed', {
+      detail: { height: ladder.top.height },
+      timeoutMs: WAIT_MS,
+    });
+    // Shaka's first decision comes with its first good estimate, and no later than one switch interval after the start: the climb
+    // is due in the first 8 s of playback plus the segment in which the decision is made.
+    const climbBound = SHAKA_SWITCH_INTERVAL_S + stream.segmentDurationSec;
+    expect(
+      top.mediaTime,
+      `media time of the climb to ${ladder.top.height}p (qa.events()): within the switch interval and one segment`,
+    ).toBeLessThanOrEqual(climbBound);
+
+    // Stays: nothing can change before the switch interval has elapsed, so watch past it and past the next segment decisions.
+    const window = settleWindowSeconds(stream.segmentDurationSec);
+    await qa.waitForMediaTime(top.mediaTime + window, { timeoutMs: WAIT_MS });
+
+    const events = await qa.events();
+    const changes = variantChanges(events);
+    const metrics = await qa.metrics();
+    testInfo.annotations.push({
+      type: 'measured',
+      description: `rungs: ${describeVariantChanges(changes)}; dropped frames ${metrics.frames.dropped} of ${metrics.frames.decoded}`,
+    });
+    // The hook's declared bandwidths against the catalog's: the numbers a regression of the estimate would be read against.
+    expect(
+      changes.map((change) => ({ height: change.height, bandwidth: change.bandwidth })),
+      'bandwidth declared by each variant the hook reported (qa.events()), against the ladder of the catalog',
+    ).toEqual(
+      changes.map((change) => ({
+        height: change.height,
+        bandwidth: rungOf(ladder, { height: change.height }).variantBandwidth,
+      })),
+    );
+    expect(
+      describeVariantChanges(variantChanges(await qa.events(top.index + 1))),
+      `rung changes in the ${window} s after reaching ${ladder.top.height}p (qa.events()): none (Shaka also leaves a rung when over 15 % of the frames of 2 s are dropped: ${metrics.frames.dropped} of ${metrics.frames.decoded} were)`,
+    ).toBe('none');
+    expect(metrics.bitrate.current?.height, 'active rung (metrics.bitrate.current) at the end').toBe(
+      ladder.top.height,
+    );
+    expectHealthyPlayback(metrics);
+
+    // The origin's account: the top rung was asked for, and from its first segment on nothing else; it is what was delivered last.
+    const log = await session.service.log(session.id);
+    const video = videoSegmentRequests(log);
+    expect(
+      video.some((entry) => entry.rep === ladder.top.rep),
+      `${ladder.top.rep} segments in the request log: the top rung must be fetched, not only announced: ${describeSegments(video)}`,
+    ).toBe(true);
+    expect(
+      fromFirstOf(video, ladder.top.rep)
+        .filter((entry) => entry.rep !== ladder.top.rep)
+        .map((entry) => `${entry.rep} #${entry.number}`),
+      `video segments requested after the first ${ladder.top.rep} one (request log): ${describeSegments(video)}`,
+    ).toEqual([]);
+    const delivered = videoSegmentRequests(requestsFor(log, { status: 'ok' }));
+    expect(
+      delivered.slice(-3).map((entry) => entry.rep),
+      `rungs of the last three video segments the origin delivered (request log): ${describeSegments(delivered)}`,
+    ).toEqual([ladder.top.rep, ladder.top.rep, ladder.top.rep]);
+  },
+);
 
 test(
   'PB-ABR-002 downshifts when bandwidth drops mid-playback (bandwidth-drop): at most one rebuffer, settles on a rung the network can carry',
