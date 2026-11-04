@@ -149,6 +149,11 @@ describe('PB-PERF baseline: building it from measured batches', () => {
     expect(() => baselineOf([{ spec: STARTUP, batch: startupBatch([]) }])).toThrow(/no measured run/);
   });
 
+  it('refuses a batch in which faults were injected on purpose: it is not the condition a baseline records', () => {
+    const injected = { ...startupBatch(STARTUPS), injectedFaults: [{ type: 'latency' as const, ms: 150 }] };
+    expect(() => baselineOf([{ spec: STARTUP, batch: injected }])).toThrow(/faults were injected on purpose/);
+  });
+
   it('lists every reason at once', () => {
     const batch = startupBatch(STARTUPS);
     batch.runs[0] = run({ startupMs: null, manifestMs: 1 }, 360);

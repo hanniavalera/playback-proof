@@ -160,6 +160,25 @@ describe('PB-PERF runner: warm-up, contexts and sessions', () => {
     expect(calls).toStrictEqual(['run 1 s1 vod-cmaf chromium']);
   });
 
+  it('adds injected faults to the condition of every session, as copies, and records them in the batch', async () => {
+    const w = world();
+    const injected = [{ type: 'latency' as const, ms: 150, match: { kind: 'manifest' as const } }];
+    const batch = await runBatch(
+      request(w, counting({ faultProfile: 'bandwidth-drop' }).scenario, { runs: 2, extraFaults: injected }),
+    );
+    expect(w.sessions).toHaveLength(3);
+    for (const session of w.sessions) {
+      expect(session.faults).toStrictEqual([...profile('bandwidth-drop'), ...injected]);
+    }
+    expect(w.sessions[0]!.faults![1]).not.toBe(injected[0]);
+    expect(batch.injectedFaults).toStrictEqual(injected);
+  });
+
+  it('does not mention injected faults in a normal batch', async () => {
+    const batch = await runBatch(request(world(), counting().scenario, { runs: 1 }));
+    expect('injectedFaults' in batch).toBe(false);
+  });
+
   it('labels the warm-up as such in the service log', async () => {
     const w = world();
     await runBatch(request(w, counting().scenario, { runs: 1 }));

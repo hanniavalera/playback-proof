@@ -1,5 +1,6 @@
 import { loadavg } from 'node:os';
 import type { SessionInfo, SessionRequest } from '../../shared/api.ts';
+import type { FaultRule } from '../../shared/faults.ts';
 import type { StreamId } from '../../shared/streams.ts';
 import { profile as faultsOf } from '../../shared/profiles.ts';
 import { chooseStream } from '../gaps.ts';
@@ -58,6 +59,8 @@ export interface BatchRequest {
   launch: Launcher;
   /** A run that has not finished by then fails the batch. Default 120 s. */
   runTimeoutMs?: number;
+  /** Fault rules added to the scenario's own on every session: a regression injected on purpose. Recorded in the batch. */
+  extraFaults?: readonly FaultRule[];
   onProgress?: (event: BatchProgress) => void;
   /** The page driver of a run. Default: `QaPage` over the run's Playwright page. */
   driverFor?: (run: RunPage, origin: string) => Driver;
@@ -87,6 +90,7 @@ export async function runBatch(request: BatchRequest): Promise<BatchMeasurement>
   const load = request.load ?? ((): number => loadavg()[0] ?? 0);
   const driverFor = request.driverFor ?? ((run, origin): Driver => new QaPage(run.page, origin));
   const timeoutMs = request.runTimeoutMs ?? DEFAULT_RUN_TIMEOUT_MS;
+  const extraFaults = request.extraFaults ?? [];
 
   // The stream is chosen from the committed probe of THIS environment, as the specs choose it: a documented gap is a reason, not a number.
   const choice = chooseStream(environment, 'vod', scenario.protocol);
@@ -132,7 +136,7 @@ export async function runBatch(request: BatchRequest): Promise<BatchMeasurement>
           protocol: scenario.protocol,
           label: `perf ${scenario.id} ${profile} ${warmup ? 'warm-up' : `#${index - request.warmupRuns + 1}`}`,
           ttlSec: SESSION_TTL_SEC,
-          faults: faultsOf(scenario.faultProfile),
+          faults: [...faultsOf(scenario.faultProfile), ...extraFaults.map((rule) => structuredClone(rule))],
         });
         page = await browser.newRun();
         const driver = driverFor(page, service.origin);
@@ -177,6 +181,7 @@ export async function runBatch(request: BatchRequest): Promise<BatchMeasurement>
     warmup: request.warmupRuns === 1 ? (records[0] ?? null) : null,
     runs: records.slice(request.warmupRuns),
     loadAverage: { before: loadBefore, after: load() },
+    ...(extraFaults.length > 0 ? { injectedFaults: extraFaults.map((rule) => structuredClone(rule)) } : {}),
     startedAt,
     finishedAt: now().toISOString(),
   };

@@ -564,6 +564,13 @@ describe('PB-PERF gate: the environment', () => {
       compareEnvironment(baseline, { ...same, streams: { 'vod-webm': 'c'.repeat(64) } }).problems,
     ).toStrictEqual([]);
   });
+
+  it('can check the streams before any browser has started: an unknown browser version is not a difference', () => {
+    expect(compareEnvironment(baseline, { ...same, browserVersion: null })).toStrictEqual({
+      problems: [],
+      warnings: [],
+    });
+  });
 });
 
 describe('PB-PERF gate: which metrics of a baseline gate', () => {

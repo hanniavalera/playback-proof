@@ -155,6 +155,10 @@ export function buildBaseline(input: BaselineInput): Baseline {
   const scenarios: Record<string, ScenarioBaseline> = {};
   for (const { spec, batch } of input.scenarios) {
     if (batch.runs.length === 0) problems.push(`${spec.id}: the batch has no measured run`);
+    if ((batch.injectedFaults?.length ?? 0) > 0)
+      problems.push(
+        `${spec.id}: faults were injected on purpose in this batch, so it is not the condition a baseline records`,
+      );
     for (const metric of spec.metrics) {
       if (metric.rule === null) continue;
       batch.runs.forEach((run, index) => {

@@ -373,7 +373,8 @@ export interface CurrentEnvironment {
   /** Content hash of every stream a scenario played, as the running service reports it. */
   streams: Partial<Record<string, string>>;
   ffmpeg: string;
-  browserVersion: string;
+  /** The browser build, or null while it is not known yet (the streams are checked before any browser starts). */
+  browserVersion: string | null;
   playwright: string;
   cpus: number;
 }
@@ -399,7 +400,7 @@ export function compareEnvironment(
       });
     }
   }
-  if (baseline.browser.version !== current.browserVersion)
+  if (current.browserVersion !== null && baseline.browser.version !== current.browserVersion)
     warnings.push(
       `the browser is ${current.browserVersion}; the baseline was recorded on ${baseline.browser.version}`,
     );
