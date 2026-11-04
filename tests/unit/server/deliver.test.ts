@@ -247,6 +247,20 @@ describe('stall', () => {
     agent.destroy();
     await srv.close();
   });
+
+  it('is not an abort when the client hangs up after it has received everything', async () => {
+    // A `Connection: close` client leaves the moment Content-Length is satisfied: here, during the stall after the last byte.
+    const srv = await deliveryServer(() => ({
+      input: { status: 200, headers: {}, body: BODY, plan: { stall: { afterBytes: BODY.length, ms: 5000 } } },
+    }));
+    const got = await download(srv.port, '/');
+    expect(got).toMatchObject({ bytes: BODY.length, complete: true });
+    const [outcome] = await srv.settled();
+    expect(outcome).toMatchObject({ aborted: false, bytesSent: BODY.length });
+    expect(outcome?.reason).toBeUndefined();
+    expect(outcome?.totalMs).toBeLessThan(1000); // released at once, not after the 5 s of stall
+    await srv.close();
+  });
 });
 
 /** The silence the client saw right after the read that brought it to exactly `afterBytes` (after the head, for 0). */

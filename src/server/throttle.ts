@@ -88,7 +88,8 @@ function internal(bucket: Bucket): TokenBucket {
  */
 function refill(b: TokenBucket): void {
   const t = b.now();
-  const gained = Math.max(0, t - b.last) * b.bytesPerMs;
+  if (t <= b.last) return;
+  const gained = (t - b.last) * b.bytesPerMs;
   b.last = t;
   b.tokens =
     b.queue.length > 0 ? b.tokens + gained : Math.max(b.tokens, Math.min(CHUNK_BYTES, b.tokens + gained));
@@ -215,6 +216,7 @@ export function createPacer(buckets: readonly Bucket[]): Pacer {
 
   return {
     async take(wanted: number): Promise<number> {
+      if (Number.isNaN(wanted)) throw new RangeError('wanted must be a number');
       if (left) return 0;
       let granted = Math.max(1, Math.min(CHUNK_BYTES, Math.floor(wanted)));
       const held: { bucket: TokenBucket; bytes: number }[] = [];

@@ -92,13 +92,22 @@ describe('bucket arithmetic (injected clock)', () => {
     expect(tryTake(fast, 1_000_000)).toBe(CHUNK_BYTES);
   });
 
-  it('does not run backwards when the clock does', () => {
+  it('does not run backwards when the clock does, and does not count the same time twice', () => {
     const c = clock(1000);
     const bucket = createBucket(800, { now: c.now });
     tryTake(bucket, CHUNK_BYTES);
     c.advance(-500);
     expect(tryTake(bucket, CHUNK_BYTES)).toBe(0);
-    expect(bucketState(bucket).tokens).toBeGreaterThanOrEqual(0);
+    c.advance(500); // back where it was: no time has passed since the last refill
+    expect(tryTake(bucket, CHUNK_BYTES)).toBe(0);
+    c.advance(15);
+    expect(tryTake(bucket, CHUNK_BYTES)).toBe(1500);
+  });
+
+  it('refuses a request for NaN bytes instead of poisoning a shared bucket with it', async () => {
+    const bucket = createBucket(800);
+    await expect(createPacer([bucket]).take(Number.NaN)).rejects.toThrow(RangeError);
+    expect(bucketState(bucket).tokens).toBe(CHUNK_BYTES);
   });
 
   it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY])('rejects kbps %s', (kbps) => {

@@ -77,6 +77,8 @@ class Delivery {
   private readonly arrival = performance.now();
   private bytesSent = 0;
   private ttfbMs: number | undefined;
+  // Body bytes that make the response complete: unknown until the body is known, which is why a hang-up before that is a cut.
+  private expectedBytes = Number.POSITIVE_INFINITY;
   private clientGone: boolean;
   private reason: DeliverOutcome['reason'];
   private error: string | undefined;
@@ -106,9 +108,12 @@ class Delivery {
       this.pacer?.leave();
     }
     if (this.clientGone && this.reason === undefined) {
-      this.reason = 'client-closed';
       // Writes that were in flight when the connection went away settle on the next turn; count the ones that made it.
       await new Promise<void>((resolve) => setImmediate(resolve));
+      // A client that hangs up having received everything (a `Connection: close` one does as soon as Content-Length is met,
+      // possibly before `end()` has completed) did not cut anything short.
+      const delivered = this.ttfbMs !== undefined && this.bytesSent >= this.expectedBytes;
+      if (!delivered) this.reason = 'client-closed';
     }
     const totalMs = performance.now() - this.arrival;
     const outcome: DeliverOutcome = {
@@ -127,6 +132,7 @@ class Delivery {
     const plan = input.plan ?? {};
     const body = typeof input.body === 'string' ? Buffer.from(input.body) : input.body;
     const headOnly = input.head === true || this.req.method === 'HEAD';
+    this.expectedBytes = headOnly ? 0 : body.length;
 
     if (this.clientGone) return;
     // Small paced writes must not wait for an acknowledgement (Nagle): node defaults to this already, the lab depends on it.
