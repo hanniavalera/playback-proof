@@ -53,6 +53,26 @@ function assertNoCriticalError(metrics: QAMetrics, where: string): void {
     );
 }
 
+/**
+ * Plays until the media clock reaches `mediaTime`, or fails the moment the player reports a critical error: a player that has given up
+ * never gets there, and the run must not wait out its whole safety net (90 s for the rebuffering scenario) to say so.
+ */
+async function playUntil(qa: PlayerDriver, mediaTime: number, timeoutMs?: number): Promise<number> {
+  const critical = new Promise<never>((_, reject) => {
+    qa.waitFor('error', { detail: { severity: 2 }, ...(timeoutMs === undefined ? {} : { timeoutMs }) }).then(
+      (event) =>
+        reject(
+          new Error(
+            `the player reported a critical error before media time ${mediaTime.toFixed(1)} s: ${JSON.stringify(event.detail)}`,
+          ),
+        ),
+      // No critical error within the wait is the normal case: the media-time wait decides.
+      () => {},
+    );
+  });
+  return Promise.race([qa.waitForMediaTime(mediaTime, timeoutMs), critical]);
+}
+
 function recorded(metrics: QAMetrics, values: Record<string, number | null>): Measured {
   const history = metrics.bitrate.history;
   return {
@@ -129,7 +149,7 @@ const frameRate: Scenario = {
     await qa.selectVariantByHeight(PINNED_HEIGHT);
     await qa.play();
     const first = await qa.waitFor('firstframe');
-    await qa.waitForMediaTime(first.mediaTime + FRAME_WARMUP_MEDIA_SEC);
+    await playUntil(qa, first.mediaTime + FRAME_WARMUP_MEDIA_SEC);
     const frames = await qa.measureFrames(FRAME_WINDOW_MEDIA_SEC);
     const metrics = await qa.metrics();
     assertNoCriticalError(metrics, 'PB-PERF-002');
@@ -180,7 +200,7 @@ const rebuffering: Scenario = {
   async run({ qa, session }) {
     await qa.open(session.manifestUrl);
     const first = await qa.waitFor('firstframe');
-    await qa.waitForMediaTime(first.mediaTime + REBUFFER_OBSERVE_MEDIA_SEC, REBUFFER_WAIT_MS);
+    await playUntil(qa, first.mediaTime + REBUFFER_OBSERVE_MEDIA_SEC, REBUFFER_WAIT_MS);
     const metrics = await qa.metrics();
     assertNoCriticalError(metrics, 'PB-PERF-003');
     return recorded(metrics, {
@@ -225,7 +245,7 @@ const lowEnd: Scenario = {
       );
     }
     await qa.selectVariantByHeight(PINNED_HEIGHT);
-    await qa.waitForMediaTime(first.mediaTime + FRAME_WARMUP_MEDIA_SEC);
+    await playUntil(qa, first.mediaTime + FRAME_WARMUP_MEDIA_SEC);
     const frames = await qa.measureFrames(FRAME_WINDOW_MEDIA_SEC);
     const metrics = await qa.metrics();
     assertNoCriticalError(metrics, 'PB-PERF-004');

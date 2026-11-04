@@ -187,11 +187,15 @@ function metrics(
 
 class ScriptedPlayer implements PlayerDriver {
   readonly calls: string[] = [];
+  /** The waits for a critical error that scenarios keep next to the media-time wait: they are not steps of the scenario, so they are listed apart. */
+  readonly watches: string[] = [];
   constructor(
     private readonly script: {
       metrics: QAMetrics[];
       frames?: FrameMeasurement;
       firstMediaTime?: number;
+      /** The player gives up: the wait for a critical error resolves, and the media clock never gets there. */
+      givesUp?: boolean;
     },
   ) {}
 
@@ -204,13 +208,29 @@ class ScriptedPlayer implements PlayerDriver {
     const next = this.script.metrics.length > 1 ? this.script.metrics.shift() : this.script.metrics[0];
     return next!;
   }
-  async waitFor(name: QAEventName): Promise<QAEvent> {
+  waitFor(
+    name: QAEventName,
+    options: { timeoutMs?: number; detail?: Record<string, string | number | boolean | null> } = {},
+  ): Promise<QAEvent> {
+    if (name === 'error') {
+      this.watches.push(
+        `${name} ${JSON.stringify(options.detail)}${options.timeoutMs === undefined ? '' : ` within ${options.timeoutMs}`}`,
+      );
+      if (!this.script.givesUp) return new Promise(() => {}); // no critical error: the usual case, the wait never ends
+      return Promise.resolve({
+        index: 9,
+        t: 900,
+        name,
+        mediaTime: 8.96,
+        detail: { code: 1003, codeName: 'TIMEOUT', severity: 2 },
+      });
+    }
     this.calls.push(`waitFor ${name}`);
-    return { index: 4, t: 150, name, mediaTime: this.script.firstMediaTime ?? 0.1 };
+    return Promise.resolve({ index: 4, t: 150, name, mediaTime: this.script.firstMediaTime ?? 0.1 });
   }
-  async waitForMediaTime(seconds: number, timeoutMs?: number): Promise<number> {
+  waitForMediaTime(seconds: number, timeoutMs?: number): Promise<number> {
     this.calls.push(`waitForMediaTime ${seconds}${timeoutMs === undefined ? '' : ` within ${timeoutMs}`}`);
-    return seconds;
+    return this.script.givesUp ? new Promise(() => {}) : Promise.resolve(seconds);
   }
   async load(): Promise<void> {
     this.calls.push('load');
@@ -382,12 +402,37 @@ describe('PB-PERF-003 rebuffering: one measurement', () => {
       `waitForMediaTime ${0.2 + REBUFFER_OBSERVE_MEDIA_SEC} within 90000`,
       'metrics',
     ]);
+    expect(player.watches).toStrictEqual(['error {"severity":2} within 90000']);
     expect(record.values).toStrictEqual({
       rebufferCount: 1,
       rebufferMs: 850,
       rebufferRatio: 0.045,
       switches: 2,
     });
+  });
+
+  it('fails the moment the player gives up with a critical error, and does not wait out its safety net', async () => {
+    const player = new ScriptedPlayer({ metrics: [metrics()], givesUp: true });
+    await expect(run(rebuffering, player)).rejects.toThrow(
+      /the player reported a critical error before media time 18\.1 s: \{"code":1003,"codeName":"TIMEOUT","severity":2\}/,
+    );
+    expect(player.calls).not.toContain('metrics');
+  });
+});
+
+describe('PB-PERF scenarios: a player that has given up fails every wait for the clock', () => {
+  it('in the frame-rate warm-up and the low-end warm-up as well', async () => {
+    const pinnedAtStart = metrics({ currentHeight: 720 });
+    await expect(
+      run(scenarioById('PB-PERF-002')!, new ScriptedPlayer({ metrics: [pinnedAtStart], givesUp: true })),
+    ).rejects.toThrow(/critical error before media time 2\.1 s/);
+    await expect(
+      run(
+        scenarioById('PB-PERF-004')!,
+        new ScriptedPlayer({ metrics: [pinnedAtStart], givesUp: true }),
+        'chromium-cpu4x',
+      ),
+    ).rejects.toThrow(/critical error before media time 2\.1 s/);
   });
 });
 
