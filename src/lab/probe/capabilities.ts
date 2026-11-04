@@ -92,7 +92,8 @@ export function pickStream(
   return null;
 }
 
-function describeFlavour(flavour: FlavourId, capability: FlavourCapability | undefined): string {
+/** One flavour's verdict as text: `cmaf-vp9-aac intermittent 2/5 ([play] ...), isTypeSupported claims true`. */
+export function describeFlavour(flavour: FlavourId, capability: FlavourCapability | undefined): string {
   if (!capability) return `${flavour} was not probed`;
   if (capability.attempts === 0) return `${flavour}: ${capability.error ?? 'the browser did not start'}`;
   let text = `${flavour} ${capability.reliability} ${capability.passes}/${capability.attempts}`;
