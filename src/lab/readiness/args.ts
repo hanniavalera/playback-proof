@@ -140,8 +140,9 @@ export interface ReadinessOptions {
 export const READINESS_USAGE = `npm run readiness -- [options]      run the live-event readiness checks (PB-RDY-001 to PB-RDY-004), print the go/no-go checklist and
                                      write docs/results/readiness/<env>-<engine>.json
 
-Exit codes: 0 every configuration judged is GO; 1 at least one is NO-GO; 2 the run could not judge (a check is INCONCLUSIVE, a browser
-did not start, a usage error). A NO-GO is a result about the build; exit 2 is a result about the run.
+Exit codes: 0 the build as it ships (A, the defaults) is GO in every engine run; 1 it is NO-GO in at least one; 2 the run could not judge (a
+check is INCONCLUSIVE, an engine was skipped or its browser did not start, a usage error). A candidate is evidence for a decision: its
+verdict is printed next to A's and never changes the exit code. A NO-GO is a result about the build; exit 2 is a result about the run.
 
   --engine a,b       ${ENGINES.join(', ')} or all (default chromium). Firefox does not start on the macOS host:
                      npm run docker:pw -- --cpus 3 npm run readiness -- --engine firefox

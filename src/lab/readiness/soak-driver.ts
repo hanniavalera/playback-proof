@@ -37,10 +37,18 @@ export interface SoakDriverOptions {
   /** The pid of the service the harness started, for its resident memory. */
   servicePid: number | null;
   limits?: Limits;
+  /** The harness's clock and its sleep: the real ones unless the unit tests give a virtual pair that also drives the page's timers. */
+  clock?: { now(): number; sleep(ms: number): Promise<void> };
 }
+
+const realClock = {
+  now: (): number => Date.now(),
+  sleep: (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms)),
+};
 
 export function playwrightSoakDriver(world: PlaywrightWorld, options: SoakDriverOptions): SoakDriver {
   const limits = options.limits ?? LIVE_LIMITS;
+  const clock = options.clock ?? realClock;
   const gc = exposeGc();
   let run: PlaywrightRun | null = null;
   let cdp: CDPSession | null = null;
@@ -55,8 +63,8 @@ export function playwrightSoakDriver(world: PlaywrightWorld, options: SoakDriver
 
   return {
     heapSupported: world.engine === 'chromium',
-    now: () => Date.now(),
-    sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    now: () => clock.now(),
+    sleep: (ms) => clock.sleep(ms),
 
     async start(): Promise<SoakStart> {
       run = await world.newRun({
@@ -166,11 +174,11 @@ export function playwrightSoakDriver(world: PlaywrightWorld, options: SoakDriver
 
     async readHeap(): Promise<HeapSample> {
       if (!cdp) throw new Error('the heap can only be read in Chromium');
-      return readChromiumHeap(cdp, () => Date.now());
+      return readChromiumHeap(cdp, () => clock.now());
     },
 
     readHarness(): Promise<HarnessSample> {
-      return readHarnessMemory({ nowMs: () => Date.now(), servicePid: options.servicePid, gc });
+      return readHarnessMemory({ nowMs: () => clock.now(), servicePid: options.servicePid, gc });
     },
 
     consoleProblems: () => run?.consoleProblems() ?? [],

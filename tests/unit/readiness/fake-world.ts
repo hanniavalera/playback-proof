@@ -31,14 +31,32 @@ export interface Script {
   openFails?: boolean;
   /** Extra seconds the player spends dry on top of the part of the outage it could not cover. */
   resumeDelayMs?: number;
+  /** The request log also holds the init segment and one media segment per 2 s, as a real session's does (the soak reads the first of them). */
+  mediaRequests?: boolean;
 }
 
-const AST_EPOCH = Date.parse('2030-01-01T00:00:00.000Z');
+export const AST_EPOCH = Date.parse('2030-01-01T00:00:00.000Z');
 const SEGMENT_MS = 2000;
 const TIMEOUT_ERROR = (what: string, ms: number): Error =>
   new Error(
     `${what} timed out after ${ms} ms\nthe last events of the player:\n  #0 +0 ms media 0.00 load-requested`,
   );
+
+/**
+ * The scripted player, with the synchronous members the real hook (`window.__qa`) has, so that the fake page of the command line's tests
+ * (fake-playwright.ts) can serve them from inside a page function. `waitFor` and `waitForMediaTime` advance the virtual clock and
+ * return, or throw the timeout, at once: nothing in the model waits.
+ */
+export interface FakeModel {
+  open(): void;
+  info(): QAInfo;
+  configure(patch: Record<string, unknown>): void;
+  metrics(): QAMetrics;
+  cursor(): number;
+  events(): QAEvent[];
+  waitFor(name: QAEventName, options?: { since?: number; timeoutMs?: number }): QAEvent;
+  waitForMediaTime(seconds: number, options?: { timeoutMs?: number }): number;
+}
 
 export interface Observed {
   runs: Array<{
@@ -47,6 +65,7 @@ export interface Observed {
     closed: boolean;
     configured: Array<Record<string, unknown>>;
     faults: FaultRule[];
+    model: FakeModel;
   }>;
 }
 
@@ -69,6 +88,7 @@ export function fakeWorld(script: Script = {}): {
       closed: false,
       configured: [],
       faults: [],
+      model: undefined as unknown as FakeModel,
     };
     observed.runs.push(record);
     const startupMs = script.startupMs?.[joinIndex] ?? script.startupMs?.at(-1) ?? 900;
@@ -110,12 +130,12 @@ export function fakeWorld(script: Script = {}): {
       const decayed = liveSync ? 0.1 * (clock.now - resumedAt) : 0;
       return base + Math.max(0, lostMs - decayed);
     };
-    const event = (name: QAEventName): QAEvent => ({
-      index: events++,
-      t: clock.now - AST_EPOCH,
-      name,
-      mediaTime: media,
-    });
+    const history: QAEvent[] = [];
+    const event = (name: QAEventName): QAEvent => {
+      const made: QAEvent = { index: events++, t: clock.now - AST_EPOCH, name, mediaTime: media };
+      history.push(made);
+      return made;
+    };
 
     const manifestTimes = (): number[] => {
       const every = script.manifestEveryMs ?? 2000;
@@ -123,20 +143,40 @@ export function fakeWorld(script: Script = {}): {
       for (let at = createdAt + 300; at <= clock.now; at += every) times.push(at);
       return script.manifestStopsAfter === undefined ? times : times.slice(0, script.manifestStopsAfter);
     };
-    const entries = (): RequestLogEntry[] =>
-      manifestTimes().map((at, i) => ({
-        seq: i + 1,
-        t: new Date(at).toISOString(),
-        msSinceStart: at - createdAt,
-        method: 'GET',
-        path: '/s/x/live-cmaf/dash/manifest.mpd',
-        kind: 'manifest' as const,
-        status: 200,
-        bytes: 4000,
-        ttfbMs: 2,
-        totalMs: 3,
-        faults: [],
-      }));
+    const logEntry = (
+      seq: number,
+      at: number,
+      kind: RequestLogEntry['kind'],
+      path: string,
+      bytes: number,
+    ): RequestLogEntry => ({
+      seq,
+      t: new Date(at).toISOString(),
+      msSinceStart: at - createdAt,
+      method: 'GET',
+      path,
+      kind,
+      status: 200,
+      bytes,
+      ttfbMs: 2,
+      totalMs: 3,
+      faults: [],
+    });
+    const entries = (): RequestLogEntry[] => {
+      const manifests = manifestTimes().map((at, i) =>
+        logEntry(i + 1, at, 'manifest', '/s/x/live-cmaf/dash/manifest.mpd', 4000),
+      );
+      if (!script.mediaRequests) return manifests;
+      // The init segment right after the first manifest, then one video segment every segment duration: what a playing session asks for.
+      const media: RequestLogEntry[] = [
+        logEntry(0, createdAt + 400, 'init', '/s/x/live-cmaf/dash/v720/init.mp4', 900),
+      ];
+      for (let at = createdAt + 800; at <= clock.now; at += SEGMENT_MS)
+        media.push(logEntry(0, at, 'segment', '/s/x/live-cmaf/dash/v720/seg.m4s', 180_000));
+      return [...manifests, ...media]
+        .sort((a, b) => Date.parse(a.t) - Date.parse(b.t))
+        .map((entry, i) => ({ ...entry, seq: i + 1 }));
+    };
 
     const service: ReadinessService = {
       async detail(id): Promise<SessionDetail> {
@@ -204,30 +244,32 @@ export function fakeWorld(script: Script = {}): {
       service,
     };
 
-    const player: ReadinessPlayer = {
-      async open() {
+    const model: FakeModel = {
+      open() {
         if (script.openFails)
           throw new Error(
             'the player page did not boot (http://127.0.0.1/player/?manifest=...): net::ERR_CONNECTION_REFUSED',
           );
         advance(200);
       },
-      async info() {
+      info() {
         return {
           shakaVersion: '5.3.3',
           userAgent: 'FakeBrowser/1',
           config: 'A',
           configured: record.configured,
           loadMode: 'media-source',
+          paramProblems: [],
+          supported: true,
         } as unknown as QAInfo;
       },
-      async configure(patch) {
+      configure(patch) {
         record.configured.push(patch);
         const sync = (patch as { streaming?: { liveSync?: { enabled?: boolean } } }).streaming?.liveSync
           ?.enabled;
         if (sync !== undefined) liveSync = sync;
       },
-      async metrics() {
+      metrics() {
         sync();
         return {
           state: stalledNow() ? 'buffering' : 'playing',
@@ -253,13 +295,13 @@ export function fakeWorld(script: Script = {}): {
           },
         } as unknown as QAMetrics;
       },
-      async cursor() {
+      cursor() {
         return events;
       },
-      async events() {
-        return [];
+      events() {
+        return history.slice();
       },
-      async waitFor(name, options) {
+      waitFor(name, options) {
         const timeoutMs = options?.timeoutMs ?? 15_000;
         if (name === 'firstframe') {
           if (startupMs >= timeoutMs) {
@@ -298,7 +340,7 @@ export function fakeWorld(script: Script = {}): {
         }
         throw new Error(`the fake player does not know ${name}`);
       },
-      async waitForMediaTime(seconds, options) {
+      waitForMediaTime(seconds, options) {
         sync();
         if (hung()) {
           advance(options?.timeoutMs ?? 15_000);
@@ -312,6 +354,19 @@ export function fakeWorld(script: Script = {}): {
         void firstFrameAt;
         return media;
       },
+    };
+    record.model = model;
+
+    // The async members of the interface the checks are written against: the model's, one microtask later.
+    const player: ReadinessPlayer = {
+      open: async () => model.open(),
+      info: async () => model.info(),
+      configure: async (patch) => model.configure(patch),
+      metrics: async () => model.metrics(),
+      cursor: async () => model.cursor(),
+      events: async () => model.events(),
+      waitFor: async (name, options) => model.waitFor(name, options),
+      waitForMediaTime: async (seconds, options) => model.waitForMediaTime(seconds, options),
     };
 
     return {

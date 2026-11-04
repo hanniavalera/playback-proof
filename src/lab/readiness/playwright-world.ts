@@ -4,12 +4,16 @@ import type { LaunchedBrowser } from '../measure/browser.ts';
 import type { ServiceClient } from '../service-client.ts';
 import { ReadinessPage } from './page.ts';
 import type { Engine } from './soak-evaluators.ts';
-import type { NewRunRequest, ReadinessRun, ReadinessWorld } from './world.ts';
+import type { NewRunRequest, ReadinessRun, ReadinessService, ReadinessWorld } from './world.ts';
 
 // The world of the command line: the test data service as a client, one browser process for the engine, and for every run a fresh
 // context (a viewer who opens the page: no cache, no storage, nothing carried over from the run before: ADR-120 in docs/decisions/perf.md)
-// with a session of its own, which is deleted when the run closes. Not unit-tested, because it needs a browser: it is deliberately thin, and
-// everything with a decision in it is in the modules that the unit tests cover.
+// with a session of its own, which is deleted when the run closes. It needs a browser and a service to run for real; the unit tests give
+// it a fake of the part of Playwright it uses (tests/unit/readiness/fake-playwright.ts), which runs every line of it except the browser's.
+
+/** The part of the service client this world uses: `ServiceClient` has all of it, and so has the fake of the unit tests. */
+export type WorldService = ReadinessService &
+  Pick<ServiceClient, 'origin' | 'createSession' | 'deleteSession'>;
 
 export interface PlaywrightRun extends ReadinessRun {
   player: ReadinessPage;
@@ -23,7 +27,7 @@ export interface PlaywrightRun extends ReadinessRun {
 
 export interface PlaywrightWorld extends ReadinessWorld {
   newRun(request: NewRunRequest): Promise<PlaywrightRun>;
-  readonly service: ServiceClient;
+  readonly service: WorldService;
 }
 
 const MAX_CONSOLE_PROBLEMS = 40;
@@ -32,7 +36,7 @@ export function playwrightWorld(args: {
   engine: Engine;
   stream: StreamId;
   protocol: Protocol;
-  service: ServiceClient;
+  service: WorldService;
   browser: LaunchedBrowser;
 }): PlaywrightWorld {
   const { engine, stream, protocol, service, browser } = args;
