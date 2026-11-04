@@ -1,5 +1,5 @@
 name: setup
-description: Node, the locked dependencies and, when asked, ffmpeg. The checkout is a separate step, because a local action can only be used after it.
+description: Node, the locked dependencies and, when asked, ffmpeg, the shared streams and one Playwright browser. The checkout is a separate step, because a local action can only be used after it.
 
 inputs:
   ffmpeg:
@@ -8,6 +8,18 @@ inputs:
       because they play the streams of the `streams` job. macOS never installs it: see ADR-112.
     required: false
     default: 'false'
+  streams:
+    description: >-
+      'true' downloads the `streams` artifact of this run (published by .github/workflows/streams.yml) into .cache/streams, where the
+      service looks for it.
+    required: false
+    default: 'false'
+  browser:
+    description: >-
+      chromium, firefox or webkit: the one Playwright browser to install, cached by the Playwright version. On Linux its system
+      packages are installed too (--with-deps). Empty installs none.
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -22,3 +34,33 @@ runs:
       run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
     - shell: bash
       run: npm ci --no-audit --no-fund
+
+    - if: inputs.streams == 'true'
+      uses: actions/download-artifact@v8
+      with:
+        name: streams
+        path: .cache/streams
+    # These lines are in the log of every job that downloads the artifact: equal hashes show that the engines played the same bytes.
+    - if: inputs.streams == 'true'
+      shell: bash
+      run: jq -r '"\(.index.info.id)  \(.index.info.contentHash[0:12])  ffmpeg \(.ffmpegVersion)"' .cache/streams/*/*/stream.json
+
+    - if: inputs.browser != ''
+      id: playwright
+      shell: bash
+      run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+    - if: inputs.browser != ''
+      uses: actions/cache@v6
+      with:
+        path: ${{ runner.os == 'macOS' && '~/Library/Caches/ms-playwright' || '~/.cache/ms-playwright' }}
+        key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.playwright.outputs.version }}-${{ inputs.browser }}
+    - if: inputs.browser != ''
+      shell: bash
+      env:
+        BROWSER: ${{ inputs.browser }}
+      run: |
+        if [ "$RUNNER_OS" = "Linux" ]; then
+          npx playwright install --with-deps "$BROWSER"
+        else
+          npx playwright install "$BROWSER"
+        fi

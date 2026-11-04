@@ -46,3 +46,68 @@ jobs:
   streams:
     name: streams
     uses: ./.github/workflows/streams.yml
+
+  # The @merge browser tests, one job per engine, in parallel: the stage is the npm script the Jenkinsfile calls, and only the
+  # Playwright project differs. A leg that fails fails the run: nothing here is allowed to fail (no continue-on-error).
+  # webkit-linux is the experimental engine (ADR-113): it is a required check like the others, and its name says what it is.
+  merge-gate:
+    name: merge-gate (${{ matrix.leg }}${{ matrix.experimental && ', experimental' || '' }})
+    needs: streams
+    runs-on: ${{ matrix.runner }}
+    # The budget of one engine is 8 minutes with warm caches (TEST_STRATEGY.md section 6.3); the timeout is the net under it.
+    # macOS runners are slower and have 3 CPUs, so they get more: the macOS probe job took about 25 minutes.
+    timeout-minutes: ${{ matrix.timeout }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - leg: chromium
+            project: chromium
+            browser: chromium
+            runner: ubuntu-24.04
+            timeout: 15
+          - leg: firefox
+            project: firefox
+            browser: firefox
+            runner: ubuntu-24.04
+            timeout: 15
+          - leg: chromium-cpu4x
+            project: chromium-cpu4x
+            browser: chromium
+            runner: ubuntu-24.04
+            timeout: 15
+          - leg: webkit-linux
+            experimental: true
+            project: webkit
+            browser: webkit
+            runner: ubuntu-24.04
+            timeout: 15
+          - leg: webkit-macos
+            project: webkit
+            browser: webkit
+            runner: macos-15
+            timeout: 30
+    env:
+      # GitHub sets it too. The Playwright config reads it: two workers, one retry, no test.only.
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          streams: 'true'
+          browser: ${{ matrix.browser }}
+      - name: Build the player
+        run: npm run build:player
+      - name: Merge gate (${{ matrix.project }})
+        run: npm run gate:merge -- --project=${{ matrix.project }}
+      # The JSON report and every failure attachment: the flake tracker and the failure triage read them.
+      - name: Upload the reports and the failure attachments
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reports-${{ matrix.leg }}
+          path: |
+            reports
+            test-results
+          retention-days: 14
+          overwrite: true

@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   streams:
-    name: streams
+    name: restore or generate
     runs-on: ubuntu-24.04
     # A cache hit takes about a minute; a miss adds the ffmpeg install and the generation (about 2 minutes on 4 vCPU). The rest is margin.
     timeout-minutes: 15
