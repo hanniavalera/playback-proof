@@ -659,7 +659,7 @@ describe('PB-LAB-006 README: the prose against the files it stands on', () => {
       ]);
       expect(plan('PB-AB-002').conditions[0].rules).toMatchObject([{ type: 'latency', ms: 300 }]);
       expect(readme).toContain(
-        'Under 300 ms of latency B starts 15 ms after A, and the interval of that difference, -19.2 to +51.8 ms, is inside the margin of 100 ms (PB-AB-002).',
+        'Under 300 ms of latency B takes 15 ms longer than A to start (the shift the harness estimates), and the interval of that difference, -19.2 to +51.8 ms, is inside the margin of 100 ms (PB-AB-002).',
       );
       expect(readme).toContain('startup under 300 ms of latency');
       expect(readme).toContain('both valid (7 of 7 gates) and both *equivalent within the margin* (keep A)');
