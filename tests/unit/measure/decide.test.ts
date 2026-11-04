@@ -3,6 +3,7 @@ import {
   EXIT_PASS,
   EXIT_PROBLEM,
   EXIT_REGRESSION,
+  combineExitCodes,
   compareEnvironment,
   compareMetric,
   exceeds,
@@ -514,6 +515,14 @@ describe('PB-PERF gate: exit codes', () => {
   it('does not count a regression that did not reproduce as a failure', () => {
     const notReproduced = settle(judgeStartup(constant(300)), judgeStartup(QUIET));
     expect(exitCodeOf([notReproduced])).toBe(0);
+  });
+
+  it('combines the verdicts of several profiles the same way: a regression, then a problem, then a pass', () => {
+    expect(combineExitCodes([])).toBe(0);
+    expect(combineExitCodes([0, 0])).toBe(0);
+    expect(combineExitCodes([0, 2, 0])).toBe(2);
+    expect(combineExitCodes([2, 1, 0])).toBe(1);
+    expect(combineExitCodes([1])).toBe(1);
   });
 });
 

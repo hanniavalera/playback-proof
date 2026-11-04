@@ -3,6 +3,7 @@ import { runGate } from '../../../src/lab/measure/gate.ts';
 import type { Attempt, GateResult } from '../../../src/lab/measure/gate.ts';
 import {
   buildGateReport,
+  busyWarning,
   renderBatchSummary,
   renderGateMarkdown,
   renderGateText,
@@ -106,6 +107,20 @@ describe('PB-PERF report: what `npm run perf` prints for a batch', () => {
     expect(startup!.summary).toMatchObject({ n: 2, median: 150 });
     expect(manifest!.summary).toBeNull();
     expect(renderBatchSummary(STARTUP, batch)).toMatch(/manifestMs\s+0\s+-/);
+  });
+});
+
+describe('PB-PERF report: the machine was busy', () => {
+  it('says nothing about a quiet machine', () => {
+    expect(busyWarning([startupBatch(QUIET)], 12)).toBeNull();
+  });
+
+  it('warns when the load average of either end of any batch is above half of the CPUs, and names the worst', () => {
+    const busy = { ...startupBatch(QUIET), loadAverage: { before: 2, after: 7.34 } };
+    expect(busyWarning([startupBatch(QUIET), busy], 12)).toBe(
+      'the machine was busy while this was measured (load average 7.3 on 12 CPUs, more than 50 % of them): the numbers are suspect, and a baseline should be recorded on a quiet machine',
+    );
+    expect(busyWarning([{ ...busy, loadAverage: { before: 6, after: 6 } }], 12)).toBeNull();
   });
 });
 

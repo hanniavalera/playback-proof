@@ -12,13 +12,13 @@ import type { BatchMeasurement, ScenarioSpec } from './types.ts';
 
 export type Attempt = 'first' | 'remeasure';
 
-export interface GateRequest {
+export interface GateRequest<S extends ScenarioSpec = ScenarioSpec> {
   /** The scenarios of the profile, in catalog order. */
-  specs: readonly ScenarioSpec[];
+  specs: readonly S[];
   /** The baseline of this environment and profile; null when there is none and the caller allowed that (the numbers are only reported). */
   baseline: Baseline | null;
   /** Measures one batch of a scenario. A HarnessError is a problem of the harness; anything else is a bug and propagates. */
-  measure: (spec: ScenarioSpec, attempt: Attempt) => Promise<BatchMeasurement>;
+  measure: (spec: S, attempt: Attempt) => Promise<BatchMeasurement>;
   limits?: PerfLimits;
   onScenario?: (result: ScenarioResult) => void;
 }
@@ -48,7 +48,7 @@ function problemOutcome(scenario: string, message: string, remeasured = false): 
   return { scenario, status: 'problem', metrics: [], problems: [{ scenario, message }], remeasured };
 }
 
-export async function runGate(request: GateRequest): Promise<GateResult> {
+export async function runGate<S extends ScenarioSpec>(request: GateRequest<S>): Promise<GateResult> {
   const limits = request.limits ?? PERF_LIMITS;
   const results: ScenarioResult[] = [];
 
@@ -62,9 +62,9 @@ export async function runGate(request: GateRequest): Promise<GateResult> {
   return { scenarios: results, problems, exitCode: exitCodeOf(results.map((result) => result.outcome)) };
 }
 
-async function gateScenario(
-  spec: ScenarioSpec,
-  request: GateRequest,
+async function gateScenario<S extends ScenarioSpec>(
+  spec: S,
+  request: GateRequest<S>,
   limits: PerfLimits,
 ): Promise<ScenarioResult> {
   const { baseline } = request;

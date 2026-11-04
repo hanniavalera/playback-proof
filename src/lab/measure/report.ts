@@ -111,6 +111,22 @@ function batchFacts(spec: ScenarioSpec, batch: BatchMeasurement): string {
 const batchHeading = (spec: ScenarioSpec, batch: BatchMeasurement): string =>
   `${spec.id} ${spec.name} (${batch.profile}): ${batchFacts(spec, batch)}`;
 
+/** The 1-minute load average above which the machine counts as busy, as a share of its CPUs. A hint for the reader, not a policy. */
+export const BUSY_LOAD_SHARE = 0.5;
+
+/**
+ * A warning when the machine was busy while a batch ran, or null. The numbers of a batch are only as quiet as the machine that took them:
+ * the harness records the load average before and after every batch so that a reader can see it, and says so when it is high.
+ */
+export function busyWarning(batches: readonly BatchMeasurement[], cpus: number): string | null {
+  const busiest = Math.max(
+    0,
+    ...batches.flatMap((batch) => [batch.loadAverage.before, batch.loadAverage.after]),
+  );
+  if (busiest <= cpus * BUSY_LOAD_SHARE) return null;
+  return `the machine was busy while this was measured (load average ${busiest.toFixed(1)} on ${cpus} CPUs, more than ${BUSY_LOAD_SHARE * 100} % of them): the numbers are suspect, and a baseline should be recorded on a quiet machine`;
+}
+
 /** What `npm run perf` prints for one batch: the statistics of every metric, and which of them gate. */
 export function renderBatchSummary(spec: ScenarioSpec, batch: BatchMeasurement): string {
   const rows = summarizeBatch(spec, batch).map(({ metric, summary }) => {

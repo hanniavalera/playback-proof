@@ -353,6 +353,13 @@ export const EXIT_PASS = 0;
 export const EXIT_REGRESSION = 1;
 export const EXIT_PROBLEM = 2;
 
+/** The exit code of several independent verdicts (one per profile): a regression wins over a problem, a problem over a pass. */
+export function combineExitCodes(codes: readonly ExitCode[]): ExitCode {
+  if (codes.includes(EXIT_REGRESSION)) return EXIT_REGRESSION;
+  if (codes.includes(EXIT_PROBLEM)) return EXIT_PROBLEM;
+  return EXIT_PASS;
+}
+
 /**
  * 0 passes, 1 a regression reproduced, 2 the measurement could not be trusted (no baseline, a changed stream, a browser that did not
  * start, a metric that was not produced). A regression that reproduced is a finding whatever else went wrong elsewhere, so it wins; any

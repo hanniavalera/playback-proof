@@ -248,7 +248,9 @@ export function scenarioById(id: string): Scenario | undefined {
   return SCENARIOS.find((scenario) => scenario.id === id);
 }
 
-/** The scenarios a profile runs, in catalog order. */
-export function scenariosFor(profile: PerfProfile): Scenario[] {
-  return SCENARIOS.filter((scenario) => scenario.profiles.includes(profile));
+/** The scenarios a profile runs, in catalog order; `ids` (when given) narrows them. */
+export function scenariosFor(profile: PerfProfile, ids: readonly string[] | null = null): Scenario[] {
+  return SCENARIOS.filter(
+    (scenario) => scenario.profiles.includes(profile) && (ids === null || ids.includes(scenario.id)),
+  );
 }
