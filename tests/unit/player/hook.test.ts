@@ -337,22 +337,36 @@ describe('the variants', () => {
     expect(hook.events()[2]?.detail).toMatchObject({ reason: 'start', from: null, to: 2 });
   });
 
-  it('an adaptation is `abr`, a variantchanged is `manual`, and an event that changes nothing records nothing', async () => {
+  it('an adaptation is `abr`, a variantchanged nobody asked for is `abr` too, and an event that changes nothing records nothing', async () => {
     const { hook, player } = await harness();
     await hook.load(URI);
     for (const track of player.tracks) track.active = track.id === 3;
     player.emit('adaptation');
     player.emit('adaptation');
+    // Shaka raises `variantchanged` as well when it moves away from a rung that failed (failover): the page did not ask for it.
     for (const track of player.tracks) track.active = track.id === 1;
     player.emit('variantchanged');
     const changes = hook.events().filter((event) => event.name === 'variant-changed');
     expect(changes.map((event) => event.detail)).toEqual([
       { from: null, to: 2, bandwidth: 764_000, height: 360, reason: 'start' },
       { from: 2, to: 3, bandwidth: 1_864_000, height: 720, reason: 'abr' },
-      { from: 3, to: 1, bandwidth: 364_000, height: 240, reason: 'manual' },
+      { from: 3, to: 1, bandwidth: 364_000, height: 240, reason: 'abr' },
     ]);
     expect(hook.metrics().bitrate.switches).toBe(2);
     expect(hook.metrics().bitrate.current).toMatchObject({ id: 1, height: 240, videoCodec: 'vp09.00.10.08' });
+  });
+
+  it('only the page`s own selectVariantByHeight is `manual`, and a failover after it is `abr` again', async () => {
+    const { hook, player } = await harness();
+    await hook.load(URI);
+    await hook.selectVariantByHeight(720);
+    for (const track of player.tracks) track.active = track.id === 2;
+    player.emit('variantchanged');
+    const reasons = hook
+      .events()
+      .filter((event) => event.name === 'variant-changed')
+      .map((event) => event.detail?.reason);
+    expect(reasons).toEqual(['start', 'manual', 'abr']);
   });
 
   describe('selectVariantByHeight', () => {

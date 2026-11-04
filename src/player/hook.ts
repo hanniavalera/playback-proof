@@ -148,6 +148,8 @@ export class PlayerHook implements QAHook {
   private firstFrameSeen = false;
   private hasPlayed = false;
   private lastVariantId: number | null = null;
+  /** True while selectVariantByHeight() waits for its own change: the only time a `variantchanged` is `manual`. */
+  private manualSelection = false;
   private lastObservedTime: number | null = null;
   private presentationTimeline: PresentationTimelineLike | null | undefined = undefined;
   private viewerSeeks = 0;
@@ -232,7 +234,9 @@ export class PlayerHook implements QAHook {
       this.timeline.record(event.buffering ? 'buffering-start' : 'buffering-end'),
     );
     on('adaptation', () => this.syncVariant('abr'));
-    on('variantchanged', () => this.syncVariant('manual'));
+    // Shaka raises `variantchanged` for the application's own selectVariantTrack(), but also when it moves away from a rung that
+    // failed (failover). Only a change that this hook asked for is `manual`; anything Shaka does by itself is `abr`.
+    on('variantchanged', () => this.syncVariant(this.manualSelection ? 'manual' : 'abr'));
     on('error', (event: { detail: unknown }) => this.recordShakaError(event.detail, 'shaka'));
     // Shaka resets the MediaSource after some media errors and then raises no error event at all: the recovery is the only trace.
     on('mediasourcerecovered', () =>
@@ -652,11 +656,16 @@ export class PlayerHook implements QAHook {
     const cursor = this.timeline.cursor();
     // Before anything has played there is nothing worth keeping: flush, so that the pinned rung is what plays first.
     // Once playback has started the change is seamless: it applies to what is fetched next.
-    player.selectVariantTrack(target, !this.hasPlayed, 0);
-    await this.timeline.waitFor('variant-changed', {
-      since: cursor,
-      predicate: (event) => event.detail?.to === target.id,
-    });
+    this.manualSelection = true;
+    try {
+      player.selectVariantTrack(target, !this.hasPlayed, 0);
+      await this.timeline.waitFor('variant-changed', {
+        since: cursor,
+        predicate: (event) => event.detail?.to === target.id,
+      });
+    } finally {
+      this.manualSelection = false;
+    }
   }
 
   setAbr(enabled: boolean): void {
