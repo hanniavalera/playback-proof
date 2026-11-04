@@ -38,6 +38,13 @@ every night 04:41 UTC  |  manual run  |  a pull request that changes nightly.yml
   +-- flake (nightly)          the judge of ci.yml, for these runs (it runs on the pull request too)
   +-- flake-record (nightly)   the recorder of ci.yml; schedule and manual runs on main only
 
+by hand only (workflow_dispatch, read-only token)                                      (measure.yml)
+
+  streams ---- the same workflow
+  |
+  +-- measure (<task>, <engine>, <runner>)   one long measurement on ubuntu-24.04 or macos-15, then the artifact
+                                             measure-<task>-<label>-<runner>  (the section "Measurements on GitHub runners")
+
 Arrive with their phase, as jobs that need `streams` (nothing of them exists yet):
   performance gate (Phase 5), A/B runs (6), soak and readiness (7), triage (8).
 ```
@@ -73,7 +80,7 @@ The legs and what each one is for:
 
 **Required checks.** Branch protection on `main` should require these eight names, exactly as they are printed: `static`, `unit`, `merge-gate (chromium)`, `merge-gate (firefox)`, `merge-gate (chromium-cpu4x)`, `merge-gate (webkit-linux, experimental)`, `merge-gate (webkit-macos)`, `flake`. `streams / restore or generate` is implied by the five that need it. `flake` is more than the flake gate: nothing can skip it, so when no leg ran (`streams` failed and the legs were skipped) it fails for want of run files, and it is the check that notices a merge gate that did not run (ADR-171). `flake-record` is **not** required: it runs only for a push to `main`, where nothing waits for it, and a pull request never has it. The performance gate joins the list when its job exists. The rule is the owner's to set; it is not in the repository. A renamed job stops being required until the rule is updated, so a rename is a change to the rule too.
 
-**What a pull request does not run:** the nightly (`@release` tests; it runs once on a pull request that changes `nightly.yml`), the codec matrix ([`codec-matrix.yml`](../.github/workflows/codec-matrix.yml): on demand, and on pushes to the probe's own files; it installs ffmpeg with brew on macOS because the probe makes its own test clips), the soak, the readiness checks and the A/B runs (TEST_STRATEGY.md section 6.4).
+**What a pull request does not run:** the nightly (`@release` tests; it runs once on a pull request that changes `nightly.yml`), the codec matrix ([`codec-matrix.yml`](../.github/workflows/codec-matrix.yml): on demand, and on pushes to the probe's own files; it installs ffmpeg with brew on macOS because the probe makes its own test clips), the soak, the readiness checks and the A/B runs (TEST_STRATEGY.md section 6.4), and the measurements of [`measure.yml`](../.github/workflows/measure.yml), which only start when somebody dispatches them.
 
 ## The flake gate
 
@@ -122,6 +129,60 @@ npx tsx tools/ci-summary.ts --title "merge-gate (firefox)"
 
 A leg that fails only on GitHub is reproduced with the streams of that run and the report of that leg (`gh run download <run-id> --name reports-<leg>`).
 
+## Measurements on GitHub runners
+
+[`measure.yml`](../.github/workflows/measure.yml) runs **one long measurement on a GitHub runner** when somebody dispatches it, so that the measurements that need a machine to themselves (a performance baseline, its A/A check, a soak) run there while the workstation does something else, and in the environments the merge gate runs in (`gha-linux-x64`, `gha-macos-arm64`). Those environments need baselines of their own, which can only be recorded on them (ADR-126). It starts by hand and by nothing else (no push, no pull request, no schedule), has a read-only token and uses no secret. The decisions: ADR-175 to ADR-177 in [decisions/ci-measure.md](decisions/ci-measure.md). **Status: written, linted, unit-tested and its scripts run locally; it has not been dispatched on GitHub yet** (the last section lists what that leaves open).
+
+| Input | Values | What it does |
+| --- | --- | --- |
+| `task` | `perf-baseline`, `perf-aa`, `ab`, `readiness`, `soak`, `flake-collect` | Which measurement. A closed list: GitHub refuses any other value. |
+| `runner` | `ubuntu-24.04` (default), `macos-15` | The machine, and with it the environment id. |
+| `engine` | `chromium` (default), `firefox`, `webkit`, `chromium-cpu4x` | The browser to install (`chromium-cpu4x` installs Chromium) and what the task is given: `--profile` for the performance tasks, `--engine` for `readiness` and `soak`, `--project` for `flake-collect`. An A/B plan names its own engine, so for `ab` it only picks the browser. `ab`, `readiness` and `soak` have no `chromium-cpu4x`: the job says so and stops. |
+| `args` | text | Extra arguments for the task, split on spaces into words and handed over as words: nothing evaluates them, so there is no quoting, and a JSON value must not contain a space. |
+| `repeat` | 1 to 50, default 10 | `perf-aa` only: how many times the gate is run against its own baseline. |
+| `timeout_minutes` | 1 to 340, default 60 | The job's limit. The task itself is stopped 10 minutes earlier, so that the machine record and the results are still uploaded. |
+| `label` | text, default `run` | Names the artifact, `measure-<task>-<label>-<runner>`; anything but letters, digits, dots, dashes and underscores becomes a dash, and 60 characters are kept. |
+
+**Dispatch.** `<ref>` is the branch whose code is measured. A dispatch runs the workflow file **of that ref**, so the branch has to contain `measure.yml` (merge `main` into it first), and GitHub only offers the first dispatch of a new workflow once the file is on the default branch.
+
+```sh
+# the baseline of one profile in the environment of the runner (one dispatch per profile and runner: chromium, chromium-cpu4x, firefox, webkit)
+gh workflow run measure.yml --ref <ref> -f task=perf-baseline -f runner=ubuntu-24.04 -f engine=chromium -f label=base1 -f timeout_minutes=90
+
+# the gate against its own baseline, ten times: the baseline of gha-linux-x64 for that profile has to be committed in <ref>
+gh workflow run measure.yml --ref <ref> -f task=perf-aa -f runner=ubuntu-24.04 -f engine=chromium -f repeat=10 -f label=aa1 -f timeout_minutes=180
+
+# an A/B experiment: the plan names the engine, `engine` only picks the browser to install
+gh workflow run measure.yml --ref <ref> -f task=ab -f runner=ubuntu-24.04 -f engine=chromium -f args='--prereg ab/prereg/pipeline-check.json' -f label=pipeline-check -f timeout_minutes=90
+
+# the readiness checks: the workflow adds --engine
+gh workflow run measure.yml --ref <ref> -f task=readiness -f runner=ubuntu-24.04 -f engine=chromium -f args='--checks all' -f label=rdy1 -f timeout_minutes=90
+
+# a soak: --minutes is required (ci is 5 minutes, release is 30)
+gh workflow run measure.yml --ref <ref> -f task=soak -f runner=ubuntu-24.04 -f engine=chromium -f args='--minutes ci' -f label=soak-ci -f timeout_minutes=60
+
+# thirty repetitions of the merge tier, recorded in flake/history
+gh workflow run measure.yml --ref <ref> -f task=flake-collect -f runner=ubuntu-24.04 -f engine=chromium -f args='--runs 30 --grep @merge' -f label=collect1 -f timeout_minutes=180
+```
+
+The timeouts are guesses from the design budgets (a performance job 12 minutes, [TEST_STRATEGY.md](../TEST_STRATEGY.md) section 6.3), not measurements. Give each dispatch its own `label` (put the engine in it): a third dispatch with the same task, label, runner and engine cancels the second one that is still waiting.
+
+**Download.**
+
+```sh
+gh run list --workflow measure.yml --limit 10
+gh run watch <run-id>
+gh run download <run-id> --name measure-perf-baseline-base1-ubuntu-24.04 --dir results/measure-perf-baseline-base1-ubuntu-24.04
+```
+
+The artifact holds `perf/baselines`, `docs/results`, `flake/history`, `reports` and `test-results` under the paths the repository uses, so what the task wrote can be copied into a checkout and committed. `reports/measure-produced.txt` lists the files the task wrote or changed (the artifact also carries what `docs/results` and `perf/baselines` already held). The job's summary page prints the machine record and the download command. A run with a failing task still uploads: the artifact is there to find out why.
+
+**What each runner is called.** The code names it, and the workflow overrides nothing (`PB_ENV_ID` is not set; [`src/shared/env.ts`](../src/shared/env.ts) builds the id from `RUNNER_OS` and `RUNNER_ARCH`): `ubuntu-24.04` is **`gha-linux-x64`** and `macos-15` is **`gha-macos-arm64`**. A baseline therefore lands in `perf/baselines/gha-linux-x64/<profile>.json` or `perf/baselines/gha-macos-arm64/<profile>.json`, a result in `docs/results/<kind>/<id>...`, and none of it can be mistaken for a workstation's (`local-darwin-arm64`) or a container's (`docker-linux-arm64`). Firefox has not been run on `macos-15` in this lab: the merge gate runs it on Linux only.
+
+**For the performance gate, in this order.** `perf-baseline` for each profile; download; commit the files into `perf/baselines/<id>/`; then `perf-aa` on a ref that contains them (the gate refuses to judge without a baseline of its own environment and exits 2, so every pass would be untrusted). The A/A check is the one that matters on a runner: it measures how often the gate raises a false alarm when the baseline was recorded on another VM, which is exactly the situation of a pull request. `perf-aa` writes `docs/results/perf/<id>/<profile>-aa.json` and `.md`; its passes that exit 1 are results (false positives, counted), and the job only fails when a pass exits 2.
+
+**A shared VM is noisier than a quiet workstation.** A hosted runner is a virtual machine on hardware that other jobs share: its neighbours, the CPU model behind it and the image change from one run to the next, and nothing here makes it quiet or pins it. The performance harness assumes a machine that is otherwise idle and says so when it was not (it records the load average around every batch). So a number from a runner is read together with three things, and without them it is not a result: its **environment id** (baselines of one environment are never compared with another's, ADR-126); its **own variation** (the baseline holds every run and the coefficient of variation of each metric, and the A/A check measures the false alarms); and the **machine record** of the run, `reports/measure-machine.txt`: the environment id the code computed, the commit, the CPU model and count, the memory, the OS and image version, the load before and after, and the versions of Node, npm, Playwright and ffmpeg. Two dispatches of one task can land on different hardware (the record shows the CPU model): do not average them as if they were one machine.
+
 ## What is validated, and what is not
 
 Done on the development host (Apple M2 Pro, macOS 27.2, Docker Desktop), 2026-11-04:
@@ -131,6 +192,7 @@ Done on the development host (Apple M2 Pro, macOS 27.2, Docker Desktop), 2026-11
 - The parity of the two CI systems: [`tests/unit/ci/parity.test.ts`](../tests/unit/ci/parity.test.ts) compares `ci.yml` and the Jenkinsfile (the gate scripts and their order, the projects of the merge gate, the options of each script, the modes of the flake gate, that every `npm run` names a script that exists), with the differences that are allowed written in one list. It was run over files with one mistake each (a renamed gate in either file, an engine left out, an option in one only, a script made an alias): each is reported. The macOS WebKit leg, `--global-timeout`, and what depends on the history store are the allowed differences (ADR-173).
 - The commands of the Firefox leg ran in the Playwright image with `--cpus 2` and `CI=true`, on the five streams generated on the host: 3 of 3 `@merge` tests passed in 8.5 s with two workers. `--list` shows what each project selects: 3 tests in each engine and 1 in `chromium-cpu4x`.
 - The flake jobs: `actionlint` 1.7.12 with `shellcheck` 0.11.0 (the native binaries) finds nothing in the workflows, and `npx prettier --check .github` passes. [`tests/unit/ci/flake-jobs.test.ts`](../tests/unit/ci/flake-jobs.test.ts) reads the arguments out of the workflow text, compares them with the legs of the matrix (one invocation per environment, each with the artifacts of its own legs), and runs them through the real gate against a temporary bare git repository laid out as the job lays out its workspace: a judge on an empty history writes nothing, the first recording creates `ci-data` as an orphan with one commit per environment, authored by the bot, and leaves `main` alone, a re-run adds nothing, and a leg without run files makes the gate exit 2. The same file runs `npm run gate:flake -- --help` and found a defect that no other check would have: the script was an alias of another one (`npm run flake:gate`), npm gives the arguments of an alias to itself, and every flag of the workflow would have been dropped. The script now runs the gate directly. The judging commands were also run, through `npm`, on the real `reports-<leg>` artifacts of the last green run of `main` (`gh run download`), against the real remote, which has no `ci-data`: both environments pass with "not enough data" and nothing is written. The recording commands were run on the same artifacts against a temporary bare repository: the first write creates `ci-data` as an orphan with one commit per environment, authored and committed as `github-actions[bot]`, a re-run adds nothing, and the `jq` check of the recorder passes. The two commands of the Jenkinsfile's `Flake` stage are run by the same test file against a history directory laid out as its unstash loop lays it out.
+- The measurement workflow: `actionlint` with `shellcheck` finds nothing (a planted `SC2086` in a scratch workflow was found, so the shell checks were on), Prettier passes, and [`tests/unit/ci/measure.test.ts`](../tests/unit/ci/measure.test.ts) keeps its properties: only `workflow_dispatch`, `contents: read`, no expression in any script, an input only under keys that cannot be code, closed choices, a branch for each task that calls a script and a file that exist or are listed as pending with their branch, the artifact, the limits. It was run over copies with one mistake each, and over the file itself with an input pasted into a script. The scripts of the job were also run from the workflow's own text: the artifact name with hostile labels (`$(id)`, backticks, quotes, a newline, `::set-output`), the check of the inputs over valid and invalid values, the run step with `npm` and `npx` replaced by functions that print their arguments (the command of every task, the arguments as separate words and not expanded, the A/A loop with a pass that exits 1 and one that exits 2), the machine record on macOS, and the step that lists the files the task wrote, which had two bugs that only running it showed (a directory that does not exist made `find` fail the step, and appending to the machine record before listing the files made every file older than it).
 
 **Not validated, because it needs a GitHub run:**
 
@@ -142,6 +204,7 @@ Done on the development host (Apple M2 Pro, macOS 27.2, Docker Desktop), 2026-11
 - Both flake jobs on GitHub: that `download-artifact` lays the files out as its source says (the layout above), that the fetch of `ci-data` works from a checkout that keeps no credential, that the push of the bot with the job's token creates the branch and is accepted (and that no rule added later forbids it), the time of the jobs, and how the gate's report renders on the job summary.
 - What a required `flake` check does to a pull request whose legs were skipped by a failed `streams`: never observed (ADR-171). To see it, break `streams` on a throwaway branch and read the checks of its pull request.
 - The `Flake` stage of the Jenkinsfile, in a Jenkins: that the file loads, that the stash and unstash carry the run files across the parallel workspaces, that the stage runs after a red engine, that the history volume is writable and keeps the file, and that a build of `main` is recognised as one. The round that wrote it had no Docker; ADR-174 lists what a real build must show.
+- The measurement workflow on GitHub, which has never been dispatched: that the expressions of the job's and the step's `timeout-minutes` are accepted with a number input, that a step stopped at its limit lets the upload run, the Linux branch of the machine record (shellchecked and read, not run), that a dispatch on a branch reads the workflow file of that branch, and that the artifact name is accepted. And the three tasks whose files are on other branches (`perf/aa.ts` on `p5/perf`, `ab/run.ts` on `p6/ab`, `live/readiness.ts` and `live/soak.ts` on `p7/live`): the workflow was written against the command lines read in those worktrees (ADR-176), and nothing here ran them.
 - That a reusable workflow called with `uses: ./.github/workflows/streams.yml` and a local composite action behave as the documentation says on a pull request from the same repository.
 - Whether Playwright's own stop at the limit behaves on a runner as it did on the development host (a 6 s limit on two tests wrote the report with the errors of the run and both tests marked as not run), and whether the upload step runs after a job that the runner itself timed out.
 - The rendering of the job summary.
