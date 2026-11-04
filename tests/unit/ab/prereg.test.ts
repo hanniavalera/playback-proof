@@ -17,6 +17,7 @@ import {
   validatePreregistration,
 } from '../../../ab/prereg.ts';
 import { PROFILE_NAMES, profile } from '../../../src/shared/profiles.ts';
+import { mentionedSettings, settingNames } from '../../../ab/settings.ts';
 import { rebufferPrereg, startupPrereg } from './fixtures.ts';
 import type { Json } from './fixtures.ts';
 
@@ -108,8 +109,50 @@ describe('PB-AB pre-registration: a valid plan', () => {
     }
   });
 
-  it('accepts the rebuffering experiment, and warns that bandwidth-drop is unmeasured for its first 8 s', () => {
+  it('accepts the rebuffering experiment on the finite variant of bandwidth-drop, with no warning: every download is measured', () => {
     const result = validatePreregistration(rebufferPrereg());
+    expect(result).toMatchObject({ ok: true, warnings: [] });
+    if (result.ok) {
+      expect(result.prereg.conditions[0]).toMatchObject({ id: 'bandwidth-drop-finite', profile: null });
+      expect(result.prereg.conditions[0]?.rules).toStrictEqual([
+        { type: 'throttle', kbps: 20000 },
+        { type: 'throttle', kbps: 600, afterMs: 8000 },
+      ]);
+    }
+  });
+
+  it('refuses a condition with a stretch the player cannot hear for an experiment, an exploratory run and an A/A run: finite links only', () => {
+    for (const kind of ['experiment', 'exploratory', 'aa'] as const) {
+      const plan = changed((p) => {
+        p.kind = kind;
+        conditions(p)[0] = {
+          id: 'bandwidth-drop',
+          profile: 'bandwidth-drop',
+          rules: profile('bandwidth-drop'),
+          rationale: 'The catalog profile as it is: the link weakens after four segments.',
+        };
+      }, rebufferPrereg);
+      const problems = problemsOf(plan).join('\n');
+      expect(problems, kind).toContain('conditions[0] (bandwidth-drop)');
+      expect(problems, kind).toContain('between 0 ms and 8000 ms');
+      expect(problems, kind).toContain('finite links only');
+      expect(problems, kind).toContain('at most 20000 kbps');
+      expect(problems, kind).toContain('"profile": null');
+    }
+  });
+
+  it('only warns for a pipeline check, which decides nothing', () => {
+    const plan = changed((p) => {
+      p.kind = 'pipeline-check';
+      p.catalogId = null;
+      conditions(p)[0] = {
+        id: 'bandwidth-drop',
+        profile: 'bandwidth-drop',
+        rules: profile('bandwidth-drop'),
+        rationale: 'The catalog profile as it is: the link weakens after four segments.',
+      };
+    }, rebufferPrereg);
+    const result = validatePreregistration(plan);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.warnings).toHaveLength(1);
@@ -118,7 +161,7 @@ describe('PB-AB pre-registration: a valid plan', () => {
     }
   });
 
-  it('takes a condition of its own, with the finite link written out, once it says it is not the named profile', () => {
+  it('takes a finite link written another way, with the first 8 s covered by a throttle that ends when the drop begins', () => {
     const plan = changed((p) => {
       conditions(p)[0] = {
         id: 'bandwidth-drop-finite',
@@ -136,7 +179,7 @@ describe('PB-AB pre-registration: a valid plan', () => {
 
   it('knows every named profile of the lab (a profile name is checked against the code, not a list kept here)', () => {
     for (const name of PROFILE_NAMES) {
-      const plan = changed((p) => {
+      const withProfile = (p: Json): void => {
         conditions(p)[0] = {
           id: name,
           profile: name,
@@ -144,8 +187,17 @@ describe('PB-AB pre-registration: a valid plan', () => {
           rationale: `The condition called ${name} in the lab.`,
         };
         p.observation = { mediaSecondsAfterFirstFrame: 30, sessionTimeoutMs: 120000 };
+      };
+      // As a pipeline check every profile is accepted (a quiet stretch only warns); as an experiment only a finite link is.
+      const asPipelineCheck = changed((p) => {
+        withProfile(p);
+        p.kind = 'pipeline-check';
+        p.catalogId = null;
       });
-      expect(problemsOf(plan), name).toStrictEqual([]);
+      expect(problemsOf(asPipelineCheck), name).toStrictEqual([]);
+      const asExperiment = problemsOf(changed(withProfile));
+      if (unmeasuredWindows(profile(name)).length === 0) expect(asExperiment, name).toStrictEqual([]);
+      else expect(asExperiment.join('\n'), name).toContain('finite links only');
     }
   });
 
@@ -407,6 +459,54 @@ describe('PB-AB pre-registration: what is refused', () => {
       p.metrics = [];
     });
     expect(problemsOf(plan).length).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('PB-AB pre-registration: B is several settings together, so no sentence of a plan may credit one setting', () => {
+  it('knows every setting of B under each name it goes by: its path, its last key and the id of its knob', () => {
+    expect(settingNames()).toStrictEqual(
+      [
+        'abr.defaultBandwidthEstimate',
+        'abr.switchInterval',
+        'abr.useNetworkInformation',
+        'bufferingGoal',
+        'conservative-start',
+        'deeper-buffer',
+        'defaultBandwidthEstimate',
+        'faster-switching',
+        'streaming.bufferingGoal',
+        'switchInterval',
+        'useNetworkInformation',
+      ].sort(),
+    );
+    expect(mentionedSettings('B starts on the lowest rung and keeps more buffer')).toStrictEqual([]);
+    expect(mentionedSettings('the SwitchInterval of B')).toStrictEqual(['switchInterval']);
+  });
+
+  it.each([
+    ['a hypothesis', (p: Json) => ((p.hypotheses as Json[])[0] as Json).text, 'hypotheses[0].text'],
+    ['a threshold basis', (p: Json) => (metrics(p)[0] as Json).thresholdBasis, 'metrics[0].thresholdBasis'],
+    ['a condition rationale', (p: Json) => (conditions(p)[0] as Json).rationale, 'conditions[0].rationale'],
+    ['the title', (p: Json) => p.title, '$.title'],
+  ])('refuses %s that names a single setting', (_name, original, where) => {
+    const plan = changed((p) => {
+      const sentence = `${String(original(p))} The shorter switchInterval of B is what should show.`;
+      if (where === 'hypotheses[0].text') ((p.hypotheses as Json[])[0] as Json).text = sentence;
+      else if (where === 'metrics[0].thresholdBasis') (metrics(p)[0] as Json).thresholdBasis = sentence;
+      else if (where === 'conditions[0].rationale') (conditions(p)[0] as Json).rationale = sentence;
+      else p.title = sentence;
+    });
+    const problems = problemsOf(plan).join('\n');
+    expect(problems).toContain(`${where} names a single setting of configuration B (switchInterval)`);
+    expect(problems).toContain('B is several settings together');
+  });
+
+  it('accepts what is expected of B as a whole', () => {
+    const plan = changed((p) => {
+      ((p.hypotheses as Json[])[0] as Json).text =
+        'B starts on the lowest rung in every engine and keeps more media buffered, so it should stall less after the link drops.';
+    });
+    expect(problemsOf(plan)).toStrictEqual([]);
   });
 });
 

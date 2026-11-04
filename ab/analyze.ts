@@ -341,9 +341,9 @@ function startRungComposition(analysed: readonly SessionRecord[]): StartRungComp
   let note: string;
   if (disjoint) {
     note =
-      `The arms never started on the same rung (A: ${show(A)}; B: ${show(B)}). Any difference in startup, and in the first seconds of playback, includes the effect of ` +
-      `the first rung, which is one of the things B changes (its "conservative-start" knob, ADR-064): it cannot be told apart from the rest of the configuration here, ` +
-      'and a rung-matched comparison is not possible with these data.';
+      `The arms never started on the same rung (A: ${show(A)}; B: ${show(B)}). Any difference in startup, and in the first seconds of playback, includes whatever the first rung does: ` +
+      'the first rung is set by the configuration (ADR-064), and the two configurations are compared as shipped, so this experiment cannot say how much of a difference is the first rung and how much is the rest of the configuration. ' +
+      'A rung-matched comparison is not possible with these data.';
   } else if (differs) {
     note = `The arms started on different rungs in different proportions (A: ${show(A)}; B: ${show(B)}): part of any early difference is the first rung. A comparison within the rungs both arms started on is in the exploratory section.`;
   } else {

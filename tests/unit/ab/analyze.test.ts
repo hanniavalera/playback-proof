@@ -65,7 +65,7 @@ describe('PB-AB analysis of one condition: a clear improvement', () => {
       differs: true,
     });
     expect(analysis.startRungs.note).toContain('never started on the same rung');
-    expect(analysis.startRungs.note).toContain('cannot be told apart');
+    expect(analysis.startRungs.note).toContain('cannot say how much of a difference is the first rung');
   });
 
   it('is reproducible: the same sessions and seed give the same analysis, another seed moves only the interval', () => {

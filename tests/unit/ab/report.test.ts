@@ -5,6 +5,7 @@ import { validatePreregistration } from '../../../ab/prereg.ts';
 import type { Preregistration } from '../../../ab/prereg.ts';
 import { renderReport } from '../../../ab/report.ts';
 import type { RawResult } from '../../../ab/results.ts';
+import { settingNames } from '../../../ab/settings.ts';
 import { profile } from '../../../src/shared/profiles.ts';
 import { gaussian, generator } from './helpers.ts';
 import { aaPrereg, rebufferPrereg, startupPrereg } from './fixtures.ts';
@@ -116,7 +117,15 @@ describe('PB-AB report: a pre-registered experiment in which B is better', () =>
     expect(section).toContain('**Localhost, synthetic content.**');
     expect(section).toContain('quiet by its load average');
     expect(section).toContain('**The condition tested.** Only `high-latency`');
-    expect(section).toContain('**B is a bundle.**');
+    expect(section).toContain('**B is several settings together.**');
+    expect(section).toContain('differs from configuration A in 4 settings at once');
+    expect(section).toContain('`abr.useNetworkInformation` = false');
+    expect(section).toContain('`abr.defaultBandwidthEstimate` = 500 kbps');
+    expect(section).toContain('`abr.switchInterval` = 4 s');
+    expect(section).toContain('`streaming.bufferingGoal` = 20 s');
+    expect(section).toContain('compared as they are shipped, not setting by setting');
+    expect(section).toContain('no effect found here can be credited to one of these settings');
+    expect(section).toContain('no arm of A plus one setting was run');
     expect(section).toContain(
       '"Equivalent within the margin" says the whole interval lies inside the pre-registered margin, not that the true effect is zero',
     );
@@ -185,13 +194,34 @@ describe('PB-AB report: rebuffering', () => {
     expect(markdown).toMatch(/\| Rebuffer ratio \| 30 \/ 30 \|/);
   });
 
-  it('warns about the stretch of bandwidth-drop that the player cannot hear, and the Chromium stall that starts late', () => {
-    const section = markdown.slice(markdown.indexOf('## What this experiment cannot say'));
+  it('warns about the stretch the player cannot hear when the condition has one (a pipeline check on the named bandwidth-drop), and the Chromium stall that starts late', () => {
+    const quiet = build({
+      ...rebufferPrereg(),
+      kind: 'pipeline-check',
+      catalogId: null,
+      conditions: [
+        {
+          id: 'bandwidth-drop',
+          profile: 'bandwidth-drop',
+          rules: profile('bandwidth-drop'),
+          rationale: 'The catalog profile as it is: the link weakens after four segments.',
+        },
+      ],
+    });
+    const { markdown: quietMarkdown } = report(quiet.raw);
+    const section = quietMarkdown.slice(quietMarkdown.indexOf('## What this experiment cannot say'));
     expect(section).toContain('**A stretch the player cannot hear.**');
     expect(section).toContain('between 0 ms and 8000 ms');
     expect(section).toContain('**When a stall starts in Chromium.**');
     expect(section).toContain('a video-only underflow is not in the number');
-    expect(markdown).toContain('Warnings of the plan:');
+    expect(quietMarkdown).toContain('Warnings of the plan:');
+  });
+
+  it('says nothing about a stretch the player cannot hear on the finite variant: every download is measured', () => {
+    const section = markdown.slice(markdown.indexOf('## What this experiment cannot say'));
+    expect(section).not.toContain('A stretch the player cannot hear');
+    expect(section).toContain('**When a stall starts in Chromium.**');
+    expect(markdown).not.toContain('Warnings of the plan:');
   });
 });
 
@@ -348,5 +378,56 @@ describe('PB-AB report: failures, provenance and several conditions', () => {
     expect(markdown).toContain('## Verdict: condition constrained-1500');
     expect(markdown).toContain('## What this experiment cannot say: condition constrained-1500');
     expect(markdown).toContain('**The condition was stopped early:** 5 sessions failed in a row');
+  });
+});
+
+describe('PB-AB report: B is compared as shipped, and no sentence credits one of its settings', () => {
+  const SETTINGS = settingNames();
+  const sample = (raw: Json, sessions?: ReturnType<typeof interleaved>): string =>
+    report(build(raw, sessions).raw).markdown;
+
+  it('names a single setting of B nowhere but in the table of the arms and in the one sentence that says they come together', () => {
+    const markdowns = [
+      // B better, A better, equivalent, inconclusive: every verdict has its own sentences.
+      sample(startupPrereg()),
+      sample(
+        startupPrereg(),
+        interleaved(startupOnly(normal(1, 30, 800, 80)), startupOnly(normal(2, 30, 1000, 80))),
+      ),
+      sample(
+        startupPrereg(),
+        interleaved(startupOnly(normal(3, 30, 1000, 20)), startupOnly(normal(4, 30, 1000, 20))),
+      ),
+      sample(
+        startupPrereg(),
+        interleaved(startupOnly(normal(5, 30, 1000, 150)), startupOnly(normal(6, 30, 930, 150))),
+      ),
+      sample(
+        rebufferPrereg(),
+        interleaved(startupOnly(normal(7, 30, 900, 90)), startupOnly(normal(8, 30, 900, 90))),
+      ),
+    ];
+    for (const markdown of markdowns) {
+      expect(markdown).toContain('**B is several settings together.**');
+      for (const line of markdown.split('\n')) {
+        const named = SETTINGS.find((name) => line.toLowerCase().includes(name.toLowerCase()));
+        if (named === undefined) continue;
+        const allowed =
+          line.startsWith('| Arm B |') || line.startsWith('- **B is several settings together.**');
+        expect(allowed, `${named}: ${line.slice(0, 140)}`).toBe(true);
+      }
+    }
+  });
+
+  it('says nothing about a bundle for an A/A run: both arms are one configuration', () => {
+    const { raw } = build(
+      aaPrereg(),
+      interleaved(startupOnly(normal(9, 30, 1000, 40)), startupOnly(normal(10, 30, 1000, 40)), () => ({
+        config: 'A' as const,
+      })),
+    );
+    const { markdown } = report(raw);
+    expect(markdown).not.toContain('several settings together');
+    expect(markdown).toContain('| Arm B | configuration A: no overrides');
   });
 });

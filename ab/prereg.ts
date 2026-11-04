@@ -5,10 +5,16 @@ import type { FaultRule } from '../src/shared/faults.ts';
 import { PROFILE_NAMES, profile } from '../src/shared/profiles.ts';
 import type { ProfileName } from '../src/shared/profiles.ts';
 import type { Protocol, StreamId } from '../src/shared/streams.ts';
-import { describeUnmeasured, unmeasuredWindows } from './conditions.ts';
+import {
+  describeUnmeasured,
+  measurableCeilingKbps,
+  measurableLatencyMs,
+  unmeasuredWindows,
+} from './conditions.ts';
 import { METRICS, isMetricId } from './metrics.ts';
 import type { MetricId } from './metrics.ts';
 import { AB_POLICY } from './policy.ts';
+import { mentionedSettings } from './settings.ts';
 import type { ConfigLetter } from './types.ts';
 
 // The pre-registration of an experiment: a JSON file, committed BEFORE the data run, that fixes what will be compared, how, and what will
@@ -151,7 +157,17 @@ function text(object: Json, key: string, path: string, problems: string[], minLe
     );
     return '';
   }
+  noSingleSetting(value, `${path}.${key}`, problems);
   return value;
+}
+
+/** B is several settings together: a sentence of a plan must not speak of one of them (ab/settings.ts). */
+function noSingleSetting(value: string, path: string, problems: string[]): void {
+  const named = mentionedSettings(value);
+  if (named.length > 0)
+    problems.push(
+      `${path} names a single setting of configuration B (${named.join(', ')}): B is several settings together and the experiment compares the two configurations as shipped, so say what is expected of B, not of one of its settings`,
+    );
 }
 
 function integer(
@@ -236,7 +252,10 @@ function validateMetric(
   if (raw.thresholdBasis !== undefined) {
     if (!isNonEmptyString(raw.thresholdBasis))
       problems.push(`${path}.thresholdBasis must be a non-empty string`);
-    else metric.thresholdBasis = raw.thresholdBasis;
+    else {
+      noSingleSetting(raw.thresholdBasis, `${path}.thresholdBasis`, problems);
+      metric.thresholdBasis = raw.thresholdBasis;
+    }
   }
   if (role === 'primary') {
     if (metric.practicalThreshold === undefined)
@@ -337,7 +356,14 @@ function validateCondition(
     );
   }
   if (typeof id !== 'string') return undefined;
-  for (const note of describeUnmeasured(unmeasuredWindows(rules))) warnings.push(`${path} (${id}): ${note}`);
+  for (const note of describeUnmeasured(unmeasuredWindows(rules))) {
+    // An experiment lets Shaka adapt, so every stretch of its session must be on a link the player can hear: finite links only.
+    if (plan.kind === 'pipeline-check') warnings.push(`${path} (${id}): ${note}`);
+    else
+      problems.push(
+        `${path} (${id}): ${note}. An experiment runs on finite links only: write the condition so that a throttle of at most ${measurableCeilingKbps()} kbps, or a delay of at least ${measurableLatencyMs()} ms, covers the whole session (a named profile with a quiet start is not that: say "profile": null and name the finite variant for what it is)`,
+      );
+  }
   for (const [r, rule] of rules.entries()) {
     const starts = rule.afterMs ?? 0;
     const observedMs = plan.observation.mediaSecondsAfterFirstFrame * 1000;
@@ -351,7 +377,8 @@ function validateCondition(
 
 /**
  * Validates a parsed pre-registration. Returns every problem found (not just the first), or the typed plan with the warnings that do not
- * block it (a condition with a stretch in which the player's estimator is deaf, see ab/conditions.ts).
+ * block it. A condition with a stretch in which the player's estimator is deaf (ab/conditions.ts) is a problem for every kind but a
+ * pipeline check, which only warns: an experiment runs on finite links only.
  */
 export function validatePreregistration(raw: unknown): PreregistrationResult {
   const problems: string[] = [];

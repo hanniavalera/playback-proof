@@ -62,7 +62,7 @@ export function startupPrereg(): Json {
   }) as Json;
 }
 
-/** The rebuffering experiment: three primary metrics under the (unmodified) bandwidth-drop profile. */
+/** The rebuffering experiment: its primary metric under the finite variant of the bandwidth-drop profile (see the condition). */
 export function rebufferPrereg(): Json {
   const base = startupPrereg();
   return {
@@ -78,11 +78,14 @@ export function rebufferPrereg(): Json {
     ],
     conditions: [
       {
-        id: 'bandwidth-drop',
-        profile: 'bandwidth-drop',
-        rules: [{ type: 'throttle', kbps: 600, afterMs: 8000 }],
+        id: 'bandwidth-drop-finite',
+        profile: null,
+        rules: [
+          { type: 'throttle', kbps: 20000 },
+          { type: 'throttle', kbps: 600, afterMs: 8000 },
+        ],
         rationale:
-          'The catalog row names this profile: the link weakens after four segments to what only the lowest rung carries.',
+          'The catalog profile bandwidth-drop with its first 8 s on a finite 20 Mbps link instead of an unthrottled one (the slowest throttle wins, so the link is 600 kbps from 8 s on), because the player ignores downloads under 5 ms and an unthrottled start would not be heard.',
       },
     ],
     observation: { mediaSecondsAfterFirstFrame: 18, sessionTimeoutMs: 120000 },

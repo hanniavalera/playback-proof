@@ -44,8 +44,11 @@ describe('PB-AB pilot analysis', () => {
     const raw = buildRaw(
       {
         text: textOf(plan),
-        conditionId: 'bandwidth-drop',
-        rules: [{ type: 'throttle', kbps: 600, afterMs: 8000 }],
+        conditionId: 'bandwidth-drop-finite',
+        rules: [
+          { type: 'throttle', kbps: 20000 },
+          { type: 'throttle', kbps: 600, afterMs: 8000 },
+        ],
       },
       aaPool(generator(8), 40),
     );

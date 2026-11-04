@@ -8,6 +8,7 @@ import type { Preregistration } from './prereg.ts';
 import type { RawResult } from './results.ts';
 import type { SessionRecord } from './types.ts';
 import { BUSY_LOAD_SHARE } from '../src/lab/measure/report.ts';
+import { configFor, flattenPatch } from '../src/player/configs.ts';
 
 // THE REPORT of an experiment: Markdown for people, JSON for tools, both made from the raw results and nothing else. The Markdown answers,
 // in this order, the questions a reader asks: what is the verdict and why (the decision rule applied literally), under what design and
@@ -66,6 +67,35 @@ function describeConfig(sessions: readonly SessionRecord[], arm: 'A' | 'B'): str
   return `configuration ${seen.info.config}: ${overrides}`;
 }
 
+/** What each overridden setting of configuration B is, in words: its path, its value with a unit where it has one, and Shaka's own default. */
+const SETTING_UNITS: Record<string, (value: unknown) => string> = {
+  'abr.defaultBandwidthEstimate': (value) => `${Number(value) / 1000} kbps`,
+  'abr.switchInterval': (value) => `${String(value)} s`,
+  'streaming.bufferingGoal': (value) => `${String(value)} s`,
+};
+
+function describeSetting(path: string, value: unknown, defaults: unknown): string {
+  const show = (v: unknown): string =>
+    SETTING_UNITS[path] ? (SETTING_UNITS[path] as (v: unknown) => string)(v) : JSON.stringify(v);
+  const known = flattenPatch(defaults).find((entry) => entry.path === path);
+  return `\`${path}\` = ${show(value)}${known === undefined ? '' : ` (Shaka's default: ${show(known.value)})`}`;
+}
+
+/** The sentence every report of two different configurations carries: B is several settings together, so nothing is credited to one. */
+function bundleSentence(prereg: Preregistration, raw: RawResult): string | null {
+  const letterA = prereg.arms.A;
+  const letterB = prereg.arms.B;
+  if (letterA === letterB) return null;
+  const sessionOfB = raw.conditions
+    .flatMap((condition) => condition.sessions)
+    .find((session) => session.arm === 'B' && session.info !== null);
+  const defaults = sessionOfB?.info?.configDefaults ?? {};
+  const settings = flattenPatch(configFor(letterB)).map((entry) =>
+    describeSetting(entry.path, entry.value, defaults),
+  );
+  return `**B is several settings together.** Configuration ${letterB} differs from configuration ${letterA} in ${settings.length} settings at once: ${settings.join('; ')}. The two configurations are compared as they are shipped, not setting by setting: no effect found here can be credited to one of these settings, and no arm of A plus one setting was run.`;
+}
+
 function limitations(
   prereg: Preregistration,
   raw: RawResult,
@@ -80,7 +110,7 @@ function limitations(
     `**One engine.** Only ${engine} was measured. Shaka's first rung depends on the engine (720p from the reported downlink in Chromium, 360p then 720p in Firefox and WebKit, ADR-064 in docs/decisions/player.md), so another engine would start from another place; nothing here says what it would do.`,
     `**Localhost, synthetic content.** Test patterns (a three-rung VP9 ladder of 300, 700 and 1800 kbps with 2 s segments), software decoding, a test data service on the same machine (${raw.environment.envId}, ${raw.environment.host.os.name}, ${raw.environment.host.cpus} CPUs), and a machine that was ${isBusy ? `NOT quiet: the load average reached ${busy.toFixed(1)} on ${raw.environment.host.cpus} CPUs, more than ${BUSY_LOAD_SHARE * 100} % of them` : 'quiet by its load average'}. These are laboratory numbers that compare configurations under identical conditions. They are not members' quality of experience and they do not transfer to another environment.`,
     `**The condition tested.** Only \`${condition.id}\`: ${rules.length === 0 ? 'no faults' : rules.map((rule) => JSON.stringify(rule)).join(', ')}. A configuration can win under one network and lose under another; nothing here speaks for the others.`,
-    `**B is a bundle.** Configuration B changes three things at once (a fixed initial estimate that starts on the lowest rung, a 4 s switch interval, a 20 s buffering goal). An effect cannot be credited to one of them: that would take arms of A plus one knob, which were not run.`,
+    ...(bundleSentence(prereg, raw) === null ? [] : [bundleSentence(prereg, raw) as string]),
     '**What the intervals mean.** They describe the sampling noise of these sessions on this machine. "Equivalent within the margin" says the whole interval lies inside the pre-registered margin, not that the true effect is zero, and it is the only verdict that says there is no meaningful difference; "inconclusive" says the data cannot rule out a difference that matters and do not show one: not finding a difference is not evidence that there is none.',
   ];
   if (
