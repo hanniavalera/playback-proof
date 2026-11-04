@@ -26,9 +26,10 @@ import type { Counts } from '../../../ab/stats/index.ts';
 // script.
 //
 // TOLERANCES. A figure agrees when |mine - scipy| <= abs + rel * |scipy|. Each is stated with what it is based on: the largest difference seen
-// when the vectors were made (on scipy 1.17.1 and numpy 2.4.6, Node 22) and the room that leaves. They are tight enough that a wrong
-// digit, a wrong correction or a wrong formula fails (the mutations of the lab's own mutation checks differ by 1e-4 or more), and loose
-// enough that another libm or another BLAS does not.
+// when the vectors were made (on scipy 1.17.1 and numpy 2.4.6, Node 22) and the room that leaves. They are tight enough that the mutations
+// tried on this library fail them (a dropped continuity or tie correction, a Fisher or exact Mann-Whitney tail one step off, a wrong Wilson
+// centre or Newcombe end, a Clopper-Pearson tail one event off, a flipped sign of the shift or of Cliff's delta, a quantile of type 6, a
+// truncated continued fraction of erfc: ADR-141), and loose enough that another libm or another BLAS does not.
 
 type Tolerance = { abs: number; rel: number };
 
@@ -58,8 +59,8 @@ const TOLERANCE = {
  * Monte Carlo error of a percentile of B resamples, which for a normal-ish distribution is sqrt(p (1 - p) / B) / f(q): about 0.7 % of the
  * width of the interval for scipy's 9999 resamples and 0.5 % for the 20000 used here, so 0.8 % for the difference of the two (one sd). The
  * largest difference seen was 1.1 % of the width (three data sets, two ends). The room allowed is 5 % of the width: six sd of the error of
- * the difference, and far less than what a wrong procedure gives (a bootstrap that resamples the two arms pooled, or one arm only, or
- * takes the wrong quantiles, moves the ends by 10 % of the width or more).
+ * the difference, and far less than a wrong procedure gives: resampling one arm only, or taking the 5th and 95th percentiles instead of
+ * the 2.5th and 97.5th (a 90 % interval), each fail all three data sets.
  */
 const BOOTSTRAP_ROOM_OF_THE_WIDTH = 0.05;
 

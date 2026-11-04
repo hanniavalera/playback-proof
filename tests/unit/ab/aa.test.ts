@@ -205,6 +205,22 @@ describe('PB-AB real interleaved A/A: what its verdict means', () => {
     expect(evaluation.reason).toContain('declared a difference between two copies of configuration A');
     expect(evaluation.reason).toContain('repeat it as a new pre-registered A/A');
   });
+
+  it('is not acceptable either when the verdict declares a difference that the adjusted p-value does not: "A better" between two copies of A is a false positive too', () => {
+    const declared = analyse(
+      normal(5, 30, 40),
+      normal(6, 30, 40).map((x) => x + 400),
+      150,
+    );
+    const evaluation = evaluateAa({
+      ...declared,
+      metrics: declared.metrics.map((metric) => ({ ...metric, significant: false })),
+    });
+    expect(evaluation.significant).toBe(false);
+    expect(evaluation.verdict).toBe('a-better');
+    expect(evaluation.acceptable).toBe(false);
+    expect(evaluation.reason).toContain('verdict a-better');
+  });
 });
 
 describe('PB-AB A/A: the pool of a results file', () => {
