@@ -122,7 +122,7 @@ describe('the stages', () => {
 
   it('give the nightly one run for both tiers, because two runs would overwrite each other’s report', () => {
     expect(release).toContain(
-      '--grep "@merge|@release" --project=${{ matrix.project }} --global-timeout=${{ matrix.limit }}',
+      '--grep "@merge|@release" --grep-invert "@readiness" --project=${{ matrix.project }} --global-timeout=${{ matrix.limit }}',
     );
     expect(release.match(/npm run test:e2e/g)).toHaveLength(1);
   });

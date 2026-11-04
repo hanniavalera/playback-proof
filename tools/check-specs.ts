@@ -18,8 +18,9 @@ export const SPEC_DIRECTORIES = { 'tests/e2e': 'e2e', 'tests/live': 'live' } as 
 
 export const TIER_TAGS = ['@merge', '@release'] as const;
 export const CPU_TAG = '@cpu';
-/** What a test plays (docs/CONTRACTS.md section 7): chosen by the spec, not decided by the catalog. */
-export const CONTENT_TAGS = ['@live', '@hls', '@dash', '@eme', '@soak'] as const;
+/** What a test plays (docs/CONTRACTS.md section 7), or the lane that runs it (`@readiness`: the specs of tests/live, which the nightly
+ *  leaves out): chosen by the spec, not decided by the catalog. */
+export const CONTENT_TAGS = ['@live', '@hls', '@dash', '@eme', '@soak', '@readiness'] as const;
 export const KNOWN_TAGS: readonly string[] = [...TIER_TAGS, CPU_TAG, ...CONTENT_TAGS];
 
 const TEST_MODIFIERS = new Set(['skip', 'fixme', 'fail', 'slow', 'only']);
