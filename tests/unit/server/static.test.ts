@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {
+  appendFileSync,
   existsSync,
   mkdirSync,
   readdirSync,
@@ -8,13 +9,14 @@ import {
   rmSync,
   statSync,
   symlinkSync,
+  truncateSync,
   writeFileSync,
 } from 'node:fs';
 import { createServer } from 'node:http';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import net from 'node:net';
 import { join, relative, sep } from 'node:path';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { contentTypeFor, resolveStaticFile, serveStatic } from '../../../src/server/static.ts';
 import type { StaticResult } from '../../../src/server/static.ts';
 import { makeScratch } from '../support/scratch.ts';
@@ -781,20 +783,58 @@ async function settleTo(limit: number): Promise<number> {
   return count;
 }
 
-/** Starts a download of the large file and returns its socket once the body has begun, reading no further. */
-function stalledDownload(): Promise<net.Socket> {
+interface Download {
+  socket: net.Socket;
+  /** Bytes of the response head, so that body bytes can be told from header bytes. */
+  headBytes: number;
+  /** Bytes received so far, head included. */
+  received: number;
+}
+
+/** Starts a download (the large file by default) and returns it once the body has begun, reading no further. */
+function stalledDownload(path = `${MOUNT}big.bin`, extraHeaders: string[] = []): Promise<Download> {
   return new Promise((resolve, reject) => {
     const socket = net.connect({ host: '127.0.0.1', port });
+    const chunks: Buffer[] = [];
     let received = 0;
-    socket.on('connect', () => socket.write(`GET ${MOUNT}big.bin HTTP/1.1\r\nHost: lab\r\n\r\n`));
-    socket.on('data', (chunk: Buffer) => {
+    socket.on('connect', () =>
+      socket.write(`${[`GET ${path} HTTP/1.1`, 'Host: lab', ...extraHeaders].join('\r\n')}\r\n\r\n`),
+    );
+    const onData = (chunk: Buffer): void => {
+      chunks.push(chunk);
       received += chunk.length;
       if (received > 4096) {
+        // Detached, or it would pause the socket again on every chunk once the download is resumed.
+        socket.off('data', onData);
         socket.pause();
-        resolve(socket);
+        resolve({ socket, headBytes: Buffer.concat(chunks).indexOf('\r\n\r\n') + 4, received });
       }
-    });
+    };
+    socket.on('data', onData);
     socket.on('error', reject);
+  });
+}
+
+/**
+ * Resumes a stalled download and counts the rest of the body until the server closes the connection. The timeout is a
+ * safety net: it reports `closed: false` for a server that left the connection open, it is never a measurement.
+ */
+function finish(download: Download): Promise<{ closed: boolean; body: number }> {
+  return new Promise((resolve) => {
+    let received = download.received;
+    let settled = false;
+    const done = (closed: boolean): void => {
+      if (settled) return;
+      settled = true;
+      download.socket.destroy();
+      resolve({ closed, body: received - download.headBytes });
+    };
+    download.socket.setTimeout(3000, () => done(false));
+    download.socket.on('data', (chunk: Buffer) => {
+      received += chunk.length;
+    });
+    download.socket.on('close', () => done(true));
+    download.socket.resume();
   });
 }
 
@@ -833,9 +873,9 @@ describe.skipIf(!countsDescriptors)('file handles', () => {
 
   /** Starts `count` downloads that stall mid-body, then abandons them all. Returns the descriptors held while stalled. */
   async function abandonDownloads(count: number): Promise<number> {
-    const sockets = await Promise.all(Array.from({ length: count }, () => stalledDownload()));
+    const downloads = await Promise.all(Array.from({ length: count }, () => stalledDownload()));
     const held = openDescriptors();
-    for (const socket of sockets) socket.destroy();
+    for (const download of downloads) download.socket.destroy();
     await quiet();
     return held;
   }
@@ -914,6 +954,33 @@ describe.skipIf(!countsDescriptors)('file handles', () => {
     await expect(serveStatic(req, res, root, MOUNT)).resolves.toEqual({ status: 404 });
     expect(destroyed).toBe(1);
     await expectNoLeak(baseline, 'after a response that could not be written');
+  });
+});
+
+describe('a file that changes while it is being sent', () => {
+  const SIZE = 32 * 1024 * 1024;
+  const changing = join(root, 'changing.bin');
+
+  // A sparse file: the reads are cheap and the server cannot have buffered all of it while the client is stalled.
+  beforeEach(() => {
+    writeFileSync(changing, '');
+    truncateSync(changing, SIZE);
+  });
+
+  it('closes the connection when the file shrinks, instead of leaving a keep-alive client waiting for the rest', async () => {
+    const download = await stalledDownload(`${MOUNT}changing.bin`);
+    truncateSync(changing, 1024);
+    const { closed, body } = await finish(download);
+    expect(closed).toBe(true);
+    expect(body).toBeLessThan(SIZE);
+  });
+
+  it('never sends more than the length it declared when the file grows', async () => {
+    const download = await stalledDownload(`${MOUNT}changing.bin`, ['Connection: close']);
+    appendFileSync(changing, Buffer.alloc(1024 * 1024));
+    const { closed, body } = await finish(download);
+    expect(closed).toBe(true);
+    expect(body).toBe(SIZE);
   });
 });
 

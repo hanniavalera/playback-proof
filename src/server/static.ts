@@ -217,6 +217,16 @@ function reply(
 
 const ignore = (): void => undefined;
 
+/** Passes the file through, and fails instead of finishing unless exactly `size` bytes came out of it. */
+async function* exactly(source: AsyncIterable<Buffer>, size: number): AsyncGenerator<Buffer> {
+  let read = 0;
+  for await (const chunk of source) {
+    read += chunk.length;
+    yield chunk;
+  }
+  if (read !== size) throw new Error(`the file changed while it was sent: ${read} of ${size} bytes`);
+}
+
 async function sendFile(res: ServerResponse, file: string, head: boolean): Promise<StaticResult> {
   // Opened once and sized with fstat: Content-Length describes the file that is streamed, even if the path is replaced
   // meanwhile. O_NOFOLLOW makes the last component refuse a symlink that appeared after the check.
@@ -226,14 +236,22 @@ async function sendFile(res: ServerResponse, file: string, head: boolean): Promi
     const info = await handle.stat();
     if (!info.isFile()) return reply(res, 404, head);
     res.writeHead(200, { ...NO_STORE, 'Content-Type': contentTypeFor(file), 'Content-Length': info.size });
-    if (head) {
+    if (head || info.size === 0) {
       res.end();
     } else {
-      const stream = handle.createReadStream();
+      // The body is capped at the declared length, and a read that comes up short (the file was truncated meanwhile)
+      // fails the pipeline before the response is ended, which drops the connection: a keep-alive client must not wait
+      // for bytes that never come, or take the next response for them. After end() it would be too late: the response
+      // has let go of the socket.
+      const stream = handle.createReadStream({ start: 0, end: info.size - 1 });
       // From here the stream owns the handle: pipeline destroys it, and so closes the file, when the client goes away
       // or the read fails. Until here, the finally below closes it.
       owned = true;
-      await pipeline(stream, res).catch(ignore);
+      try {
+        await pipeline(stream, (source: AsyncIterable<Buffer>) => exactly(source, info.size), res);
+      } catch {
+        // The client left or the read failed: pipeline has already destroyed both ends.
+      }
     }
     return { status: 200, file };
   } finally {
