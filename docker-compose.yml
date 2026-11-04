@@ -53,6 +53,7 @@ services:
     volumes:
       - agent-secrets:/run/agent-secrets:ro
       - streams-cache:/cache
+      - flake-history:/history
       - npm-cache:/home/jenkins/.npm
       - ${PB_REPO:-.}:/repo:ro
     restart: unless-stopped
@@ -62,4 +63,7 @@ volumes:
   agent-secrets:
   # The generated streams, shared by every build (ADR-118).
   streams-cache:
+  # The flake history of this stack: a file per environment, appended by the Flake stage for a build of main (ADR-174). Apart from
+  # the streams so that clearing one cache does not clear the other.
+  flake-history:
   npm-cache:

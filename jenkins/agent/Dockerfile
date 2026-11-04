@@ -9,12 +9,12 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # The user is uid 1000, like the controller's: the connection secret the controller writes into the shared volume (mode 0600)
-# is readable here. The image's own uid 1000 user ("ubuntu") makes room. /cache/streams is the mount point of the stream
-# cache volume (ADR-118): a new volume takes the owner of the directory the image has there.
+# is readable here. The image's own uid 1000 user ("ubuntu") makes room. /cache/streams and /history are the mount points of the
+# stream cache and of the flake history (ADR-118, ADR-174): a new volume takes the owner of the directory the image has there.
 RUN userdel --remove ubuntu \
     && useradd --uid 1000 --user-group --create-home --shell /bin/bash jenkins \
-    && mkdir -p /home/jenkins/agent /home/jenkins/.npm /cache/streams /run/agent-secrets \
-    && chown -R jenkins:jenkins /home/jenkins /cache /run/agent-secrets \
+    && mkdir -p /home/jenkins/agent /home/jenkins/.npm /cache/streams /history /run/agent-secrets \
+    && chown -R jenkins:jenkins /home/jenkins /cache /history /run/agent-secrets \
     # The repository is mounted read-only and belongs to the host's user: git would refuse it as "dubious ownership".
     && git config --system --add safe.directory /repo
 
