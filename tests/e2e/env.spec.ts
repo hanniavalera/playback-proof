@@ -5,6 +5,7 @@ import { explainUndocumentedGap, versionDrift } from './support/gaps.ts';
 // What the probe of the matrix requires of a flavour (docs/CODEC_MATRIX.md): 1 s of media time and 5 frames presented.
 const MEDIA_SECONDS = 1;
 const MIN_FRAMES = 5;
+const OBSERVED_FRAMES = 10;
 
 // The environment check. Where the committed matrix says an engine cannot play here, the shared fixture has already skipped this
 // test with that evidence. Everywhere else the engine must play a real stream of the flavour the matrix selected, through the player
@@ -26,11 +27,16 @@ test(
 
     const session = await newSession({ stream, protocol });
     const qa = player(session);
+    // Thrown after the catch, with the evidence: the message already carries what the player said, and a `cause` would print it twice.
+    let failure: Error | null = null;
     try {
       await qa.open();
       await qa.waitFor('firstframe');
       await qa.waitForMediaTime(MEDIA_SECONDS);
     } catch (error) {
+      failure = error as Error;
+    }
+    if (failure) {
       const info = await qa.info().catch(() => null);
       throw new Error(
         explainUndocumentedGap(environment, {
@@ -38,9 +44,8 @@ test(
           protocol,
           actualVersion: version,
           ...(info ? { userAgent: info.userAgent } : {}),
-          cause: (error as Error).message,
+          cause: failure.message,
         }),
-        { cause: error },
       );
     }
 
@@ -51,5 +56,15 @@ test(
     );
     const info = await qa.info();
     expect(info.loadMode, 'load mode (qa.info().loadMode)').toBe('media-source');
+
+    // The suite's negative observations (a paused player does not advance the clock) let frames of the page go by, and mean nothing
+    // unless frames come and the media clock of a PLAYING player moves across them: the instrument's precondition, per engine.
+    const before = (await qa.metrics()).playback.currentTime;
+    await qa.observeFrames(OBSERVED_FRAMES);
+    const after = (await qa.metrics()).playback.currentTime;
+    expect(
+      after,
+      `media time (metrics.playback.currentTime) of a playing player across ${OBSERVED_FRAMES} frames of the page`,
+    ).toBeGreaterThan(before);
   },
 );
