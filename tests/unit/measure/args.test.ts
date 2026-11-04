@@ -4,6 +4,7 @@ import {
   DEFAULT_PROFILES,
   PERF_USAGE,
   PerfUsageError,
+  injectionFor,
   parsePerfArgs,
 } from '../../../src/lab/measure/args.ts';
 import { PERF_LIMITS } from '../../../src/shared/criteria.ts';
@@ -165,6 +166,38 @@ describe('PB-PERF command line: injecting a regression on purpose', () => {
       /--inject-on must be all or first/,
     );
     expect(() => gate('--inject-on', 'first')).toThrow(/needs --inject-faults or --inject-cpu-throttle/);
+  });
+
+  it('gives a batch what it was told to inject, in every batch or only in the first one of a scenario', () => {
+    const rule = { type: 'latency' as const, ms: 150, match: { kind: 'manifest' as const } };
+    const both = (injectOn: string) =>
+      gate(
+        '--inject-faults',
+        JSON.stringify([rule]),
+        '--inject-cpu-throttle',
+        '6',
+        '--inject-on',
+        injectOn,
+        '--profile',
+        'chromium',
+      );
+    // Every batch: the first and the fresh one.
+    for (const attempt of ['first', 'remeasure'] as const)
+      expect(injectionFor(both('all'), attempt)).toStrictEqual({ extraFaults: [rule], cpuThrottleRate: 6 });
+    // The first batch only: the fresh batch of the gate sees a clean condition, so that a one-off disturbance does not reproduce.
+    expect(injectionFor(both('first'), 'first')).toStrictEqual({ extraFaults: [rule], cpuThrottleRate: 6 });
+    expect(injectionFor(both('first'), 'remeasure')).toStrictEqual({});
+  });
+
+  it('injects only what was asked for: faults without a throttle, a throttle without faults, and nothing in a normal run', () => {
+    const rule = { type: 'latency' as const, ms: 150 };
+    expect(injectionFor(gate('--inject-faults', JSON.stringify([rule])), 'first')).toStrictEqual({
+      extraFaults: [rule],
+    });
+    expect(injectionFor(gate('--inject-cpu-throttle', '8'), 'first')).toStrictEqual({ cpuThrottleRate: 8 });
+    for (const attempt of ['first', 'remeasure'] as const) {
+      expect(injectionFor(gate(), attempt)).toStrictEqual({});
+    }
   });
 });
 

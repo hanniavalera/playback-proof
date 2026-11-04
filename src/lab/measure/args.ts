@@ -111,6 +111,22 @@ function parseFaults(text: string): FaultRule[] {
   return parsed as FaultRule[];
 }
 
+/**
+ * What a batch is given on purpose (the sensitivity check): the fault rules and the replaced CPU throttle, in every batch or, with
+ * `--inject-on first`, only in the first batch of a scenario, so that the fresh batch that confirms a failure is clean (a one-off
+ * disturbance that must not reproduce). Nothing is injected in a normal run: the result is empty.
+ */
+export function injectionFor(
+  options: Pick<PerfOptions, 'injectFaults' | 'injectCpuThrottle' | 'injectOn'>,
+  attempt: 'first' | 'remeasure',
+): { extraFaults?: FaultRule[]; cpuThrottleRate?: number } {
+  if (options.injectOn === 'first' && attempt !== 'first') return {};
+  return {
+    ...(options.injectFaults.length > 0 ? { extraFaults: options.injectFaults } : {}),
+    ...(options.injectCpuThrottle !== null ? { cpuThrottleRate: options.injectCpuThrottle } : {}),
+  };
+}
+
 export function parsePerfArgs(
   mode: PerfOptions['mode'],
   argv: readonly string[],

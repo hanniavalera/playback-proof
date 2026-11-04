@@ -47,12 +47,17 @@ export interface LaunchOptions {
 
 export type Launcher = (profile: PerfProfile, options?: LaunchOptions) => Promise<LaunchedBrowser>;
 
+/** What cannot be launched, said before anything is: a CPU throttle is a DevTools command, which only Chromium has. */
+export function checkLaunchOptions(profile: PerfProfile, options: LaunchOptions): void {
+  if (options.cpuThrottleRate !== undefined && engineOf(profile) !== 'chromium')
+    throw new Error(`a CPU throttle is a Chromium DevTools command: ${profile} cannot be given one`);
+}
+
 /** Launches the engine of `profile`. Playwright is imported here, so that nothing that only judges numbers ever loads it. */
 export const launchProfile: Launcher = async (profile, options = {}) => {
+  checkLaunchOptions(profile, options);
   const playwright = await import('@playwright/test');
   const engine = engineOf(profile);
-  if (options.cpuThrottleRate !== undefined && engine !== 'chromium')
-    throw new Error(`a CPU throttle is a Chromium DevTools command: ${profile} cannot be given one`);
   const rate = options.cpuThrottleRate ?? cpuThrottleOf(profile);
   const descriptor = playwright.devices[DEVICE[engine]];
   if (!descriptor) throw new Error(`Playwright has no device descriptor called ${DEVICE[engine]}`);

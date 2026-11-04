@@ -7,6 +7,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { launchProfile } from '../src/lab/measure/browser.ts';
 import type { BaselineBrowser } from '../src/lab/measure/baseline.ts';
+import { injectionFor } from '../src/lab/measure/args.ts';
 import type { PerfOptions } from '../src/lab/measure/args.ts';
 import { runBatch } from '../src/lab/measure/runner.ts';
 import type { Attempt } from '../src/lab/measure/gate.ts';
@@ -112,10 +113,8 @@ export async function startHarness(options: PerfOptions): Promise<Harness> {
     streamHashes,
     ffmpeg: service.health.ffmpeg,
     browsers,
-    measure: (profile, scenario, attempt = 'first') => {
-      // An injection reaches every batch, or only the first one of each scenario: a disturbance that the fresh batch must not see.
-      const inject = options.injectOn === 'all' || attempt === 'first';
-      return runBatch({
+    measure: (profile, scenario, attempt = 'first') =>
+      runBatch({
         scenario,
         profile,
         runs: options.runs,
@@ -124,13 +123,9 @@ export async function startHarness(options: PerfOptions): Promise<Harness> {
         service: { origin: service.origin, client: service.client },
         launch,
         runTimeoutMs: options.runTimeoutMs,
-        ...(inject ? { extraFaults: options.injectFaults } : {}),
-        ...(inject && options.injectCpuThrottle !== null
-          ? { cpuThrottleRate: options.injectCpuThrottle }
-          : {}),
+        ...injectionFor(options, attempt),
         onProgress: (event) => log(progressLine(event)),
-      });
-    },
+      }),
     stop: async () => {
       process.removeListener('SIGINT', onSignal);
       process.removeListener('SIGTERM', onSignal);
