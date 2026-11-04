@@ -1,7 +1,7 @@
 import { profile } from '../../src/shared/profiles.ts';
 import { settleWindowSeconds, throttleOf, upshiftBoundSeconds } from './abr/conditions.ts';
 import { bestRungCarriedBy, ladderOf, rungOf } from './abr/ladder.ts';
-import { describeSegments, videoSegmentRequests } from './abr/log.ts';
+import { describeSegments, fromFirstOf, videoSegmentRequests } from './abr/log.ts';
 import { describeVariantChanges, variantChanges } from './abr/variants.ts';
 import {
   expectAtMostRebuffers,
@@ -82,11 +82,12 @@ test(
     // delivered are of that rung.
     const log = await session.service.log(session.id);
     const video = videoSegmentRequests(log);
-    const firstSettled = video.findIndex((entry) => entry.rep === settle.rep);
-    expect(firstSettled, `${settle.rep} segments in the request log`).toBeGreaterThanOrEqual(0);
     expect(
-      video
-        .slice(firstSettled)
+      video.some((entry) => entry.rep === settle.rep),
+      `${settle.rep} segments in the request log: ${describeSegments(video)}`,
+    ).toBe(true);
+    expect(
+      fromFirstOf(video, settle.rep)
         .filter((entry) => entry.rep !== settle.rep)
         .map((entry) => `${entry.rep} #${entry.number}`),
       `video segments requested after the first ${settle.rep} one (request log): ${describeSegments(video)}`,
@@ -244,9 +245,7 @@ test(
     const video = videoSegmentRequests(await session.service.log(session.id));
     const after = video.filter((entry) => entry.seq > logSince);
     const lastBefore = video.filter((entry) => entry.seq <= logSince).at(-1);
-    const stragglers = after
-      .slice(after.findIndex((entry) => entry.rep === target.rep))
-      .filter((entry) => entry.rep !== target.rep);
+    const stragglers = fromFirstOf(after, target.rep).filter((entry) => entry.rep !== target.rep);
     expect(
       stragglers.map((entry) => `${entry.rep} #${entry.number}`),
       `video segments requested after the first ${target.rep} one (request log): ${describeSegments(video)}`,
@@ -260,5 +259,85 @@ test(
       jumps,
       `video segment numbers must follow on without a gap or a step back across the choice (request log): ${describeSegments(video)}`,
     ).toEqual([]);
+  },
+);
+
+test(
+  'PB-ABR-005 ABR disabled stays on the pinned rung even when the network cannot carry it (constrained-1500, pinned at 720p)',
+  { tag: ['@release', '@dash'] },
+  async ({ newSession, streamFor, player }, testInfo) => {
+    test.setTimeout(ABR_TEST_TIMEOUT_MS);
+    const rules = profile('constrained-1500');
+    const session = await newSession({ stream: streamFor('vod', 'dash'), protocol: 'dash', faults: rules });
+    const stream = await streamInfoOf(session);
+    const ladder = ladderOf(stream);
+    const pinned = ladder.top;
+    const link = throttleOf(rules).kbps;
+    // The scenario is only meaningful if ABR would want to leave the pinned rung: the arithmetic of the profile says that a link of
+    // 1500 kbps carries 360p (764 kbps with its audio) and not 720p (1864).
+    expect(
+      pinned.variantBandwidth,
+      `declared bandwidth of the pinned rung (the ladder): it must be more than the ${link} kbps link carries`,
+    ).toBeGreaterThan(link * 1000);
+
+    const qa = await player(session).open();
+    await qa.waitFor('firstframe');
+    // The engines start on different rungs and ABR is free to move until the pin: Chromium starts on 720p and steps down to 360p
+    // within its first second, the others start on 360p. A few seconds of playback first, so that the pin is the first thing
+    // that moves the rung after that, whichever engine this is.
+    await qa.waitForMediaTime(3, { timeoutMs: WAIT_MS });
+
+    const logSince = await requestLogCursor(session);
+    await qa.selectVariantByHeight(pinned.height);
+    // From here on ABR is off. The cursor is taken after the pin has returned, so that nothing ABR decided before it can be counted.
+    const eventsSince = await qa.cursor();
+    const pinnedAt = (await qa.metrics()).playback.currentTime;
+
+    // The positive event that opens the window: the origin is asked for the pinned rung. Then play the settle window past the
+    // moment ABR would have stepped down (it decides at most every 8 s, on a segment download).
+    await waitForRequest(session, (entry) => entry.kind === 'segment' && entry.rep === pinned.rep, {
+      since: logSince,
+      timeoutMs: WAIT_MS,
+    });
+    const window = settleWindowSeconds(stream.segmentDurationSec);
+    await qa.waitForMediaTime(pinnedAt + window, { timeoutMs: WAIT_MS });
+
+    // The player's account: not one change of rung after the pin, of any reason.
+    const metrics = await qa.metrics();
+    testInfo.annotations.push({
+      type: 'measured',
+      description: `pinned ${pinned.height}p at media ${pinnedAt.toFixed(1)} s, held to ${metrics.playback.currentTime.toFixed(1)} s; rebuffers ${metrics.rebuffer.count}`,
+    });
+    expect(
+      describeVariantChanges(variantChanges(await qa.events(eventsSince))),
+      `rung changes in the ${window} s after pinning ${pinned.height}p with selectVariantByHeight (qa.events()): none, ABR is off`,
+    ).toBe('none');
+    expect(metrics.bitrate.current?.height, 'active rung (metrics.bitrate.current) at the end').toBe(
+      pinned.height,
+    );
+    expectHealthyPlayback(metrics);
+
+    // The origin's account: from the first request of the pinned rung on, no other video segment was asked for, however late the
+    // pinned ones arrived. The request that was in flight when the pin was made may be of the old rung, so it is not counted.
+    const log = await session.service.log(session.id, logSince);
+    const video = videoSegmentRequests(log);
+    const fromPin = fromFirstOf(video, pinned.rep);
+    expect(
+      fromPin.filter((entry) => entry.rep !== pinned.rep).map((entry) => `${entry.rep} #${entry.number}`),
+      `video segments requested after the first ${pinned.rep} one (request log): ${describeSegments(video)}`,
+    ).toEqual([]);
+    expect(
+      fromPin.length,
+      `${pinned.rep} segments requested in the window (request log): the player must keep fetching the pinned rung`,
+    ).toBeGreaterThanOrEqual(3);
+    // The precondition, from the origin: the link really could not carry the pinned rung (a segment took longer than it plays),
+    // otherwise this test would pass on a lab that applied no throttle.
+    const late = requestsFor(log, { kind: 'segment', rep: pinned.rep, status: 'ok' }).filter(
+      (entry) => entry.totalMs > stream.segmentDurationSec * 1000,
+    );
+    expect(
+      late.length,
+      `${pinned.rep} segments the origin delivered in more than their ${stream.segmentDurationSec} s of playing time (request log): the ${link} kbps link must not carry the pinned rung`,
+    ).toBeGreaterThan(0);
   },
 );

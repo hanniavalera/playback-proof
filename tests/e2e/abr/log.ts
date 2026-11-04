@@ -14,6 +14,12 @@ export function videoSegmentRequests(log: readonly RequestLogEntry[]): RequestLo
   return requestsFor(log, { kind: 'segment' }).filter((entry) => isVideoRep(entry.rep));
 }
 
+/** The entries from the first one of `rep` on (empty when there is none): "from the first v240 segment on, nothing else was asked for". */
+export function fromFirstOf(entries: readonly RequestLogEntry[], rep: string): RequestLogEntry[] {
+  const first = entries.findIndex((entry) => entry.rep === rep);
+  return first < 0 ? [] : entries.slice(first);
+}
+
 /** `v720 #9, v240 #11`: video segment requests as a line of a failure message. */
 export function describeSegments(entries: readonly RequestLogEntry[], last = 12): string {
   if (entries.length === 0) return 'none';
