@@ -59,6 +59,9 @@ jobs:
     timeout-minutes: ${{ matrix.timeout }}
     strategy:
       fail-fast: false
+      # `limit` is the most time, in milliseconds, that the test run itself may take: Playwright stops there and still writes its
+      # report. It is the job's timeout less four minutes for the setup and the upload, because a job that the runner kills
+      # leaves no report (ADR-114).
       matrix:
         include:
           - leg: chromium
@@ -66,27 +69,32 @@ jobs:
             browser: chromium
             runner: ubuntu-24.04
             timeout: 15
+            limit: 660000
           - leg: firefox
             project: firefox
             browser: firefox
             runner: ubuntu-24.04
             timeout: 15
+            limit: 660000
           - leg: chromium-cpu4x
             project: chromium-cpu4x
             browser: chromium
             runner: ubuntu-24.04
             timeout: 15
+            limit: 660000
           - leg: webkit-linux
             experimental: true
             project: webkit
             browser: webkit
             runner: ubuntu-24.04
             timeout: 15
+            limit: 660000
           - leg: webkit-macos
             project: webkit
             browser: webkit
             runner: macos-15
             timeout: 30
+            limit: 1560000
     env:
       # GitHub sets it too. The Playwright config reads it: two workers, one retry, no test.only.
       CI: 'true'
@@ -100,7 +108,7 @@ jobs:
       - name: Build the player
         run: npm run build:player
       - name: Merge gate (${{ matrix.project }})
-        run: npm run gate:merge -- --project=${{ matrix.project }}
+        run: npm run gate:merge -- --project=${{ matrix.project }} --global-timeout=${{ matrix.limit }}
       # The tests that failed, flaked or were skipped, with their attachments, on the page of this job.
       - name: Summarise the run
         if: ${{ always() && steps.setup.outcome == 'success' }}

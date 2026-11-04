@@ -40,6 +40,7 @@ jobs:
     timeout-minutes: ${{ matrix.timeout }}
     strategy:
       fail-fast: false
+      # `limit`: the most time in milliseconds that the test run itself may take, the job's timeout less four minutes (see ci.yml).
       matrix:
         include:
           - leg: chromium
@@ -47,27 +48,32 @@ jobs:
             browser: chromium
             runner: ubuntu-24.04
             timeout: 30
+            limit: 1560000
           - leg: firefox
             project: firefox
             browser: firefox
             runner: ubuntu-24.04
             timeout: 30
+            limit: 1560000
           - leg: chromium-cpu4x
             project: chromium-cpu4x
             browser: chromium
             runner: ubuntu-24.04
             timeout: 30
+            limit: 1560000
           - leg: webkit-linux
             experimental: true
             project: webkit
             browser: webkit
             runner: ubuntu-24.04
             timeout: 30
+            limit: 1560000
           - leg: webkit-macos
             project: webkit
             browser: webkit
             runner: macos-15
             timeout: 45
+            limit: 2460000
     env:
       CI: 'true'
     steps:
@@ -82,7 +88,7 @@ jobs:
       # No npm script runs both tiers (`test:merge` and `test:release` select one tag each, and two runs would overwrite each
       # other's report), so one run selects both tags.
       - name: '@merge and @release tests (${{ matrix.project }})'
-        run: npm run test:e2e -- --grep "@merge|@release" --project=${{ matrix.project }}
+        run: npm run test:e2e -- --grep "@merge|@release" --project=${{ matrix.project }} --global-timeout=${{ matrix.limit }}
       - name: Summarise the run
         if: ${{ always() && steps.setup.outcome == 'success' }}
         run: npx tsx tools/ci-summary.ts --title "${{ github.job }} (${{ matrix.leg }})" --artifact reports-${{ matrix.leg }}

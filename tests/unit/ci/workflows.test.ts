@@ -49,7 +49,10 @@ interface Leg {
   browser: string;
   runner: string;
   experimental: boolean;
+  /** Minutes the runner lets the job run. */
   timeout: number;
+  /** Milliseconds Playwright lets the test run take (`--global-timeout`). */
+  limit: number;
 }
 
 /** The `matrix.include` entries of a job: each starts with `- leg:` and its other keys are indented by twelve spaces. */
@@ -73,6 +76,7 @@ function legsOf(job: string): Leg[] {
         runner: fields.get('runner') ?? '',
         experimental: fields.get('experimental') === 'true',
         timeout: Number(fields.get('timeout')),
+        limit: Number(fields.get('limit')),
       };
     });
 }
@@ -160,14 +164,18 @@ describe('the stages', () => {
     expect(stages).toEqual(new Set(['gate:static', 'gate:unit', 'gate:merge']));
   });
 
-  it('call gate:static, gate:unit and gate:merge from the merge gate, with the project of the leg', () => {
+  it('call gate:static, gate:unit and gate:merge from the merge gate, with the project of the leg and its time limit', () => {
     expect(ci).toContain('run: npm run gate:static');
     expect(ci).toContain('run: npm run gate:unit');
-    expect(mergeGate).toContain('run: npm run gate:merge -- --project=${{ matrix.project }}');
+    expect(mergeGate).toContain(
+      'run: npm run gate:merge -- --project=${{ matrix.project }} --global-timeout=${{ matrix.limit }}',
+    );
   });
 
   it('give the nightly one run for both tiers, because two runs would overwrite each other’s report', () => {
-    expect(release).toContain('--grep "@merge|@release" --project=${{ matrix.project }}');
+    expect(release).toContain(
+      '--grep "@merge|@release" --project=${{ matrix.project }} --global-timeout=${{ matrix.limit }}',
+    );
     expect(release.match(/npm run test:e2e/g)).toHaveLength(1);
   });
 });
@@ -185,8 +193,8 @@ describe('the browser matrix', () => {
       'webkit-linux',
       'webkit-macos',
     ]);
-    const withoutTimeout = (legs: Leg[]) => legs.map(({ timeout: _timeout, ...rest }) => rest);
-    expect(withoutTimeout(nightlyLegs)).toEqual(withoutTimeout(mergeLegs));
+    const withoutTimes = (legs: Leg[]) => legs.map(({ timeout: _timeout, limit: _limit, ...rest }) => rest);
+    expect(withoutTimes(nightlyLegs)).toEqual(withoutTimes(mergeLegs));
   });
 
   it('marks Linux WebKit as the one experimental leg, in its name', () => {
@@ -221,6 +229,17 @@ describe('the browser matrix', () => {
       expect(timeout(nightlyLegs, leg.leg), leg.leg).toBeGreaterThan(leg.timeout);
     }
     expect(timeout(mergeLegs, 'webkit-macos')).toBeGreaterThan(timeout(mergeLegs, 'chromium'));
+  });
+
+  it('makes Playwright stop, and write its report, before the runner kills the job', () => {
+    const SETUP_AND_UPLOAD_MINUTES = 3;
+    for (const leg of [...mergeLegs, ...nightlyLegs]) {
+      expect(leg.limit, `${leg.leg}: no limit`).toBeGreaterThan(0);
+      expect(
+        leg.limit,
+        `${leg.leg}: the limit leaves no time for the setup and the upload`,
+      ).toBeLessThanOrEqual((leg.timeout - SETUP_AND_UPLOAD_MINUTES) * 60_000);
+    }
   });
 });
 

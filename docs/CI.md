@@ -34,16 +34,16 @@ Arrive with their phase, as jobs that need `streams` (nothing of them exists yet
 
 ## The jobs
 
-Budgets are the design numbers of [TEST_STRATEGY.md section 6.3](../TEST_STRATEGY.md): a merge job of one engine 8 minutes on the design target (2 cores, 2 workers; the GitHub Linux runner has 4 vCPUs and the macOS runner 3, and the config uses 2 workers in CI), static plus unit 4 minutes together, a release job 15 minutes. The timeout is the net under the budget, not the budget.
+Budgets are the design numbers of [TEST_STRATEGY.md section 6.3](../TEST_STRATEGY.md): a merge job of one engine 8 minutes on the design target (2 cores, 2 workers; the GitHub Linux runner has 4 vCPUs and the macOS runner 3, and the config uses 2 workers in CI), static plus unit 4 minutes together, a release job 15 minutes. The timeout is the net under the budget, not the budget. A job that the runner kills at its timeout leaves no Playwright report, so every browser leg also passes `--global-timeout` with the job's timeout less four minutes (the "stops at" figures below): Playwright ends a run that is too long itself and still writes the report and the attachments (ADR-114).
 
 | Job | Trigger | Runner | Budget (design) | Timeout | Artifacts | Reproduce locally |
 | --- | --- | --- | --- | --- | --- | --- |
 | `static` | pull request, push to `main`, manual | `ubuntu-24.04` | 4 min with `unit` | 10 min | none | `npm run gate:static` |
 | `unit` | same | `ubuntu-24.04` | 4 min with `static` | 15 min | none | `npm run gate:unit` (needs ffmpeg on the `PATH`) |
 | `streams` (restore or generate) | same, and the nightly | `ubuntu-24.04` | none in the strategy; about 1 min on a cache hit, 3 to 4 on a miss (generation is about 2 min on 4 cores: expected, not measured on a runner) | 15 min | `streams` (`.cache/streams`, 43 MB, 3 days) | `npm run generate:streams`, or `gh run download <run-id> --name streams --dir .cache/streams` |
-| `merge-gate (chromium)`, `(firefox)`, `(chromium-cpu4x)`, `(webkit-linux, experimental)` | same | `ubuntu-24.04` | 8 min | 15 min | `reports-<leg>` (`reports/`, `test-results/`, 14 days) | `CI=true npm run docker:pw -- npm run gate:merge -- --project=<project>` (the streams must be in `.cache/streams`) |
-| `merge-gate (webkit-macos)` | same | `macos-15` | 8 min (a slow 3-CPU runner: unmeasured) | 30 min | `reports-webkit-macos` | on a macOS host: `npx playwright install webkit`, then `CI=true npm run gate:merge -- --project=webkit` |
-| `streams`, `release (<leg>)` of the nightly | `schedule` (04:41 UTC), manual, and a pull request that changes `nightly.yml` (a schedule and a manual run exist only for a file on the default branch, so a change would otherwise be seen the night after the merge) | as the gate | 15 min per engine (the release budget) | 30 min; 45 on macOS | `reports-<leg>` (30 days) | `CI=true npm run docker:pw -- npm run test:e2e -- --grep "@merge\|@release" --project=<project>` |
+| `merge-gate (chromium)`, `(firefox)`, `(chromium-cpu4x)`, `(webkit-linux, experimental)` | same | `ubuntu-24.04` | 8 min | 15 min (Playwright stops its own run at 11) | `reports-<leg>` (`reports/`, `test-results/`, 14 days) | `CI=true npm run docker:pw -- npm run gate:merge -- --project=<project>` (the streams must be in `.cache/streams`) |
+| `merge-gate (webkit-macos)` | same | `macos-15` | 8 min (a slow 3-CPU runner: unmeasured) | 30 min (Playwright stops at 26) | `reports-webkit-macos` | on a macOS host: `npx playwright install webkit`, then `CI=true npm run gate:merge -- --project=webkit` |
+| `streams`, `release (<leg>)` of the nightly | `schedule` (04:41 UTC), manual, and a pull request that changes `nightly.yml` (a schedule and a manual run exist only for a file on the default branch, so a change would otherwise be seen the night after the merge) | as the gate | 15 min per engine (the release budget) | 30 min, stop at 26; 45 on macOS, stop at 41 | `reports-<leg>` (30 days) | `CI=true npm run docker:pw -- npm run test:e2e -- --grep "@merge\|@release" --project=<project>` |
 
 The legs and what each one is for:
 
@@ -99,7 +99,8 @@ Done on the development host (Apple M2 Pro, macOS 27.2, Docker Desktop), 2026-11
 - The macOS leg: its time on a 3-CPU runner, and that `jq` is on the image (the setup action uses it to list the streams).
 - That an artifact uploaded with `actions/upload-artifact@v7` (stored uncompressed, hidden directory included) downloads with `actions/download-artifact@v8` into the path the service reads, and that a second job of the run restores the cache entry the first one saved.
 - That a reusable workflow called with `uses: ./.github/workflows/streams.yml` and a local composite action behave as the documentation says on a pull request from the same repository.
-- Whether the upload step runs after a job hits its timeout, and the rendering of the job summary.
+- Whether Playwright's own stop at the limit behaves on a runner as it did on the development host (a 6 s limit on two tests wrote the report with the errors of the run and both tests marked as not run), and whether the upload step runs after a job that the runner itself timed out.
+- The rendering of the job summary.
 - That a run that is re-run replaces its artifacts cleanly (`overwrite: true`).
 
 ## Adding a job

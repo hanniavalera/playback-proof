@@ -230,6 +230,17 @@ describe('a skipped test', () => {
       '| PB-VOD-003 WebM VOD starts | firefox | **no reason recorded** |',
     );
   });
+
+  it('blames the run, not the test, when the run stopped before the test could start (the global timeout)', () => {
+    const markdown = render(
+      reportOf([skipped([])], { errors: ['Timed out waiting 660s for the test suite to run'] }),
+    );
+    expect(markdown).toContain('- Timed out waiting 660s for the test suite to run');
+    expect(markdown).toContain(
+      '| PB-VOD-003 WebM VOD starts | firefox | did not run: the run stopped (see the errors above) |',
+    );
+    expect(markdown).not.toContain('no reason recorded');
+  });
 });
 
 describe('what the run says about itself', () => {

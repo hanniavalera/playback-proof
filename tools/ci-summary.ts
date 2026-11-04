@@ -134,14 +134,21 @@ function testTable(rows: TestRow[]): string[] {
   ];
 }
 
-/** The `skip` annotation is the reason of a documented gap (docs/CONTRACTS.md 7.3); a skip without one is a bug, so it says so. */
-function skipTable(rows: TestRow[]): string[] {
+/**
+ * The `skip` annotation is the reason of a documented gap (docs/CONTRACTS.md 7.3); a skip without one is a bug, so it says so.
+ * When the run itself stopped (the global timeout, a setup that threw), the tests that never started are reported as skipped
+ * too, and "no reason recorded" would blame the wrong thing: the errors of the run are the reason.
+ */
+function skipTable(rows: TestRow[], runStopped: boolean): string[] {
+  const missing = runStopped
+    ? 'did not run: the run stopped (see the errors above)'
+    : '**no reason recorded**';
   return [
     '| test | project | reason |',
     '| --- | --- | --- |',
     ...rows.map((r) => {
       const reason = r.annotations.find((a) => a.type === 'skip')?.description;
-      return `| ${cell(r.title)} | ${cell(r.project)} | ${reason ? cell(reason) : '**no reason recorded**'} |`;
+      return `| ${cell(r.title)} | ${cell(r.project)} | ${reason ? cell(reason) : missing} |`;
     }),
   ];
 }
@@ -188,7 +195,14 @@ export function renderSummary(summary: Summary, options: RenderOptions): string 
   if (flaky.length > 0) {
     lines.push('', `#### Flaky (${flaky.length}): passed only on a retry`, '', ...testTable(flaky));
   }
-  if (skipped.length > 0) lines.push('', `#### Skipped (${skipped.length})`, '', ...skipTable(skipped));
+  if (skipped.length > 0) {
+    lines.push(
+      '',
+      `#### Skipped (${skipped.length})`,
+      '',
+      ...skipTable(skipped, summary.runErrors.length > 0),
+    );
+  }
   if (options.artifact) {
     lines.push(
       '',
