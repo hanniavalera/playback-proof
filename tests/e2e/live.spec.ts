@@ -9,11 +9,19 @@ import {
   seconds,
 } from './live/edge.ts';
 import { recordMeasured } from './live/measured.ts';
-import { answeredManifest, describeCheckpoints, gapsBetween, rangeProblems } from './live/refresh.ts';
-import type { Checkpoint } from './live/refresh.ts';
+import {
+  advanceProblems,
+  answeredManifest,
+  describeCheckpoints,
+  fetchesVideoSegmentFrom,
+  gapsBetween,
+  rangeProblems,
+  readCheckpoints,
+} from './live/refresh.ts';
 import { describeSeries, measuredLatencies, percentile, sampleLatency } from './live/series.ts';
 import { expectHealthyPlayback, expectNoErrors, expectNoRebuffer } from './support/assertions.ts';
 import { expect, test } from './support/fixtures.ts';
+import { streamInfoOf } from './support/session.ts';
 import { requestsFor, waitForRequest, waitForRequests } from './support/waiting.ts';
 
 // A join plays this much media before the health of the instrument is read: a first frame alone proves the instrument little
@@ -201,20 +209,10 @@ test(
 
     // Each refresh is awaited on the origin's log (the load is the first answer), and only then the player and the origin are asked
     // where the playhead is: five reads, each of them after the window has slid by one more segment.
-    const checkpoints: Checkpoint[] = [];
-    let answered = await waitForRequests(session, answeredManifest(), { count: 1 });
-    for (let refresh = 1; refresh <= REFRESHES; refresh++) {
-      answered = await waitForRequests(session, answeredManifest(), { count: 1 + refresh });
-      const metrics = await qa.metrics();
-      const edge = await publishedEdge(session);
-      checkpoints.push({
-        refresh,
-        arrivedMs: answered[refresh]?.msSinceStart ?? Number.NaN,
-        mediaTime: metrics.playback.currentTime,
-        latencyMs: metrics.live.latencyMs,
-        edge,
-      });
-    }
+    const { checkpoints, answered } = await readCheckpoints(session, qa, {
+      isRefresh: answeredManifest(),
+      refreshes: REFRESHES,
+    });
     const cadenceMs = gapsBetween(answered);
     const loadEdge = edgeAt(live, (answered[0] as { t: string }).t);
     recordMeasured(testInfo, {
@@ -229,7 +227,7 @@ test(
 
     // Where the playhead is after each refresh, by the player's reading and by the origin's: the claim of the row.
     const outside = checkpoints.flatMap((point) =>
-      rangeProblems(point, live, { windowMs }).map((problem) => `refresh ${point.refresh}: ${problem}`),
+      rangeProblems(point, live).map((problem) => `refresh ${point.refresh}: ${problem}`),
     );
     expect(
       outside,
@@ -237,34 +235,15 @@ test(
     ).toEqual([]);
 
     // And playback went on: between two refreshes the media clock moved at least MIN_ADVANCE_SHARE of the time that passed.
-    const stalled = checkpoints.flatMap((point, index) => {
-      const previous = checkpoints[index - 1];
-      if (!previous) {
-        return point.mediaTime > joinedAt
-          ? []
-          : [`refresh 1: the media clock is still at the first frame, ${joinedAt.toFixed(2)} s`];
-      }
-      const elapsedSec = (point.arrivedMs - previous.arrivedMs) / 1000;
-      const advancedSec = point.mediaTime - previous.mediaTime;
-      return advancedSec >= elapsedSec * MIN_ADVANCE_SHARE
-        ? []
-        : [
-            `refresh ${point.refresh}: the media clock advanced ${advancedSec.toFixed(2)} s in the ${elapsedSec.toFixed(2)} s since the previous refresh`,
-          ];
-    });
-    expect(stalled, `playback did not go on across the manifest refreshes. ${table}`).toEqual([]);
+    expect(
+      advanceProblems(checkpoints, joinedAt, MIN_ADVANCE_SHARE),
+      `playback did not go on across the manifest refreshes. ${table}`,
+    ).toEqual([]);
 
     // The origin's side of "the player used the refreshes": the manifest it loaded listed segments up to `loadEdge`, so a segment
     // above it can only have been learned from a refresh, and the playhead only gets beyond the end of that first listing by playing it.
     const wanted = loadEdge + REFRESHES;
-    await waitForRequest(
-      session,
-      (entry) =>
-        entry.kind === 'segment' &&
-        entry.rep !== undefined &&
-        /^v\d+$/.test(entry.rep) &&
-        (entry.number ?? 0) >= wanted,
-    ).catch((error: Error) => {
+    await waitForRequest(session, fetchesVideoSegmentFrom(wanted)).catch((error: Error) => {
       throw new Error(
         `the player never asked for a video segment from #${wanted} on, which only the refreshed manifests list (the one it loaded ended at #${loadEdge}). ${table}\n${error.message}`,
       );
@@ -279,6 +258,97 @@ test(
     expect(
       metrics.playback.currentTime,
       `media time (metrics.playback.currentTime): the playhead has not played past the last second the manifest it loaded listed (${publishedEndSec(live, loadEdge)} s). ${table}`,
+    ).toBeGreaterThan(publishedEndSec(live, loadEdge));
+    expectHealthyPlayback(metrics);
+    expectNoErrors(metrics);
+  },
+);
+
+test(
+  'PB-LIVE-004 HLS live: joins, plays and stays inside the sliding window across at least five playlist refreshes',
+  { tag: ['@merge', '@live', '@hls'] },
+  async ({ newSession, streamFor, player }, testInfo) => {
+    test.setTimeout(60_000);
+    const session = await newSession({
+      stream: streamFor('live', 'hls'),
+      protocol: 'hls',
+      faults: profile('clean'),
+    });
+    const live = liveClockOf(session);
+    const windowMs = live.windowSegments * live.segmentDurationSec * 1000;
+    const { reps } = await streamInfoOf(session);
+    const audioReps = reps.filter((rep) => rep.track === 'audio').map((rep) => rep.id);
+    const videoReps = reps.filter((rep) => rep.track === 'video').map((rep) => rep.id);
+    const qa = await player(session).open();
+    await qa.waitFor('firstframe');
+    const joinedAt = (await qa.metrics()).playback.currentTime;
+
+    // The refresh that is counted is the one of the audio playlist: the player reloads the playlists of the variant it plays together
+    // and the audio has a single representation, whereas the video playlist is another file each time ABR changes rung (a switch
+    // would be one more request that is not a refresh). The video playlist is held to the same count below.
+    const { checkpoints, answered } = await readCheckpoints(session, qa, {
+      isRefresh: answeredManifest(audioReps),
+      refreshes: REFRESHES,
+    });
+    await waitForRequests(session, answeredManifest(videoReps), { count: 1 + REFRESHES }).catch(
+      (error: Error) => {
+        throw new Error(
+          `the video playlist was not refreshed ${REFRESHES} times while the audio playlist was: the player stopped tracking the window of the picture.\n${error.message}`,
+        );
+      },
+    );
+    const log = await session.service.log(session.id);
+    const firstPlaylist = requestsFor(log, { kind: 'manifest' }).find((entry) => entry.rep !== undefined);
+    const loadEdge = edgeAt(live, (firstPlaylist as { t: string }).t);
+    const cadenceMs = gapsBetween(answered);
+    recordMeasured(testInfo, {
+      refreshesAnswered: answered.length - 1,
+      refreshGapsMs: cadenceMs,
+      videoPlaylistAnswers: requestsFor(log, { kind: 'manifest', rep: videoReps, status: 'ok' }).length,
+      playheads: checkpoints.map((point) => point.mediaTime),
+      latenciesMs: checkpoints.map((point) => point.latencyMs),
+      loadEdge,
+      lastEdge: checkpoints.at(-1)?.edge ?? null,
+    });
+    const table = `The audio playlist was answered at these gaps (ms): ${cadenceMs.join(', ')}.\n${describeCheckpoints(checkpoints)}`;
+
+    const outside = checkpoints.flatMap((point) =>
+      rangeProblems(point, live).map((problem) => `refresh ${point.refresh}: ${problem}`),
+    );
+    expect(
+      outside,
+      `the playhead left the seek range at one of ${REFRESHES} playlist refreshes (the sliding window is ${windowMs / 1000} s). ${table}`,
+    ).toEqual([]);
+    expect(
+      advanceProblems(checkpoints, joinedAt, MIN_ADVANCE_SHARE),
+      `playback did not go on across the playlist refreshes. ${table}`,
+    ).toEqual([]);
+
+    // The playlist the player loaded listed segments up to `loadEdge` (the sequence number of a segment is its number in the URL), so a
+    // segment above it can only have been learned from a refreshed playlist.
+    const wanted = loadEdge + REFRESHES;
+    await waitForRequest(session, fetchesVideoSegmentFrom(wanted)).catch((error: Error) => {
+      throw new Error(
+        `the player never asked for a video segment from #${wanted} on, which only the refreshed playlists list (the one it loaded ended at #${loadEdge}). ${table}\n${error.message}`,
+      );
+    });
+    expect(
+      requestsFor(await session.service.log(session.id), { status: 'error' }),
+      'requests the origin refused or aborted while the window slid (request log)',
+    ).toEqual([]);
+
+    const metrics = await qa.metrics();
+    expect(
+      metrics.live.isLive,
+      'live presentation (metrics.live.isLive): the playlist was not played as live',
+    ).toBe(true);
+    expect(
+      (await qa.info()).loadMode,
+      'load mode (qa.info().loadMode): the lab plays HLS through Media Source Extensions, with the player parsing the playlists',
+    ).toBe('media-source');
+    expect(
+      metrics.playback.currentTime,
+      `media time (metrics.playback.currentTime): the playhead has not played past the last second the playlist it loaded listed (${publishedEndSec(live, loadEdge)} s). ${table}`,
     ).toBeGreaterThan(publishedEndSec(live, loadEdge));
     expectHealthyPlayback(metrics);
     expectNoErrors(metrics);
