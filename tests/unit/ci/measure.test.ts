@@ -223,8 +223,14 @@ function problems(text: string, world: World): string[] {
   if (!measure.includes("browser: ${{ inputs.engine == 'chromium-cpu4x' && 'chromium' || inputs.engine }}")) {
     out.push('the browser to install is the engine, and Chromium for chromium-cpu4x');
   }
-  if (!/^ {4}timeout-minutes: \$\{\{ inputs\.timeout_minutes > 340 && 340 \|\| /m.test(measure)) {
-    out.push('the job must be limited to 340 minutes whatever is asked');
+  if (
+    !/^ {4}timeout-minutes: \$\{\{ fromJSON\(inputs\.timeout_minutes > 340 && '340' \|\| inputs\.timeout_minutes < 1 && '1' \|\| inputs\.timeout_minutes\) \}\}$/m.test(
+      measure,
+    )
+  ) {
+    out.push(
+      'the job must be limited to 340 minutes whatever is asked, as a number: an expression of strings is refused by GitHub (Unexpected value)',
+    );
   }
   if (!measure.includes('timeout-minutes: ${{ fromJSON(steps.meta.outputs.task_timeout) }}')) {
     out.push('the task must have a limit of its own, shorter than the job, so that the upload still runs');
@@ -411,7 +417,9 @@ describe('the measurement workflow test fails when a promise is broken', () => {
 
   it('loses the limits: the job, the task, the browser of chromium-cpu4x', () => {
     expect(
-      broken(replaced('inputs.timeout_minutes > 340 && 340 ||', 'inputs.timeout_minutes > 400 && 400 ||')),
+      broken(
+        replaced("inputs.timeout_minutes > 340 && '340' ||", "inputs.timeout_minutes > 400 && '400' ||"),
+      ),
     ).toContain('limited to 340 minutes');
     expect(
       broken(replaced('timeout-minutes: ${{ fromJSON(steps.meta.outputs.task_timeout) }}\n', '')),

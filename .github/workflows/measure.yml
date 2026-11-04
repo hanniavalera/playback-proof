@@ -82,7 +82,8 @@ jobs:
     needs: streams
     runs-on: ${{ inputs.runner }}
     # The net under the task, which has its own limit ten minutes shorter. 360 minutes is the most a hosted job may run.
-    timeout-minutes: ${{ inputs.timeout_minutes > 340 && 340 || inputs.timeout_minutes < 1 && 1 || inputs.timeout_minutes }}
+    # Inputs are strings in an expression, and `timeout-minutes` refuses a string ("Unexpected value '60'"): fromJSON makes the number.
+    timeout-minutes: ${{ fromJSON(inputs.timeout_minutes > 340 && '340' || inputs.timeout_minutes < 1 && '1' || inputs.timeout_minutes) }}
     env:
       # Playwright's own runs (the flake collection) use the workers of the merge gate: one on the three-CPU macOS runner (ci.yml).
       PB_WORKERS: ${{ inputs.runner == 'macos-15' && 1 || 2 }}
