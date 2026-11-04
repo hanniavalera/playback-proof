@@ -340,7 +340,7 @@ Decisions: [decisions/flake.md](decisions/flake.md) (ADR-130 to ADR-139); how to
 
 `npm run typecheck | lint | format:check | docs:check | specs:check | build:player | generate:streams | verify:streams | serve | smoke:service | bench:server | player:smoke | codec-matrix | docker:pw | test:unit | test:e2e | test:merge | test:release | perf | perf:gate | perf:baseline | flake:report | flake:gate | ab | readiness | soak | triage`
 (`docker:pw -- <command>` runs a command inside the Playwright Linux image that matches the pinned `@playwright/test`, with the repository mounted: this is how Firefox runs on a macOS host and how the Linux CI environment is reproduced locally. `codec-matrix` probes the installed browsers and writes `docs/results/codec-matrix/<envId>.json`; `codec-matrix -- --render` regenerates [CODEC_MATRIX.md](CODEC_MATRIX.md) from every committed file and `-- --check` fails when it is stale. Options of both: `npm run codec-matrix -- --help`, `bash tools/docker/pw.sh --help`.)
-and the CI gate stages `gate:static | gate:unit | gate:merge | gate:perf | gate:flake | gate:triage`, which both GitHub Actions and the Jenkinsfile call.
+and the CI gate stages `gate:static | gate:unit | gate:merge | gate:perf | gate:flake | gate:triage`, which both GitHub Actions and the Jenkinsfile call (the GitHub Actions pipeline: [CI.md](CI.md)).
 
 ### 9.1 The performance harness (`perf/`, `src/lab/measure`; decisions: [decisions/perf.md](decisions/perf.md), ADR-120 to ADR-129)
 
