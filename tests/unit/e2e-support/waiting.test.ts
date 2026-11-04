@@ -59,17 +59,23 @@ describe('describeEntry', () => {
       ),
     ).toBe('#1 GET manifest -> 503 in 4 ms [faults r1]');
     expect(describeEntry(entry(3, { pending: true, status: 0 }))).toBe('#3 GET segment v360 #3 -> pending');
-    expect(describeEntry(entry(4, { aborted: true }))).toBe('#4 GET segment v360 #4 -> 200 aborted in 4 ms');
+    expect(describeEntry(entry(4, { aborted: true }))).toBe('#4 GET segment v360 #4 -> 200, aborted in 4 ms');
   });
 
   it('says who ended an aborted request, so a failure message tells a hang-up of the player from an origin that cut one', () => {
-    const line = (abortReason: RequestLogEntry['abortReason']): string =>
+    const line = (abortReason: RequestLogEntry['abortReason'], status = 200): string =>
       describeEntry(
-        entry(5, { aborted: true, abortReason, faults: abortReason === 'fault-abort' ? ['f2'] : [] }),
+        entry(5, { status, aborted: true, abortReason, faults: abortReason === 'fault-abort' ? ['f2'] : [] }),
       );
-    expect(line('client-closed')).toBe('#5 GET segment v360 #5 -> 200 aborted by the client in 4 ms');
-    expect(line('fault-abort')).toBe('#5 GET segment v360 #5 -> 200 aborted by a fault in 4 ms [faults f2]');
-    expect(line('error')).toBe('#5 GET segment v360 #5 -> 200 aborted by a service error in 4 ms');
+    expect(line('client-closed')).toBe('#5 GET segment v360 #5 -> 200, aborted by the client in 4 ms');
+    expect(line('fault-abort')).toBe('#5 GET segment v360 #5 -> 200, aborted by a fault in 4 ms [faults f2]');
+    expect(line('error', 0)).toBe(
+      '#5 GET segment v360 #5 -> no response, aborted by a service error in 4 ms',
+    );
+    // aborted before the head was sent: there is no status to show
+    expect(line('client-closed', 0)).toBe(
+      '#5 GET segment v360 #5 -> no response, aborted by the client in 4 ms',
+    );
   });
 });
 

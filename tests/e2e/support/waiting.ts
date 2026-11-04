@@ -27,8 +27,9 @@ export function describeEntry(entry: RequestLogEntry): string {
   const what = [entry.kind, entry.rep, entry.number === undefined ? undefined : `#${entry.number}`]
     .filter((part) => part !== undefined)
     .join(' ');
-  const abort = entry.aborted ? ` ${ABORTED_BY[entry.abortReason ?? 'unknown']}` : '';
-  const outcome = entry.pending ? 'pending' : `${entry.status}${abort} in ${entry.totalMs} ms`;
+  const answer = entry.status === 0 ? 'no response' : String(entry.status);
+  const abort = entry.aborted ? `, ${ABORTED_BY[entry.abortReason ?? 'unknown']}` : '';
+  const outcome = entry.pending ? 'pending' : `${answer}${abort} in ${entry.totalMs} ms`;
   const faults = entry.faults.length > 0 ? ` [faults ${entry.faults.join(', ')}]` : '';
   return `#${entry.seq} ${entry.method} ${what} -> ${outcome}${faults}`;
 }
