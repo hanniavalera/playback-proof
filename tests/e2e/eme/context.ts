@@ -7,8 +7,8 @@ import type { Browser, BrowserContext, TestInfo } from '@playwright/test';
  * Why the EME controls do not share the test's context: the ClearKey module of Firefox keeps the keys of a context in one table keyed
  * by key id, and the FIRST key given for a key id wins until the page that gave it is closed (measured, ADR-105): in the same
  * context a page with a wrong key plays with the right key of the page next to it, and a page with the right key fails after a page
- * with a wrong one. A new context has a table of its own (and so has a new browser process; a page of the same context after the
- * first one was closed does too, but that depends on how fast the module lets go).
+ * with a wrong one. A new context has a table of its own (so does a page of the same context once the first page was closed, but that
+ * depends on how fast the module lets go of the key, which is why the controls do not rely on it).
  */
 export function newIsolatedContext(
   browser: Browser,

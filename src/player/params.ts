@@ -65,9 +65,10 @@ export function clearKeyPatch(pair: ClearKeyParam | null): { drm?: { clearKeys: 
 }
 
 /**
- * The query string without `clearKey` (`''` when nothing else is left), or null when it had none. The page puts this back into the
- * address bar once it has read the pair: a browser repeats the page's URL in some of its own console messages (Firefox does, in its
- * warning about `requestMediaKeySystemAccess`), and the key is public but stays out of logs.
+ * The query string without `clearKey` (`''` when nothing else is left), or null when it had none. The page puts it into the address
+ * bar once it has read the pair: a browser may repeat the page's URL in its own console messages (Firefox does, in its warning about a
+ * `requestMediaKeySystemAccess` call without capabilities, which the lab's probe made and the player does not), and the key, public as
+ * it is, stays out of the logs a failing test attaches.
  */
 export function withoutClearKey(search: string): string | null {
   const query = new URLSearchParams(search);

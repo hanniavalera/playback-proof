@@ -19,8 +19,9 @@ declare const shaka: typeof shakaTypes;
 const video = document.getElementById('video') as HTMLVideoElement;
 const { params, problems } = parsePlayerParams(location.search);
 
-// A ClearKey pair is public, but a browser repeats the page's URL in some of its own console messages (Firefox does): once it is read it
-// leaves the address bar, so that it stays out of the logs a failing test attaches.
+// A ClearKey pair is public, but a browser may repeat the page's URL in its own console messages (Firefox does, for a call of
+// requestMediaKeySystemAccess without capabilities): once it is read it leaves the address bar, so that it stays out of the logs a
+// failing test attaches.
 const search = withoutClearKey(location.search);
 if (search !== null) history.replaceState(history.state, '', `${location.pathname}${search}${location.hash}`);
 
