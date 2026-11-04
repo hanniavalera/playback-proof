@@ -2,7 +2,7 @@
 
 Architecture decision records for the module that serves the built player page (`/player/` from `dist/player`): [`src/server/static.ts`](../../src/server/static.ts), tested by [`tests/unit/server/static.test.ts`](../../tests/unit/server/static.test.ts) (ADR-055 to ADR-057). The repository is public and a web server that serves files is the classic place for a path-traversal hole, so this module is small and its tests are written as an attack, not as a demo. Each record can be defended in a review: the situation, the choice, what was rejected, what it costs, and how I would argue for it. The lab-wide decisions this builds on are in [DESIGN_DECISIONS.md](../DESIGN_DECISIONS.md); the URL layout it serves is in [CONTRACTS.md](../CONTRACTS.md), sections 3 and 4.
 
-The numbers quoted below are from runs on macOS arm64 with Node 22.11 (`npx vitest run tests/unit/server/static.test.ts`: 190 tests in under a second). The suite was not run on Linux.
+The numbers quoted below are from runs on macOS arm64 with Node 22.11 (`npx vitest run tests/unit/server/static.test.ts`: 190 tests in under a second). The same file was also run on Linux (aarch64, Node 24.22.1, in the Playwright Docker image, from a copy with its own `npm ci`): 190 of 190, five runs in a row. It was not run on x64, on GitHub's runners, or on Windows.
 
 ## ADR-055: A request path is resolved, resolved again through the file system, and checked against the real root; it is never cleaned
 

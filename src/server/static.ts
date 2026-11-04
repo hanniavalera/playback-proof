@@ -275,7 +275,12 @@ function giveUp(res: ServerResponse, head: boolean): StaticResult {
   return { status: 404 };
 }
 
-/** Writes the whole response for GET and HEAD under the mount. Never throws: what cannot be served is answered or dropped. */
+/**
+ * Writes the whole response for GET and HEAD for a request whose path is the mount or under it (`/player` or `/player/...`;
+ * `mountPath` may be written with or without its trailing slash). Never throws: what cannot be served is answered or dropped.
+ * Resolves when the response is finished or the client has gone; a 200 means the head was sent, not that the whole body
+ * arrived. Every other method is a 405 here: answering `OPTIONS` (CORS preflight) is the caller's job.
+ */
 export async function serveStatic(
   req: IncomingMessage,
   res: ServerResponse,
