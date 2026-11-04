@@ -133,7 +133,7 @@ export const LIVE_READINESS = {
     'Latency restored after a stall',
     60_000,
     'ms',
-    'Time from recovery (`playing`) until `latencyMs` is back within the maximum above.',
+    'Time from recovery (`playing`) until `latencyMs` is back within the maximum above and stays there for 5 s.',
     'A member who lived through an outage should be back at the live edge within about a minute (30 segments). Phase 7 measures what the default configuration and the candidate really achieve: a limit the default cannot meet is a finding, not a number to relax.',
   ),
   manifestPeriodMs: fact(
@@ -182,7 +182,7 @@ export const LIVE_READINESS = {
     'Unrecovered stalls',
     0,
     'count',
-    'Buffering episodes that last longer than the stall recovery limit or never end, over the soak.',
+    'Buffering episodes that last longer than the stall recovery limit or never end, over the soak; also a media clock that stands still for longer than that limit while the player is not paused.',
     'Zero tolerance: a stall that outlasts the limit is a hung player.',
   ),
   maxCriticalErrors: assumption(
@@ -190,7 +190,14 @@ export const LIVE_READINESS = {
     0,
     'count',
     'Shaka errors with severity 2 in `qa.metrics().errors` over the soak.',
-    'A critical error ends a viewing session. Recoverable errors are counted and reported, and must be explained by an injected fault.',
+    'A critical error ends a viewing session. Recoverable errors are counted and reported (next row), and do not block.',
+  ),
+  maxUnexplainedCriticalErrors: assumption(
+    'Unexplained critical errors',
+    0,
+    'count',
+    'Errors of severity 2 in `qa.metrics().errors` over the soak that are not inside the window of a fault the soak injected or the stall-recovery limit after it. A recoverable error that no injected fault explains is counted and reported with its first examples, and does not block.',
+    'A live event cannot tolerate an error that nobody can attribute: an injected fault is a cause the lab put there and can name, and a critical error outside its window has no cause that anyone knows. It is a no-go on its own, and its first example is where the investigation starts. Recoverable errors are reported and do not block, because real networks produce them.',
   ),
   maxRebufferRatio: assumption(
     'Rebuffer ratio',
@@ -203,14 +210,14 @@ export const LIVE_READINESS = {
     'Latency drift',
     SEGMENT_MS / 2,
     'ms',
-    'Median `latencyMs` of the last quarter of the soak minus the median of the first quarter after the warm-up.',
+    'The change that the Theil-Sen slope (the median of the slopes between every two of the `latencyMs` reads) makes over the length of the soak after the warm-up, outside the injected faults (one slope for the stretches between them, each with its own level). The same change by least squares and the difference of the medians of the last and the first quarter are reported next to it, and the sheet says when the least-squares reading differs from it by more than the limit.',
     'Half a segment. A trend that large means the playhead is slipping relative to the edge; smaller differences are within what segment-granular positioning and timer jitter explain.',
   ),
   maxHeapGrowthMb: assumption(
     'JS heap growth (Chromium only)',
     20,
     'MB',
-    'JS heap after a forced collection (DevTools protocol) at the end of the soak minus the value after the warm-up.',
+    'JS heap after a forced collection (DevTools protocol): the median of the last readings at the end of the soak minus the median of the first readings after the warm-up.',
     'The player keeps kilobytes of bookkeeping per segment, so 20 MB over 30 minutes is far beyond a normal sawtooth after collection: crossing it means a leak. The 5-minute soak uses the same number, so it only catches gross leaks; the release soak catches slow ones.',
   ),
   maxDroppedFrameRatio: assumption(
