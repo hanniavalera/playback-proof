@@ -95,7 +95,7 @@ A member is a person watching (a subscriber). These are the things members do, w
 | --- | --- | --- |
 | Desktop Chromium-class | Playwright Chromium (Linux in CI, macOS locally) | The engine's MSE and codec behaviour, real decode. Not a consumer browser product. |
 | Desktop Firefox-class | Playwright Firefox (Linux in CI; Docker on a macOS host) | The engine's behaviour. Does not start on the macOS development host. |
-| Desktop WebKit-class | Playwright WebKit (macOS only) | A WebKit build, not Safari: the same engine, not the same product or media stack. Its Linux build cannot play MSE content, so Linux WebKit is a documented gap (section 13). |
+| Desktop WebKit-class | Playwright WebKit (macOS, and Linux as an experimental engine) | A WebKit build, not Safari: the same engine, not the same product or media stack. Its Linux build plays MSE content only intermittently on the codec probe's page, so Linux WebKit runs as an experimental, flake-tracked engine and macOS WebKit is the realistic one (section 13). |
 | Low-end television or set-top box | Chromium with `Emulation.setCPUThrottlingRate` at 4x | Main-thread slowness: page boot, parsing, our own per-frame work. Not hardware decoders, memory limits, the network stack of a device, or input latency. Firefox and WebKit have no equivalent. |
 
 ## 4. Risk ranking
@@ -204,15 +204,15 @@ Highest risk first. The line is drawn by the rule above: the areas whose gate sa
 
 ### 5.2 Environments
 
-The matrix below is the design; the CI jobs arrive in Phase 4. Chromium and Firefox run on Linux, WebKit runs on macOS. Linux WebKit's MSE playback is broken in Playwright's build (`MediaError 4: Failed to push buffer`, intermittently, while `isTypeSupported` answers `true` for everything): see section 2 of [docs/CONTRACTS.md](docs/CONTRACTS.md) and ADR-001.
+The matrix below is the design; the jobs that implement it are described in [docs/CI.md](docs/CI.md). Chromium and Firefox run on Linux and WebKit runs on macOS. Linux WebKit runs too, as an **experimental, flake-tracked engine**: Playwright's build answers `isTypeSupported` with `true` for everything and its MSE playback is intermittent on the codec probe's page (`MediaError 4: Failed to push buffer`), but the real player page passed 80 of 80 runs in the Playwright image on arm64. See section 2 of [docs/CONTRACTS.md](docs/CONTRACTS.md), ADR-001, ADR-072 and ADR-113.
 
 | Environment | Chromium | Firefox | WebKit | `chromium-cpu4x` | Used for |
 | --- | --- | --- | --- | --- | --- |
-| GitHub Actions, Linux | yes | yes | no (documented gap) | yes | The merge gate for three of the four projects, the performance gate, nightly and release jobs. |
+| GitHub Actions, Linux | yes | yes | experimental (required, flake-tracked) | yes | The merge gate for all four projects, the performance gate, nightly and release jobs. |
 | GitHub Actions, macOS | not needed | no | yes | no | The WebKit merge job, WebKit performance and release jobs. |
 | Jenkins, Linux agent (run locally with docker-compose) | yes | yes | experimental (Linux WebKit; the macOS job has no local equivalent) | yes | The same `gate:*` stages as GitHub Actions: parity of the pipeline, not extra coverage ([jenkins/README.md](jenkins/README.md)). |
 | Development host, macOS (arm64) | yes | no (does not launch: "Could not find profile folder") | yes | yes | The inner loop. |
-| Docker, Linux (the Playwright image, arm64 here) | yes | yes | no | yes | Firefox from a macOS host, and reproducing CI locally (`npm run docker:pw`). |
+| Docker, Linux (the Playwright image, arm64 here) | yes | yes | experimental | yes | Firefox from a macOS host, and reproducing CI locally (`npm run docker:pw`). |
 
 Performance baselines are keyed by environment and profile (`perf/baselines/<env>/<profile>.json`, ADR-004) and never compared across environments.
 
@@ -322,7 +322,8 @@ Expected seconds per test are design estimates and Phase 3 replaces them with me
 | The full codec matrix | A fresh browser process per case and repeated attempts: minutes, and it changes only when a browser or a runner image changes. | Weekly, and on every Playwright upgrade. PB-ENV-001 is the cheap proxy that stays in the merge gate. |
 | Language-model triage summaries | They never decide a verdict and need a key. | Red builds only, optional. |
 | Performance comparison across environments | Meaningless (ADR-004). | Never. |
-| WebKit playback on Linux | A documented gap: its MSE playback is broken in Playwright's build. | Skipped with the reason; the probe keeps reporting it. |
+
+Linux WebKit is not on this list: it runs in the merge gate as an experimental engine (section 5.2, ADR-113), because the real player page, unlike the codec probe's page, plays reliably there in the evidence so far.
 
 ## 7. Performance and flake policy
 
@@ -539,7 +540,7 @@ The list of record. Phase 3 and later implement exactly these ids, and the docs 
 | Performance regression | The performance gate fails on the median or the p90 and the automatic re-measure reproduces it. | The author of the change. | Compare the per-run values with the committed baseline and its variation; split startup into manifest time and first-segment time; bisect the commits since the last green baseline. | The performance report diff, the per-run values, `qa.metrics()` of the slowest run, the request log's `ttfbMs`. |
 | Flake | Fails, then passes on the retry; or the flake gate lists the test above its trigger; no product signal in the timeline. | The owner of the test (the area owner, named in the quarantine entry). | Do not rerun the job. Record it; if the test is above the trigger, fix it or quarantine it the same day with an owner, a reason and an expiry. | The first failed attempt's trace (not the green retry), the order of events (a missed or late one), runner load, and whether the request log shows the faults firing as configured. |
 | Environment or infrastructure | A browser did not launch, the service is not healthy, ffmpeg is missing, a port clash, the capability probe changed, or many unrelated tests fail at once. | The lab maintainer, with the CI owner. | Fix the environment and rerun the job, not the test. Never edit a test to make an environment failure go away. | The job log, `/health`, the output of PB-ENV-001, the codec matrix. |
-| Known gap | A documented limitation (Linux WebKit's MSE playback, Firefox on the macOS host): the spec is skipped with its reason. | The lab maintainer. | Nothing for the pull request; re-probe on every browser upgrade. A skip without a reason is a bug. | The skip reason in the report and the codec matrix. |
+| Known gap | A documented limitation (Firefox on the macOS host; Linux WebKit's MSE playback if its experiment ends): the spec is skipped with its reason. | The lab maintainer. | Nothing for the pull request; re-probe on every browser upgrade. A skip without a reason is a bug. | The skip reason in the report and the codec matrix. |
 
 Failure triage (Phase 8) clusters the failures of a red build by root cause: a deterministic signature first (the normalised error message, the Shaka error code and the top application frame), so the same cause is one cluster whatever the ids and timestamps; an optional language-model summary when a key is configured (none is here, so summaries are untested against the real service and the README says so). A cluster is mapped to one of the classes above. It saves the first hour; it never decides a verdict.
 
@@ -602,7 +603,7 @@ The statistics assume nothing about the shape of the data: startup times are rig
 
 **Gaps in what the lab can run.**
 
-- **Linux WebKit.** Playwright's Linux WebKit exposes `MediaSource` and answers `isTypeSupported` with `true` for everything, but MSE playback fails (`MediaError 4: Failed to push buffer`, intermittently). The WebKit playback suites run on macOS; on Linux they are skipped with that reason, and the probe keeps reporting it so that a fixed build is noticed (ADR-001).
+- **Linux WebKit.** Playwright's Linux WebKit exposes `MediaSource` and answers `isTypeSupported` with `true` for everything, and its MSE playback is intermittent on the codec probe's page (`MediaError 4: Failed to push buffer`). The real player page passed 80 of 80 runs in the Playwright image on arm64, so the playback suites run in Linux WebKit as an experimental, flake-tracked engine: a required job of the merge gate whose name says "experimental". The evidence is one image on one architecture, and until the engine's flake rate is known a failure there is data for the experiment before it is a regression of the player (ADR-072, ADR-113). macOS WebKit is the realistic media stack. The probe keeps reporting the engine, so that a change in either direction is noticed (ADR-001).
 - **Firefox on the macOS development host** does not start ("Could not find profile folder"); locally it runs in Docker.
 - **The low-end class is simulated in Chromium only.** Firefox and WebKit cannot be throttled, so the lab has no low-end evidence for them. A throttle is not a device.
 - **Playwright's WebKit is not Safari**, and Playwright's engines are not the consumer browsers.
