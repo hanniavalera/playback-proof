@@ -1,0 +1,278 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-04T18:35:15.593Z",
+  "from": "artifacts",
+  "sources": [
+    {
+      "path": "reports-chromium/reports/playwright.json",
+      "tests": 15,
+      "passed": 15,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "notRun": 0,
+      "interrupted": 0,
+      "runErrors": 0,
+      "startTime": "2026-11-04T18:29:20.802Z",
+      "durationMs": 75797
+    },
+    {
+      "path": "reports-chromium-cpu4x/reports/playwright.json",
+      "tests": 3,
+      "passed": 3,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "notRun": 0,
+      "interrupted": 0,
+      "runErrors": 0,
+      "startTime": "2026-11-04T18:29:33.584Z",
+      "durationMs": 12793
+    },
+    {
+      "path": "reports-webkit-linux/reports/playwright.json",
+      "tests": 15,
+      "passed": 15,
+      "failed": 0,
+      "flaky": 0,
+      "skipped": 0,
+      "notRun": 0,
+      "interrupted": 0,
+      "runErrors": 0,
+      "startTime": "2026-11-04T18:29:47.407Z",
+      "durationMs": 85047
+    },
+    {
+      "path": "reports-webkit-macos/reports/playwright.json",
+      "tests": 15,
+      "passed": 14,
+      "failed": 0,
+      "flaky": 1,
+      "skipped": 0,
+      "notRun": 0,
+      "interrupted": 0,
+      "runErrors": 0,
+      "startTime": "2026-11-04T18:29:25.195Z",
+      "durationMs": 234784
+    }
+  ],
+  "totals": {
+    "failures": 0,
+    "flaky": 1,
+    "clusters": 1,
+    "rootCauses": 1,
+    "skipped": 0,
+    "notRun": 0,
+    "interrupted": 0
+  },
+  "clusters": [
+    {
+      "rank": 1,
+      "key": "6786aa8927d7",
+      "signature": "Error: rung changes of the load (qa.events()): <n>p start at <n> s, <n>p abr at <n> s, <n>p abr at <n> s, <n>p abr at <n> s. Each segment of a rung that the <n> kbps link does not carry takes longer … [toBeLessThanOrEqual]",
+      "parts": {
+        "message": "Error: rung changes of the load (qa.events()): <n>p start at <n> s, <n>p abr at <n> s, <n>p abr at <n> s, <n>p abr at <n> s. Each segment of a rung that the <n> kbps link does not carry takes longer …",
+        "assertion": "toBeLessThanOrEqual",
+        "location": null,
+        "shaka": null
+      },
+      "size": 1,
+      "tests": [
+        "PB-ABR-002"
+      ],
+      "projects": [
+        "webkit"
+      ],
+      "outcomes": {
+        "failed": 0,
+        "timedOut": 0,
+        "flaky": 1
+      },
+      "category": "unknown",
+      "rule": {
+        "rule": "no-rule-matched",
+        "category": "unknown",
+        "evidence": [
+          "no rule matched “Error: rung changes of the load (qa.events()): 360p start at 0.00 s, 720p abr at 0.43 s, 360p abr at 18.23 s, 240p abr at 22.70 s. Each segment of a rung that the 600 kbps link does not carry takes longer to arrive than…”"
+        ],
+        "cause": null
+      },
+      "ruleRationale": "No rule of the table recognised this failure: the message and the attachments have to be read.",
+      "failureClass": "Flake",
+      "firstCheck": "Do not rerun the job: it passed on the retry, and a retried pass is not a pass. Read the trace of the first failed attempt, not the green retry. The message, the stack and the attachments of the representative failure; if it recurs, add a rule for it (docs/TRIAGE.md).",
+      "agreement": {
+        "sameRule": 1,
+        "of": 1,
+        "otherRules": []
+      },
+      "representative": {
+        "scope": "test",
+        "id": "PB-ABR-002",
+        "title": "PB-ABR-002 downshifts when bandwidth drops mid-playback (bandwidth-drop): at most one rebuffer, settles on a rung the network can carry",
+        "file": "tests/e2e/abr.spec.ts",
+        "line": 134,
+        "project": "webkit",
+        "tags": [
+          "@dash",
+          "@merge"
+        ],
+        "tier": "merge",
+        "outcome": "flaky",
+        "retries": 1,
+        "attempts": 2,
+        "failedAttempts": 1,
+        "attempt": 0,
+        "durationMs": 41525,
+        "quarantined": false,
+        "experimental": false,
+        "annotations": [
+          {
+            "type": "measured",
+            "description": "rungs: 360p start at 0.00 s, 720p abr at 0.69 s, 360p abr at 9.89 s, 240p abr at 19.90 s; rebuffers 0; dropped frames 30 of 963"
+          },
+          {
+            "type": "measured",
+            "description": "rungs: 360p start at 0.00 s, 720p abr at 0.43 s, 360p abr at 18.23 s, 240p abr at 22.70 s; rebuffers 2; dropped frames 32 of 1049"
+          }
+        ],
+        "envId": "gha-linux-x64",
+        "source": "reports-webkit-macos/reports/playwright.json",
+        "error": {
+          "message": "Error: rung changes of the load (qa.events()): 360p start at 0.00 s, 720p abr at 0.43 s, 360p abr at 18.23 s, 240p abr at 22.70 s. Each segment of a rung that the 600 kbps link does not carry takes longer to arrive than it plays, so whether the player stalls depends on how early it left the rung it was on when the link weakened (ADR-097). Shaka also leaves a rung, whatever the link, when 15 % of the frames of a 2 s window are dropped (it disables that variant for 30 s); dropped frames in this load: 32 of 1049 (3.1 %). Changes that came sooner than the 8 s the adaptation waits between decisions were not decisions about the link, they were forced (a ban): 240p at media time 22.70 s, 5.7 s after the change before it\nrebuffers (metrics.rebuffer.count): expected at most 1, saw 2 totalling 889 ms: at media time 20.00 s for 524 ms; at media time 22.00 s for 365 ms\n\nexpect(received).toBeLessThanOrEqual(expected)\n\nExpected: <= 1\nReceived:    2",
+          "frames": [
+            {
+              "file": "tests/e2e/abr.spec.ts",
+              "fn": null,
+              "line": 205
+            }
+          ]
+        },
+        "diagnostics": {
+          "attached": [
+            "page-console.json",
+            "qa-events.json",
+            "qa-info.json",
+            "qa-metrics.json",
+            "request-log.json",
+            "session-detail.json"
+          ],
+          "players": 1,
+          "sessions": 1,
+          "shakaErrors": [],
+          "primaryError": null,
+          "metrics": {
+            "state": "playing",
+            "startupMs": 1015,
+            "rebuffers": {
+              "count": 2,
+              "totalMs": 889
+            },
+            "frames": {
+              "decoded": 1067,
+              "dropped": 32
+            },
+            "liveLatencyMs": null,
+            "bitrateSwitches": 3,
+            "currentTime": 35.456359373
+          },
+          "events": {
+            "total": 18,
+            "names": {
+              "load-requested": 1,
+              "buffering-start": 4,
+              "manifest-loaded": 1,
+              "variant-changed": 4,
+              "loaded": 1,
+              "playing": 3,
+              "buffering-end": 3,
+              "firstframe": 1
+            },
+            "around": [
+              "#10 t=19812.0 media=18.232 variant-changed {\"from\":2,\"to\":1,\"bandwidth\":746360,\"height\":360,\"reason\":\"abr\"}",
+              "#11 t=21632.0 media=20.000 buffering-start",
+              "#12 t=22156.0 media=20.000 playing",
+              "#13 t=22156.0 media=20.000 buffering-end",
+              "#14 t=24367.0 media=22.000 buffering-start",
+              "#15 t=24732.0 media=22.000 playing",
+              "#16 t=24732.0 media=22.000 buffering-end",
+              "#17 t=25478.0 media=22.704 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":342376,\"height\":240,\"reason\":\"abr\"}"
+            ]
+          },
+          "requestLog": {
+            "entries": 56,
+            "segments": 49,
+            "manifests": 1,
+            "inits": 6,
+            "other": 0,
+            "originFailures": 0,
+            "originFailuresWithoutFault": 0,
+            "clientAborted": 3,
+            "pending": 0,
+            "byStatus": {
+              "200": 56
+            },
+            "failed": []
+          },
+          "faults": [
+            {
+              "id": "f1",
+              "type": "throttle",
+              "description": "throttle 600 kbps after 8000 ms",
+              "fired": 34
+            }
+          ],
+          "console": {
+            "errors": 1,
+            "warnings": 0,
+            "pageErrors": 0,
+            "samples": [
+              "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy."
+            ]
+          },
+          "problems": {},
+          "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Safari/605.1.15",
+          "config": "A",
+          "loadMode": "media-source"
+        },
+        "missing": []
+      },
+      "members": [
+        {
+          "id": "PB-ABR-002",
+          "project": "webkit",
+          "outcome": "flaky",
+          "source": "reports-webkit-macos/reports/playwright.json"
+        }
+      ],
+      "rootCause": "84618a1f4459"
+    }
+  ],
+  "rootCauses": [
+    {
+      "rank": 1,
+      "key": "84618a1f4459",
+      "category": "unknown",
+      "rule": "no-rule-matched",
+      "cause": null,
+      "size": 1,
+      "clusters": [
+        "6786aa8927d7"
+      ],
+      "clusterRanks": [
+        1
+      ],
+      "tests": [
+        "PB-ABR-002"
+      ],
+      "projects": [
+        "webkit"
+      ],
+      "failureClass": "Flake"
+    }
+  ],
+  "skipped": [],
+  "problems": [],
+  "summaries": [],
+  "summaryNote": null,
+  "summaryRun": null
+}
