@@ -63,6 +63,12 @@ export interface TrackLike {
   audioCodec?: string | null;
 }
 
+/** The part of Shaka's presentation timeline that the live latency needs. */
+export interface PresentationTimelineLike {
+  getSegmentAvailabilityEnd(): number;
+  getDelay(): number;
+}
+
 /** The parts of shaka.Player the hook uses. */
 export interface PlayerLike {
   addEventListener(type: string, listener: (event: Event) => void): void;
@@ -78,9 +84,7 @@ export interface PlayerLike {
   seekRange(): { start: number; end: number };
   getLoadMode(): number;
   goToLive?(): void;
-  getManifest?(): {
-    presentationTimeline?: { getSegmentAvailabilityEnd(): number; getDelay(): number };
-  } | null;
+  getManifest?(): { presentationTimeline?: PresentationTimelineLike } | null;
 }
 
 export interface PlayerEnvironment {
@@ -140,6 +144,7 @@ export class PlayerHook implements QAHook {
   private hasPlayed = false;
   private lastVariantId: number | null = null;
   private lastObservedTime: number | null = null;
+  private presentationTimeline: PresentationTimelineLike | null | undefined = undefined;
   private viewerSeeks = 0;
   private frameHandle: number | null = null;
   private destroyed = false;
@@ -350,7 +355,12 @@ export class PlayerHook implements QAHook {
   private liveEdge(): { availabilityEnd: number; delayMs: number } | null {
     const player = this.env?.player;
     if (!player || !player.isLive()) return null;
-    const timeline = player.getManifest?.()?.presentationTimeline;
+    // Looked up once per load: Shaka logs a warning every time getManifest() is called ("not covered by semantic versioning"),
+    // and this runs at every timeupdate. The timeline object is live (it computes the edge when asked), so it can be kept.
+    if (this.presentationTimeline === undefined) {
+      this.presentationTimeline = player.getManifest?.()?.presentationTimeline ?? null;
+    }
+    const timeline = this.presentationTimeline;
     if (!timeline) return null;
     const availabilityEnd = timeline.getSegmentAvailabilityEnd();
     return Number.isFinite(availabilityEnd) ? { availabilityEnd, delayMs: timeline.getDelay() * 1000 } : null;
@@ -400,6 +410,7 @@ export class PlayerHook implements QAHook {
     this.hasPlayed = false;
     this.lastVariantId = null;
     this.lastObservedTime = null;
+    this.presentationTimeline = undefined;
     this.latency.reset();
     this.presented.reset();
   }

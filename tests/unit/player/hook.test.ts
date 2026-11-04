@@ -609,6 +609,18 @@ describe('live', () => {
     expect(hook.metrics().live).toMatchObject({ latencyMs: 4000, latencyMaxMs: 10_000 });
   });
 
+  it("asks Shaka for its manifest once per load, not at every sample: getManifest() logs a warning each time (found in WebKit's console)", async () => {
+    const { hook, video, player } = await liveHarness();
+    for (let t = 100; t < 105; t += 0.25) video.advanceTo(t);
+    hook.metrics();
+    hook.metrics();
+    expect(player.manifestCalls).toBe(1);
+    await hook.load(URI); // a new load is a new presentation
+    video.advanceTo(100);
+    hook.metrics();
+    expect(player.manifestCalls).toBe(2);
+  });
+
   it('is null for VOD, with no delay', async () => {
     const { hook, video } = await harness();
     await hook.load(URI);
