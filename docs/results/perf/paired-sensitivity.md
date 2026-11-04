@@ -4,7 +4,7 @@ The [A/A](paired-aa/README.md) shows that the paired gate does not fail a build 
 
 ## The pull request
 
-Draft pull request #16, "DEMO (do not merge): a 150 ms startup regression", closed without merging. Head commit `d1b65828cc5ef86c3799bcfd87b701e204eb7581` on base `e0a5be3`, one change in `src/player/hook.ts`: the page waits 150 ms between recording `load-requested` and handing the manifest to the player. CI run [41887534070](https://github.com/hanniavalera/playback-proof/actions/runs/41887534070).
+Draft pull request #16, "DEMO (do not merge): a 150 ms startup regression", closed without merging. Head commit `d1b6582` on base `e0a5be3`, one change in `src/player/hook.ts`: the page waits 150 ms between recording `load-requested` and handing the manifest to the player. CI run [41887534070](https://github.com/hanniavalera/playback-proof/actions/runs/41887534070).
 
 | Check | Result |
 | --- | --- |

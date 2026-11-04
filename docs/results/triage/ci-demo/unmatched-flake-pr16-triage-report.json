@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-04T18:35:15.593Z",
-  "from": "artifacts",
+  "generatedAt": "2026-11-04T18:57:07.057Z",
+  "from": "<path>/artifacts",
   "sources": [
     {
       "path": "reports-chromium/reports/playwright.json",

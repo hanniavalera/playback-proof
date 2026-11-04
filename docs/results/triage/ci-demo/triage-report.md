@@ -4,7 +4,7 @@
 
 | # | Failures | Engines | Tests | Category · rule | Class | Error |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 59 | chromium, chromium-cpu4x, firefox, webkit | PB-ABR-002, PB-LIVE-001, PB-LIVE-002, PB-LIVE-003 +10 | `page-boot-failure` · `page-did-not-boot` | Functional regression | Error: the player page did not boot (http://127.0.0.1:4600/player/?manifest=%2Fs%2F2eddfafe7dcf%2Fvod-cmaf%2Fdash%2Fman… |
+| 1 | 59 | chromium, chromium-cpu4x, firefox, webkit | PB-ABR-002, PB-LIVE-001, PB-LIVE-002, PB-LIVE-003 +10 | `page-boot-failure` · `page-did-not-boot` | Functional regression | Error: the player page did not boot (http://&lt;host&gt;/player/?&lt;query&gt;): Timeout 15000ms exceeded. |
 | 2 | 3 | chromium, firefox, webkit | PB-ENV-001 | `page-boot-failure` · `page-did-not-boot` | Functional regression | Error: chromium 156.0.8078.4 in gha-linux-x64 could not play vod-cmaf over dash through the player, and no documented g… |
 | 3 | 1 | webkit | PB-ENV-001 | `page-boot-failure` · `page-did-not-boot` | Functional regression | Error: webkit 27.2 in gha-macos-arm64 could not play vod-cmaf over dash through the player, and no documented gap cover… |
 
@@ -25,18 +25,18 @@ A cluster is one signature, which is the words of one failure. When the same rul
 - **Root cause** shared with the clusters #2, #3: the player page did not boot: a Content Security Policy blocked its scripts
 - **Class** Functional regression (TEST_STRATEGY.md section 10)
 - **Evidence** (what the rule found: check it against the attachments, and disagree with it if it is wrong):
-  - the page did not boot: “Error: the player page did not boot (http://127.0.0.1:4600/player/?manifest=%2Fs%2F2eddfafe7dcf%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.”
+  - the page did not boot: “Error: the player page did not boot (http://<host>/player/?<query>): Timeout 15000ms exceeded.”
   - the console names a Content Security Policy violation
-  - console: “Loading the script 'http://127.0.0.1:4600/player/shaka.js' violates the following Content Security Policy directive: "script-src 'none'". Note that 'script-src…”
-  - console: “Loading the script 'http://127.0.0.1:4600/player/player.js' violates the following Content Security Policy directive: "script-src 'none'". Note that 'script-sr…”
+  - console: “Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: "script-src 'none'". Note that 'script-src…”
+  - console: “Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: "script-src 'none'". Note that 'script-sr…”
 - **First thing to check** The console lines quoted in the message (a blocked script is a Content Security Policy or a missing `dist/player`): `curl -I <origin>/player/`, then `npm run build:player`.
 - **Representative failure** PB-ABR-002 on chromium: failed, 2 attempts of 2, merge tier, gha-linux-x64, from `reports-chromium/reports/playwright.json`
 
 ```text
-Error: the player page did not boot (http://127.0.0.1:4600/player/?manifest=%2Fs%2F2eddfafe7dcf%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.
+Error: the player page did not boot (http://<host>/player/?<query>): Timeout 15000ms exceeded.
 The browser console said:
-  error: Loading the script 'http://127.0.0.1:4600/player/shaka.js' violates the following Content Security Policy directive: "script-src 'none'". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.
-  error: Loading the script 'http://127.0.0.1:4600/player/player.js' violates the following Content Security Policy directive: "script-src 'none'". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.
+  error: Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: "script-src 'none'". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.
+  error: Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: "script-src 'none'". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.
 ```
 
 Frames of the lab's own code: `tests/e2e/abr.spec.ts:150`
@@ -88,17 +88,17 @@ Could not be read: qa-events.json: not attached; qa-metrics.json: not attached; 
 - **Evidence** (what the rule found: check it against the attachments, and disagree with it if it is wrong):
   - the page did not boot: “Error: chromium 156.0.8078.4 in gha-linux-x64 could not play vod-cmaf over dash through the player, and no documented gap covers it.”
   - the console names a Content Security Policy violation
-  - console: “Loading the script 'http://127.0.0.1:4600/player/shaka.js' violates the following Content Security Policy directive: "script-src 'none'". Note that 'script-src…”
-  - console: “Loading the script 'http://127.0.0.1:4600/player/player.js' violates the following Content Security Policy directive: "script-src 'none'". Note that 'script-sr…”
+  - console: “Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: "script-src 'none'". Note that 'script-src…”
+  - console: “Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: "script-src 'none'". Note that 'script-sr…”
 - **First thing to check** The console lines quoted in the message (a blocked script is a Content Security Policy or a missing `dist/player`): `curl -I <origin>/player/`, then `npm run build:player`.
 - **Representative failure** PB-ENV-001 on chromium: failed, 2 attempts of 2, merge tier, gha-linux-x64, from `reports-chromium/reports/playwright.json`
 
 ```text
 Error: chromium 156.0.8078.4 in gha-linux-x64 could not play vod-cmaf over dash through the player, and no documented gap covers it.
-What the player said: the player page did not boot (http://127.0.0.1:4600/player/?manifest=%2Fs%2F149fcc7a0d68%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.
+What the player said: the player page did not boot (http://<host>/player/?<query>): Timeout 15000ms exceeded.
 The browser console said:
-  error: Loading the script 'http://127.0.0.1:4600/player/shaka.js' violates the following Content Security Policy directive: "script-src 'none'". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.
-  error: Loading the script 'http://127.0.0.1:4600/player/player.js' violates the following Content Security Policy directive: "script-src 'none'". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.
+  error: Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: "script-src 'none'". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.
+  error: Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: "script-src 'none'". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.
 Committed evidence (docs/results/codec-matrix/gha-linux-x64.json) claims it plays: cmaf-vp9-aac ok 5/5.
 So the engine or the runner image changed since the matrix was probed: this is an environment failure, not a playback regression. Re-run `npm run codec-matrix` here and read docs/CODEC_MATRIX.md; do not retry the specs.
 ```
@@ -124,18 +124,18 @@ Could not be read: qa-events.json: not attached; qa-metrics.json: not attached; 
 - **Evidence** (what the rule found: check it against the attachments, and disagree with it if it is wrong):
   - the page did not boot: “Error: webkit 27.2 in gha-macos-arm64 could not play vod-cmaf over dash through the player, and no documented gap covers it.”
   - the console names a Content Security Policy violation
-  - console: “Refused to load http://127.0.0.1:4600/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.”
-  - console: “Refused to load http://127.0.0.1:4600/player/player.js because it does not appear in the script-src directive of the Content Security Policy.”
+  - console: “Refused to load http://<host>/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.”
+  - console: “Refused to load http://<host>/player/player.js because it does not appear in the script-src directive of the Content Security Policy.”
   - console: “Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.”
 - **First thing to check** The console lines quoted in the message (a blocked script is a Content Security Policy or a missing `dist/player`): `curl -I <origin>/player/`, then `npm run build:player`.
 - **Representative failure** PB-ENV-001 on webkit: failed, 2 attempts of 2, merge tier, gha-linux-x64, from `reports-webkit-macos/reports/playwright.json`
 
 ```text
 Error: webkit 27.2 in gha-macos-arm64 could not play vod-cmaf over dash through the player, and no documented gap covers it.
-What the player said: the player page did not boot (http://127.0.0.1:4600/player/?manifest=%2Fs%2Ff150e1d54213%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.
+What the player said: the player page did not boot (http://<host>/player/?<query>): Timeout 15000ms exceeded.
 The browser console said:
-  error: Refused to load http://127.0.0.1:4600/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.
-  error: Refused to load http://127.0.0.1:4600/player/player.js because it does not appear in the script-src directive of the Content Security Policy.
+  error: Refused to load http://<host>/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.
+  error: Refused to load http://<host>/player/player.js because it does not appear in the script-src directive of the Content Security Policy.
 Committed evidence (docs/results/codec-matrix/gha-macos-arm64.json) claims it plays: cmaf-vp9-aac ok 5/5.
 So the engine or the runner image changed since the matrix was probed: this is an environment failure, not a playback regression. Re-run `npm run codec-matrix` here and read docs/CODEC_MATRIX.md; do not retry the specs.
 ```
@@ -158,4 +158,4 @@ Could not be read: qa-events.json: not attached; qa-metrics.json: not attached; 
 
 No model summaries: they are opt-in (`npm run triage -- --summarize`, with `ANTHROPIC_API_KEY`).
 
-Generated 2026-11-04T18:39:23.214Z from `artifacts` by `triage/` (docs/TRIAGE.md).
+Generated 2026-11-04T18:57:06.552Z from `<path>/artifacts` by `triage/` (docs/TRIAGE.md).

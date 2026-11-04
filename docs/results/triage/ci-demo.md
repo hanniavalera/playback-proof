@@ -4,7 +4,7 @@ The seven induced failures of [README.md](README.md) were run on the development
 
 ## The pull request
 
-Draft pull request #17, "DEMO (do not merge): a policy that blocks scripts", closed without merging. Head commit `8f0a99c2f13a8951f374ad2253bf1e0bb0b3aa56`, one change in `src/player/index.html`: the content security policy of the player page says `script-src 'none'` where it said `'self'`, so the page loads and its scripts never run. CI run [41887574166](https://github.com/hanniavalera/playback-proof/actions/runs/41887574166).
+Draft pull request #17, "DEMO (do not merge): a policy that blocks scripts", closed without merging. Head commit `8f0a99c`, one change in `src/player/index.html`: the content security policy of the player page says `script-src 'none'` where it said `'self'`, so the page loads and its scripts never run. CI run [41887574166](https://github.com/hanniavalera/playback-proof/actions/runs/41887574166).
 
 | Check | Result |
 | --- | --- |
@@ -17,7 +17,7 @@ Draft pull request #17, "DEMO (do not merge): a policy that blocks scripts", clo
 
 ## What the triage said
 
-The report is [`triage-report.md`](ci-demo/triage-report.md) ([`.json`](ci-demo/triage-report.json)), written by `npm run gate:triage -- --from artifacts --out reports/triage` over the Playwright reports of the five legs, downloaded as artifacts:
+The report is [`triage-report.md`](ci-demo/triage-report.md) ([`.json`](ci-demo/triage-report.json)): the report of the `triage` job, made by `npm run gate:triage -- --from artifacts --out reports/triage` over the Playwright reports of the five legs, downloaded as artifacts. The job's own artifact holds the same clusters with the local address and query of the failing page in the messages; the file here was **re-rendered from the same artifacts with `--redact`** (the tool's option for a report that is published), which is the only difference, and which the repository's scan of committed files requires:
 
 > **63 failed in 5 reports became 3 clusters of 1 root cause.**
 

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-04T18:39:23.214Z",
-  "from": "artifacts",
+  "generatedAt": "2026-11-04T18:57:06.552Z",
+  "from": "<path>/artifacts",
   "sources": [
     {
       "path": "reports-chromium/reports/playwright.json",
@@ -122,10 +122,10 @@
         "rule": "page-did-not-boot",
         "category": "page-boot-failure",
         "evidence": [
-          "the page did not boot: “Error: the player page did not boot (http://127.0.0.1:4600/player/?manifest=%2Fs%2F2eddfafe7dcf%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.”",
+          "the page did not boot: “Error: the player page did not boot (http://<host>/player/?<query>): Timeout 15000ms exceeded.”",
           "the console names a Content Security Policy violation",
-          "console: “Loading the script 'http://127.0.0.1:4600/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src…”",
-          "console: “Loading the script 'http://127.0.0.1:4600/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-sr…”"
+          "console: “Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src…”",
+          "console: “Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-sr…”"
         ],
         "cause": "the player page did not boot: a Content Security Policy blocked its scripts"
       },
@@ -161,7 +161,7 @@
         "envId": "gha-linux-x64",
         "source": "reports-chromium/reports/playwright.json",
         "error": {
-          "message": "Error: the player page did not boot (http://127.0.0.1:4600/player/?manifest=%2Fs%2F2eddfafe7dcf%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://127.0.0.1:4600/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://127.0.0.1:4600/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
+          "message": "Error: the player page did not boot (http://<host>/player/?<query>): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.",
           "frames": [
             {
               "file": "tests/e2e/abr.spec.ts",
@@ -221,8 +221,8 @@
             "warnings": 0,
             "pageErrors": 0,
             "samples": [
-              "Loading the script 'http://127.0.0.1:4600/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src…",
-              "Loading the script 'http://127.0.0.1:4600/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-sr…"
+              "Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src…",
+              "Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-sr…"
             ]
           },
           "problems": {
@@ -629,8 +629,8 @@
         "evidence": [
           "the page did not boot: “Error: chromium 156.0.8078.4 in gha-linux-x64 could not play vod-cmaf over dash through the player, and no documented gap covers it.”",
           "the console names a Content Security Policy violation",
-          "console: “Loading the script 'http://127.0.0.1:4600/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src…”",
-          "console: “Loading the script 'http://127.0.0.1:4600/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-sr…”"
+          "console: “Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src…”",
+          "console: “Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-sr…”"
         ],
         "cause": "the player page did not boot: a Content Security Policy blocked its scripts"
       },
@@ -670,7 +670,7 @@
         "envId": "gha-linux-x64",
         "source": "reports-chromium/reports/playwright.json",
         "error": {
-          "message": "Error: chromium 156.0.8078.4 in gha-linux-x64 could not play vod-cmaf over dash through the player, and no documented gap covers it.\nWhat the player said: the player page did not boot (http://127.0.0.1:4600/player/?manifest=%2Fs%2F149fcc7a0d68%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://127.0.0.1:4600/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://127.0.0.1:4600/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\nCommitted evidence (docs/results/codec-matrix/gha-linux-x64.json) claims it plays: cmaf-vp9-aac ok 5/5.\nSo the engine or the runner image changed since the matrix was probed: this is an environment failure, not a playback regression. Re-run `npm run codec-matrix` here and read docs/CODEC_MATRIX.md; do not retry the specs.",
+          "message": "Error: chromium 156.0.8078.4 in gha-linux-x64 could not play vod-cmaf over dash through the player, and no documented gap covers it.\nWhat the player said: the player page did not boot (http://<host>/player/?<query>): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\n  error: Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The action has been blocked.\nCommitted evidence (docs/results/codec-matrix/gha-linux-x64.json) claims it plays: cmaf-vp9-aac ok 5/5.\nSo the engine or the runner image changed since the matrix was probed: this is an environment failure, not a playback regression. Re-run `npm run codec-matrix` here and read docs/CODEC_MATRIX.md; do not retry the specs.",
           "frames": [
             {
               "file": "tests/e2e/env.spec.ts",
@@ -723,8 +723,8 @@
             "warnings": 0,
             "pageErrors": 0,
             "samples": [
-              "Loading the script 'http://127.0.0.1:4600/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src…",
-              "Loading the script 'http://127.0.0.1:4600/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-sr…"
+              "Loading the script 'http://<host>/player/shaka.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-src…",
+              "Loading the script 'http://<host>/player/player.js' violates the following Content Security Policy directive: \"script-src 'none'\". Note that 'script-sr…"
             ]
           },
           "problems": {
@@ -793,8 +793,8 @@
         "evidence": [
           "the page did not boot: “Error: webkit 27.2 in gha-macos-arm64 could not play vod-cmaf over dash through the player, and no documented gap covers it.”",
           "the console names a Content Security Policy violation",
-          "console: “Refused to load http://127.0.0.1:4600/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.”",
-          "console: “Refused to load http://127.0.0.1:4600/player/player.js because it does not appear in the script-src directive of the Content Security Policy.”",
+          "console: “Refused to load http://<host>/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.”",
+          "console: “Refused to load http://<host>/player/player.js because it does not appear in the script-src directive of the Content Security Policy.”",
           "console: “Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.”"
         ],
         "cause": "the player page did not boot: a Content Security Policy blocked its scripts"
@@ -835,7 +835,7 @@
         "envId": "gha-linux-x64",
         "source": "reports-webkit-macos/reports/playwright.json",
         "error": {
-          "message": "Error: webkit 27.2 in gha-macos-arm64 could not play vod-cmaf over dash through the player, and no documented gap covers it.\nWhat the player said: the player page did not boot (http://127.0.0.1:4600/player/?manifest=%2Fs%2Ff150e1d54213%2Fvod-cmaf%2Fdash%2Fmanifest.mpd): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Refused to load http://127.0.0.1:4600/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.\n  error: Refused to load http://127.0.0.1:4600/player/player.js because it does not appear in the script-src directive of the Content Security Policy.\nCommitted evidence (docs/results/codec-matrix/gha-macos-arm64.json) claims it plays: cmaf-vp9-aac ok 5/5.\nSo the engine or the runner image changed since the matrix was probed: this is an environment failure, not a playback regression. Re-run `npm run codec-matrix` here and read docs/CODEC_MATRIX.md; do not retry the specs.",
+          "message": "Error: webkit 27.2 in gha-macos-arm64 could not play vod-cmaf over dash through the player, and no documented gap covers it.\nWhat the player said: the player page did not boot (http://<host>/player/?<query>): Timeout 15000ms exceeded.\nThe browser console said:\n  error: Refused to load http://<host>/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.\n  error: Refused to load http://<host>/player/player.js because it does not appear in the script-src directive of the Content Security Policy.\nCommitted evidence (docs/results/codec-matrix/gha-macos-arm64.json) claims it plays: cmaf-vp9-aac ok 5/5.\nSo the engine or the runner image changed since the matrix was probed: this is an environment failure, not a playback regression. Re-run `npm run codec-matrix` here and read docs/CODEC_MATRIX.md; do not retry the specs.",
           "frames": [
             {
               "file": "tests/e2e/env.spec.ts",
@@ -888,8 +888,8 @@
             "warnings": 0,
             "pageErrors": 0,
             "samples": [
-              "Refused to load http://127.0.0.1:4600/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.",
-              "Refused to load http://127.0.0.1:4600/player/player.js because it does not appear in the script-src directive of the Content Security Policy.",
+              "Refused to load http://<host>/player/shaka.js because it does not appear in the script-src directive of the Content Security Policy.",
+              "Refused to load http://<host>/player/player.js because it does not appear in the script-src directive of the Content Security Policy.",
               "Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy."
             ]
           },

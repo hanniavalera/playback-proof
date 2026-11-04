@@ -43,4 +43,4 @@ Frames of the lab's own code: `tests/e2e/abr.spec.ts:205`
 
 No model summaries: they are opt-in (`npm run triage -- --summarize`, with `ANTHROPIC_API_KEY`).
 
-Generated 2026-11-04T18:35:15.593Z from `artifacts` by `triage/` (docs/TRIAGE.md).
+Generated 2026-11-04T18:57:07.057Z from `<path>/artifacts` by `triage/` (docs/TRIAGE.md).
