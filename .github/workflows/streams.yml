@@ -26,12 +26,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # The key hashes every file the generator imports (tests/unit/ci/workflows.test.ts checks that list), and names the
+      # runner and the ffmpeg major. `v1` is the lever to throw every entry away by hand.
       - name: Restore the stream cache
         id: cache
         uses: actions/cache/restore@v6
         with:
           path: .cache/streams
-          key: streams-v1-${{ runner.os }}-${{ runner.arch }}-ffmpeg${{ env.FFMPEG_MAJOR }}-${{ hashFiles('src/server/media/**', 'tools/generate-streams.ts') }}
+          key: streams-v1-${{ runner.os }}-${{ runner.arch }}-ffmpeg${{ env.FFMPEG_MAJOR }}-${{ hashFiles('src/server/media/**', 'src/shared/streams.ts', 'tools/generate-streams.ts') }}
 
       - name: Set up Node, the dependencies and ffmpeg (cache miss)
         if: steps.cache.outputs.cache-hit != 'true'
