@@ -35,10 +35,11 @@ export interface InPageOutcome {
 }
 
 /**
- * Appends the source through MediaSource (or plays it as a plain `<video src>` for the control cases), plays it muted,
- * and passes only when media time passed the threshold and, for video, frames were presented. Event-driven: it waits on
- * `sourceopen`, `updateend`, `play()`, `timeupdate` and video frame callbacks. A media element or SourceBuffer error ends
- * the attempt at once with the stage it happened in; the deadline timer only catches a pipeline that never says anything.
+ * Appends the source through MediaSource (or plays it as a plain `<video src>` for the control cases), plays it (muted,
+ * unless the profile says otherwise), and passes only when media time passed the threshold and, for video, frames were
+ * presented. Event-driven: it waits on `sourceopen`, `updateend`, `play()`, `timeupdate` and video frame callbacks. A media
+ * element or SourceBuffer error ends the attempt at once with the stage it happened in; the deadline timer only catches a
+ * pipeline that never says anything.
  */
 export async function probeInPage(spec: InPageSpec): Promise<InPageOutcome> {
   let stage: ProbeStage = 'setup';
