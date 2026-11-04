@@ -1,0 +1,89 @@
+name: nightly
+
+# The release tier of the browser tests: every @merge and @release test, in every engine of the merge gate's matrix, every night on
+# main and on demand. Nobody waits for it, so a job has the release budget (15 minutes, TEST_STRATEGY.md section 6.3) and not the
+# 8 minutes of a merge job. The streams come from the same workflow as the merge gate's, with the same cache.
+#
+# The jobs of later phases plug in here as jobs that `need: streams`, and download the same artifact with ./.github/actions/setup:
+# the soak and the readiness checks (tests/live, `npm run soak` and `npm run readiness`), the A/B runs and the performance runs.
+# They do not exist yet, so they are not here.
+
+on:
+  schedule:
+    # 04:41 UTC, off-peak. Not on the hour: that is when most scheduled workflows start and runs are delayed the most.
+    - cron: '41 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A run that is still going is never cancelled by the next one: the next waits. A night's verdict is not superseded.
+concurrency:
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  streams:
+    name: streams
+    uses: ./.github/workflows/streams.yml
+
+  # The same legs as the merge gate (ci.yml), and a unit test keeps them equal. webkit-linux is experimental (ADR-113).
+  release:
+    name: release (${{ matrix.leg }}${{ matrix.experimental && ', experimental' || '' }})
+    needs: streams
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: ${{ matrix.timeout }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - leg: chromium
+            project: chromium
+            browser: chromium
+            runner: ubuntu-24.04
+            timeout: 30
+          - leg: firefox
+            project: firefox
+            browser: firefox
+            runner: ubuntu-24.04
+            timeout: 30
+          - leg: chromium-cpu4x
+            project: chromium-cpu4x
+            browser: chromium
+            runner: ubuntu-24.04
+            timeout: 30
+          - leg: webkit-linux
+            experimental: true
+            project: webkit
+            browser: webkit
+            runner: ubuntu-24.04
+            timeout: 30
+          - leg: webkit-macos
+            project: webkit
+            browser: webkit
+            runner: macos-15
+            timeout: 45
+    env:
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          streams: 'true'
+          browser: ${{ matrix.browser }}
+      - name: Build the player
+        run: npm run build:player
+      # No npm script runs both tiers (`test:merge` and `test:release` select one tag each, and two runs would overwrite each
+      # other's report), so one run selects both tags.
+      - name: '@merge and @release tests (${{ matrix.project }})'
+        run: npm run test:e2e -- --grep "@merge|@release" --project=${{ matrix.project }}
+      - name: Upload the reports and the failure attachments
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reports-${{ matrix.leg }}
+          path: |
+            reports
+            test-results
+          retention-days: 30
+          overwrite: true
