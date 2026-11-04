@@ -147,7 +147,7 @@ export function renderGateBudgets(): string {
     '',
     renderPolicyTable(TEST_SECONDS_BY_AREA, { first: 'Area', value: 'Estimate' }),
     '',
-    '**Expected wall-clock of one run of a performance scenario** (design estimates, replaced by measured durations in Phase 5)',
+    '**Expected wall-clock of one run of a performance scenario** (design estimates for the CI runner; each basis also gives the duration measured on the development workstation, to be re-measured in CI)',
     '',
     renderPolicyTable(PERF_SECONDS_PER_RUN, { first: 'Scenario', value: 'Estimate' }),
   ].join('\n');

@@ -278,35 +278,35 @@ export const TEST_SECONDS_BY_AREA = {
   ),
 } satisfies Record<string, Policy>;
 
-/** Design estimate of one measured run of a performance scenario (one fresh browser context), by catalog id. */
+/** Design estimate of one measured run of a performance scenario (one fresh browser context), by catalog id, for the design-target CI runner. The basis of each also gives the duration measured on the development workstation (the baselines: perf/baselines), which is not the runner: to be re-measured in CI. */
 export const PERF_SECONDS_PER_RUN = {
   'PB-PERF-001': assumption(
     'PB-PERF-001 startup',
     5,
     's',
     'One run.',
-    '3 s boot + 1.5 s startup + 0.5 s teardown.',
+    '3 s boot + 1.5 s startup + 0.5 s teardown. Measured locally (the workstation of the baselines, not a CI runner): 0.15 s per run on Chromium, 0.25 to 0.40 s on Firefox and WebKit, the first run of a batch (the warm-up) twice that; to be re-measured in CI, where the page boot is the unknown.',
   ),
   'PB-PERF-002': assumption(
     'PB-PERF-002 frame rate',
     12,
     's',
     'One run.',
-    '3 s boot + 1.5 s startup + 2 s warm-up + a 5 s measured media window + 0.5 s teardown.',
+    '3 s boot + 1.5 s startup + 2 s warm-up + a 5 s measured media window + 0.5 s teardown. Measured locally: 7.3 s per run on Chromium and in the container, 7.4 to 7.6 s on Firefox and WebKit (the 7 s of media plus the boot); to be re-measured in CI.',
   ),
   'PB-PERF-003': assumption(
     'PB-PERF-003 rebuffering',
     23,
     's',
     'One run.',
-    '3 s boot + 1.5 s startup + 8 s until the throttle + about 10 s to observe the adaptation + 0.5 s teardown.',
+    '3 s boot + 1.5 s startup + 8 s until the throttle + about 10 s to observe the adaptation + 0.5 s teardown. Measured locally: 18.2 s per run on Chromium, 18.3 to 18.6 s on the other engines (the scenario plays 18 s of media); to be re-measured in CI.',
   ),
   'PB-PERF-004': assumption(
     'PB-PERF-004 low-end profile',
     15,
     's',
     'One run under the 4x CPU throttle.',
-    '6 s boot and startup (the throttle slows both) + 2 s warm-up + a 5 s measured window + 2 s teardown.',
+    '6 s boot and startup (the throttle slows both) + 2 s warm-up + a 5 s measured window + 2 s teardown. Measured locally: 7.5 s per run under the throttle; to be re-measured in CI.',
   ),
 } satisfies Record<string, Policy>;
 
@@ -370,14 +370,14 @@ export const GATE_BUDGETS = {
     720,
     's',
     'Wall-clock of one performance job (one environment, its profiles) when no metric fails.',
-    'Twelve minutes. Performance runs are serial (one browser at a time) and must not share the machine; the table in section 6 adds up the scenarios.',
+    'Twelve minutes. Performance runs are serial (one browser at a time) and must not share the machine; the table in section 6 adds up the scenarios. Measured locally (the workstation of the baselines, not a CI runner): the runs of the job "chromium and chromium-cpu4x" add up to 365 s with their warm-ups (282 s for the three scenarios of Chromium, 83 s for the throttled profile), about 6 to 7 minutes with the starts of the service and of four browsers; to be re-measured in CI.',
   ),
   perfRemeasureSec: assumption(
     'Performance re-measure',
     360,
     's',
     'Extra time allowed when a metric fails and the gate re-measures it with fresh runs.',
-    `One scenario of N runs at the slowest per-run estimate (${PERF_RUNS} x ${slowestPerfScenarioSec / PERF_RUNS} s = ${slowestPerfScenarioSec} s) plus margin. Only a failing build pays it.`,
+    `One scenario of N runs at the slowest per-run estimate (${PERF_RUNS} x ${slowestPerfScenarioSec / PERF_RUNS} s = ${slowestPerfScenarioSec} s) plus margin. Only a failing build pays it. Measured locally: the slowest scenario, PB-PERF-003, takes 200 s for its warm-up and ten runs; to be re-measured in CI.`,
   ),
   releaseE2eJobSec: assumption(
     'Release job, browser tests, one engine',
@@ -501,14 +501,14 @@ export const PERF_POLICY = {
     0.3,
     'ratio',
     '`startupMs` under the 4x CPU throttle: the median share, as for PB-PERF-001.',
-    `The same share as PB-PERF-001 because one stability limit (15 %) applies to both rules and a throttled baseline at the limit needs it. The one throttled baseline measured (local Chromium, CV 6.4 %) needs only 10.2 % (x 1.25 = 15 %, ${PERF_DERIVATION}), so on that profile the margin is 2.9 times; a per-rule limit would allow 15 % there.`,
+    `The same share as PB-PERF-001, on purpose: one stability limit (15 %) governs every rule, so a throttled baseline at the limit needs this share, and the baselines of the CI runners (gha-linux-x64, gha-macos-arm64) are expected to be noisier than this workstation: a metric whose own baseline is too noisy is tracked there by the same rule, so noise is handled per environment and not by a rule of its own for each profile. The one throttled baseline measured here (local Chromium, CV 6.4 %) needs only 10.2 % (x 1.25 = 15 %, ${PERF_DERIVATION}), so a tighter low-end gate (15 %) was possible on this workstation and was not taken, for the sake of one policy; on this profile the margin is 2.9 times (ADR-124).`,
   ),
   lowEndStartupTailRel: assumption(
     'Low-end startup (PB-PERF-004): p90, share',
     0.3,
     'ratio',
     '`startupMs` under the 4x CPU throttle: the p90 share, as for PB-PERF-001.',
-    `As for the median: the measured need of the throttled p90 is 11.7 % (x 1.25 = 15 %), the policy uses the startup share.`,
+    `As for the median: the measured need of the throttled p90 is 11.7 % (x 1.25 = 15 %), the policy uses the startup share (one policy, one limit: ADR-124).`,
   ),
   lowEndStartupFloorMs: measured(
     'Low-end startup (PB-PERF-004): floor',
@@ -523,21 +523,21 @@ export const PERF_POLICY = {
     0.05,
     'ratio',
     '`fps` (frames presented per media second): the median may be below the baseline median by at most this share of it (and the floor). Lower is worse; a higher rate never fails.',
-    'The content is 30 fps and a healthy run reads about 30 (docs/METRICS.md), so a spread of a few percent is already a visible drop: 5 % is 1.5 fps.',
+    'The content is 30 fps and a healthy run reads about 30 (docs/METRICS.md), so a spread of a few percent is already a visible drop: 5 % is 1.5 fps. Not derived from variation, because there was none: the rate was 30.0 fps in all 50 baseline runs of the five profiles that run PB-PERF-002 and in the 10 of the throttled profile (docs/results/perf/threshold-derivation.md), and it did not move in any completed A/A pass (docs/results/perf). The gate has not been seen to fire: no regression that could be injected moved the frame rate (an 8x CPU throttle left it at 30 fps, docs/results/perf/sensitivity/summary.md).',
   ),
   fpsTailRel: assumption(
     'Frame rate (PB-PERF-002): p10, share',
     0.1,
     'ratio',
     '`fps`: the p10 (the worse tail, since lower is worse) may be below the baseline p10 by at most this share of it (and the floor).',
-    'Twice the median share, for the same reason as the startup tail.',
+    'Twice the median share: with ten runs the p10 is essentially the second worst run, a coarser statistic than the median. Unlike the startup tail this could not be checked against variation, because there was none: the p10 was 30 fps in every baseline run (docs/results/perf/threshold-derivation.md).',
   ),
   fpsFloor: assumption(
     'Frame rate (PB-PERF-002): floor',
     1,
     'fps',
     '`fps`: a median or p10 that is lower by this much or less never fails.',
-    'One frame per second of 30 (3 %): over the five-second window (150 frames) that is five frames, far more than the one or two by which where the window starts and ends can change the count.',
+    'One frame per second of 30 (3 %): over the five-second window (150 frames) that is five frames, far more than the one or two by which where the window starts and ends can change the count (the decoded count was 150 in every baseline run but one of 149 and four of 151, docs/results/perf/threshold-derivation.md). Set by the resolution of the measurement, not by noise: no baseline run varied.',
   ),
 
   frameDroppedMedianBudget: assumption(
@@ -545,14 +545,14 @@ export const PERF_POLICY = {
     0.01,
     'ratio',
     '`droppedRatio` (dropped / decoded over the measured window): the median may be above the baseline median by at most this much, in absolute ratio.',
-    'One percent: the lab policy for a dropped-frame ratio over a whole soak (LIVE_READINESS.maxDroppedFrameRatio), applied here to the increase over the baseline of a five-second window. The baseline is expected to be zero or a frame or two.',
+    'One percent: the lab policy for a dropped-frame ratio over a whole soak (LIVE_READINESS.maxDroppedFrameRatio), applied here to the increase over the baseline of a five-second window (1.5 frames of the 150). The baseline was zero: no dropped frame in any of the 60 baseline runs (50 at 720p on five profiles, 10 under the throttle, docs/results/perf/threshold-derivation.md), so there is no variation to derive a budget from, and no completed A/A pass had one. The budget has not been seen to fire: an 8x CPU throttle dropped no frame at 720p either (docs/results/perf/sensitivity/summary.md).',
   ),
   frameDroppedTailBudget: assumption(
     'Dropped frames (PB-PERF-002): p90, budget',
     0.03,
     'ratio',
     '`droppedRatio`: the p90 may be above the baseline p90 by at most this much.',
-    'Three times the median budget: the p90 of ten runs is essentially the second worst run, so one unlucky run moves it.',
+    'Three times the median budget (4.5 frames of 150): the p90 of ten runs is essentially the second worst run, so one unlucky run moves it. The baseline p90 was zero on every profile.',
   ),
 
   lowEndDroppedMedianBudget: assumption(
@@ -560,14 +560,14 @@ export const PERF_POLICY = {
     0.02,
     'ratio',
     '`droppedRatio` under the 4x CPU throttle: the median budget, as for PB-PERF-002.',
-    'Twice the unthrottled budget: the throttle exists to magnify per-frame cost, so the same regression shows as more dropped frames and the same noise as more too.',
+    "Twice the unthrottled budget: the throttle exists to magnify per-frame cost, so the same regression shows as more dropped frames and the same noise as more too. The throttled baseline (10 runs) had no dropped frame, and a throttle of 8x, twice the profile's own, still dropped none (docs/results/perf/sensitivity/summary.md): the budget has not been seen to fire.",
   ),
   lowEndDroppedTailBudget: assumption(
     'Low-end dropped frames (PB-PERF-004): p90, budget',
     0.05,
     'ratio',
     '`droppedRatio` under the 4x CPU throttle: the p90 budget.',
-    'The tail of the throttled profile: wider than its median budget, for the reason given for PB-PERF-002.',
+    'The tail of the throttled profile: wider than its median budget, for the reason given for PB-PERF-002. The throttled baseline p90 was zero.',
   ),
 
   rebufferCountMedianBudget: assumption(
@@ -575,42 +575,42 @@ export const PERF_POLICY = {
     0,
     'count',
     '`rebufferCount` under `bandwidth-drop`: the median may be above the baseline median by at most this many rebuffers.',
-    'Zero: the median count may not rise. With ten runs that means at least half of them now rebuffer more than the typical baseline run, a shift of the whole distribution and not one slow run (the median ignores one run). A batch that got there by chance is absorbed by the re-measure.',
+    'Zero: the median count may not rise. With ten runs that means at least half of them now rebuffer more than the typical baseline run, a shift of the whole distribution and not one slow run (the median ignores one run). A batch that got there by chance is absorbed by the re-measure. The baseline was zero: no rebuffer in any of the 50 baseline runs of the five profiles that run PB-PERF-003 (docs/results/perf/threshold-derivation.md), so there is no variation to derive from; no pass of the A/A check on local Chromium (5 passes, 55 runs) moved it, and holding one video segment back for 8 s gave a median of 3 rebuffers and failed this rule in both batches (docs/results/perf/sensitivity/summary.md).',
   ),
   rebufferCountTailBudget: assumption(
     'Rebuffering (PB-PERF-003): count, p90 budget',
     1,
     'count',
     '`rebufferCount`: the p90 may be above the baseline p90 by at most this many rebuffers.',
-    'One extra rebuffer in the tail of the batch: the tail of ten integer counts moves by a whole rebuffer when one slow run happens, which is noise at this size.',
+    'One extra rebuffer in the tail of the batch: the tail of ten integer counts moves by a whole rebuffer when one slow run happens, which is noise at this size. The p90 was 4 in the late-segment sensitivity run.',
   ),
   rebufferMsMedianBudget: assumption(
     'Rebuffering (PB-PERF-003): duration, median budget',
     250,
     'ms',
     '`rebufferMs` (total stalled time): the median may be above the baseline median by at most this long.',
-    'A quarter of a second, an eighth of a 2 s segment: small enough to catch one more short stall, large enough to sit above timer granularity.',
+    'A quarter of a second, an eighth of a 2 s segment: small enough to catch one more short stall, large enough to sit above timer granularity. The baseline was 0 ms in every run; the late-segment run stalled for a median of 7,990 ms, about 32 times the budget.',
   ),
   rebufferMsTailBudget: assumption(
     'Rebuffering (PB-PERF-003): duration, p90 budget',
     1000,
     'ms',
     '`rebufferMs`: the p90 may be above the baseline p90 by at most this long.',
-    'One second: half a segment of 2 s, and four times the median budget for the wider spread of a tail.',
+    'One second: half a segment of 2 s, and four times the median budget for the wider spread of a tail. The p90 was 11,180 ms in the late-segment run.',
   ),
   rebufferRatioMedianBudget: assumption(
     'Rebuffering (PB-PERF-003): ratio, median budget',
     0.01,
     'ratio',
     '`rebufferRatio` (stalled time over stalled plus playing time since the first frame): the median may be above the baseline median by at most this much.',
-    'One percent: about a fifth of a second over the 18 s of media the scenario plays, consistent with the duration budget.',
+    'One percent: about a fifth of a second over the 18 s of media the scenario plays, consistent with the duration budget. The baseline was 0 in every run; the late-segment run had a median of 0.306.',
   ),
   rebufferRatioTailBudget: assumption(
     'Rebuffering (PB-PERF-003): ratio, p90 budget',
     0.05,
     'ratio',
     '`rebufferRatio`: the p90 may be above the baseline p90 by at most this much.',
-    'Five percent: about one second over the 18 s of media the scenario plays, consistent with the duration budget of the tail.',
+    'Five percent: about one second over the 18 s of media the scenario plays, consistent with the duration budget of the tail. The p90 was 0.381 in the late-segment run.',
   ),
 } satisfies Record<string, Policy>;
 
