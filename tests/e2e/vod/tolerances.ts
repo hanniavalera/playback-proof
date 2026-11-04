@@ -22,6 +22,9 @@ export const MIN_CONTROL_ADVANCE_SEC = 0.1;
 /** Real time on top of the media still to play that `waitForEnded` allows: a slow runner takes longer, and the wait is on the media clock, not the wall clock. */
 export const END_MARGIN_MS = 15_000;
 
+/** How long a spec whose `play()` was rejected looks on, in the failure, for the player to restart by itself: twice Shaka's `streaming.minTimeBetweenRecoveries` (5 s), the time it keeps between two resets of the MediaSource. It is a diagnosis and not a retry: the verdict is the rejection. */
+export const RECOVERY_LOOKOUT_MS = 10_000;
+
 /** How long the player plays at the far position in PB-VOD-008 before the way back: enough for it to append there and move its playhead on. */
 export const EVICTION_PLAY_SEC = 3;
 

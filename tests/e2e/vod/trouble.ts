@@ -3,6 +3,7 @@ import type { PlayerHandle } from '../support/player.ts';
 import type { TestSession } from '../support/session.ts';
 import { failure } from './fail.ts';
 import { describeOriginSince } from './seeking.ts';
+import { RECOVERY_LOOKOUT_MS } from './tolerances.ts';
 
 // What the player and the origin say when something a spec waits for does not happen. The first CI run on a macOS runner failed the
 // suites three times with a headline that named the wait ("timed out", "was rejected") and not the cause, which was in the timeline and
@@ -65,16 +66,19 @@ async function describeLoadFailure(qa: PlayerHandle): Promise<string> {
 }
 
 /**
- * `qa.play()` on an ended title, and when it is rejected, what the element looked like afterwards and what the origin was asked for. A
- * pending `play()` is rejected with an AbortError when the element is paused or its media is reset (the media element load algorithm of
- * HTML), not when a seek is slow; in the release run of the first CI on macOS, WebKit rejected it in both attempts, 0.4 s and 3.8 s after
- * the restart's own seek began, with the element left at readyState 0 and no duration, no Shaka error, no `unloaded` event and nothing
- * asked of the origin: the browser emptied the element, and neither `seeked` nor `playing` was coming for a spec to wait for instead.
+ * `qa.play()` on an ended title. When it is rejected the message says what the element looked like afterwards, whether the player
+ * restarted by itself within `RECOVERY_LOOKOUT_MS`, and what the origin was asked for since: the verdict stays the rejection, the lookout
+ * is the evidence for what it means. A pending `play()` is rejected with an AbortError when the element is paused or its media is reset
+ * (the media element load algorithm of HTML), not when a seek is slow. In the release run of the first CI on macOS WebKit rejected it
+ * in both attempts, 0.4 s and 3.8 s after the restart's own seek began, with the element left at readyState 0 and no duration, no Shaka
+ * error, no `unloaded` event and nothing asked of the origin, and neither `seeked` nor `playing` had come for a spec to wait for
+ * instead (ADR-094). Shaka resets the MediaSource of a player whose browser closed it and plays on after the reset, which fits; the runs
+ * ended at the rejection, so whether it did is what the lookout will say.
  */
 export async function playAfterEnded(
   qa: PlayerHandle,
   session: TestSession,
-  logCursor: number,
+  from: { since: number; logCursor: number },
 ): Promise<void> {
   try {
     await qa.play();
@@ -86,8 +90,16 @@ export async function playAfterEnded(
     } catch {
       // The page may be gone: the message above is all there is.
     }
+    const lookout = await qa.waitFor('playing', { since: from.since, timeoutMs: RECOVERY_LOOKOUT_MS }).then(
+      (playing) =>
+        `\nThe player then restarted by itself: a playing event at media time ${playing.mediaTime} s since play() was called, which play() had not delivered.`,
+      (lookoutError: unknown) =>
+        /timed out/.test(String(lookoutError))
+          ? `\nThe player did not restart by itself either: no playing event within ${RECOVERY_LOOKOUT_MS} ms of the rejection.`
+          : '',
+    );
     throw failure(
-      `${(error as Error).message}${after}${await describeOriginSince({ session, logCursor }, 'play() was called')}`,
+      `${(error as Error).message}${after}${lookout}${await describeOriginSince({ session, logCursor: from.logCursor }, 'play() was called')}`,
     );
   }
 }

@@ -535,33 +535,45 @@ describe('what a failed precondition or action says about itself', () => {
     await expect(waitForFirstFrame(started)).resolves.toMatchObject({ name: 'firstframe' });
   });
 
-  it('says what the element looked like and what the origin was asked for when play() after the end is rejected (PB-VOD-011 of the release run)', async () => {
+  it('says what the element looked like, whether the player restarted by itself and what the origin was asked for when play() after the end is rejected (PB-VOD-011 of the release run)', async () => {
     const session = { id: 's1', service: { log: () => Promise.resolve([]) } } as unknown as TestSession;
+    const from = { since: 12, logCursor: 0 };
     const aborted = () =>
       Promise.reject(new Error('qa.play() was rejected: AbortError: The operation was aborted..'));
+    const neverRestarted = () =>
+      Promise.reject(new Error("qa.waitFor('playing') timed out after 10000 ms (looking from index 12)."));
     const emptied = {
       play: aborted,
+      waitFor: neverRestarted,
       metrics: metricsOf({
         playback: { currentTime: 0, duration: 0, paused: false, ended: false, readyState: 0 },
       }),
     } as unknown as PlayerHandle;
-    const failed = playAfterEnded(emptied, session, 0);
+    const failed = playAfterEnded(emptied, session, from);
     await expect(failed).rejects.toThrow(/qa.play\(\) was rejected: AbortError/);
     await expect(failed).rejects.toThrow(
       /The element afterwards: readyState 0, duration 0 s, media time 0 s, paused false, ended false\. It has no media any more/,
     );
+    await expect(failed).rejects.toThrow(
+      /did not restart by itself either: no playing event within 10000 ms of the rejection/,
+    );
     await expect(failed).rejects.toThrow(/The origin was not asked for anything since play\(\) was called/);
-    const stalled = {
+    const recovering = {
       play: aborted,
+      waitFor: () => Promise.resolve(at('playing', 9000, 0.05, 20)),
       metrics: metricsOf({
         playback: { currentTime: 0.3, duration: 12, paused: false, ended: false, readyState: 1 },
       }),
     } as unknown as PlayerHandle;
-    await expect(playAfterEnded(stalled, session, 0)).rejects.toThrow(
+    const reset = playAfterEnded(recovering, session, from);
+    await expect(reset).rejects.toThrow(
       /readyState 1, duration 12 s, media time 0.3 s, paused false, ended false\.\n/,
     );
+    await expect(reset).rejects.toThrow(
+      /restarted by itself: a playing event at media time 0.05 s since play\(\) was called/,
+    );
     const restarted = { play: () => Promise.resolve() } as unknown as PlayerHandle;
-    await expect(playAfterEnded(restarted, session, 0)).resolves.toBeUndefined();
+    await expect(playAfterEnded(restarted, session, from)).resolves.toBeUndefined();
   });
 
   it('adds the stalls and the errors of the player to a measurement that could not be made (PB-VOD-012 of the release run: one stall of 2838 ms at media time 0)', async () => {

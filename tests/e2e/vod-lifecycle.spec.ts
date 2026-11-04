@@ -194,7 +194,7 @@ test(
     const since = await qa.cursor();
     const logCursor = await requestLogCursor(session);
     const elapsed = stopwatch();
-    await playAfterEnded(qa, session, logCursor);
+    await playAfterEnded(qa, session, { since, logCursor });
     const restartedAt = (await qa.waitFor('playing', { since })).mediaTime;
     const restartedAfterMs = elapsed();
     const reached = await qa.waitForMediaTime(CONTINUE_SEC);
