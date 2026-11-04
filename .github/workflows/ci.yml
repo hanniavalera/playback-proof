@@ -3,7 +3,7 @@ name: ci
 # The merge gate. Each job is one stage of the pipeline that the Jenkinsfile also runs: the stage names are the
 # `npm run gate:*` scripts, so the two CI systems cannot drift apart (a unit test compares them).
 # The pipeline as a diagram, the budgets and how to reproduce a job locally: docs/CI.md. The decisions: docs/decisions/ci.md.
-# The performance gate and the flake and triage stages are added as the lab grows; see TEST_STRATEGY.md section 6.
+# The performance gate and the triage stage are added as the lab grows; see TEST_STRATEGY.md section 6.
 
 on:
   push:
@@ -129,3 +129,83 @@ jobs:
             test-results
           retention-days: 14
           overwrite: true
+
+  # The flake gate (docs/FLAKE.md, ADR-170): this build's runs are judged against the history of their environment, which lives on the
+  # orphan branch `ci-data`, and the build fails when the policy of TEST_STRATEGY.md section 7.2 says so. It only READS the history:
+  # `contents: read`, a checkout that keeps no credential, and a public repository, so the fetch of `ci-data` needs none. It runs when a
+  # leg is red (a build that flaked is the one to judge) and not when the run was cancelled (ADR-171). Nothing can skip it: when no leg
+  # ran (the streams job failed, so the legs were skipped) it has no run file to judge and fails, which makes it, as a required check,
+  # the one that notices a merge gate that did not run.
+  # A history is per environment and the gate refuses to mix them: the four Linux legs are one environment, macOS is another.
+  flake:
+    name: flake
+    needs: merge-gate
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      # The git store needs an identity even to read; this job never commits: nothing here pushes.
+      FLAKE_IDENTITY: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Set up Node and the dependencies
+        uses: ./.github/actions/setup
+      - name: Download the run files of the legs
+        uses: actions/download-artifact@v8
+        with:
+          pattern: reports-*
+          path: reports/flake
+      - name: Judge the Linux legs (gha-linux-x64)
+        run: >-
+          npm run gate:flake -- --store git --git-identity "$FLAKE_IDENTITY"
+          --runs reports/flake/reports-chromium --runs reports/flake/reports-firefox
+          --runs reports/flake/reports-chromium-cpu4x --runs reports/flake/reports-webkit-linux
+          --json reports/flake/gate-linux.json
+      - name: Judge the macOS leg (gha-macos-arm64)
+        if: ${{ !cancelled() }}
+        run: >-
+          npm run gate:flake -- --store git --git-identity "$FLAKE_IDENTITY"
+          --runs reports/flake/reports-webkit-macos --json reports/flake/gate-macos.json
+
+  # Records the build in the history (ADR-170, ADR-172). The only job of the workflow with a write token, and it runs for a push to
+  # main only: the code it runs is code that was merged, never a pull request's. The store pushes to `ci-data` with the token that
+  # `actions/checkout` leaves configured, creates the branch (an orphan) when it is not there, never forces, and makes a lost race
+  # again on the new tip. The gate judges before it records, and exits 1 on a verdict: that is the `flake` job's to report, so
+  # this job answers whether the build is in the history (the file the gate writes says so) and not what the verdict was.
+  flake-record:
+    name: flake-record
+    needs: merge-gate
+    if: ${{ !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      FLAKE_IDENTITY: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Node and the dependencies
+        uses: ./.github/actions/setup
+      - name: Download the run files of the legs
+        uses: actions/download-artifact@v8
+        with:
+          pattern: reports-*
+          path: reports/flake
+      - name: Record the Linux legs (gha-linux-x64)
+        run: >-
+          npm run gate:flake -- --store git --git-identity "$FLAKE_IDENTITY" --record --push
+          --runs reports/flake/reports-chromium --runs reports/flake/reports-firefox
+          --runs reports/flake/reports-chromium-cpu4x --runs reports/flake/reports-webkit-linux
+          --json reports/flake/gate-linux.json || [ "$?" -eq 1 ]
+      - name: Record the macOS leg (gha-macos-arm64)
+        if: ${{ !cancelled() }}
+        run: >-
+          npm run gate:flake -- --store git --git-identity "$FLAKE_IDENTITY" --record --push
+          --runs reports/flake/reports-webkit-macos --json reports/flake/gate-macos.json || [ "$?" -eq 1 ]
+      - name: Check that both environments are in the history
+        if: ${{ !cancelled() }}
+        run: jq -e -s 'all(.[]; .recorded != null)' reports/flake/gate-linux.json reports/flake/gate-macos.json

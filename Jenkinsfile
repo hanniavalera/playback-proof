@@ -9,15 +9,27 @@
 // `reports/` and `test-results/` cannot clobber each other) and its own service port (the agent's executors share one
 // network namespace).
 //
-// A later gate (perf, flake, triage) is one more block in `stages` with its own `sh 'npm run gate:<name>'` line.
-// None exists here until its script does.
+// A later gate (perf, triage) is one more block in `stages` with its own `sh 'npm run gate:<name>'` line. None exists here until its
+// script does. `Flake` (gate:flake) is the last stage: it judges the run files the engines stashed against the history on the
+// `flake-history` volume, and records the build when it is a build of main (ADR-174 in docs/decisions/ci-flake.md).
 
 // Keeps what the engine runs produced (the failure attachments of docs/CONTRACTS.md 7.2 live in test-results/), then
 // frees the workspace: the next build starts from a clean checkout. The JUnit step is a no-op until a JUnit report exists.
-def collectResults() {
+// An engine of the merge gate also names the stash for its flake run files (reports/flake/run*.json): its workspace is its
+// own and is wiped here, and the Flake stage reads the files of every engine from another one.
+def collectResults(String flakeStash = '') {
     archiveArtifacts artifacts: 'reports/**, test-results/**', allowEmptyArchive: true
     junit allowEmptyResults: true, testResults: 'reports/**/junit*.xml'
+    if (flakeStash != '') {
+        stash name: flakeStash, includes: 'reports/flake/run*.json', allowEmpty: true
+    }
     cleanWs()
+}
+
+// A build of the main branch. The git plugin says `origin/main`, and `refs/heads/main` or `main` for other ways of defining a job:
+// all of them are main. Only such a build is recorded in the flake history.
+def isMainBranch(String branch) {
+    return (branch ?: '') ==~ '(refs/heads/|refs/remotes/origin/|origin/)?main'
 }
 
 pipeline {
@@ -103,11 +115,14 @@ pipeline {
                     steps {
                         checkout scm
                         sh 'npm ci --no-audit --no-fund'
-                        sh 'npm run gate:merge -- --project=chromium'
+                        // A red engine does not skip the Flake stage: a build that failed is still judged (and recorded).
+                        catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                            sh 'npm run gate:merge -- --project=chromium'
+                        }
                     }
                     post {
                         always {
-                            script { collectResults() }
+                            script { collectResults('flake-chromium') }
                         }
                     }
                 }
@@ -121,11 +136,13 @@ pipeline {
                     steps {
                         checkout scm
                         sh 'npm ci --no-audit --no-fund'
-                        sh 'npm run gate:merge -- --project=firefox'
+                        catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                            sh 'npm run gate:merge -- --project=firefox'
+                        }
                     }
                     post {
                         always {
-                            script { collectResults() }
+                            script { collectResults('flake-firefox') }
                         }
                     }
                 }
@@ -139,11 +156,13 @@ pipeline {
                     steps {
                         checkout scm
                         sh 'npm ci --no-audit --no-fund'
-                        sh 'npm run gate:merge -- --project=chromium-cpu4x'
+                        catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                            sh 'npm run gate:merge -- --project=chromium-cpu4x'
+                        }
                     }
                     post {
                         always {
-                            script { collectResults() }
+                            script { collectResults('flake-chromium-cpu4x') }
                         }
                     }
                 }
@@ -160,13 +179,49 @@ pipeline {
                     steps {
                         checkout scm
                         sh 'npm ci --no-audit --no-fund'
-                        sh 'npm run gate:merge -- --project=webkit'
+                        catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                            sh 'npm run gate:merge -- --project=webkit'
+                        }
                     }
                     post {
                         always {
-                            script { collectResults() }
+                            script { collectResults('flake-webkit') }
                         }
                     }
+                }
+            }
+        }
+
+        // The flake gate (docs/FLAKE.md, ADR-174): this build's runs, judged against the history of this environment, a file on the
+        // `flake-history` volume. The engines above ran in workspaces of their own and stashed their run files; this stage lays them
+        // side by side (the layout of GitHub's download step) and runs the script of the `flake` job. A build of main is recorded,
+        // whatever its verdict, as the gate does by design (a history of the good builds only would understate the rate); a build of
+        // any other branch is judged and forgotten, as a pull request is on GitHub.
+        stage('Flake') {
+            agent { label 'playwright' }
+            environment {
+                // The volume that outlives builds; the gate reads the directory from this variable (--store file).
+                PB_FLAKE_HISTORY_DIR = '/history'
+            }
+            steps {
+                script {
+                    def scmVars = checkout scm
+                    sh 'npm ci --no-audit --no-fund'
+                    for (engine in ['chromium', 'firefox', 'chromium-cpu4x', 'webkit']) {
+                        dir("reports/flake/${engine}") {
+                            unstash "flake-${engine}"
+                        }
+                    }
+                    if (isMainBranch(scmVars.GIT_BRANCH)) {
+                        sh 'npm run gate:flake -- --store file --runs reports/flake --record'
+                    } else {
+                        sh 'npm run gate:flake -- --store file --runs reports/flake'
+                    }
+                }
+            }
+            post {
+                always {
+                    script { collectResults() }
                 }
             }
         }

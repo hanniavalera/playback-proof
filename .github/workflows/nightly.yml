@@ -7,6 +7,9 @@ name: nightly
 # The jobs of later phases plug in here as jobs that `need: streams`, and download the same artifact with ./.github/actions/setup:
 # the soak and the readiness checks (tests/live, `npm run soak` and `npm run readiness`), the A/B runs and the performance runs.
 # They do not exist yet, so they are not here.
+#
+# The flake gate (`flake`, `flake-record`) closes the workflow, as it closes ci.yml: the runs of the release tier are judged against
+# the history and, on main, recorded in it.
 
 on:
   schedule:
@@ -106,3 +109,77 @@ jobs:
             test-results
           retention-days: 30
           overwrite: true
+
+  # The flake gate of the nightly (docs/CI.md, ADR-170 to ADR-172): the two jobs of ci.yml for the runs of this workflow, so that the
+  # history also holds the flake rates of the @release tests (the runs here contain the @merge tests as well, which count as builds
+  # of their engine job like the merge gate's do). The names say `nightly`: the required check `flake` is the one of ci.yml, and two
+  # checks of one name would make a pull request ambiguous. The judge also runs on the pull request that changes this file, which
+  # is the only time its wiring is exercised before the merge; the recorder never does.
+  flake:
+    name: flake (nightly)
+    needs: release
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      FLAKE_IDENTITY: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Set up Node and the dependencies
+        uses: ./.github/actions/setup
+      - name: Download the run files of the legs
+        uses: actions/download-artifact@v8
+        with:
+          pattern: reports-*
+          path: reports/flake
+      - name: Judge the Linux legs (gha-linux-x64)
+        run: >-
+          npm run gate:flake -- --store git --git-identity "$FLAKE_IDENTITY"
+          --runs reports/flake/reports-chromium --runs reports/flake/reports-firefox
+          --runs reports/flake/reports-chromium-cpu4x --runs reports/flake/reports-webkit-linux
+          --json reports/flake/gate-linux.json
+      - name: Judge the macOS leg (gha-macos-arm64)
+        if: ${{ !cancelled() }}
+        run: >-
+          npm run gate:flake -- --store git --git-identity "$FLAKE_IDENTITY"
+          --runs reports/flake/reports-webkit-macos --json reports/flake/gate-macos.json
+
+  # Records the nightly in the history, for the schedule and for a manual run on main: the code it runs is main's, never a pull
+  # request's. The only job of this workflow with a write token; see the same job in ci.yml for how it records and what it tolerates.
+  flake-record:
+    name: flake-record (nightly)
+    needs: release
+    if: ${{ !cancelled() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      FLAKE_IDENTITY: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Node and the dependencies
+        uses: ./.github/actions/setup
+      - name: Download the run files of the legs
+        uses: actions/download-artifact@v8
+        with:
+          pattern: reports-*
+          path: reports/flake
+      - name: Record the Linux legs (gha-linux-x64)
+        run: >-
+          npm run gate:flake -- --store git --git-identity "$FLAKE_IDENTITY" --record --push
+          --runs reports/flake/reports-chromium --runs reports/flake/reports-firefox
+          --runs reports/flake/reports-chromium-cpu4x --runs reports/flake/reports-webkit-linux
+          --json reports/flake/gate-linux.json || [ "$?" -eq 1 ]
+      - name: Record the macOS leg (gha-macos-arm64)
+        if: ${{ !cancelled() }}
+        run: >-
+          npm run gate:flake -- --store git --git-identity "$FLAKE_IDENTITY" --record --push
+          --runs reports/flake/reports-webkit-macos --json reports/flake/gate-macos.json || [ "$?" -eq 1 ]
+      - name: Check that both environments are in the history
+        if: ${{ !cancelled() }}
+        run: jq -e -s 'all(.[]; .recorded != null)' reports/flake/gate-linux.json reports/flake/gate-macos.json

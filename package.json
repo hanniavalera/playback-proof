@@ -43,7 +43,7 @@
     "gate:unit": "npm run test:unit",
     "gate:merge": "tsx tools/gate-merge.ts",
     "gate:perf": "npm run perf:gate",
-    "gate:flake": "npm run flake:gate",
+    "gate:flake": "tsx flake/gate.ts",
     "gate:triage": "npm run triage -- --from-ci"
   },
   "dependencies": {

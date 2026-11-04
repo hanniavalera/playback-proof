@@ -78,11 +78,23 @@ Jenkinsfile only calls scripts and projects that exist).
 | `gate:merge`, Firefox          | the merge job of the engine              | `Merge gate` > `firefox`                         | `npm run gate:merge -- --project=firefox`                         |
 | `gate:merge`, throttled Chrome | the merge job of the project             | `Merge gate` > `chromium-cpu4x`                  | `npm run gate:merge -- --project=chromium-cpu4x`                  |
 | `gate:merge`, WebKit           | the **macOS** job (the WebKit that ships) | `Merge gate` > `webkit` (Linux, **experimental**) | `npm run gate:merge -- --project=webkit`                         |
-| `gate:perf`, `gate:flake`, `gate:triage` | their jobs, as they are added   | one block each, when their scripts exist         | not in the Jenkinsfile yet: a stage for something that cannot run would be a stub |
+| `gate:flake`                   | `flake` (the judge) and `flake-record` (a push to `main`) | `Flake`, after `Merge gate`      | `npm run gate:flake -- --store file --runs reports/flake`, plus `--record` for a build of `main` (ADR-174) |
+| `gate:perf`, `gate:triage`     | their jobs, as they are added            | one block each, when their scripts exist         | not in the Jenkinsfile yet: a stage for something that cannot run would be a stub |
 
 The GitHub jobs are defined by the other half of the setup, in `.github/workflows`; the rows are the intent of
 [TEST_STRATEGY.md](../TEST_STRATEGY.md) section 6.1, and the jobs that do not exist there yet are marked by their absence from that
 directory, not by this table.
+
+**The `Flake` stage.** The four engines run in workspaces of their own, so each one stashes its `reports/flake/run*.json` before its
+workspace is wiped, and `Flake` unstashes them side by side under `reports/flake/<engine>/` (the layout of GitHub's download step) and
+judges them against the history of this environment, `jenkins-linux-arm64`: a file on the volume `flake-history`, mounted at
+`/history` and named to the gate by `PB_FLAKE_HISTORY_DIR`. It runs when an engine is red (the engines' `gate:merge` is wrapped in
+`catchError`, which marks the engine and the build red without skipping the stages after it). **A build of `main` is recorded** in that
+history, whatever its result, as the gate does by design; a build of any other branch (`PB_BRANCH`, the negative run below) is judged
+and forgotten. With a handful of builds the gate says "not enough data": a verdict on a rate needs 20 builds of an engine, which a
+laptop rarely has. What the stage shows at once is the plumbing and the rules that need no history (an expired quarantine, an invalid
+list, no run file at all). See ADR-174 in [docs/decisions/ci-flake.md](../docs/decisions/ci-flake.md), which also says what
+a real build still has to prove. To see the history: `docker compose exec agent ls -l /history`.
 
 ## Evidence: what the builds of this setup showed
 
@@ -142,8 +154,8 @@ npx tsx tools/jenkins-evidence.ts --trigger --expect FAILURE --expect-stage "Mer
 ## Tear it down
 
 ```sh
-docker compose down          # stops and removes the containers; keeps the volumes (Jenkins home, streams, npm cache)
-docker compose down -v       # also removes the volumes: the next start is a cold start (the streams are generated again)
+docker compose down          # stops and removes the containers; keeps the volumes (Jenkins home, streams, flake history, npm cache)
+docker compose down -v       # also removes the volumes: the next start is a cold start (the streams are generated again, the flake history is empty)
 ```
 
 `docker compose ps` and `docker ps` should then list nothing of the project `playback-proof-jenkins`. `.env` stays (it is yours);
@@ -154,7 +166,7 @@ delete it to get a new password the next time.
 | Path                                     | What it is                                                                                           |
 | ---------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `Jenkinsfile`                            | The pipeline. Declarative; only `sh 'npm run ...'` lines do work.                                    |
-| `docker-compose.yml`, `.env.example`     | The stack: controller, agent and four named volumes. `.env` is created by `init-env.sh` and ignored by git. |
+| `docker-compose.yml`, `.env.example`     | The stack: controller, agent and five named volumes. `.env` is created by `init-env.sh` and ignored by git. |
 | `jenkins/controller/Dockerfile`          | The LTS controller with the plugins of `plugins.txt` installed by `jenkins-plugin-cli`.              |
 | `jenkins/controller/plugins.txt`         | Every plugin, dependencies included, pinned.                                                         |
 | `jenkins/controller/casc.yaml`           | Configuration as Code: the admin user, no executors on the controller, the agent node, the job.      |
@@ -176,7 +188,8 @@ delete it to get a new password the next time.
   service.
 - **Environment evidence.** The environment id of a build here is `jenkins-linux-arm64`. No codec matrix and no performance baseline
   is committed for it, so the specs run without a documented gap and the performance gate (when it exists) has no baseline to compare
-  with: both need a probe and a baseline run on this agent first.
+  with: both need a probe and a baseline run on this agent first. The flake history of this id is the one on the `flake-history`
+  volume, filled by the builds of `main` that ran here and by nothing else.
 
 ## If something does not start
 
