@@ -9,7 +9,7 @@
 //
 // It is not a verdict on the pull request's own failures: a test that failed after its retry already failed the browser job.
 // This file is the judgement and its rendering, as pure functions of their input; the command line is at the end.
-import { FLAKE_LIMITS, INVALID_RUN_PREFIX } from '../src/shared/criteria.ts';
+import { FLAKE_LIMITS } from '../src/shared/criteria.ts';
 import { CATALOG_AREAS } from '../tools/catalog.ts';
 import type { AreaCode } from '../tools/catalog.ts';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -40,7 +40,7 @@ import type {
   QuarantineLimits,
   ReadResult,
 } from './quarantine.ts';
-import { isExecuted, isInvalidRun } from './run.ts';
+import { invalidRunHead, isExecuted, isInvalidRun } from './run.ts';
 import type { FlakeRun } from './run.ts';
 import { flakeStats, invalidRunsAllowed, percent } from './stats.ts';
 import type { FlakeLimits, InvalidRunStats, SuiteStats, TestStats } from './stats.ts';
@@ -156,18 +156,6 @@ function suiteFailure(s: SuiteStats, today: string, limits: FlakeLimits & Quaran
   };
 }
 
-/**
- * What an invalid run says first, for a sentence of the gate: its reason without the prefix, cut at its first sentence and at 200
- * characters (the numbers of the attempt come first: `invalidRunReason`).
- */
-function headOf(reason: string, max = 200): string {
-  const flat = reason.replace(/\s+/g, ' ').trim();
-  const body = flat.startsWith(INVALID_RUN_PREFIX) ? flat.slice(INVALID_RUN_PREFIX.length).trim() : flat;
-  const end = body.search(/\.(\s|$)/);
-  const sentence = (end === -1 ? body : body.slice(0, end)).trim() || flat;
-  return sentence.length > max ? `${sentence.slice(0, max - 1)}…` : sentence;
-}
-
 function invalidBudgetFailure(
   s: InvalidRunStats,
   quarantine: QuarantineEntry | null,
@@ -175,7 +163,7 @@ function invalidBudgetFailure(
 ): GateFailure {
   const last = s.lastInvalid;
   const where = last
-    ? ` Last invalid run: ${headOf(last.reason)} (run ${last.runId}, ${last.date.slice(0, 10)}, commit ${last.commit.slice(0, 8)}).`
+    ? ` Last invalid run: ${invalidRunHead(last.reason)} (run ${last.runId}, ${last.date.slice(0, 10)}, commit ${last.commit.slice(0, 8)}).`
     : '';
   const held = quarantine
     ? ` It is quarantined until ${quarantine.expires} (owner ${quarantine.owner}): a quarantine is about flakiness and does not cover this.`

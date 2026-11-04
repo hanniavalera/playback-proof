@@ -4,7 +4,7 @@
 // its budget; the quarantine list; what was skipped and why.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { FLAKE_LIMITS } from '../src/shared/criteria.ts';
+import { FLAKE_LIMITS, INVALID_RUN_PREFIX } from '../src/shared/criteria.ts';
 import { detectEnvId } from '../src/shared/env.ts';
 import {
   appendStepSummary,
@@ -18,15 +18,29 @@ import { HistoryError, mergeHistories } from './history.ts';
 import { expiredEntries, findQuarantine, loadList, utcDay } from './quarantine.ts';
 import type { CatalogFacts, QuarantineEntry, ReadResult } from './quarantine.ts';
 import { assessQuarantine } from './quarantine.ts';
+import { invalidRunHead } from './run.ts';
 import type { FlakeRun, Tier } from './run.ts';
 import { flakeStats, percent } from './stats.ts';
-import type { FlakeLimits, SuiteStats, TestStats, Verdict } from './stats.ts';
+import type {
+  FlakeLimits,
+  InvalidRunStats,
+  InvalidRunVerdict,
+  SuiteStats,
+  TestStats,
+  Verdict,
+} from './stats.ts';
 import { StoreError } from './store.ts';
 import type { FlakeStore } from './store.ts';
 
 export interface ReportTest extends TestStats {
   title: string;
   /** The entry that quarantines the test today, or null. */
+  quarantine: QuarantineEntry | null;
+}
+
+export interface ReportInvalidRuns extends InvalidRunStats {
+  title: string;
+  /** The entry that quarantines the test today, or null: shown, and never a reason to excuse an invalid-run overrun. */
   quarantine: QuarantineEntry | null;
 }
 
@@ -57,6 +71,8 @@ export interface FlakeReport {
   limits: FlakeLimits;
   suites: SuiteStats[];
   tests: ReportTest[];
+  /** Every test and engine with a scheduled execution: its invalid runs, their share, the budget and the verdict. */
+  invalidRuns: ReportInvalidRuns[];
   quarantine: ReportQuarantine[];
   quarantineProblems: string[];
   skips: ReportSkip[];
@@ -75,6 +91,11 @@ export interface ReportInput {
 }
 
 const RANK: Record<Verdict, number> = { 'over-trigger': 0, watch: 1, 'not-enough-data': 2, ok: 3 };
+const INVALID_RANK: Record<InvalidRunVerdict, number> = {
+  'over-invalid-budget': 0,
+  'not-enough-data': 1,
+  ok: 2,
+};
 
 export function buildReport(input: ReportInput): FlakeReport {
   const limits = input.limits ?? FLAKE_LIMITS;
@@ -97,6 +118,20 @@ export function buildReport(input: ReportInput): FlakeReport {
       (a, b) =>
         RANK[a.verdict] - RANK[b.verdict] ||
         b.flakeRate - a.flakeRate ||
+        a.id.localeCompare(b.id) ||
+        a.project.localeCompare(b.project),
+    );
+
+  const invalidRuns: ReportInvalidRuns[] = stats.invalidRuns
+    .map((s) => ({
+      ...s,
+      title: titles.get(`${s.project}\u0000${s.id}`) ?? s.id,
+      quarantine: findQuarantine(assessed.effective, s.id, s.project, input.today),
+    }))
+    .sort(
+      (a, b) =>
+        INVALID_RANK[a.verdict] - INVALID_RANK[b.verdict] ||
+        b.share - a.share ||
         a.id.localeCompare(b.id) ||
         a.project.localeCompare(b.project),
     );
@@ -170,6 +205,7 @@ export function buildReport(input: ReportInput): FlakeReport {
     limits,
     suites: stats.suites,
     tests,
+    invalidRuns,
     quarantine,
     quarantineProblems: assessed.problems,
     skips: [...latestSkip.values()].sort(
@@ -198,7 +234,7 @@ export function renderMarkdown(report: FlakeReport): string {
   out.push(
     report.history.runs === 0
       ? `Generated ${report.generatedAt}. The history of this environment is empty.`
-      : `Generated ${report.generatedAt}, as of ${report.today}. History: ${report.history.runs} runs, from ${report.history.from} to ${report.history.to}. Window: the last ${limits.windowRuns} executions of a test, the last ${limits.windowRuns} builds of an engine job. A test is judged from ${limits.minRunsToJudge} executions; the trigger is ${percent(limits.quarantineTriggerRate)}, the suite budget ${percent(limits.suiteBudgetRate)}.`,
+      : `Generated ${report.generatedAt}, as of ${report.today}. History: ${report.history.runs} runs, from ${report.history.from} to ${report.history.to}. Window: the last ${limits.windowRuns} executions of a test, the last ${limits.windowRuns} builds of an engine job. A test is judged from ${limits.minRunsToJudge} executions; the trigger is ${percent(limits.quarantineTriggerRate)}, the suite budget ${percent(limits.suiteBudgetRate)}, the invalid-run budget ${percent(limits.invalidRunBudgetRate)}.`,
     '',
   );
 
@@ -284,6 +320,51 @@ export function renderMarkdown(report: FlakeReport): string {
         ]),
       );
     }
+  }
+
+  out.push(
+    '',
+    '## Invalid runs: the share of scheduled executions that could not evaluate their claim',
+    '',
+    `An invalid run is a skip whose reason starts with \`${INVALID_RUN_PREFIX}\`: the attempt could not evaluate its claim (docs/FLAKE.md, "Invalid runs"). Per test and engine, over the last ${limits.windowRuns} scheduled executions (invalid runs and executions that ran to a verdict; a documented gap is neither), judged from ${limits.minRunsToJudge}; above the budget of ${percent(limits.invalidRunBudgetRate)} the gate fails, quarantined or not.`,
+    '',
+  );
+  const withInvalid = report.invalidRuns.filter((t) => t.invalid > 0);
+  if (report.invalidRuns.length === 0) out.push('No test has been scheduled in the history.');
+  else if (withInvalid.length === 0) out.push('No test has an invalid run in its window.');
+  else {
+    out.push(
+      row([
+        'Test',
+        'Engine',
+        'Tier',
+        'Invalid runs',
+        'Share',
+        'Budget',
+        'Verdict',
+        'Quarantine',
+        'Last invalid run',
+      ]),
+    );
+    out.push(row(['---', '---', '---', '---', '---', '---', '---', '---', '---']));
+    for (const t of withInvalid) {
+      out.push(
+        row([
+          t.id,
+          t.project + (t.experimental ? ' (experimental)' : ''),
+          t.tier ?? '-',
+          `${t.invalid} of ${t.scheduled}`,
+          percent(t.share),
+          percent(t.budget),
+          t.verdict,
+          t.quarantine ? `until ${t.quarantine.expires} (${t.quarantine.owner})` : '-',
+          t.lastInvalid ? `${t.lastInvalid.date.slice(0, 10)}: ${invalidRunHead(t.lastInvalid.reason)}` : '-',
+        ]),
+      );
+    }
+    const none = report.invalidRuns.length - withInvalid.length;
+    if (none > 0)
+      out.push('', `${none} tests and engines with no invalid run in their window are not listed.`);
   }
 
   out.push('', '## Quarantine', '');

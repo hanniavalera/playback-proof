@@ -146,6 +146,18 @@ export function isInvalidRun(test: Pick<TestRecord, 'outcome' | 'skipReason'>): 
 }
 
 /**
+ * What an invalid run says first, for a sentence or a table cell: its reason without the prefix, cut at its first sentence and at `max`
+ * characters (the numbers of the attempt come first: `invalidRunReason`, tests/e2e/abr/bans.ts).
+ */
+export function invalidRunHead(reason: string, max = 200): string {
+  const flat = reason.replace(/\s+/g, ' ').trim();
+  const body = flat.startsWith(INVALID_RUN_PREFIX) ? flat.slice(INVALID_RUN_PREFIX.length).trim() : flat;
+  const end = body.search(/\.(\s|$)/);
+  const sentence = (end === -1 ? body : body.slice(0, end)).trim() || flat;
+  return sentence.length > max ? `${sentence.slice(0, max - 1)}…` : sentence;
+}
+
+/**
  * A test scheduled in one run, as the invalid-run budget counts it: it ran to a verdict (`invalid: false`) or its attempt was ended as an
  * invalid run (`invalid: true`). Any other skip and an interrupted test are not scheduled executions: they say nothing about whether the
  * claim could be evaluated. Unlike a flake observation, a scheduled execution does not need a retry: whether the claim was evaluated
