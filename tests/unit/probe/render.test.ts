@@ -102,6 +102,8 @@ describe('renderMatrix', () => {
     expect(gaps).toContain('engines.webkit.cases["cmaf-vp9-aac"]');
     expect(gaps).toContain('Same flavour under other page profiles: `unmuted` ok 5/5, `prefetch` ok 5/5');
     expect(gaps).toContain('all 4 controls ok');
+    expect(gaps).toContain('All 13 cases of this engine: 10 ok, 2 intermittent, 1 fail');
+    expect(gaps).toContain('can be luck: 5 attempts are a sample');
     // The primary flavour is flaky but WebM works: DASH VOD falls back, everything else is skipped, with the reason.
     expect(gaps).toContain('VOD over DASH uses `vod-webm`');
     expect(gaps).toContain('Specs that need VOD over HLS, live over DASH, live over HLS are skipped');

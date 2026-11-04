@@ -161,7 +161,7 @@ describe('explainNoStream', () => {
       ) ?? '';
     expect(reason).toContain('no vod stream plays over dash in webkit 3.0');
     expect(reason).toContain(
-      'cmaf-vp9-aac intermittent 2/5, [play] NotSupportedError: nope, isTypeSupported claims true',
+      'cmaf-vp9-aac intermittent 2/5 ([play] NotSupportedError: nope), isTypeSupported claims true',
     );
     expect(reason).toContain('webm-vp9-opus fail 0/5');
     expect(reason).toContain('docs/CODEC_MATRIX.md');

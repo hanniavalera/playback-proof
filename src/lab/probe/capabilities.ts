@@ -95,11 +95,11 @@ export function pickStream(
 function describeFlavour(flavour: FlavourId, capability: FlavourCapability | undefined): string {
   if (!capability) return `${flavour} was not probed`;
   if (capability.attempts === 0) return `${flavour}: ${capability.error ?? 'the browser did not start'}`;
-  const parts = [`${capability.reliability} ${capability.passes}/${capability.attempts}`];
-  if (capability.stage) parts.push(`[${capability.stage}] ${capability.error ?? ''}`.trim());
+  let text = `${flavour} ${capability.reliability} ${capability.passes}/${capability.attempts}`;
+  if (capability.stage) text += ` ([${capability.stage}] ${capability.error ?? ''})`.replace(' )', ')');
   if (capability.typeSupportedClaim && capability.reliability !== 'ok')
-    parts.push('isTypeSupported claims true');
-  return `${flavour} ${parts.join(', ')}`;
+    text += ', isTypeSupported claims true';
+  return text;
 }
 
 /**

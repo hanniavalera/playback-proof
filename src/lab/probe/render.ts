@@ -386,6 +386,14 @@ function renderGap(gap: LabGap, index: number, files: readonly ResultFile[]): st
         : `  - Plain \`<video src>\` playback of the same files: ${controls.length - notOk.length} of ${controls.length} controls ok; not ok: ${notOk.map(([id, r]) => `${code(id)} ${verdictText(r)}`).join(', ')}.`,
     );
   }
+  const everyCase = Object.values(engine.cases);
+  const tally = (reliability: string): number =>
+    everyCase.filter((c) => c.reliability === reliability).length;
+  if (tally('intermittent') > 0) {
+    out.push(
+      `  - All ${everyCase.length} cases of this engine: ${tally('ok')} ok, ${tally('intermittent')} intermittent, ${tally('fail')} fail. An ${code('ok')} cell next to intermittent ones can be luck: ${file.options.attempts} attempts are a sample, not a guarantee, which is why a flavour must pass every attempt to count as supported.`,
+    );
+  }
   out.push(
     `- **Evidence:** ${link}: ${gap.flavours.map((id) => code(jsonPath(name, 'cases', id))).join(', ')}` +
       (profileResults.length > 0 ? `, ${code(`engines.${name}.sensitivity`)}` : '') +
