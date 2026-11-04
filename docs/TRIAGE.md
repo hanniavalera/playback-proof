@@ -10,8 +10,8 @@ A red build leaves a hundred lines in three engines, and one cause shows up as a
 | --- | --- | --- |
 | Collection | Reads every failed or flaky test of every Playwright JSON report under a directory into a typed `Failure`: identity, engine, tier, attempts, the first failing attempt's message and application frames, and digests of the failure attachments. Says what was missing. | [`triage/collect.ts`](../triage/collect.ts), [`digest.ts`](../triage/digest.ts), [`stack.ts`](../triage/stack.ts) |
 | Signature | The name of a cause: the same cause has the same name whatever its ids, ports, timestamps, paths and engine. | [`triage/signature.ts`](../triage/signature.ts), on [`src/lab/signature.ts`](../src/lab/signature.ts) |
-| Clusters | Failures with the same signature, ordered by size, then by engines, then by signature. | [`triage/cluster.ts`](../triage/cluster.ts) |
-| Categories | An ordered table of named rules; the first that finds something names the category and prints its evidence. | [`triage/rules.ts`](../triage/rules.ts) |
+| Clusters | Failures with the same signature, ordered by size, then by engines, then by signature; then the clusters that are one **root cause** (below) are rolled up. | [`triage/cluster.ts`](../triage/cluster.ts) |
+| Categories | An ordered table of named rules; the first that finds something names the category, says what exactly is broken when it names a cause, and prints its evidence. | [`triage/rules.ts`](../triage/rules.ts) |
 | Report | Text, `triage-report.md`, `triage-report.json`, and a summary for `$GITHUB_STEP_SUMMARY`. | [`triage/report.ts`](../triage/report.ts), [`cli.ts`](../triage/cli.ts) |
 | Redaction | What is taken out of the evidence before any of it leaves the machine. | [`triage/redact.ts`](../triage/redact.ts) |
 | Summaries | One request per cluster to the Messages API, from the redacted evidence, behind an opt-in. | [`triage/summarize.ts`](../triage/summarize.ts) |
@@ -116,9 +116,25 @@ A cluster is one signature, which is the words of one failure. One cause is word
 
 ## Reading the report
 
-Per cluster, in this order: rank, size, engines, tests, category and the rule that fired, the signature and its key, the **evidence** of the rule, the class and the first thing to check, the representative failure (the one with the richest diagnostics, so the same cluster always reads the same), its error message, every member, and what was missing. A summary of the whole run: failed, flaky, skipped and interrupted counts, the reports read, and **what could not be read** (a file that is not a report is named, never skipped silently).
+Per cluster, in this order: rank, size, engines, tests, category and the rule that fired, the signature and its key, the **evidence** of the rule, the class and the first thing to check, the representative failure (the one with the richest diagnostics, so the same cluster always reads the same), its error message, every member, and what was missing. A summary of the whole run: failed, flaky, skipped, interrupted and not-run counts, the number of clusters and, when several clusters are one cause, of **root causes** (`12 clusters of 8 root causes`), the reports read, and **what could not be read** (a file that is not a report is named, never skipped silently).
 
 `triage-report.json` has the same content with `schemaVersion: 1`. `$GITHUB_STEP_SUMMARY` gets a table of the first twelve clusters and a count of the rest.
+
+## The real failures it was run on
+
+Seven different causes were induced on purpose in a scratch copy of the lab and run through the **real merge-tier specs** (Chromium and WebKit; Firefox is a documented gap on the host that ran them). Nothing here is a hand-written message: the fixtures in [`tests/fixtures/triage/`](../tests/fixtures/triage) are the reports of those runs, reduced and redacted, and [`results/triage/`](results/triage/README.md) has the whole experiment (what was run, the patches, `uptime` before and after every run, the report).
+
+| # | Cause induced | Failed | Clusters | Category · rule | Root causes |
+| --- | --- | --- | --- | --- | --- |
+| 1 | the service is down | 1 (the run) | 1 | `environment` · `service-not-reachable` | 1 |
+| 2 | a stream file in the cache is truncated | 1 (the run) | 1 | `environment` · `run-failed-before-any-test` | 1 |
+| 3 | the page is served with `script-src 'none'` | 7 | 2 | `page-boot-failure` · `page-did-not-boot` | 1 |
+| 4 | the origin answers 503 to every segment | 10 | 3 | `origin-error` · `origin-failed-without-fault` | 1 |
+| 5 | segments with corrupted bytes of the right size | 6 | 1 | `decode-or-mse-error` · `media-error` | 1 |
+| 6 | the player's retry and failover policy is off | 4 | 2 | `network-fault-not-recovered` · `fault-fired-player-failed` | 1 |
+| 7 | the origin is 2.5 s slower for every segment | 2 | 2 | `instrument-disagreement` · `test-premise-not-met`; `metric-regression` · `metric-assertion-failed` | 2 |
+
+Read together as one directory of artifacts (what a CI stage does), **31 failed tests became 12 clusters of 8 root causes**, and no cause was merged with another. The runs were not kind to the first version of the rules, and each correction has a test and none was made by editing a fixture: the environment check blamed the environment for a page that did not boot; the same cause was two clusters when the message named the engine, and when two engines gave the same corrupt bytes two Shaka codes (3015, 3016); two causes read together were one cluster because a quoted fault rule pushed the telling words past the cut of the signature; one cause was three clusters because every spec words it differently (hence root causes); a failed premise was `unknown`. The one that stays two root causes is a slow origin, and the limit is in [What it cannot tell](#what-it-cannot-tell). The experiments' own table is in [results/triage](results/triage/README.md).
 
 ## In CI: `gate:triage`
 
@@ -181,9 +197,10 @@ ANTHROPIC_API_KEY=... ANTHROPIC_MODEL=claude-haiku-5-5 npm run triage -- --from 
   **Redaction finds shapes.** A secret that looks like prose, a hostname with no dot, a name inside a sentence are not found by any pattern. That is why the evidence is a short digest and not a log, why the summaries are opt-in, and why the redaction is a second line of defence and not the first.
 - **Budget** (all of them are options of `summarize()`, and the defaults are the caps): at most 10 clusters, 6,000 characters of evidence per cluster, 30 HTTP requests per run (retries included), 60,000 characters in all, 1 request in flight (2 at most), a timeout of 30 s per attempt, 3 retries with a backoff of 1 s doubling to at most 30 s on 408, 429, 500, 502, 503, 504 and 529, a timeout or a lost connection, honouring `retry-after` (a wait longer than 60 s is not taken: the cluster fails with the reason). A 401, 402, 403, 404 or a spend-limit 429 stops the run: the rest are reported `not attempted`.
 - **It degrades, it does not fail.** No key: one line, `summaries skipped: ANTHROPIC_API_KEY is not set`, and no request. An error of the service: the cluster keeps its deterministic report, the error is recorded in its place (the key and any secret scrubbed from the message), and the exit code does not change. A draft is a draft: it is printed as a suggestion for a person, quoted, with the model it came from, and it never changes a cluster, a category, a class or a verdict.
-- **Cache**: `.cache/triage/<cluster key>-<model>-p<prompt version>.json`, so a rerun on the same failures costs nothing and a changed prompt asks again; `--refresh` ignores it.
+- **Cache**: `.cache/triage/<cluster key>-<model>-<endpoint hash>-p<prompt version>.json`, so a rerun on the same failures costs nothing, a changed prompt asks again, and a draft is only ever found by the endpoint that wrote it (a draft of the local mock is never served to a run that asks the real service; a cached draft of a non-live endpoint is labelled as such in the report); `--refresh` ignores it.
 - **Cost, by arithmetic and not by measurement.** The models overview lists the model from $0.10 per million input tokens and $0.50 per million output tokens. A typical run (a few clusters of 1,000 to 2,000 input tokens and about 300 output tokens each) costs a fraction of a cent. The hard caps above bound a run: 60,000 characters of input is about 20,000 tokens, 30 requests of at most 2,000 output tokens is 60,000, so a run cannot cost more than about three and a half cents at that price, and the arithmetic leaves a margin for the new tokenizer's larger counts. It was not measured: nothing was sent. A real run prints the tokens the service reports for its drafts, so the first run with a key measures it.
 - **What the mock proves, and what it cannot** (ADR-168). [`tools/triage-mock.ts`](../tools/triage-mock.ts) rejects a request whose headers, version, content type or fields are not the documented ones (including the sampling parameters the current version removed, a prefilled turn and streaming), and answers success, 400, 401, 429 with `retry-after`, 500, a slow answer, a malformed body and a dropped connection, with the documented error shape. The tests assert the exact request, that the key appears in one header and in no log or report, that no request ever contains the text of a secret pattern, retries, the budget, the cache and the degradation. It cannot show what the real service answers to a prompt, whether the model follows the requested shape, the real rate limits, or a change of the API since 2026-11-04.
+- **The demo is of the mock.** [`results/triage/`](results/triage/README.md#the-model-summary-mock-only) has the console and the report of a `--summarize` run against the mock on 127.0.0.1 (12 drafts, each labelled `NOT the live service` and `[MOCK] no model wrote this`), and the output of the same command with no key (the clusters only, `summaries skipped: ANTHROPIC_API_KEY is not set`, exit 0). Neither says anything about the quality of a model's summary.
 
 ## What it cannot tell
 
@@ -204,6 +221,8 @@ ANTHROPIC_API_KEY=... ANTHROPIC_MODEL=claude-haiku-5-5 npm run triage -- --from 
 | `tests/unit/triage/` | the tests, builders that make the lab's own failure messages and attachments (`support.ts`) and fake secrets assembled at run time from fragments (`secrets.ts`) |
 | `tools/triage-mock.ts` | `npx tsx tools/triage-mock.ts [--port 4751]`: the mock, on 127.0.0.1 |
 | `tools/triage-fixture.ts` | `npx tsx tools/triage-fixture.ts --from reports/playwright.json --out tests/fixtures/triage/<name>` |
+| `tests/fixtures/triage/` | seven real failed runs of the lab, reduced and redacted (below), read by `real-failures.test.ts` |
+| [`results/triage/`](results/triage/README.md) | the experiments, the report made from the fixtures (`triage-report.md`, `triage-report.json`), the patches that induced four of the causes, the mock demo of the summaries (labelled as a mock) and the output with no key |
 | `reports/triage/` | `triage-report.md`, `triage-report.json` |
 | `.cache/triage/` | cached drafts |
 | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, `ANTHROPIC_BASE_URL`, `ANTHROPIC_WORKSPACE_ID` | the summaries; all optional |
