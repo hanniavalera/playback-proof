@@ -20,6 +20,21 @@ const noFixedSleeps = [
   },
 ];
 
+// Letting time pass has exactly one home: PlayerHandle.observeFrames (tests/e2e/support/player.ts), which counts animation frames of
+// the page for NEGATIVE observations. A spec that wants one calls that; it does not write its own frame loop.
+const noAnimationFrames = [
+  {
+    selector: "CallExpression[callee.name='requestAnimationFrame']",
+    message:
+      'No frame loops in specs. For a negative observation use player.observeFrames(n); otherwise wait on a player event.',
+  },
+  {
+    selector: "CallExpression[callee.property.name='requestAnimationFrame']",
+    message:
+      'No frame loops in specs. For a negative observation use player.observeFrames(n); otherwise wait on a player event.',
+  },
+];
+
 export default tseslint.config(
   {
     ignores: [
@@ -50,8 +65,13 @@ export default tseslint.config(
     languageOptions: { globals: { ...globals.browser } },
   },
   {
-    // Specs and the helpers they use: event-driven waits only.
+    // Specs and the helpers they use: event-driven waits only, and no frame loops of their own.
     files: ['tests/e2e/**/*.ts', 'tests/live/**/*.ts'],
+    rules: { 'no-restricted-syntax': ['error', ...noFixedSleeps, ...noAnimationFrames] },
+  },
+  {
+    // The one home of the frame loop (observeFrames).
+    files: ['tests/e2e/support/player.ts'],
     rules: { 'no-restricted-syntax': ['error', ...noFixedSleeps] },
   },
 );

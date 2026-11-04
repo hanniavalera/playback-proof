@@ -22,15 +22,28 @@ import type { Protocol, StreamId } from '../../../src/shared/streams.ts';
 // with the evidence as its reason; everything that is not documented here runs, and fails if it does not play.
 
 /**
- * THE ONE OVERRIDE, for the open question of Linux WebKit.
+ * THE ONE OVERRIDE: Linux WebKit, an experimental engine.
  *
- * `false` (the default): Linux WebKit is a gap exactly where the committed matrix of the environment says it cannot play
- * (today: `docker-linux-arm64`, intermittent `MediaError 4` in every flavour), and nowhere else.
- * `true`: the specs run in Linux WebKit whatever the matrix says. Flip it when an experiment shows that the real player page
- * plays there reliably although the probe's default page profile (a muted element, data fetched after the SourceBuffers
- * exist) does not; re-probe and commit the matrix afterwards, then set it back.
+ * `true` (the committed setting): the specs run in Linux WebKit whatever the committed matrix says, and every test of it carries
+ * the `experimental-engine` annotation, so that the flake tracking follows it apart from the engines the matrix supports.
+ * `false`: Linux WebKit is a gap exactly where the committed matrix of the environment says it cannot play (`docker-linux-arm64`
+ * and `gha-linux-x64`: `MediaError 4: Failed to push buffer`, intermittently), and nowhere else.
+ *
+ * Why it is `true`. The codec probe's own page (a muted element, data fetched after the SourceBuffers exist) plays 2 of 5 attempts
+ * of the primary flavour in Linux WebKit and 9 of 20 in the N=20 spot check (ADR-031 to ADR-033 in docs/decisions/codecs.md;
+ * docs/results/codec-matrix). The REAL player page, which adds every SourceBuffer before it fetches, passed 80 of 80 runs, each in a
+ * fresh browser process, in the Playwright image (arm64, WebKit 27.2): `vod-dash` and `vod-hls` 20 of 20 muted and 20 of 20 unmuted,
+ * `live-dash` 10 of 10 each way, a pass being 3 s of media time with a first frame and no error event
+ * (docs/results/player-smoke/experiments/linux-webkit-*.json; ADR-062 to ADR-068 in docs/decisions/player.md, the measurement is in
+ * ADR-067: the 95 % upper bound on the failure rate is 3.7 %). It is the evidence of one image, one architecture, one WebKit build and
+ * short plays: WebM, live over HLS and long sessions were not part of it, so a failure there is data for the experiment and not a
+ * regression of the player. Setting it back to `false` is the whole way back to "gap by evidence".
  */
-export const RUN_SPECS_IN_LINUX_WEBKIT = false;
+export const RUN_SPECS_IN_LINUX_WEBKIT = true;
+
+/** The text of the `experimental-engine` annotation, and of what a failure in this engine means. */
+export const EXPERIMENTAL_LINUX_WEBKIT =
+  'Linux WebKit runs the specs although the codec probe is intermittent there: the real player page passed 80 of 80 runs (docs/results/player-smoke/experiments, ADR-067 in docs/decisions/player.md). Experimental: a failure is tracked as a flake of this engine.';
 
 export const MATRIX_DIR = fileURLToPath(new URL('../../../docs/results/codec-matrix/', import.meta.url));
 
@@ -54,6 +67,8 @@ export interface Environment {
   capabilities: Capabilities | null;
   /** Where `capabilities` came from, or why there are none: goes into skip reasons and failure messages. */
   basis: string;
+  /** Why this engine runs here although the committed evidence would not let it (Linux WebKit, `RUN_SPECS_IN_LINUX_WEBKIT`); null for every other engine. */
+  experimental: string | null;
 }
 
 export interface EnvironmentInput {
@@ -71,21 +86,23 @@ export function resolveEnvironment(input: EnvironmentInput): Environment {
   const platform = input.platform ?? process.platform;
   const evidence = input.evidence ?? null;
   const path = `docs/results/codec-matrix/${envId}.json`;
-  const base = { envId, engine, platform };
+  const base = { envId, engine, platform, experimental: null };
 
+  if ((input.runInLinuxWebKit ?? RUN_SPECS_IN_LINUX_WEBKIT) && engine === 'webkit' && platform === 'linux') {
+    return {
+      ...base,
+      capabilities: null,
+      basis:
+        'RUN_SPECS_IN_LINUX_WEBKIT is set in tests/e2e/support/gaps.ts: the specs run in Linux WebKit whatever the committed matrix says',
+      experimental: EXPERIMENTAL_LINUX_WEBKIT,
+    };
+  }
   if (!evidence) {
     return { ...base, capabilities: null, basis: `no committed probe result for ${envId} (${path})` };
   }
   const result = evidence.engines[engine];
   if (!result) {
     return { ...base, capabilities: null, basis: `${path} has no result for ${engine}` };
-  }
-  if ((input.runInLinuxWebKit ?? RUN_SPECS_IN_LINUX_WEBKIT) && engine === 'webkit' && platform === 'linux') {
-    return {
-      ...base,
-      capabilities: null,
-      basis: `RUN_SPECS_IN_LINUX_WEBKIT is set in tests/e2e/support/gaps.ts: the specs run in Linux WebKit whatever ${path} says`,
-    };
   }
   return { ...base, capabilities: capabilitiesFromEngine(engine, result), basis: path };
 }
@@ -193,7 +210,12 @@ export function explainUndocumentedGap(env: Environment, gap: UndocumentedGap): 
     `What the player said: ${gap.cause}`,
   ];
   if (gap.userAgent) lines.push(`User agent: ${gap.userAgent}`);
-  if (env.capabilities) {
+  if (env.experimental) {
+    lines.push(
+      `${env.engine} is an experimental engine in ${env.envId}: ${env.experimental}`,
+      'The committed evidence was not used to decide whether it runs, so this is a failure of the experiment, not a change of the environment: read the timeline above, and record it as a flake of the engine. RUN_SPECS_IN_LINUX_WEBKIT in tests/e2e/support/gaps.ts goes back to the committed matrix when it is false.',
+    );
+  } else if (env.capabilities) {
     const flavour = LAB_STREAMS[gap.stream].flavour;
     lines.push(
       `Committed evidence (${env.basis}) claims it plays: ${describeFlavour(flavour, env.capabilities.flavours[flavour])}.`,

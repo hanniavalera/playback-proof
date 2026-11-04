@@ -19,7 +19,10 @@ export type { TestSession } from './session.ts';
 // before the body runs, never silently), and a failure explains itself (the diagnostics are attached to the result).
 
 interface TestFixtures {
-  /** (auto) Skips the test, before its body and before any browser starts, when the engine cannot play anything here: a documented gap. */
+  /**
+   * (auto) Skips the test, before its body and before any browser starts, when the engine cannot play anything here: a documented gap.
+   * Marks every test of an experimental engine (Linux WebKit) with an `experimental-engine` annotation.
+   */
   documentedGap: void;
   /** (auto) Slows the page's CPU when the project's `metadata.cpuThrottleRate` is set (`chromium-cpu4x`), before the page navigates. */
   cpuThrottle: void;
@@ -68,6 +71,10 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     async ({ environment }, use, testInfo) => {
       const reason = engineGap(environment);
       if (reason) testInfo.skip(true, reason);
+      // Every test of an experimental engine says so in its result, so that the flake tracking can follow it apart from the others.
+      if (environment.experimental) {
+        testInfo.annotations.push({ type: 'experimental-engine', description: environment.experimental });
+      }
       await use();
     },
     { auto: true },

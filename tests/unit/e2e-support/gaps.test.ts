@@ -5,7 +5,9 @@ import { FLAVOUR_IDS } from '../../../src/lab/probe/formats.ts';
 import { ResultFileError, serializeResultFile } from '../../../src/lab/probe/report.ts';
 import type { CaseResult } from '../../../src/lab/probe/results.ts';
 import {
+  EXPERIMENTAL_LINUX_WEBKIT,
   MATRIX_DIR,
+  RUN_SPECS_IN_LINUX_WEBKIT,
   chooseStream,
   engineGap,
   explainUndocumentedGap,
@@ -44,8 +46,16 @@ const macEvidence = resultFile('fixture-mac-arm64', {
   }),
 });
 
+// The committed setting of the Linux WebKit override is `true`; every test below that is about the evidence says `false` (or `true`)
+// out loud, so that none of them depends on what is committed.
 const env = (evidence: typeof linuxEvidence | null, engine: string, extra: object = {}): Environment =>
-  resolveEnvironment({ envId: evidence?.envId ?? 'fixture-new-runner', engine, evidence, ...extra });
+  resolveEnvironment({
+    envId: evidence?.envId ?? 'fixture-new-runner',
+    engine,
+    evidence,
+    runInLinuxWebKit: false,
+    ...extra,
+  });
 
 describe('readEvidence', () => {
   let dir: string;
@@ -192,26 +202,75 @@ describe('a gap in one stream while others play', () => {
   });
 });
 
-describe('the Linux WebKit override', () => {
-  it('lets the specs run in Linux WebKit whatever the evidence says', () => {
-    const forced = env(linuxEvidence, 'webkit', { platform: 'linux', runInLinuxWebKit: true });
-    expect(forced.capabilities).toBeNull();
-    expect(forced.basis).toContain('RUN_SPECS_IN_LINUX_WEBKIT');
-    expect(engineGap(forced)).toBeNull();
-  });
+describe('the Linux WebKit override, in both of its settings', () => {
+  const linuxWebkit = (setting: boolean, evidence: typeof linuxEvidence | null = linuxEvidence) =>
+    env(evidence, 'webkit', { platform: 'linux', runInLinuxWebKit: setting });
 
-  it('touches nothing else: not WebKit elsewhere, not another engine on Linux', () => {
-    const flaky = resultFile('fixture-elsewhere', {
-      chromium: probedEngine({ cases: everyFlavour(() => verdict(0, 5, true)) }),
-      webkit: probedEngine({ cases: everyFlavour(() => verdict(0, 5, true)) }),
+  it('false: Linux WebKit is a gap exactly where the committed evidence says it cannot play, and is not experimental', () => {
+    const off = linuxWebkit(false);
+    expect(off.experimental).toBeNull();
+    expect(off.capabilities).not.toBeNull();
+    expect(engineGap(off)).toMatch(
+      /^documented gap in fixture-linux-arm64: no vod stream plays over dash in webkit 3\.0/,
+    );
+    expect(chooseStream(off, 'vod', 'dash')).toMatchObject({
+      gap: expect.stringContaining('intermittent 2/5'),
     });
-    expect(engineGap(env(flaky, 'webkit', { platform: 'darwin', runInLinuxWebKit: true }))).not.toBeNull();
-    expect(engineGap(env(flaky, 'chromium', { platform: 'linux', runInLinuxWebKit: true }))).not.toBeNull();
+    expect(
+      engineGap(linuxWebkit(false, resultFile('fixture-ok-linux', { webkit: probedEngine() }))),
+    ).toBeNull();
   });
 
-  it('is off in the repository: the committed default is "by evidence"', async () => {
-    const { RUN_SPECS_IN_LINUX_WEBKIT } = await import('../../../tests/e2e/support/gaps.ts');
-    expect(RUN_SPECS_IN_LINUX_WEBKIT).toBe(false);
+  it('true: the specs run in Linux WebKit whatever the evidence says, and the engine is marked experimental', () => {
+    const on = linuxWebkit(true);
+    expect(on.capabilities).toBeNull();
+    expect(on.experimental).toContain(
+      'Linux WebKit runs the specs although the codec probe is intermittent there',
+    );
+    expect(on.experimental).toContain('80 of 80');
+    expect(on.basis).toContain('RUN_SPECS_IN_LINUX_WEBKIT');
+    expect(engineGap(on)).toBeNull();
+    expect(gapForStream(on, 'vod-webm')).toBeNull();
+    expect(chooseStream(on, 'vod', 'hls')).toStrictEqual({ stream: 'vod-cmaf' });
+  });
+
+  it('true: also without evidence for the environment or for the engine, because the annotation follows the engine and not the file', () => {
+    expect(linuxWebkit(true, null).experimental).not.toBeNull();
+    expect(
+      linuxWebkit(true, resultFile('fixture-no-webkit', { chromium: probedEngine() })).experimental,
+    ).not.toBeNull();
+    expect(linuxWebkit(false, null).experimental).toBeNull();
+  });
+
+  it.each([true, false])(
+    'touches nothing else when it is %s: not WebKit elsewhere, not another engine on Linux',
+    (setting) => {
+      const flaky = resultFile('fixture-elsewhere', {
+        chromium: probedEngine({ cases: everyFlavour(() => verdict(0, 5, true)) }),
+        firefox: probedEngine({ cases: everyFlavour(() => verdict(0, 5, true)) }),
+        webkit: probedEngine({ cases: everyFlavour(() => verdict(0, 5, true)) }),
+      });
+      const mac = env(flaky, 'webkit', { platform: 'darwin', runInLinuxWebKit: setting });
+      expect(engineGap(mac)).not.toBeNull();
+      expect(mac.experimental).toBeNull();
+      for (const engine of ['chromium', 'firefox']) {
+        const other = env(flaky, engine, { platform: 'linux', runInLinuxWebKit: setting });
+        expect(engineGap(other)).not.toBeNull();
+        expect(other.experimental).toBeNull();
+      }
+    },
+  );
+
+  it('is on in the repository: the committed setting enables Linux WebKit as an experimental engine', () => {
+    expect(RUN_SPECS_IN_LINUX_WEBKIT).toBe(true);
+    const committed = resolveEnvironment({
+      envId: 'fixture-linux-arm64',
+      engine: 'webkit',
+      platform: 'linux',
+      evidence: linuxEvidence,
+    });
+    expect(committed.experimental).toBe(EXPERIMENTAL_LINUX_WEBKIT);
+    expect(engineGap(committed)).toBeNull();
   });
 });
 
@@ -256,41 +315,94 @@ describe('explainUndocumentedGap: the failure text of PB-ENV-001', () => {
     expect(text).toContain('docs/results/codec-matrix/fixture-new-runner.json');
     expect(text).not.toContain('claims it plays');
   });
+
+  it('in an experimental engine: a failure of the experiment, which is not an environment change and says how to go back', () => {
+    const text = explainUndocumentedGap(
+      env(linuxEvidence, 'webkit', { platform: 'linux', runInLinuxWebKit: true }),
+      gap,
+    );
+    expect(text).toContain(
+      'webkit is an experimental engine in fixture-linux-arm64: Linux WebKit runs the specs',
+    );
+    expect(text).toContain('a failure of the experiment, not a change of the environment');
+    expect(text).toContain(
+      'RUN_SPECS_IN_LINUX_WEBKIT in tests/e2e/support/gaps.ts goes back to the committed matrix when it is false',
+    );
+    expect(text).not.toContain('do not retry the specs');
+    expect(text).not.toContain('npm run codec-matrix');
+  });
 });
 
 describe('the committed evidence of this repository', () => {
-  const real = (envId: string, engine: string, platform: string): Environment =>
-    resolveEnvironment({ envId, engine, platform, evidence: readEvidence(envId, MATRIX_DIR) });
-
-  it('documents exactly the gaps of docs/CONTRACTS.md section 2: Linux WebKit, and Firefox on the macOS host', () => {
-    const gaps = (['docker-linux-arm64', 'local-darwin-arm64'] as const).flatMap((envId) =>
-      (['chromium', 'firefox', 'webkit'] as const).map((engine) => {
-        const platform = envId.includes('linux') ? 'linux' : 'darwin';
-        return [envId, engine, engineGap(real(envId, engine, platform)) !== null] as const;
-      }),
+  const real = (envId: string, engine: string, platform: string, runInLinuxWebKit: boolean): Environment =>
+    resolveEnvironment({
+      envId,
+      engine,
+      platform,
+      evidence: readEvidence(envId, MATRIX_DIR),
+      runInLinuxWebKit,
+    });
+  const ENVIRONMENTS = [
+    ['docker-linux-arm64', 'linux'],
+    ['gha-linux-x64', 'linux'],
+    ['local-darwin-arm64', 'darwin'],
+    ['gha-macos-arm64', 'darwin'],
+  ] as const;
+  const gapsOf = (runInLinuxWebKit: boolean): string[] =>
+    ENVIRONMENTS.flatMap(([envId, platform]) =>
+      (['chromium', 'firefox', 'webkit'] as const)
+        .filter((engine) => engineGap(real(envId, engine, platform, runInLinuxWebKit)) !== null)
+        .map((engine) => `${envId}/${engine}`),
     );
-    expect(gaps.filter(([, , gap]) => gap).map(([envId, engine]) => `${envId}/${engine}`)).toStrictEqual([
+
+  it('documents the gaps of docs/CONTRACTS.md section 2 when the override is false: Linux WebKit, and Firefox on the macOS host', () => {
+    expect(gapsOf(false)).toStrictEqual([
       'docker-linux-arm64/webkit',
+      'gha-linux-x64/webkit',
       'local-darwin-arm64/firefox',
     ]);
   });
 
+  it('documents only Firefox on the macOS host when the override is true, which is how it is committed', () => {
+    expect(gapsOf(true)).toStrictEqual(['local-darwin-arm64/firefox']);
+  });
+
+  it('marks as experimental exactly Linux WebKit, in both Linux environments, when the override is true', () => {
+    const experimental = ENVIRONMENTS.flatMap(([envId, platform]) =>
+      (['chromium', 'firefox', 'webkit'] as const)
+        .filter((engine) => real(envId, engine, platform, true).experimental !== null)
+        .map((engine) => `${envId}/${engine}`),
+    );
+    expect(experimental).toStrictEqual(['docker-linux-arm64/webkit', 'gha-linux-x64/webkit']);
+    expect(
+      ENVIRONMENTS.flatMap(([envId, platform]) =>
+        (['chromium', 'firefox', 'webkit'] as const).filter(
+          (engine) => real(envId, engine, platform, false).experimental !== null,
+        ),
+      ),
+    ).toStrictEqual([]);
+  });
+
   it('gives the reasons the skips will print', () => {
-    expect(engineGap(real('docker-linux-arm64', 'webkit', 'linux'))).toMatch(
+    expect(engineGap(real('docker-linux-arm64', 'webkit', 'linux', false))).toMatch(
       /^documented gap in docker-linux-arm64: no vod stream plays over dash in webkit .*cmaf-vp9-aac intermittent \d\/5/,
     );
-    expect(engineGap(real('local-darwin-arm64', 'firefox', 'darwin'))).toContain(
+    expect(engineGap(real('gha-linux-x64', 'webkit', 'linux', false))).toMatch(
+      /^documented gap in gha-linux-x64: no vod stream plays over dash in webkit .*cmaf-vp9-aac intermittent \d\/5/,
+    );
+    expect(engineGap(real('local-darwin-arm64', 'firefox', 'darwin', true))).toContain(
       'Could not find profile folder',
     );
   });
 
-  it('plays every lab stream in macOS WebKit and Chromium, and picks the CMAF stream', () => {
+  it('plays every lab stream in macOS WebKit, Chromium and Firefox where the matrix says so, and picks the CMAF stream', () => {
     for (const [envId, engine, platform] of [
       ['local-darwin-arm64', 'webkit', 'darwin'],
       ['local-darwin-arm64', 'chromium', 'darwin'],
+      ['gha-macos-arm64', 'firefox', 'darwin'],
       ['docker-linux-arm64', 'firefox', 'linux'],
     ] as const) {
-      const environment = real(envId, engine, platform);
+      const environment = real(envId, engine, platform, true);
       expect(chooseStream(environment, 'vod', 'dash')).toStrictEqual({ stream: 'vod-cmaf' });
       expect(chooseStream(environment, 'vod', 'hls')).toStrictEqual({ stream: 'vod-cmaf' });
       expect(chooseStream(environment, 'live', 'dash')).toStrictEqual({ stream: 'live-cmaf' });

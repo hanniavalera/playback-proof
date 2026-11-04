@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { QAEvent, QAInfo } from '../../../src/shared/qa.ts';
-import { DEFAULT_WAIT_MS, PlayerHandle } from '../../../tests/e2e/support/player.ts';
+import { DEFAULT_WAIT_MS, MAX_OBSERVED_FRAMES, PlayerHandle } from '../../../tests/e2e/support/player.ts';
 
 // PlayerHandle is glue: what matters is that every call reaches the hook with the arguments the spec gave (and an explicit timeout),
 // that a page that cannot be used fails `open()` with the reason, and that the page's errors arrive readable. A fake page runs the
@@ -64,18 +64,21 @@ function fakeQa(overrides: Record<string, unknown> = {}) {
 
 type Listener = (arg: unknown) => void;
 
-function fakePage(qa: unknown, options: { bootFails?: Error } = {}) {
+function fakePage(qa: unknown, options: { waitFails?: Error } = {}) {
   const listeners = new Map<string, Listener[]>();
   const gotos: Array<{ url: string; options: unknown }> = [];
+  const waits: Array<{ arg: unknown; options: unknown }> = [];
   return {
     gotos,
+    waits,
     emit: (event: string, arg: unknown) => (listeners.get(event) ?? []).forEach((listener) => listener(arg)),
     on: (event: string, listener: Listener) =>
       void listeners.set(event, [...(listeners.get(event) ?? []), listener]),
     goto: async (url: string, goOptions: unknown) => void gotos.push({ url, options: goOptions }),
-    waitForFunction: async (fn: () => unknown) => {
-      if (options.bootFails) throw options.bootFails;
-      const result = await fn();
+    waitForFunction: async (fn: (arg: unknown) => unknown, arg: unknown, waitOptions: unknown) => {
+      waits.push({ arg, options: waitOptions });
+      if (options.waitFails) throw options.waitFails;
+      const result = await fn(arg);
       if (!result) throw new Error('page.waitForFunction: predicate returned a falsy value');
     },
     evaluate: async (fn: (arg: unknown) => unknown, arg: unknown) => fn(arg),
@@ -85,7 +88,7 @@ function fakePage(qa: unknown, options: { bootFails?: Error } = {}) {
 
 const SESSION = { id: 'abc', manifestUrl: '/s/abc/vod-cmaf/dash/manifest.mpd' };
 
-function handleFor(qaOverrides: Record<string, unknown> = {}, pageOptions: { bootFails?: Error } = {}) {
+function handleFor(qaOverrides: Record<string, unknown> = {}, pageOptions: { waitFails?: Error } = {}) {
   const { qa, calls } = fakeQa(qaOverrides);
   const page = fakePage(qa, pageOptions);
   (globalThis as unknown as { window: unknown }).window = { __qa: qa };
@@ -146,7 +149,7 @@ describe('PlayerHandle.open', () => {
   it('fails when the page does not boot, with the reason and what the browser console said', async () => {
     const { handle, page } = handleFor(
       {},
-      { bootFails: new Error('page.waitForFunction: Timeout 15000ms exceeded.') },
+      { waitFails: new Error('page.waitForFunction: Timeout 15000ms exceeded.') },
     );
     page.emit('console', {
       type: () => 'error',
@@ -218,6 +221,89 @@ describe('PlayerHandle: calls reach the hook', () => {
 
   it('keeps every wait shorter than the 45 s of a test, so a stuck wait fails as itself', () => {
     expect(DEFAULT_WAIT_MS).toBeLessThan(45_000 / 2);
+  });
+});
+
+describe('PlayerHandle.observeFrames: the one primitive that lets time pass', () => {
+  /** A page whose animation frames only happen when the test says so. */
+  function manualFrames() {
+    const pending: Array<() => void> = [];
+    (globalThis as unknown as { requestAnimationFrame: unknown }).requestAnimationFrame = (
+      callback: () => void,
+    ) => pending.push(callback);
+    return { pending, step: () => pending.shift()?.() };
+  }
+  const settle = () => new Promise<void>((resolve) => setImmediate(resolve));
+
+  afterEach(() => {
+    delete (globalThis as { requestAnimationFrame?: unknown }).requestAnimationFrame;
+  });
+
+  it('resolves after exactly the number of animation frames asked for, one request at a time, and not before', async () => {
+    const frames = manualFrames();
+    const { handle, page } = handleFor();
+    let done = false;
+    const observing = handle.observeFrames(3).then(() => {
+      done = true;
+    });
+    expect(frames.pending).toHaveLength(1);
+    frames.step();
+    await settle();
+    expect(done).toBe(false);
+    expect(frames.pending).toHaveLength(1);
+    frames.step();
+    await settle();
+    expect(done).toBe(false);
+    expect(frames.pending).toHaveLength(1);
+    frames.step();
+    await observing;
+    expect(done).toBe(true);
+    expect(frames.pending).toHaveLength(0);
+    expect(page.waits).toStrictEqual([{ arg: 3, options: { timeout: DEFAULT_WAIT_MS } }]);
+  });
+
+  it("is bounded by Playwright's own timeout, which a spec can change, and a frame loop is never started when the call is refused", async () => {
+    manualFrames();
+    const { handle, page } = handleFor();
+    void handle.observeFrames(1, { timeoutMs: 2500 });
+    expect(page.waits).toStrictEqual([{ arg: 1, options: { timeout: 2500 } }]);
+    const refused = handleFor();
+    await expect(refused.handle.observeFrames(0)).rejects.toThrow(RangeError);
+    expect(refused.page.waits).toStrictEqual([]);
+  });
+
+  it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, MAX_OBSERVED_FRAMES + 1])(
+    'refuses %s frames, and says that a long window should end on an event',
+    async (frames) => {
+      const { handle } = handleFor();
+      await expect(handle.observeFrames(frames)).rejects.toThrow(
+        new RegExp(`frames must be an integer from 1 to ${MAX_OBSERVED_FRAMES}.*positive event`),
+      );
+    },
+  );
+
+  it('accepts the largest window', async () => {
+    (globalThis as unknown as { requestAnimationFrame: unknown }).requestAnimationFrame = (
+      callback: () => void,
+    ) => void queueMicrotask(callback);
+    const { handle } = handleFor();
+    await expect(handle.observeFrames(MAX_OBSERVED_FRAMES)).resolves.toBeUndefined();
+  });
+
+  it('fails with what the page did, how long it waited and what the browser console said when the frames do not come', async () => {
+    manualFrames();
+    const { handle, page } = handleFor(
+      {},
+      { waitFails: new Error('page.waitForFunction: Timeout 2000ms exceeded.') },
+    );
+    page.emit('console', {
+      type: () => 'warning',
+      text: () => 'The page was hidden',
+      location: () => ({ url: '', lineNumber: 0 }),
+    });
+    await expect(handle.observeFrames(30, { timeoutMs: 2000 })).rejects.toThrow(
+      /^observeFrames\(30\): the page did not paint 30 animation frames within 2000 ms \(Timeout 2000ms exceeded\.\)\. Is its tab hidden, or its main thread stuck\?\nThe browser console said:\n {2}warning: The page was hidden$/,
+    );
   });
 });
 

@@ -23,6 +23,9 @@ import { atCaller } from './stack.ts';
  */
 export const DEFAULT_WAIT_MS = 15_000;
 
+/** The most frames `observeFrames` accepts: ten seconds of a 60 Hz page. A longer window is a wait that should end on an event. */
+export const MAX_OBSERVED_FRAMES = 600;
+
 /** Keys of the event's `detail` that must be strictly equal: `{ reason: 'abr', height: 720 }`. Strings, numbers, booleans, null. */
 export type DetailFilter = NonNullable<QAWaitOptions['detail']>;
 
@@ -248,6 +251,56 @@ export class PlayerHandle {
 
   async unload(): Promise<void> {
     await this.run(() => this.page.evaluate(() => window.__qa.unload()));
+  }
+
+  /**
+   * Lets `frames` animation frames of the page go by and resolves: `frames` calls of the page's own `requestAnimationFrame`, so the
+   * window is measured by the frame clock of the page (about 16.7 ms a frame at 60 Hz, longer on a slow runner or under the CPU
+   * throttle), never by a timer.
+   *
+   * THIS IS THE ONLY "LET TIME PASS" PRIMITIVE OF THE LIBRARY, for NEGATIVE observations: a paused player must not advance the media
+   * clock, no event must happen in a window. Nothing positive marks the end of such a window, so something has to say "this long was
+   * enough", and it is a number of frames of the page. Everything else waits for a positive event (`waitFor`, `waitForMediaTime`,
+   * `waitForRequest`), and a spec should still prefer one whenever it can name it: "the media clock stayed where it was for 30 frames"
+   * is weaker than "the pause was acknowledged, and a resume moved the clock". Give a negative observation its positive control (the
+   * same window with the player playing moves the clock), or it can never fail.
+   *
+   * It is bounded by the page's frame clock: it resolves only if the page paints (a hidden tab, or a main thread that is stuck, does
+   * not), so it has a timeout like every wait (`timeoutMs`, default `DEFAULT_WAIT_MS`) and rejects when the frames do not come. At most
+   * `MAX_OBSERVED_FRAMES` (600, ten seconds at 60 Hz): a longer window is a wait that should end on an event.
+   */
+  async observeFrames(frames: number, options: { timeoutMs?: number } = {}): Promise<void> {
+    if (!Number.isInteger(frames) || frames < 1 || frames > MAX_OBSERVED_FRAMES) {
+      throw atCaller(
+        new RangeError(
+          `observeFrames: frames must be an integer from 1 to ${MAX_OBSERVED_FRAMES}, got ${String(frames)}. A longer window is a wait that should end on a positive event.`,
+        ),
+      );
+    }
+    const timeoutMs = options.timeoutMs ?? DEFAULT_WAIT_MS;
+    try {
+      // Playwright's own timeout bounds the wait: the page function settles when the last frame has been counted.
+      await this.page.waitForFunction(
+        (count) =>
+          new Promise<boolean>((resolve) => {
+            let remaining = count;
+            const onFrame = (): void => {
+              remaining -= 1;
+              if (remaining <= 0) resolve(true);
+              else requestAnimationFrame(onFrame);
+            };
+            requestAnimationFrame(onFrame);
+          }),
+        frames,
+        { timeout: timeoutMs },
+      );
+    } catch (error) {
+      throw atCaller(
+        new Error(
+          `observeFrames(${frames}): the page did not paint ${frames} animation frames within ${timeoutMs} ms (${readable(error).message}). Is its tab hidden, or its main thread stuck?${this.consoleSummary()}`,
+        ),
+      );
+    }
   }
 
   private async run<T>(call: () => Promise<T>): Promise<T> {
