@@ -1,0 +1,434 @@
+{
+  "schemaVersion": 1,
+  "kind": "ab-raw",
+  "preregistration": {
+    "path": "ab/prereg/pipeline-check.json",
+    "sha256": "c52c09eae2d7b9b0101610b3e25dcd5a9b9ddaf728adb099ad141984f3d98cdd",
+    "text": "{\n  \"schemaVersion\": 1,\n  \"id\": \"pipeline-check\",\n  \"kind\": \"pipeline-check\",\n  \"catalogId\": null,\n  \"title\": \"Pipeline check: six sessions that prove the harness runs end to end (it decides nothing)\",\n  \"registeredOn\": \"2026-11-04\",\n  \"hypotheses\": [\n    {\n      \"metric\": \"startupMs\",\n      \"text\": \"None about the configurations: this run proves that the service, the browser, the page, the runner, the analysis and the report work together. Six sessions cannot say anything about configuration B.\"\n    }\n  ],\n  \"engine\": \"chromium\",\n  \"stream\": \"vod-cmaf\",\n  \"protocol\": \"dash\",\n  \"arms\": { \"A\": \"A\", \"B\": \"B\" },\n  \"conditions\": [\n    {\n      \"id\": \"high-latency\",\n      \"profile\": \"high-latency\",\n      \"rules\": [{ \"type\": \"latency\", \"ms\": 300, \"jitterMs\": 100, \"match\": { \"kind\": \"any\" } }],\n      \"rationale\": \"The catalog condition of the startup experiment: 300 ms before the first byte of every response makes every download measurable by the player's estimator, for the whole session.\"\n    }\n  ],\n  \"observation\": { \"mediaSecondsAfterFirstFrame\": 6, \"sessionTimeoutMs\": 60000 },\n  \"sessionsPerArm\": 2,\n  \"warmupSessionsPerArm\": 1,\n  \"alpha\": 0.05,\n  \"bootstrapResamples\": 1000,\n  \"metrics\": [\n    {\n      \"id\": \"startupMs\",\n      \"role\": \"primary\",\n      \"direction\": \"lower-is-better\",\n      \"practicalThreshold\": 100,\n      \"thresholdBasis\": \"A tenth of a second is the smallest startup change a viewer notices on a page load. A pipeline check decides nothing, so the number only has to be there.\"\n    },\n    { \"id\": \"rebufferShare\", \"role\": \"secondary\", \"direction\": \"lower-is-better\" },\n    { \"id\": \"rebufferRatio\", \"role\": \"secondary\", \"direction\": \"lower-is-better\" }\n  ],\n  \"decisionRule\": {\n    \"id\": \"pb-ab-v1\",\n    \"text\": \"Four verdicts and no more: B better (ship B), A better (do not ship B), equivalent within the margin (keep A), inconclusive (keep A and collect more sessions). A pipeline check applies none of them: it prints no verdict.\"\n  },\n  \"exclusionRule\": {\n    \"text\": \"A session that errors or times out is a failed session: it is reported and never silently dropped; its metrics are left out of the comparison.\",\n    \"maxFailedShare\": 0.1,\n    \"abortAfterConsecutiveFailures\": 5\n  },\n  \"seed\": 20261104\n}\n",
+    "committed": {
+      "clean": true,
+      "commit": "1a4095b",
+      "date": "2026-11-04T10:29:02-06:00"
+    }
+  },
+  "environment": {
+    "envId": "local-darwin-arm64",
+    "host": {
+      "os": {
+        "platform": "darwin",
+        "arch": "arm64",
+        "release": "27.2.0",
+        "name": "macOS 27.2"
+      },
+      "cpus": 12,
+      "memoryGiB": 16,
+      "node": "v22.11.0",
+      "playwright": "1.64.1",
+      "git": {
+        "commit": "1dce76c",
+        "dirty": false
+      }
+    },
+    "browser": {
+      "name": "chromium",
+      "version": "156.0.8078.4",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+    },
+    "ffmpeg": "9.0.2",
+    "streams": {
+      "vod-cmaf": "66738540703f45d7ccfb51c91b8ccd40fe53bec59cb7bbef41fde9d03270ec06",
+      "vod-cmaf-short": "52288c8dbedb24753b7ce482292ae144a3aa33e57d68e145db6dfcdcb17d1dd0",
+      "vod-webm": "ed602bbaec0d94a1adda7ad70fefdc1652fbaf8a0d27001e9f287e85b8630c5e",
+      "live-cmaf": "edf24480e4244b97e3031cb01a542d0b859a148b16bbbaac2b63af5796a4cdb9",
+      "vod-cmaf-clearkey": "f1d6817ae45923e9bad0afba463d325a8050c35c158ea071d28927f5c1cd024a"
+    }
+  },
+  "run": {
+    "startedAt": "2026-11-04T16:46:41.756Z",
+    "finishedAt": "2026-11-04T16:47:23.526Z",
+    "command": "npm run ab -- --prereg ab/prereg/pipeline-check.json --port 4720 --out-dir docs/results/ab/pipeline-check"
+  },
+  "conditions": [
+    {
+      "id": "high-latency",
+      "rules": [
+        {
+          "type": "latency",
+          "ms": 300,
+          "jitterMs": 100,
+          "match": {
+            "kind": "any"
+          }
+        }
+      ],
+      "stream": "vod-cmaf",
+      "startedAt": "2026-11-04T16:46:41.758Z",
+      "finishedAt": "2026-11-04T16:47:23.526Z",
+      "loadAverage": {
+        "before": 4.04736328125,
+        "after": 4.59375
+      },
+      "sessions": [
+        {
+          "index": 0,
+          "block": 0,
+          "arm": "A",
+          "config": "A",
+          "condition": "high-latency",
+          "warmup": true,
+          "status": "ok",
+          "values": {
+            "startupMs": 743.5999999642372,
+            "manifestMs": 315.5999999642372,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 0,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 401.10000002384186,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "d69ea2f6182a",
+          "startedAt": "2026-11-04T16:46:42.162Z",
+          "durationMs": 6937,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 19,
+            "fired": [
+              19
+            ]
+          }
+        },
+        {
+          "index": 1,
+          "block": 0,
+          "arm": "B",
+          "config": "B",
+          "condition": "high-latency",
+          "warmup": true,
+          "status": "ok",
+          "values": {
+            "startupMs": 719,
+            "manifestMs": 316.19999998807907,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 1,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 390.89999997615814,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 1050.699999988079,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "91ca3de83ac2",
+          "startedAt": "2026-11-04T16:46:49.099Z",
+          "durationMs": 6921,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 29,
+            "fired": [
+              29
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "block": 1,
+          "arm": "B",
+          "config": "B",
+          "condition": "high-latency",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 662.5,
+            "manifestMs": 314.10000002384186,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 2,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 396,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 1036.6000000238419,
+              "from": 0,
+              "to": 1,
+              "height": 360,
+              "reason": "abr"
+            },
+            {
+              "t": 5076.600000023842,
+              "from": 1,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "fa59aad2337d",
+          "startedAt": "2026-11-04T16:46:56.020Z",
+          "durationMs": 6862,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 29,
+            "fired": [
+              29
+            ]
+          }
+        },
+        {
+          "index": 3,
+          "block": 1,
+          "arm": "A",
+          "config": "A",
+          "condition": "high-latency",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 701.1000000238419,
+            "manifestMs": 285.10000002384186,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 0,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 359.19999998807907,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "654f99bc95f8",
+          "startedAt": "2026-11-04T16:47:02.881Z",
+          "durationMs": 6885,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 20,
+            "fired": [
+              20
+            ]
+          }
+        },
+        {
+          "index": 4,
+          "block": 2,
+          "arm": "A",
+          "config": "A",
+          "condition": "high-latency",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 573,
+            "manifestMs": 242.70000004768372,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 0,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 720,
+          "rungs": [
+            {
+              "t": 315.39999997615814,
+              "from": null,
+              "to": 2,
+              "height": 720,
+              "reason": "start"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "A",
+            "configOverrides": {},
+            "configDefaults": {},
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "7e9f3bd04ce3",
+          "startedAt": "2026-11-04T16:47:09.767Z",
+          "durationMs": 6761,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 19,
+            "fired": [
+              19
+            ]
+          }
+        },
+        {
+          "index": 5,
+          "block": 2,
+          "arm": "B",
+          "config": "B",
+          "condition": "high-latency",
+          "warmup": false,
+          "status": "ok",
+          "values": {
+            "startupMs": 723.5,
+            "manifestMs": 397,
+            "rebufferCount": 0,
+            "rebufferMs": 0,
+            "rebufferRatio": 0,
+            "switches": 1,
+            "droppedRatio": 0
+          },
+          "startRungHeight": 240,
+          "rungs": [
+            {
+              "t": 474.80000001192093,
+              "from": null,
+              "to": 0,
+              "height": 240,
+              "reason": "start"
+            },
+            {
+              "t": 1029.300000011921,
+              "from": 0,
+              "to": 2,
+              "height": 720,
+              "reason": "abr"
+            }
+          ],
+          "errors": [],
+          "info": {
+            "config": "B",
+            "configOverrides": {
+              "abr": {
+                "useNetworkInformation": false,
+                "defaultBandwidthEstimate": 500000,
+                "switchInterval": 4
+              },
+              "streaming": {
+                "bufferingGoal": 20
+              }
+            },
+            "configDefaults": {
+              "abr": {
+                "useNetworkInformation": true,
+                "defaultBandwidthEstimate": 1000000,
+                "switchInterval": 8
+              },
+              "streaming": {
+                "bufferingGoal": 10
+              }
+            },
+            "loadMode": "media-source",
+            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Safari/537.36"
+          },
+          "sessionId": "ecfae508c041",
+          "startedAt": "2026-11-04T16:47:16.528Z",
+          "durationMs": 6969,
+          "applied": {
+            "rulesMatch": true,
+            "requests": 28,
+            "fired": [
+              28
+            ]
+          }
+        }
+      ],
+      "aborted": null
+    }
+  ]
+}

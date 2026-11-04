@@ -26,10 +26,9 @@ const INPUTS = {
 /**
  * The files that a task runs and that are not on main yet, with the branch that has them. A task may call a file listed here while it
  * is missing; the day the branch merges, the test says that the entry has to go, and from then on it checks the file like any other.
+ * Empty since p6/ab merged (`ab/run.ts`); the mechanism stays, and the tests below exercise it with a table of their own.
  */
-const PENDING: Readonly<Record<string, string>> = {
-  'ab/run.ts': 'p6/ab',
-};
+const PENDING: Readonly<Record<string, string>> = {};
 
 /** How each task is told which engine to use (null: it is not: the A/B plan names its own). */
 const ENGINE_FLAG: Readonly<Record<string, string | null>> = {
@@ -49,6 +48,8 @@ const RESULT_PATHS = ['perf/baselines', 'docs/results', 'flake/history', 'report
 interface World {
   scripts: Readonly<Record<string, string>>;
   exists: (file: string) => boolean;
+  /** The pending table to check against: `PENDING`, unless a test brings its own. */
+  pending?: Readonly<Record<string, string>>;
 }
 
 /** The lines under a top-level key (`on:`, `permissions:`), without the key. */
@@ -201,11 +202,12 @@ function problems(text: string, world: World): string[] {
     if (flag === null && branch.includes('$ENGINE'))
       out.push(`${task} takes its engine from its plan, not from the input`);
   }
+  const pending = world.pending ?? PENDING;
   for (const file of needed) {
-    if (!world.exists(file) && PENDING[file] === undefined)
+    if (!world.exists(file) && pending[file] === undefined)
       out.push(`${file} is missing and not listed as pending`);
   }
-  for (const [file, branch] of Object.entries(PENDING)) {
+  for (const [file, branch] of Object.entries(pending)) {
     if (world.exists(file)) out.push(`${file} exists now (${branch} has merged): remove it from PENDING`);
     if (!needed.has(file)) out.push(`PENDING lists ${file}, which no task runs`);
   }
@@ -369,15 +371,20 @@ describe('the measurement workflow test fails when a promise is broken', () => {
     expect(broken(replaced('npx tsx perf/aa.ts', 'npx tsx perf/aaa.ts'))).toContain(
       'perf/aaa.ts is missing and not listed as pending',
     );
-    expect(broken((t) => t, { ...world, exists: () => true })).toContain(
-      'exists now (p6/ab has merged): remove it from PENDING',
+    // The table is empty on main; a stale entry is checked with one of its own (the file the A/B task ran while p6/ab was a branch).
+    const stale = { ab: 'p6/ab' } as const;
+    expect(broken((t) => t, { ...world, pending: { 'ab/run.ts': stale.ab } })).toContain(
+      'ab/run.ts exists now (p6/ab has merged): remove it from PENDING',
+    );
+    expect(broken((t) => t, { ...world, exists: (f) => f !== 'ab/run.ts' && world.exists(f) })).toContain(
+      'ab/run.ts is missing and not listed as pending',
     );
     expect(
       broken((t) => t, { ...world, exists: (f) => f !== 'tools/flake-collect.ts' && world.exists(f) }),
     ).toContain('tools/flake-collect.ts is missing and not listed as pending');
-    expect(broken(replaced('npm run ab', 'npm run flake:gate'))).toContain(
-      'PENDING lists ab/run.ts, which no task runs',
-    );
+    expect(
+      broken(replaced('npm run ab', 'npm run flake:gate'), { ...world, pending: { 'ab/run.ts': stale.ab } }),
+    ).toContain('PENDING lists ab/run.ts, which no task runs');
   });
 
   it('forgets to hand over the engine, or hands one to a task that has its own', () => {

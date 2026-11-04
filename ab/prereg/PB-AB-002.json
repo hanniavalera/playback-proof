@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "PB-AB-002",
+  "kind": "experiment",
+  "catalogId": "PB-AB-002",
+  "title": "Startup time of configuration B against configuration A under high latency (Chromium, local-darwin-arm64)",
+  "registeredOn": "2026-11-04",
+  "hypotheses": [
+    {
+      "metric": "startupMs",
+      "text": "The two configurations as shipped start within 100 ms of each other under 300 ms of latency: both wait for the same chain of round trips (manifest, initialization segments, first segments), and the link is not throttled. The verdict that would confirm it is equivalent within the margin; A better would mean B starts more than 100 ms slower, B better more than 100 ms faster. A and B start on different rungs, so any difference includes the first rung."
+    }
+  ],
+  "engine": "chromium",
+  "stream": "vod-cmaf",
+  "protocol": "dash",
+  "arms": { "A": "A", "B": "B" },
+  "conditions": [
+    {
+      "id": "high-latency",
+      "profile": "high-latency",
+      "rules": [{ "type": "latency", "ms": 300, "jitterMs": 100, "match": { "kind": "any" } }],
+      "rationale": "The condition the catalog row names: startup is a chain of round trips, and 300 ms before the first byte of every response (jitter 100 ms) makes each one visible and every download measurable by the player's estimator, for the whole session. The same condition as the A/A pilot."
+    }
+  ],
+  "observation": { "mediaSecondsAfterFirstFrame": 6, "sessionTimeoutMs": 60000 },
+  "sessionsPerArm": 30,
+  "warmupSessionsPerArm": 2,
+  "alpha": 0.05,
+  "bootstrapResamples": 5000,
+  "metrics": [
+    {
+      "id": "startupMs",
+      "role": "primary",
+      "direction": "lower-is-better",
+      "practicalThreshold": 100,
+      "thresholdBasis": "A tenth of a second is the smallest change in the time to the first frame that a viewer notices on a page load, so a smaller difference is not a reason to change a default. It is above the minimum detectable effect of the A/A pilot at 30 sessions per arm (55.7 ms for an increase, 52.8 ms for a decrease, 80 % power, from the sessions of configuration A under this condition), so the design can find it; the pilot says 30 sessions per arm suffice to detect it, which is the policy minimum. The threshold is also the margin of equivalence.",
+      "minimumDetectableEffect": {
+        "value": 55.7,
+        "sessionsPerArm": 30,
+        "power": 0.8,
+        "source": "docs/results/ab/PB-AB-001-high-latency.local-darwin-arm64.20261104T171111Z.power-30.json"
+      }
+    },
+    { "id": "rebufferShare", "role": "secondary", "direction": "lower-is-better" },
+    { "id": "rebufferRatio", "role": "secondary", "direction": "lower-is-better" }
+  ],
+  "decisionRule": {
+    "id": "pb-ab-v1",
+    "text": "Four verdicts and no more: B better (ship B) only if the whole interval of the primary metric lies beyond the threshold in B's favour, the Holm-adjusted p is below alpha and no primary metric is harmed; A better (do not ship B) if the primary metric is worse beyond the threshold with an interval that excludes zero; equivalent within the margin (keep A) only if the whole interval lies inside plus or minus the threshold; inconclusive (keep A, collect more sessions) otherwise. Not finding a difference is not evidence that there is none."
+  },
+  "exclusionRule": {
+    "text": "A session that errors or times out is a failed session: it is reported and never silently dropped; its metrics are left out of the comparison. The number of sessions is fixed in advance, 30 per arm after the warm-up: there is no interim analysis, no extension and no re-run to improve a result; the condition stops only after 5 failed sessions in a row. If the run is not valid (a data-quality gate fails) the report says so and the verdict is not acted on.",
+    "maxFailedShare": 0.1,
+    "abortAfterConsecutiveFailures": 5
+  },
+  "aaCheck": {
+    "source": "docs/results/ab/PB-AB-001-high-latency.local-darwin-arm64.20261104T171111Z.report.json"
+  },
+  "seed": 20261121
+}
