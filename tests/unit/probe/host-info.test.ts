@@ -1,12 +1,13 @@
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
 import { collectHostInfo, readGit, readOsName } from '../../../src/lab/probe/host-info.ts';
+import { makeScratch } from '../support/scratch.ts';
 
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
-const scratch = mkdtempSync(join(ROOT, '.cache', 'unit-git-'));
+const scratch = makeScratch('unit-git-');
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 describe('readGit', () => {

@@ -1,7 +1,6 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { FILE_FORMATS, PROBE_FILE_IDS } from '../../../src/lab/probe/formats.ts';
 import {
@@ -12,9 +11,9 @@ import {
   listTopLevelBoxes,
   probeMediaSpecHash,
 } from '../../../src/lab/probe/media.ts';
+import { makeScratch } from '../support/scratch.ts';
 
-const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
-const scratch = mkdtempSync(join(ROOT, '.cache', 'unit-media-'));
+const scratch = makeScratch('unit-media-');
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 function available(command: string): boolean {

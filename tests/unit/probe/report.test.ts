@@ -1,6 +1,5 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
 import {
   ResultFileError,
@@ -8,10 +7,10 @@ import {
   readResultFiles,
   serializeResultFile,
 } from '../../../src/lab/probe/report.ts';
+import { makeScratch } from '../support/scratch.ts';
 import { probedEngine, resultFile, verdict } from './fixtures.ts';
 
-const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
-const scratch = mkdtempSync(join(ROOT, '.cache', 'unit-report-'));
+const scratch = makeScratch('unit-report-');
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 // The tests break parsed JSON in deliberate ways; typing every path would only hide what is being broken.

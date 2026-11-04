@@ -1,8 +1,9 @@
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
+import { makeScratch } from '../support/scratch.ts';
 
 // tools/docker/pw.sh runs commands in the Playwright image that matches the pinned @playwright/test. These tests keep the
 // image tag and the pin from drifting apart and check the docker command line the script builds, without needing Docker:
@@ -11,7 +12,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 const SCRIPT = join(ROOT, 'tools', 'docker', 'pw.sh');
 const ENTRY = join(ROOT, 'tools', 'docker', 'pw-entry.sh');
-const scratch = mkdtempSync(join(ROOT, '.cache', 'unit-docker-'));
+const scratch = makeScratch('unit-docker-');
 afterAll(() => rmSync(scratch, { recursive: true, force: true }));
 
 const packageJson = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as {

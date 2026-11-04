@@ -1,13 +1,12 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { rmSync, writeFileSync } from 'node:fs';
 import { request } from 'node:http';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { parseRange, startStaticServer } from '../../../src/lab/probe/static-server.ts';
 import type { StaticServer } from '../../../src/lab/probe/static-server.ts';
+import { makeScratch } from '../support/scratch.ts';
 
-const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
-const scratch = mkdtempSync(join(ROOT, '.cache', 'unit-server-'));
+const scratch = makeScratch('unit-server-');
 
 describe('parseRange', () => {
   it.each([
