@@ -218,34 +218,27 @@ function reply(
 const ignore = (): void => undefined;
 
 async function sendFile(res: ServerResponse, file: string, head: boolean): Promise<StaticResult> {
-  let handle;
-  try {
-    handle = await open(file, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
-  } catch {
-    return reply(res, 404, head);
-  }
-  let size: number;
+  // Opened once and sized with fstat: Content-Length describes the file that is streamed, even if the path is replaced
+  // meanwhile. O_NOFOLLOW makes the last component refuse a symlink that appeared after the check.
+  const handle = await open(file, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+  let owned = false;
   try {
     const info = await handle.stat();
-    if (!info.isFile()) throw new Error('not a regular file');
-    size = info.size;
-  } catch {
-    await handle.close().catch(ignore);
-    return reply(res, 404, head);
+    if (!info.isFile()) return reply(res, 404, head);
+    res.writeHead(200, { ...NO_STORE, 'Content-Type': contentTypeFor(file), 'Content-Length': info.size });
+    if (head) {
+      res.end();
+    } else {
+      const stream = handle.createReadStream();
+      // From here the stream owns the handle: pipeline destroys it, and so closes the file, when the client goes away
+      // or the read fails. Until here, the finally below closes it.
+      owned = true;
+      await pipeline(stream, res).catch(ignore);
+    }
+    return { status: 200, file };
+  } finally {
+    if (!owned) await handle.close().catch(ignore);
   }
-  res.writeHead(200, {
-    ...NO_STORE,
-    'Content-Type': contentTypeFor(file),
-    'Content-Length': size,
-  });
-  if (head) {
-    await handle.close().catch(ignore);
-    res.end();
-  } else {
-    // The stream owns the handle from here. pipeline destroys it, and so closes the file, when the client goes away.
-    await pipeline(handle.createReadStream(), res).catch(ignore);
-  }
-  return { status: 200, file };
 }
 
 /** Writes the whole response for GET and HEAD under the mount. Never throws: what cannot be served is answered or dropped. */
