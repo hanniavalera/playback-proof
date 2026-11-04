@@ -8,7 +8,7 @@ import { describeEntry, requestsFor } from '../support/waiting.ts';
 import { checked, failure } from './fail.ts';
 import { videoFrameRate } from './instrument.ts';
 import { distinctAscending, middleOfSegment, repsOfTrack, segmentNumbers } from './segments.ts';
-import { CLOCK_RESOLUTION_MS, UNBUFFERED_FROM_SEC } from './tolerances.ts';
+import { CLOCK_RESOLUTION_MS, RESTART_CLOCK_STEP_SEC, UNBUFFERED_FROM_SEC } from './tolerances.ts';
 
 /** How many of the origin's last requests a failure message of a seek lists. */
 const ORIGIN_LINES_IN_MESSAGES = 8;
@@ -90,7 +90,12 @@ function slackSec(info: StreamInfo): number {
   return 1 / videoFrameRate(info) + CLOCK_RESOLUTION_MS / 1000;
 }
 
-/** Two readings of the media clock of a player at rate 1, and the wall clock of this process around them. */
+/** How far ahead of the wall clock a reading may be when the span contains a restart of the clock: the slack, and the step the clock takes then (`RESTART_CLOCK_STEP_SEC`). */
+function aheadSlackSec(info: StreamInfo): number {
+  return slackSec(info) + RESTART_CLOCK_STEP_SEC;
+}
+
+/** Two readings of the media clock of a player at rate 1, and the wall clock of this process around them. Every span contains a restart of the clock. */
 export interface ClockSpan {
   /** Media time where the span began: the target of a seek, where a pause left the clock, the start of the title for a restart. */
   from: number;
@@ -101,11 +106,15 @@ export interface ClockSpan {
 }
 
 /**
- * The media clock moved on like a clock: it did not go back by more than a frame, and it did not run faster than the wall clock did
- * (plus a frame, and the resolution of the clocks). The page reads the clock when it gets to it and a starved page gets to it seconds
- * late, so no distance in seconds from a position is a sound bound for a reading (ADR-092); the time the clock had to run is. A landing at
- * the start of the segment is a second behind its target and a skip to the next segment or GOP is a second or two ahead of a wall clock
- * that ran for a fraction of one, so both still fail. `subject` says what was read, for the message.
+ * The media clock moved on like a clock: it did not go back by more than a frame, and it did not run faster than the wall clock did (plus
+ * a frame, the resolution of the clocks, and the step the clock takes when it restarts). The page reads the clock when it gets to it and a
+ * starved page gets to it seconds late, so no distance in seconds from a position is a sound bound for a reading (ADR-092); the time the
+ * clock had to run is. But the clock is not wall-synchronous right after a restart: Chromium's read 49 to 60 ms ahead of the paused
+ * position at the `playing` event after a resume, 8 to 10 ms of wall clock after the call (first nightly on Linux), so every span that
+ * contains a restart (a resume, a replay, the landing of a seek and what follows it, which is every span this function judges) gets
+ * `RESTART_CLOCK_STEP_SEC` once, and no more: it is forward only and far below a real defect. A landing at the start of the segment is a
+ * second behind its target and a skip to the next segment or GOP is a second or two ahead of a wall clock that ran for a fraction of
+ * one, so both still fail. `subject` says what was read, for the message.
  */
 export function expectClockPace(span: ClockSpan, info: StreamInfo, subject: string): void {
   const slack = slackSec(info);
@@ -116,8 +125,8 @@ export function expectClockPace(span: ClockSpan, info: StreamInfo, subject: stri
     ).toBeGreaterThanOrEqual(span.from - slack);
     expect(
       span.to,
-      `${subject}: it is past the ${span.from} s the clock started from by more than the ${Math.round(span.wallMs)} ms of wall clock it had to run in (the clock cannot run faster than that), plus a frame`,
-    ).toBeLessThanOrEqual(span.from + span.wallMs / 1000 + slack);
+      `${subject}: it is past the ${span.from} s the clock started from by more than the ${Math.round(span.wallMs)} ms of wall clock it had to run in (the clock cannot run faster than that), plus a frame and the ${Math.round(RESTART_CLOCK_STEP_SEC * 1000)} ms step the clock may take when it restarts`,
+    ).toBeLessThanOrEqual(span.from + span.wallMs / 1000 + aheadSlackSec(info));
   });
 }
 
@@ -125,9 +134,10 @@ export function expectClockPace(span: ClockSpan, info: StreamInfo, subject: stri
  * The seek finished where it was asked to, judged by two readings of the clock that cannot be late: the one of the call (`target`, the
  * position the element takes at once, to the wall clock of this process from the call to the resolution of `seek()`), and the page's own
  * pair (the `seeking` and the `seeked` event carry the media time and the page time of the same instant, so the clock cannot have moved
- * between them faster than the page clock did, whenever the page got to record them). The two together are what a seek that skipped
- * ahead, or fell back to the start of its segment, fails, and what a seek that was merely read late, or that the player's stall
- * detector nudged forward by 0.1 s for every second it waited, does not.
+ * between them faster than the page clock did, whenever the page got to record them; the clock restarts at the landing, so a handler
+ * that reads after it may read the restart step). The two together are what a seek that skipped ahead, or fell back to the start of its
+ * segment, fails, and what a seek that was merely read late, or that the player's stall detector nudged forward by 0.1 s for every
+ * second it waited, does not.
  */
 export function expectLanded(
   seek: Pick<RecordedSeek, 'seeking' | 'seeked' | 'wallMs'>,
@@ -144,14 +154,15 @@ export function expectLanded(
   checked(() => {
     expect(
       seeked.mediaTime,
-      `media time of the seeked event (page clock ${seeked.t.toFixed(0)} ms) against the seeking event (${seeking.mediaTime} s, page clock ${seeking.t.toFixed(0)} ms): the clock cannot have run past it by more than the ${Math.round(pageMs)} ms of the page's own clock between the two, plus a frame`,
-    ).toBeLessThanOrEqual(seeking.mediaTime + pageMs / 1000 + slackSec(info));
+      `media time of the seeked event (page clock ${seeked.t.toFixed(0)} ms) against the seeking event (${seeking.mediaTime} s, page clock ${seeking.t.toFixed(0)} ms): the clock cannot have run past it by more than the ${Math.round(pageMs)} ms of the page's own clock between the two, plus a frame and the ${Math.round(RESTART_CLOCK_STEP_SEC * 1000)} ms step the clock may take when it restarts`,
+    ).toBeLessThanOrEqual(seeking.mediaTime + pageMs / 1000 + aheadSlackSec(info));
   });
 }
 
 /**
  * The clock moved on after a seek, a resume or a restart: a wait for it (`waitForMediaTime`) returned `span.to`, which is as far from
- * where it began as the wall clock allows (`expectClockPace`), however late the wait was served. `explanation` says what a failure means.
+ * where it began as the wall clock allows, with the restart step (`expectClockPace`), however late the wait was served. `explanation`
+ * says what a failure means.
  */
 export function expectClockContinued(span: ClockSpan, info: StreamInfo, explanation: string): void {
   expectClockPace(span, info, `media time reached (${span.to} s) after ${span.from} s, ${explanation}`);

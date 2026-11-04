@@ -389,6 +389,59 @@ describe('where the clock may be when it is read: the wall clock it had to run i
     });
   });
 
+  // The clock is not wall-synchronous right after a restart: in the first nightly on Linux, PB-VOD-005 failed both attempts in Chromium
+  // because the `playing` event after the resume read 60.5 ms and 49.1 ms past the paused position, 10 ms and 8 ms of wall clock after
+  // the call, and the first version of the bound did not allow for a step.
+  describe('the step the clock takes when it restarts', () => {
+    const resume = 'media time of the playing event after the resume';
+
+    it('accepts the steps measured at a resume, in every engine, and the clock read a second later', () => {
+      // Chromium on Linux, the two failed attempts: the events' own media times and the wall clock of the call
+      expect(() => expectClockPace({ from: 3.000375, to: 3.060896, wallMs: 10 }, info, resume)).not.toThrow();
+      expect(() => expectClockPace({ from: 2.991299, to: 3.040366, wallMs: 8 }, info, resume)).not.toThrow();
+      // the largest steps of the other engines (Firefox once 101 ms, Linux WebKit 79 ms), with the little wall clock a call can take
+      expect(() => expectClockPace({ from: 3, to: 3.101, wallMs: 25 }, info, resume)).not.toThrow();
+      expect(() => expectClockPace({ from: 3, to: 3.0792, wallMs: 20 }, info, resume)).not.toThrow();
+      // a second later the clock is 1.06 s past the pause in 1.01 s of wall clock: the step is still in it
+      expect(() =>
+        expectClockContinued({ from: 3.000375, to: 4.06, wallMs: 1010 }, info, 'the clock jumped forward'),
+      ).not.toThrow();
+    });
+
+    it('accepts a landing read right after the clock restarted at it', () => {
+      expect(() =>
+        expectLanded(
+          { seeking: at('seeking', 1000, 41), seeked: at('seeked', 1020, 41.06), wallMs: 40 },
+          41,
+          info,
+        ),
+      ).not.toThrow();
+    });
+
+    it('still refuses a jump: a resume that skipped a segment or two, one that went back to the start of its GOP or of the title', () => {
+      const skipped = /it is past the 3 s the clock started from by more than the 10 ms of wall clock/;
+      expect(() => expectClockPace({ from: 3, to: 4, wallMs: 10 }, info, resume)).toThrow(skipped);
+      expect(() => expectClockPace({ from: 3, to: 5, wallMs: 10 }, info, resume)).toThrow(skipped);
+      expect(() => expectClockPace({ from: 3, to: 2, wallMs: 10 }, info, resume)).toThrow(
+        /it is before the 3 s the clock started from/,
+      );
+      expect(() => expectClockPace({ from: 3, to: 0, wallMs: 10 }, info, resume)).toThrow(
+        /it is before the 3 s the clock started from/,
+      );
+      expect(() => expectClockContinued({ from: 3, to: 6, wallMs: 1000 }, info, 'the clock jumped')).toThrow(
+        /media time reached \(6 s\) after 3 s, the clock jumped: it is past the 3 s/,
+      );
+      // a landing a second ahead within 20 ms of the page clock, whatever the wall bracket
+      expect(() =>
+        expectLanded(
+          { seeking: at('seeking', 1000, 41), seeked: at('seeked', 1020, 42), wallMs: 3400 },
+          41,
+          info,
+        ),
+      ).toThrow(/the clock cannot have run past it by more than the 20 ms of the page's own clock/);
+    });
+  });
+
   describe('the frames of the counters', () => {
     it('counts the dropped frames as accounted for: the readings of the first macOS CI run, 22 and 24 short before, 10 and 3 after', () => {
       // presented 113 and decoded 135 with 12 dropped; presented 187 (and 12 frames before the first one) and decoded 223 with 21 dropped
