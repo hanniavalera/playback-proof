@@ -554,7 +554,7 @@ Failure triage (Phase 8) clusters the failures of a red build by root cause: a d
 <!-- BEGIN:FAULT_PROFILES -->
 | Profile | Rules sent to the service | What it is for | Used by |
 | --- | --- | --- | --- |
-| `clean` | none | The control condition: no faults. Functional tests that must not be disturbed, and the baseline of the startup and frame-rate scenarios. | PB-VOD-001, PB-PERF-001, PB-PERF-002 |
+| `clean` | none | The control condition: no faults. Functional tests that must not be disturbed, and the baseline of the startup and frame-rate scenarios. | PB-VOD-001, PB-PERF-001, PB-PERF-002, PB-PERF-004 |
 | `constrained-1500` | throttle 1,500 kbps on media requests | A 1500 kbps link carries the 360p rung with its audio (700 + 64 = 764 kbps) with headroom, but not the 720p rung (1800 + 64 = 1864 kbps): adaptive playback must settle on 360p, and a pinned 720p must struggle. | PB-ABR-005 |
 | `constrained-600` | throttle 600 kbps on media requests | A 600 kbps link carries only the 240p rung with its audio (300 + 64 = 364 kbps; 360p needs 764): the slowest connection the ladder can serve. | PB-ABR-006 |
 | `bandwidth-drop` | throttle 600 kbps on media requests, from 8 s after the first media request | A connection that weakens mid-title. The first 8 s are four segments, and the Shaka 5.3.3 default minimum switch interval is also 8 s, so the player has had the chance to climb before the link drops to what only the 240p rung can carry. The player must step down with at most one rebuffer. | PB-ABR-002, PB-ABR-003, PB-ABR-007, PB-PERF-003, PB-AB-003 |
