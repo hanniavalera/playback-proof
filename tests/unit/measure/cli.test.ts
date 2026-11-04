@@ -143,16 +143,19 @@ describe('PB-PERF perf/derive.ts: deriving the thresholds from the baselines on 
     expect(readFileSync(join(out, 'threshold-derivation.md'), 'utf8')).toContain('## Threshold derivation');
   });
 
-  it('exits with 2 and says so when there is no baseline to derive from', () => {
+  it('exits with 2 and says so when there is no baseline to derive from: an empty directory, and one that is not there', () => {
     const empty = join(SCRATCH, 'no-baselines');
     mkdirSync(empty, { recursive: true });
-    const result = tsx('perf/derive.ts', [
-      '--baseline-dir',
-      empty,
-      '--out-dir',
-      join(SCRATCH, 'derive-none'),
-    ]);
-    expect(result.status).toBe(2);
-    expect(result.stderr).toMatch(/no baseline under/);
+    for (const dir of [empty, join(SCRATCH, 'not-there')]) {
+      const result = tsx('perf/derive.ts', [
+        '--baseline-dir',
+        dir,
+        '--out-dir',
+        join(SCRATCH, 'derive-none'),
+      ]);
+      expect(result.status, dir).toBe(2);
+      expect(result.stderr, dir).toMatch(/no baseline under/);
+    }
+    expect(existsSync(join(SCRATCH, 'derive-none'))).toBe(false);
   });
 });
