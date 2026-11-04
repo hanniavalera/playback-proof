@@ -79,6 +79,18 @@ The GitHub jobs are defined by the other half of the setup, in `.github/workflow
 [TEST_STRATEGY.md](../TEST_STRATEGY.md) section 6.1, and the jobs that do not exist there yet are marked by their absence from that
 directory, not by this table.
 
+## Evidence: what the builds of this setup showed
+
+The files are in [`docs/results/jenkins`](../docs/results/jenkins): `build-<n>.json` (the result, every stage with its duration and the
+time it waited for an executor, the versions of Jenkins, of its plugins and of the tools on the agent, the tests per engine, the commit
+that was built) and `build-<n>-console.txt` (the console log cut down to the stage markers and the summary of each gate). The
+numbers are single runs on a Docker VM that other work shared; they are not a benchmark.
+
+| Build | What it was                                                                     | Result  | Stage durations (seconds)                                                                                                                              |
+| ----- | ------------------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2     | Not planned: four Vitest workers on the 3-CPU agent                              | FAILURE | Install 4.5, Static 9.0, **Unit 84.1: failed** (a media test whose output depends on the load of the machine); Streams and Merge gate skipped         |
+| 3     | The first full build, cold stream cache, two executors, two Vitest workers       | SUCCESS | Install 15.6, Static 12.8, Unit 109.5, Streams 175.6 (generated), Merge gate 54.5 (chromium 27.6, firefox 29.6, chromium-cpu4x 47.3, webkit 54.3, the last two including about 28 and 30 waiting for an executor); 370.7 in all |
+
 ## Tear it down
 
 ```sh
