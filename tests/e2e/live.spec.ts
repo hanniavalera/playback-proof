@@ -55,6 +55,17 @@ const PLAYED_AFTER_SEEK_SEC = 2;
 /** A seek lands within half a segment of its target: a clip to the start of the window is seconds away, a frame of slack is not. */
 const LANDING_TOLERANCE_SEC = 1;
 
+/**
+ * PB-LIVE-006: how many live segments the origin publishes while the viewer is paused (the pause is bounded by the origin's clock, not
+ * by a number of seconds), and how far the media clock may move while paused (a paused element's clock does not move at all: this is
+ * the slack for the engine's own rounding) or differ from the paused position at the first `playing` after the resume.
+ */
+const PAUSED_SEGMENTS = 4;
+const HELD_TOLERANCE_SEC = 0.1;
+const RESUME_TOLERANCE_SEC = 0.5;
+const PLAYED_BEFORE_PAUSE_SEC = 2;
+const PLAYED_AFTER_RESUME_SEC = 2;
+
 test(
   'PB-LIVE-001 joins near the live edge: first frame, and latency at the first frame within the p95 limit',
   { tag: ['@merge', '@cpu', '@live', '@dash'] },
@@ -458,5 +469,122 @@ test(
     ).toBeLessThanOrEqual(segmentMs);
     expectHealthyPlayback(settled);
     expectNoErrors(settled);
+  },
+);
+
+test(
+  'PB-LIVE-006 pause and resume in live: resume continues from the paused position while it is inside the DVR window',
+  { tag: ['@release', '@live', '@dash'] },
+  async ({ newSession, streamFor, player }, testInfo) => {
+    test.setTimeout(60_000);
+    const session = await newSession({
+      stream: streamFor('live', 'dash'),
+      protocol: 'dash',
+      faults: profile('clean'),
+    });
+    const live = liveClockOf(session);
+    const windowMs = live.windowSegments * live.segmentDurationSec * 1000;
+    const segmentMs = live.segmentDurationSec * 1000;
+    const { reps } = await streamInfoOf(session);
+    const videoReps = reps.filter((rep) => rep.track === 'video').map((rep) => rep.id);
+    const qa = await player(session).open();
+    await qa.waitFor('firstframe');
+    await qa.waitForMediaTime((await qa.metrics()).playback.currentTime + PLAYED_BEFORE_PAUSE_SEC);
+
+    // The pause. `pause()` resolves on `paused`; the position, the origin's edge and both cursors are taken at that moment.
+    await qa.pause();
+    const atPause = await qa.metrics();
+    const pausedAt = atPause.playback.currentTime;
+    const edgeAtPause = await publishedEdge(session);
+    const eventsFrom = await qa.cursor();
+    const logFrom = await requestLogCursor(session);
+    expect(atPause.playback.paused, 'media element after pause() (metrics.playback.paused)').toBe(true);
+
+    // The pause lasts until the origin has published PAUSED_SEGMENTS more segments, and says so to the player: a manifest answered
+    // after the edge reached that number. The window is the origin's clock, so the wait is a positive event of the server's log.
+    const targetEdge = edgeAtPause + PAUSED_SEGMENTS;
+    await waitForRequest(
+      session,
+      (entry) => answeredManifest()(entry) && edgeAt(live, entry.t) >= targetEdge,
+      { since: logFrom, timeoutMs: (PAUSED_SEGMENTS + 3) * segmentMs },
+    ).catch((error: Error) => {
+      throw new Error(
+        `the player did not ask for a manifest listing segment ${targetEdge} (the origin published ${edgeAtPause} when it was paused): it stopped tracking the live window while paused.\n${error.message}`,
+      );
+    });
+    const held = await qa.metrics();
+    const edgeAtResume = await publishedEdge(session);
+    const duringPause = await qa.events(eventsFrom);
+    const logDuringPause = await session.service.log(session.id, logFrom);
+
+    // The resume. The first `playing` after it says where the media clock was when the player went on.
+    const resumeFrom = await qa.cursor();
+    await qa.play();
+    const playing = await qa.waitFor('playing', { since: resumeFrom });
+    await qa.waitForMediaTime(pausedAt + PLAYED_AFTER_RESUME_SEC);
+    const resumed = await qa.metrics();
+    const afterResume = await qa.events(resumeFrom);
+    recordMeasured(testInfo, {
+      pausedAt,
+      heldAt: held.playback.currentTime,
+      pausedSegments: edgeAtResume - edgeAtPause,
+      latencyBeforePauseMs: atPause.live.latencyMs,
+      latencyAtResumeMs: held.live.latencyMs,
+      latencyAfterResumeMs: resumed.live.latencyMs,
+      playingAt: playing.mediaTime,
+      resumedAt: resumed.playback.currentTime,
+      manifestsWhilePaused: requestsFor(logDuringPause, { kind: 'manifest' }).length,
+      videoSegmentsWhilePaused: requestsFor(logDuringPause, { kind: 'segment', rep: videoReps })
+        .map((entry) => entry.number)
+        .filter((n): n is number => n !== undefined),
+    });
+
+    // 1. The pause held the clock where it was, while the origin went on: nothing played, nothing jumped, in between.
+    expect(
+      Math.abs(held.playback.currentTime - pausedAt),
+      `media time moved while paused: it is ${held.playback.currentTime.toFixed(2)} s after the origin published ${edgeAtResume - edgeAtPause} more segments, the player was paused at ${pausedAt.toFixed(2)} s (metrics.playback.currentTime)`,
+    ).toBeLessThanOrEqual(HELD_TOLERANCE_SEC);
+    expect(
+      duringPause.filter((event) =>
+        ['playing', 'seeking', 'seeked', 'live-edge-seek', 'error'].includes(event.name),
+      ),
+      'player events between the pause and the resume (qa.events()): none is expected from a paused player',
+    ).toEqual([]);
+    expect(
+      edgeAtResume - edgeAtPause,
+      'segments the origin published during the pause',
+    ).toBeGreaterThanOrEqual(PAUSED_SEGMENTS);
+
+    // 2. The resume continued from the paused position (not from the live edge, which is the paused latency plus the pause away) ...
+    expect(
+      Math.abs(playing.mediaTime - pausedAt),
+      `media time of the first 'playing' after the resume, ${playing.mediaTime.toFixed(2)} s, against the paused position ${pausedAt.toFixed(2)} s`,
+    ).toBeLessThanOrEqual(RESUME_TOLERANCE_SEC);
+    expect(
+      afterResume.filter((event) => ['seeking', 'live-edge-seek'].includes(event.name)),
+      'seeks after the resume (qa.events()): the player must continue, not jump',
+    ).toEqual([]);
+    expect(resumed.playback.currentTime, 'media time after resume and 2 s of playing').toBeGreaterThanOrEqual(
+      pausedAt + PLAYED_AFTER_RESUME_SEC,
+    );
+    // ... and that position is still inside the DVR window: it is behind the edge by what it was before the pause plus the pause.
+    expect(
+      resumed.live.latencyMs,
+      'latency after the resume (metrics.live.latencyMs) is null',
+    ).not.toBeNull();
+    const latencyMs = resumed.live.latencyMs as number;
+    const latencyBeforeMs = atPause.live.latencyMs as number;
+    expect(
+      latencyMs,
+      `latency after the resume (metrics.live.latencyMs): ${seconds(latencyMs)} behind the edge, and the DVR window is ${seconds(windowMs)}`,
+    ).toBeLessThanOrEqual(windowMs);
+    // The pause was longer than (published - 1) segments and the two latencies are read a moment apart, so one more segment is the margin.
+    expect(
+      latencyMs - latencyBeforeMs,
+      `growth of the latency across the pause (metrics.live.latencyMs: ${seconds(latencyBeforeMs)} before, ${seconds(latencyMs)} after): the origin published ${edgeAtResume - edgeAtPause} segments meanwhile, so a resume from the paused position is about that many segments further behind; a much smaller growth is a jump towards the edge`,
+    ).toBeGreaterThanOrEqual((edgeAtResume - edgeAtPause - 2) * segmentMs);
+    expectNoRebuffer(resumed);
+    expectHealthyPlayback(resumed);
+    expectNoErrors(resumed);
   },
 );
