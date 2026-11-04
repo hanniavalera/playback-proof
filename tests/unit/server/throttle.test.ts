@@ -398,8 +398,9 @@ describe.concurrent('sharing: one bucket is one link', () => {
     console.info(
       `[throttle] audio 60000 bytes next to video 400000 bytes on 1500 kbps: audio finished after ${audioMs.toFixed(0)} ms (alone it would take ${((60_000 * 8) / 1500).toFixed(0)} ms, behind the whole video ${(((400_000 + 60_000) * 8) / 1500).toFixed(0)} ms), video had ${videoByThen} bytes by then`,
     );
+    // Fair share: by the time the audio is done the video has moved about as many bytes, plus the burst that went to whoever asked first.
     expect(audioMs).toBeLessThan(((60_000 * 2 + CHUNK_BYTES) * 8) / 1500 + 150);
-    expect(Math.abs(videoByThen - 60_000)).toBeLessThan(60_000 * 0.3 + CHUNK_BYTES);
+    expect(Math.abs(videoByThen - (60_000 + CHUNK_BYTES))).toBeLessThan(60_000 * 0.3);
   });
 
   it.each([
