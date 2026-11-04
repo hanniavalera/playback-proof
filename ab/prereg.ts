@@ -304,7 +304,8 @@ function validateMetric(
       }
     }
   }
-  if (role === 'primary' && (kind === 'experiment' || kind === 'exploratory')) {
+  // Only a plan that decides must show that its threshold can be told from noise: an exploratory plan estimates and decides nothing.
+  if (role === 'primary' && kind === 'experiment') {
     const mde = metric.minimumDetectableEffect;
     if (mde === undefined) {
       problems.push(

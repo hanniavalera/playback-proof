@@ -238,6 +238,27 @@ describe('PB-AB pre-registration: a valid plan', () => {
     });
     expect(problemsOf(plan)).toStrictEqual([]);
   });
+
+  it('asks an exploratory plan for no minimum detectable effect, because it decides nothing, but keeps every other rule and checks the MDE when there is one', () => {
+    const exploratory = (edit: (p: Json) => void = () => {}) =>
+      changed((p) => {
+        p.kind = 'exploratory';
+        p.catalogId = null;
+        delete p.aaCheck;
+        edit(p);
+      });
+    expect(problemsOf(exploratory((p) => delete metrics(p)[0]?.minimumDetectableEffect))).toStrictEqual([]);
+    expect(problemsOf(exploratory())).toStrictEqual([]);
+    // Every other rule still holds: the sessions, the threshold and its basis, and an MDE that is given must be a valid one.
+    expect(problemsOf(exploratory((p) => (p.sessionsPerArm = 20)))).not.toStrictEqual([]);
+    expect(
+      problemsOf(exploratory((p) => delete (metrics(p)[0] as Json).practicalThreshold)).join('\n'),
+    ).toMatch(/practicalThreshold is required for a primary metric/);
+    // An experiment still needs it.
+    expect(problemsOf(changed((p) => delete metrics(p)[0]?.minimumDetectableEffect)).join('\n')).toMatch(
+      /minimumDetectableEffect is required/,
+    );
+  });
 });
 
 describe('PB-AB pre-registration: what is refused', () => {
