@@ -1,6 +1,7 @@
 import type { RequestLogEntry } from '../../../src/shared/api.ts';
 import { DEFAULT_WAIT_MS } from './player.ts';
 import type { TestSession } from './session.ts';
+import { atCaller } from './stack.ts';
 
 // The waits that are not player events, and what a spec asserts on once it has the server's request log. The server is the second
 // observation channel (docs/CONTRACTS.md section 4): the player says what it did, the log says what was asked of the origin.
@@ -75,9 +76,10 @@ export async function waitForRequests(
   } catch (error) {
     if (!(error instanceof Error) || !error.message.includes('did not reach the expected state')) throw error;
     const wanted = count === 1 ? 'a request' : `${count} requests`;
-    throw new Error(
-      `waited ${timeoutMs} ms for ${wanted} of session ${session.id} matching ${String(predicate).slice(0, 200)}.\n${describeLog(latest)}`,
-      { cause: error },
+    throw atCaller(
+      new Error(
+        `waited ${timeoutMs} ms for ${wanted} of session ${session.id} matching ${String(predicate).slice(0, 200)}.\n${describeLog(latest)}`,
+      ),
     );
   }
 }

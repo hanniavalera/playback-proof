@@ -1,10 +1,12 @@
-import type { QAError, QAMetrics } from '../../../src/shared/qa.ts';
 import { expect } from '@playwright/test';
+import type { QAError, QAMetrics } from '../../../src/shared/qa.ts';
 import type { PlayerHandle } from './player.ts';
+import { checkedAtCaller } from './stack.ts';
 
 // Readable assertions over the hook's metrics. Each names the metric (as the property a reader would look up in docs/METRICS.md) and
 // the value it saw, so a red test says what was wrong without opening the report. Playwright's `expect` underneath: the failure
-// carries the expected and received values and is a step of the report.
+// carries the expected and received values. The failure leaves with the library's frames removed, so the report's code frame is the
+// line of the spec that called the helper.
 
 /** `BAD_HTTP_STATUS (code 1001, severity 2, shaka): HTTP error status 404`. */
 export function describeError(error: QAError): string {
@@ -13,7 +15,9 @@ export function describeError(error: QAError): string {
 
 /** No error of any severity: what a clean network must produce. */
 export function expectNoErrors(metrics: QAMetrics): void {
-  expect(metrics.errors.map(describeError), 'player errors (metrics.errors): expected none').toEqual([]);
+  checkedAtCaller(() => {
+    expect(metrics.errors.map(describeError), 'player errors (metrics.errors): expected none').toEqual([]);
+  });
 }
 
 /**
@@ -21,17 +25,19 @@ export function expectNoErrors(metrics: QAMetrics): void {
  * defined (a first frame was presented) and frames were decoded. Recoverable errors are allowed here (use `expectNoErrors` to forbid them).
  */
 export function expectHealthyPlayback(metrics: QAMetrics): void {
-  const critical = metrics.errors.filter((error) => error.severity >= 2).map(describeError);
-  expect(critical, 'critical player errors (metrics.errors with severity 2): expected none').toEqual([]);
-  expect(metrics.state, 'player state (metrics.state): the player is in the error state').not.toBe('error');
-  expect(
-    metrics.startupMs,
-    'startup time (metrics.startupMs) is null: the first frame was never presented',
-  ).not.toBeNull();
-  expect(
-    metrics.frames.decoded,
-    'decoded frames (metrics.frames.decoded): the player decoded nothing',
-  ).toBeGreaterThan(0);
+  checkedAtCaller(() => {
+    const critical = metrics.errors.filter((error) => error.severity >= 2).map(describeError);
+    expect(critical, 'critical player errors (metrics.errors with severity 2): expected none').toEqual([]);
+    expect(metrics.state, 'player state (metrics.state): the player is in the error state').not.toBe('error');
+    expect(
+      metrics.startupMs,
+      'startup time (metrics.startupMs) is null: the first frame was never presented',
+    ).not.toBeNull();
+    expect(
+      metrics.frames.decoded,
+      'decoded frames (metrics.frames.decoded): the player decoded nothing',
+    ).toBeGreaterThan(0);
+  });
 }
 
 function describeRebuffers(metrics: QAMetrics): string {
@@ -46,17 +52,21 @@ function describeRebuffers(metrics: QAMetrics): string {
 
 /** No rebuffer after the first frame outside a seek (docs/METRICS.md, "Rebuffer event"). */
 export function expectNoRebuffer(metrics: QAMetrics): void {
-  expect(
-    metrics.rebuffer.count,
-    `rebuffers (metrics.rebuffer.count): expected none, saw ${describeRebuffers(metrics)}`,
-  ).toBe(0);
+  checkedAtCaller(() => {
+    expect(
+      metrics.rebuffer.count,
+      `rebuffers (metrics.rebuffer.count): expected none, saw ${describeRebuffers(metrics)}`,
+    ).toBe(0);
+  });
 }
 
 export function expectAtMostRebuffers(metrics: QAMetrics, limit: number): void {
-  expect(
-    metrics.rebuffer.count,
-    `rebuffers (metrics.rebuffer.count): expected at most ${limit}, saw ${describeRebuffers(metrics)}`,
-  ).toBeLessThanOrEqual(limit);
+  checkedAtCaller(() => {
+    expect(
+      metrics.rebuffer.count,
+      `rebuffers (metrics.rebuffer.count): expected at most ${limit}, saw ${describeRebuffers(metrics)}`,
+    ).toBeLessThanOrEqual(limit);
+  });
 }
 
 /**

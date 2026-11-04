@@ -232,7 +232,8 @@ describe('PlayerHandle: errors', () => {
     expect((error as Error).message).toBe(
       "qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n3 events so far, the last 3:\n  #0 t=1.0 media=0.000 load-requested\n  #1 t=2.0 media=0.000 loaded",
     );
-    expect((error as Error).cause).toBe(pageError);
+    expect((error as Error).stack).not.toMatch(/tests[\\/]e2e[\\/]support[\\/]/);
+    expect((error as Error).stack).toContain('player.test.ts');
   });
 
   it('applies to every call, not only waits', async () => {

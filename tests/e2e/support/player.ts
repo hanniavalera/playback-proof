@@ -10,6 +10,7 @@ import type {
   QAWaitOptions,
 } from '../../../src/shared/qa.ts';
 import { playerUrl } from '../../../src/shared/urls.ts';
+import { atCaller } from './stack.ts';
 
 // `PlayerHandle`: the one way a spec talks to the player page. It is a typed wrapper over `window.__qa` (src/shared/qa.ts), so a
 // spec never writes `page.evaluate`, never sees the page boundary, and cannot wait on a timer: every wait is an event of the
@@ -44,14 +45,14 @@ const MAX_CONSOLE_ENTRIES = 200;
 
 /** Playwright wraps what the page threw: "page.evaluate: Error: <message>\n    at <page stack>". The message is all a reader needs. */
 function readable(error: unknown): Error {
-  if (!(error instanceof Error)) return new Error(String(error));
+  if (!(error instanceof Error)) return atCaller(new Error(String(error)));
   const text = error.message
     .replace(/^page\.(evaluate|waitForFunction): (Error: )?/, '')
     .split('\n')
     .filter((line) => !/^\s+at /.test(line))
     .join('\n')
     .trimEnd();
-  return Object.assign(new Error(text, { cause: error }), { name: error.name });
+  return atCaller(Object.assign(new Error(text), { name: error.name }));
 }
 
 function describeMessage(message: ConsoleMessage): ConsoleEntry | null {
@@ -105,22 +106,25 @@ export class PlayerHandle {
         },
       );
     } catch (error) {
-      throw new Error(
-        `the player page did not boot (${url}): ${readable(error).message}${this.consoleSummary()}`,
-        {
-          cause: error,
-        },
+      throw atCaller(
+        new Error(
+          `the player page did not boot (${url}): ${readable(error).message}${this.consoleSummary()}`,
+        ),
       );
     }
     const info = await this.info();
     if (info.paramProblems.length > 0) {
-      throw new Error(
-        `the player page could not use its parameters (${url}):\n  - ${info.paramProblems.join('\n  - ')}`,
+      throw atCaller(
+        new Error(
+          `the player page could not use its parameters (${url}):\n  - ${info.paramProblems.join('\n  - ')}`,
+        ),
       );
     }
     if (!info.supported) {
-      throw new Error(
-        `Shaka reports that this browser is not supported (shaka.Player.isBrowserSupported() is false): ${info.userAgent}${this.consoleSummary()}`,
+      throw atCaller(
+        new Error(
+          `Shaka reports that this browser is not supported (shaka.Player.isBrowserSupported() is false): ${info.userAgent}${this.consoleSummary()}`,
+        ),
       );
     }
     return this;
