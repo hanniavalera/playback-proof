@@ -1,0 +1,453 @@
+{
+  "config": {
+    "rootDir": "/work/playback-proof/tests",
+    "projects": [
+      { "name": "chromium", "retries": 1 },
+      { "name": "firefox", "retries": 1 },
+      { "name": "webkit", "retries": 1 },
+      { "name": "chromium-cpu4x", "retries": 1 }
+    ]
+  },
+  "suites": [
+    {
+      "title": "e2e/vod-seek.spec.ts",
+      "specs": [
+        {
+          "title": "PB-VOD-006 seek forward inside the buffered range: seeked fires and playback continues from the target with no rebuffer",
+          "tags": ["merge", "dash"],
+          "file": "e2e/vod-seek.spec.ts",
+          "line": 20,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15346,
+                  "retry": 0,
+                  "startTime": "2026-11-04T16:08:22.513Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n10 events so far, the last 10:\n  #0 t=88.2 media=0.000 load-requested {\"uri\":\"/s/3e19f504cdfe/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=89.2 media=0.000 buffering-start\n  #2 t=98.6 media=0.000 manifest-loaded\n  #3 t=108.5 media=0.000 buffering-start\n  #4 t=109.4 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=110.3 media=0.000 loaded\n  #6 t=247.0 media=0.000 error {\"code\":3016,\"codeName\":\"VIDEO_ERROR\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.VIDEO_ERROR: Shaka Error 3016\",\"data\":[3,\"undefined\",\"PipelineStatus::PIPELINE_…\n  #7 t=247.2 media=0.000 paused\n  #8 t=247.5 media=0.000 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"AbortError: The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22\",\"source\":\"play\",\"code…\n  #9 t=2062.3 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n10 events so far, the last 10:\n  #0 t=88.2 media=0.000 load-requested {\"uri\":\"/s/3e19f504cdfe/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=89.2 media=0.000 buffering-start\n  #2 t=98.6 media=0.000 manifest-loaded\n  #3 t=108.5 media=0.000 buffering-start\n  #4 t=109.4 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=110.3 media=0.000 loaded\n  #6 t=247.0 media=0.000 error {\"code\":3016,\"codeName\":\"VIDEO_ERROR\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.VIDEO_ERROR: Shaka Error 3016\",\"data\":[3,\"undefined\",\"PipelineStatus::PIPELINE_…\n  #7 t=247.2 media=0.000 paused\n  #8 t=247.5 media=0.000 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"AbortError: The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22\",\"source\":\"play\",\"code…\n  #9 t=2062.3 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n    at /work/playback-proof/tests/e2e/vod-seek.spec.ts:31:5"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "qa-events.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-chromium/qa-events.json"
+                    },
+                    {
+                      "name": "qa-metrics.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-chromium/qa-metrics.json"
+                    },
+                    {
+                      "name": "qa-info.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-chromium/qa-info.json"
+                    },
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-chromium/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-chromium/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/01-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-chromium/request-log.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15315,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:08:38.387Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n10 events so far, the last 10:\n  #0 t=79.7 media=0.000 load-requested {\"uri\":\"/s/fc58b5870c38/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=80.6 media=0.000 buffering-start\n  #2 t=87.9 media=0.000 manifest-loaded\n  #3 t=91.7 media=0.000 buffering-start\n  #4 t=92.3 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=93.0 media=0.000 loaded\n  #6 t=197.7 media=0.000 error {\"code\":3016,\"codeName\":\"VIDEO_ERROR\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.VIDEO_ERROR: Shaka Error 3016\",\"data\":[3,\"undefined\",\"PipelineStatus::PIPELINE_…\n  #7 t=197.8 media=0.000 paused\n  #8 t=198.0 media=0.000 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"AbortError: The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22\",\"source\":\"play\",\"code…\n  #9 t=2568.1 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n10 events so far, the last 10:\n  #0 t=79.7 media=0.000 load-requested {\"uri\":\"/s/fc58b5870c38/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=80.6 media=0.000 buffering-start\n  #2 t=87.9 media=0.000 manifest-loaded\n  #3 t=91.7 media=0.000 buffering-start\n  #4 t=92.3 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=93.0 media=0.000 loaded\n  #6 t=197.7 media=0.000 error {\"code\":3016,\"codeName\":\"VIDEO_ERROR\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.VIDEO_ERROR: Shaka Error 3016\",\"data\":[3,\"undefined\",\"PipelineStatus::PIPELINE_…\n  #7 t=197.8 media=0.000 paused\n  #8 t=198.0 media=0.000 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"AbortError: The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22\",\"source\":\"play\",\"code…\n  #9 t=2568.1 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n    at /work/playback-proof/tests/e2e/vod-seek.spec.ts:31:5"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "PB-VOD-006 seek forward inside the buffered range: seeked fires and playback continues from the target with no rebuffer",
+          "tags": ["merge", "dash"],
+          "file": "e2e/vod-seek.spec.ts",
+          "line": 20,
+          "tests": [
+            {
+              "projectName": "webkit",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 16030,
+                  "retry": 0,
+                  "startTime": "2026-11-04T16:09:57.832Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n28 events so far, the last 15:\n  #13 t=3547.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":1,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #14 t=3547.0 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #15 t=3553.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #16 t=3577.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #17 t=3593.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #18 t=3608.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #19 t=3628.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #20 t=3645.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #21 t=3659.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #22 t=3676.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #23 t=3699.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #24 t=3713.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #25 t=4576.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #26 t=4685.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #27 t=5184.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n28 events so far, the last 15:\n  #13 t=3547.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":1,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #14 t=3547.0 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #15 t=3553.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #16 t=3577.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #17 t=3593.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #18 t=3608.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #19 t=3628.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #20 t=3645.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #21 t=3659.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #22 t=3676.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #23 t=3699.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #24 t=3713.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #25 t=4576.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #26 t=4685.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #27 t=5184.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n    at /work/playback-proof/tests/e2e/vod-seek.spec.ts:31:5"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "qa-events.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-webkit/qa-events.json"
+                    },
+                    {
+                      "name": "qa-metrics.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-webkit/qa-metrics.json"
+                    },
+                    {
+                      "name": "qa-info.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-webkit/qa-info.json"
+                    },
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-webkit/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-webkit/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/02-PB-VOD-006-seek-forward-inside-the-buffered-range-seeked-fi-webkit/request-log.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15712,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:10:14.678Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n60 events so far, the last 15:\n  #45 t=3552.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #46 t=3575.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #47 t=3601.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #48 t=3621.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #49 t=3652.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #50 t=3679.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #51 t=3700.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #52 t=3722.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #53 t=3743.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #54 t=3765.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #55 t=4712.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":1,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #56 t=4712.0 media=0.000 variant-changed {\"from\":2,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"abr\"}\n  #57 t=4716.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":1,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #58 t=4716.0 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #59 t=4725.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n60 events so far, the last 15:\n  #45 t=3552.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #46 t=3575.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #47 t=3601.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #48 t=3621.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #49 t=3652.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #50 t=3679.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #51 t=3700.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #52 t=3722.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #53 t=3743.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #54 t=3765.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #55 t=4712.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":1,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #56 t=4712.0 media=0.000 variant-changed {\"from\":2,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"abr\"}\n  #57 t=4716.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":1,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #58 t=4716.0 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #59 t=4725.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n    at /work/playback-proof/tests/e2e/vod-seek.spec.ts:31:5"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "suites": []
+    },
+    {
+      "title": "e2e/vod-start.spec.ts",
+      "specs": [
+        {
+          "title": "PB-VOD-001 DASH VOD starts: first frame presented, 3 s of media time reached, no error",
+          "tags": ["merge", "cpu", "dash"],
+          "file": "e2e/vod-start.spec.ts",
+          "line": 78,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15326,
+                  "retry": 0,
+                  "startTime": "2026-11-04T16:08:54.201Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n10 events so far, the last 10:\n  #0 t=74.8 media=0.000 load-requested {\"uri\":\"/s/4baeb6aabb1d/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=75.7 media=0.000 buffering-start\n  #2 t=82.6 media=0.000 manifest-loaded\n  #3 t=85.9 media=0.000 buffering-start\n  #4 t=86.3 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=87.0 media=0.000 loaded\n  #6 t=192.9 media=0.000 error {\"code\":3016,\"codeName\":\"VIDEO_ERROR\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.VIDEO_ERROR: Shaka Error 3016\",\"data\":[3,\"undefined\",\"PipelineStatus::PIPELINE_…\n  #7 t=193.0 media=0.000 paused\n  #8 t=193.1 media=0.000 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"AbortError: The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22\",\"source\":\"play\",\"code…\n  #9 t=1807.4 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n10 events so far, the last 10:\n  #0 t=74.8 media=0.000 load-requested {\"uri\":\"/s/4baeb6aabb1d/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=75.7 media=0.000 buffering-start\n  #2 t=82.6 media=0.000 manifest-loaded\n  #3 t=85.9 media=0.000 buffering-start\n  #4 t=86.3 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=87.0 media=0.000 loaded\n  #6 t=192.9 media=0.000 error {\"code\":3016,\"codeName\":\"VIDEO_ERROR\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.VIDEO_ERROR: Shaka Error 3016\",\"data\":[3,\"undefined\",\"PipelineStatus::PIPELINE_…\n  #7 t=193.0 media=0.000 paused\n  #8 t=193.1 media=0.000 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"AbortError: The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22\",\"source\":\"play\",\"code…\n  #9 t=1807.4 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n    at expectStartsAndPlays (/work/playback-proof/tests/e2e/vod-start.spec.ts:24:3)\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:88:5"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "qa-events.json",
+                      "contentType": "application/json",
+                      "path": "test-results/03-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-chromium/qa-events.json"
+                    },
+                    {
+                      "name": "qa-metrics.json",
+                      "contentType": "application/json",
+                      "path": "test-results/03-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-chromium/qa-metrics.json"
+                    },
+                    {
+                      "name": "qa-info.json",
+                      "contentType": "application/json",
+                      "path": "test-results/03-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-chromium/qa-info.json"
+                    },
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/03-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-chromium/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/03-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-chromium/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/03-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-chromium/request-log.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15314,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:09:10.046Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n10 events so far, the last 10:\n  #0 t=72.3 media=0.000 load-requested {\"uri\":\"/s/4b107bd703a3/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=73.1 media=0.000 buffering-start\n  #2 t=80.7 media=0.000 manifest-loaded\n  #3 t=88.5 media=0.000 buffering-start\n  #4 t=88.9 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=89.6 media=0.000 loaded\n  #6 t=187.7 media=0.000 error {\"code\":3016,\"codeName\":\"VIDEO_ERROR\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.VIDEO_ERROR: Shaka Error 3016\",\"data\":[3,\"undefined\",\"PipelineStatus::PIPELINE_…\n  #7 t=187.8 media=0.000 paused\n  #8 t=187.8 media=0.000 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"AbortError: The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22\",\"source\":\"play\",\"code…\n  #9 t=1630.8 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n10 events so far, the last 10:\n  #0 t=72.3 media=0.000 load-requested {\"uri\":\"/s/4b107bd703a3/vod-cmaf/dash/manifest.mpd\"}\n  #1 t=73.1 media=0.000 buffering-start\n  #2 t=80.7 media=0.000 manifest-loaded\n  #3 t=88.5 media=0.000 buffering-start\n  #4 t=88.9 media=0.000 variant-changed {\"from\":null,\"to\":2,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=89.6 media=0.000 loaded\n  #6 t=187.7 media=0.000 error {\"code\":3016,\"codeName\":\"VIDEO_ERROR\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.VIDEO_ERROR: Shaka Error 3016\",\"data\":[3,\"undefined\",\"PipelineStatus::PIPELINE_…\n  #7 t=187.8 media=0.000 paused\n  #8 t=187.8 media=0.000 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"AbortError: The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22\",\"source\":\"play\",\"code…\n  #9 t=1630.8 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n    at expectStartsAndPlays (/work/playback-proof/tests/e2e/vod-start.spec.ts:24:3)\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:88:5"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "PB-VOD-002 HLS VOD starts: first frame presented, 3 s of media time reached, no error",
+          "tags": ["merge", "hls"],
+          "file": "e2e/vod-start.spec.ts",
+          "line": 92,
+          "tests": [
+            {
+              "projectName": "chromium",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15358,
+                  "retry": 0,
+                  "startTime": "2026-11-04T16:09:25.838Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n14 events so far, the last 14:\n  #0 t=69.6 media=0.000 load-requested {\"uri\":\"/s/160a2694f24a/vod-cmaf/hls/master.m3u8\"}\n  #1 t=70.4 media=0.000 buffering-start\n  #2 t=92.1 media=0.000 manifest-loaded\n  #3 t=101.5 media=0.000 buffering-start\n  #4 t=101.9 media=0.000 variant-changed {\"from\":null,\"to\":11,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=102.7 media=0.000 loaded\n  #6 t=200.3 media=0.000 error {\"code\":3016,\"codeName\":\"VIDEO_ERROR\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.VIDEO_ERROR: Shaka Error 3016\",\"data\":[3,\"undefined\",\"PipelineStatus::PIPELINE_…\n  #7 t=200.5 media=0.000 paused\n  #8 t=200.6 media=0.000 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"AbortError: The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22\",\"source\":\"play\",\"code…\n  #9 t=1761.2 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":1,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #10 t=1761.2 media=0.000 variant-changed {\"from\":11,\"to\":8,\"bandwidth\":746778,\"height\":360,\"reason\":\"abr\"}\n  #11 t=1765.4 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #12 t=1770.6 media=0.000 error {\"code\":0,\"codeName\":\"MEDIA_SOURCE_RECOVERED\",\"category\":0,\"severity\":1,\"message\":\"Shaka reset the MediaSource to recover from a media error that it did not rep…\n  #13 t=1874.2 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n14 events so far, the last 14:\n  #0 t=69.6 media=0.000 load-requested {\"uri\":\"/s/160a2694f24a/vod-cmaf/hls/master.m3u8\"}\n  #1 t=70.4 media=0.000 buffering-start\n  #2 t=92.1 media=0.000 manifest-loaded\n  #3 t=101.5 media=0.000 buffering-start\n  #4 t=101.9 media=0.000 variant-changed {\"from\":null,\"to\":11,\"bandwidth\":1845302,\"height\":720,\"reason\":\"start\"}\n  #5 t=102.7 media=0.000 loaded\n  #6 t=200.3 media=0.000 error {\"code\":3016,\"codeName\":\"VIDEO_ERROR\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.VIDEO_ERROR: Shaka Error 3016\",\"data\":[3,\"undefined\",\"PipelineStatus::PIPELINE_…\n  #7 t=200.5 media=0.000 paused\n  #8 t=200.6 media=0.000 error {\"code\":0,\"category\":0,\"severity\":1,\"message\":\"AbortError: The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22\",\"source\":\"play\",\"code…\n  #9 t=1761.2 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":1,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #10 t=1761.2 media=0.000 variant-changed {\"from\":11,\"to\":8,\"bandwidth\":746778,\"height\":360,\"reason\":\"abr\"}\n  #11 t=1765.4 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #12 t=1770.6 media=0.000 error {\"code\":0,\"codeName\":\"MEDIA_SOURCE_RECOVERED\",\"category\":0,\"severity\":1,\"message\":\"Shaka reset the MediaSource to recover from a media error that it did not rep…\n  #13 t=1874.2 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n    at expectStartsAndPlays (/work/playback-proof/tests/e2e/vod-start.spec.ts:24:3)\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:102:5"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "qa-events.json",
+                      "contentType": "application/json",
+                      "path": "test-results/04-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-chromium/qa-events.json"
+                    },
+                    {
+                      "name": "qa-metrics.json",
+                      "contentType": "application/json",
+                      "path": "test-results/04-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-chromium/qa-metrics.json"
+                    },
+                    {
+                      "name": "qa-info.json",
+                      "contentType": "application/json",
+                      "path": "test-results/04-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-chromium/qa-info.json"
+                    },
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/04-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-chromium/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/04-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-chromium/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/04-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-chromium/request-log.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15419,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:09:41.772Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n51 events so far, the last 15:\n  #36 t=8097.6 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #37 t=8102.4 media=0.000 error {\"code\":0,\"codeName\":\"MEDIA_SOURCE_RECOVERED\",\"category\":0,\"severity\":1,\"message\":\"Shaka reset the MediaSource to recover from a media error that it did not rep…\n  #38 t=8609.1 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #39 t=8614.2 media=0.000 error {\"code\":0,\"codeName\":\"MEDIA_SOURCE_RECOVERED\",\"category\":0,\"severity\":1,\"message\":\"Shaka reset the MediaSource to recover from a media error that it did not rep…\n  #40 t=9120.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #41 t=9126.9 media=0.000 error {\"code\":0,\"codeName\":\"MEDIA_SOURCE_RECOVERED\",\"category\":0,\"severity\":1,\"message\":\"Shaka reset the MediaSource to recover from a media error that it did not rep…\n  #42 t=9631.7 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #43 t=9635.4 media=0.000 error {\"code\":0,\"codeName\":\"MEDIA_SOURCE_RECOVERED\",\"category\":0,\"severity\":1,\"message\":\"Shaka reset the MediaSource to recover from a media error that it did not rep…\n  #44 t=10140.2 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #45 t=10144.0 media=0.000 error {\"code\":0,\"codeName\":\"MEDIA_SOURCE_RECOVERED\",\"category\":0,\"severity\":1,\"message\":\"Shaka reset the MediaSource to recover from a media error that it did not rep…\n  #46 t=10649.2 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #47 t=10654.5 media=0.000 error {\"code\":0,\"codeName\":\"MEDIA_SOURCE_RECOVERED\",\"category\":0,\"severity\":1,\"message\":\"Shaka reset the MediaSource to recover from a media error that it did not rep…\n  #48 t=11157.9 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #49 t=11161.7 media=0.000 error {\"code\":0,\"codeName\":\"MEDIA_SOURCE_RECOVERED\",\"category\":0,\"severity\":1,\"message\":\"Shaka reset the MediaSource to recover from a media error that it did not rep…\n  #50 t=11284.4 media=0.000 error {\"code\":3014,\"codeName\":\"MEDIA_SOURCE_OPERATION_FAILED\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_FAILED: Shaka Error 3014\",\"data\":[3,\"h…",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n51 events so far, the last 15:\n  #36 t=8097.6 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #37 t=8102.4 media=0.000 error {\"code\":0,\"codeName\":\"MEDIA_SOURCE_RECOVERED\",\"category\":0,\"severity\":1,\"message\":\"Shaka reset the MediaSource to recover from a media error that it did not rep…\n  #38 t=8609.1 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #39 t=8614.2 media=0.000 error {\"code\":0,\"codeName\":\"MEDIA_SOURCE_RECOVERED\",\"category\":0,\"severity\":1,\"message\":\"Shaka reset the MediaSource to recover from a media error that it did not rep…\n  #40 t=9120.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #41 t=9126.9 media=0.000 error {\"code\":0,\"codeName\":\"MEDIA_SOURCE_RECOVERED\",\"category\":0,\"severity\":1,\"message\":\"Shaka reset the MediaSource to recover from a media error that it did not rep…\n  #42 t=9631.7 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #43 t=9635.4 media=0.000 error {\"code\":0,\"codeName\":\"MEDIA_SOURCE_RECOVERED\",\"category\":0,\"severity\":1,\"message\":\"Shaka reset the MediaSource to recover from a media error that it did not rep…\n  #44 t=10140.2 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #45 t=10144.0 media=0.000 error {\"code\":0,\"codeName\":\"MEDIA_SOURCE_RECOVERED\",\"category\":0,\"severity\":1,\"message\":\"Shaka reset the MediaSource to recover from a media error that it did not rep…\n  #46 t=10649.2 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #47 t=10654.5 media=0.000 error {\"code\":0,\"codeName\":\"MEDIA_SOURCE_RECOVERED\",\"category\":0,\"severity\":1,\"message\":\"Shaka reset the MediaSource to recover from a media error that it did not rep…\n  #48 t=11157.9 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #49 t=11161.7 media=0.000 error {\"code\":0,\"codeName\":\"MEDIA_SOURCE_RECOVERED\",\"category\":0,\"severity\":1,\"message\":\"Shaka reset the MediaSource to recover from a media error that it did not rep…\n  #50 t=11284.4 media=0.000 error {\"code\":3014,\"codeName\":\"MEDIA_SOURCE_OPERATION_FAILED\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_FAILED: Shaka Error 3014\",\"data\":[3,\"h…\n    at expectStartsAndPlays (/work/playback-proof/tests/e2e/vod-start.spec.ts:24:3)\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:102:5"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "PB-VOD-001 DASH VOD starts: first frame presented, 3 s of media time reached, no error",
+          "tags": ["merge", "cpu", "dash"],
+          "file": "e2e/vod-start.spec.ts",
+          "line": 78,
+          "tests": [
+            {
+              "projectName": "webkit",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15750,
+                  "retry": 0,
+                  "startTime": "2026-11-04T16:10:31.114Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n44 events so far, the last 15:\n  #29 t=6382.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":1,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #30 t=6382.0 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #31 t=6387.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #32 t=6408.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #33 t=6431.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #34 t=6454.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #35 t=6473.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #36 t=6492.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #37 t=6508.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #38 t=6531.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #39 t=6549.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #40 t=6568.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #41 t=6650.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #42 t=6808.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #43 t=7054.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n44 events so far, the last 15:\n  #29 t=6382.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":1,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #30 t=6382.0 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #31 t=6387.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #32 t=6408.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #33 t=6431.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #34 t=6454.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #35 t=6473.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #36 t=6492.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #37 t=6508.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #38 t=6531.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #39 t=6549.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #40 t=6568.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #41 t=6650.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #42 t=6808.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #43 t=7054.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n    at expectStartsAndPlays (/work/playback-proof/tests/e2e/vod-start.spec.ts:24:3)\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:88:5"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "qa-events.json",
+                      "contentType": "application/json",
+                      "path": "test-results/05-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-webkit/qa-events.json"
+                    },
+                    {
+                      "name": "qa-metrics.json",
+                      "contentType": "application/json",
+                      "path": "test-results/05-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-webkit/qa-metrics.json"
+                    },
+                    {
+                      "name": "qa-info.json",
+                      "contentType": "application/json",
+                      "path": "test-results/05-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-webkit/qa-info.json"
+                    },
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/05-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-webkit/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/05-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-webkit/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/05-PB-VOD-001-DASH-VOD-starts-first-frame-presented-3-s-of-me-webkit/request-log.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 15881,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:10:47.653Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n45 events so far, the last 15:\n  #30 t=2315.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #31 t=2344.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #32 t=2953.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":1,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #33 t=2953.0 media=0.000 variant-changed {\"from\":2,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"abr\"}\n  #34 t=2963.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #35 t=2994.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #36 t=3014.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #37 t=3540.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #38 t=3567.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #39 t=3586.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #40 t=3764.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #41 t=4714.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":1,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #42 t=4714.0 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #43 t=4723.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #44 t=4740.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n45 events so far, the last 15:\n  #30 t=2315.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #31 t=2344.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #32 t=2953.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":1,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #33 t=2953.0 media=0.000 variant-changed {\"from\":2,\"to\":1,\"bandwidth\":746778,\"height\":360,\"reason\":\"abr\"}\n  #34 t=2963.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #35 t=2994.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #36 t=3014.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #37 t=3540.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #38 t=3567.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #39 t=3586.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #40 t=3764.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #41 t=4714.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":1,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #42 t=4714.0 media=0.000 variant-changed {\"from\":1,\"to\":0,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #43 t=4723.0 media=0.000 seeking {\"from\":null,\"to\":0,\"requested\":false}\n  #44 t=4740.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n    at expectStartsAndPlays (/work/playback-proof/tests/e2e/vod-start.spec.ts:24:3)\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:88:5"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "title": "PB-VOD-002 HLS VOD starts: first frame presented, 3 s of media time reached, no error",
+          "tags": ["merge", "hls"],
+          "file": "e2e/vod-start.spec.ts",
+          "line": 92,
+          "tests": [
+            {
+              "projectName": "webkit",
+              "expectedStatus": "passed",
+              "status": "unexpected",
+              "annotations": [],
+              "results": [
+                {
+                  "status": "failed",
+                  "duration": 15871,
+                  "retry": 0,
+                  "startTime": "2026-11-04T16:11:04.307Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n40 events so far, the last 15:\n  #25 t=2777.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #26 t=3569.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":1,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #27 t=3569.0 media=0.000 variant-changed {\"from\":8,\"to\":5,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #28 t=3579.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #29 t=3599.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #30 t=4129.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #31 t=4147.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #32 t=4165.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #33 t=4184.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #34 t=4202.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #35 t=4222.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #36 t=4247.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #37 t=4267.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #38 t=5008.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #39 t=5556.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n40 events so far, the last 15:\n  #25 t=2777.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #26 t=3569.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":1,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #27 t=3569.0 media=0.000 variant-changed {\"from\":8,\"to\":5,\"bandwidth\":341878,\"height\":240,\"reason\":\"abr\"}\n  #28 t=3579.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #29 t=3599.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #30 t=4129.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #31 t=4147.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #32 t=4165.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #33 t=4184.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #34 t=4202.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #35 t=4222.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #36 t=4247.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #37 t=4267.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #38 t=5008.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #39 t=5556.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n    at expectStartsAndPlays (/work/playback-proof/tests/e2e/vod-start.spec.ts:24:3)\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:102:5"
+                  },
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "qa-events.json",
+                      "contentType": "application/json",
+                      "path": "test-results/06-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-webkit/qa-events.json"
+                    },
+                    {
+                      "name": "qa-metrics.json",
+                      "contentType": "application/json",
+                      "path": "test-results/06-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-webkit/qa-metrics.json"
+                    },
+                    {
+                      "name": "qa-info.json",
+                      "contentType": "application/json",
+                      "path": "test-results/06-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-webkit/qa-info.json"
+                    },
+                    {
+                      "name": "page-console.json",
+                      "contentType": "application/json",
+                      "path": "test-results/06-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-webkit/page-console.json"
+                    },
+                    {
+                      "name": "session-detail.json",
+                      "contentType": "application/json",
+                      "path": "test-results/06-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-webkit/session-detail.json"
+                    },
+                    {
+                      "name": "request-log.json",
+                      "contentType": "application/json",
+                      "path": "test-results/06-PB-VOD-002-HLS-VOD-starts-first-frame-presented-3-s-of-med-webkit/request-log.json"
+                    }
+                  ]
+                },
+                {
+                  "status": "failed",
+                  "duration": 17118,
+                  "retry": 1,
+                  "startTime": "2026-11-04T16:11:20.931Z",
+                  "error": {
+                    "message": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n26 events so far, the last 15:\n  #11 t=1322.0 media=0.000 seeked {\"readyState\":3,\"paused\":false}\n  #12 t=1322.0 media=0.000 buffering-end\n  #13 t=1322.0 media=0.000 playing\n  #14 t=1351.0 media=0.000 buffering-start\n  #15 t=2570.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #16 t=3007.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #17 t=3351.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #18 t=3442.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #19 t=4683.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":1,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #20 t=4683.0 media=0.000 variant-changed {\"from\":11,\"to\":8,\"bandwidth\":746778,\"height\":360,\"reason\":\"abr\"}\n  #21 t=4695.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #22 t=5228.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #23 t=5260.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #24 t=5284.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #25 t=5292.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…",
+                    "stack": "Error: qa.waitFor('firstframe') timed out after 15000 ms (looking from index 0).\n26 events so far, the last 15:\n  #11 t=1322.0 media=0.000 seeked {\"readyState\":3,\"paused\":false}\n  #12 t=1322.0 media=0.000 buffering-end\n  #13 t=1322.0 media=0.000 playing\n  #14 t=1351.0 media=0.000 buffering-start\n  #15 t=2570.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #16 t=3007.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #17 t=3351.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #18 t=3442.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #19 t=4683.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":1,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n  #20 t=4683.0 media=0.000 variant-changed {\"from\":11,\"to\":8,\"bandwidth\":746778,\"height\":360,\"reason\":\"abr\"}\n  #21 t=4695.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #22 t=5228.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #23 t=5260.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #24 t=5284.0 media=0.000 seeking {\"from\":0,\"to\":0,\"requested\":false}\n  #25 t=5292.0 media=0.000 error {\"code\":3015,\"codeName\":\"MEDIA_SOURCE_OPERATION_THREW\",\"category\":3,\"severity\":2,\"message\":\"MEDIA.MEDIA_SOURCE_OPERATION_THREW: Shaka Error 3015\",\"data\":[\"{\\\"na…\n    at expectStartsAndPlays (/work/playback-proof/tests/e2e/vod-start.spec.ts:24:3)\n    at /work/playback-proof/tests/e2e/vod-start.spec.ts:102:5"
+                  },
+                  "annotations": [],
+                  "attachments": []
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "suites": []
+    }
+  ],
+  "errors": [],
+  "stats": { "startTime": "2026-11-04T16:08:21.209Z", "duration": 197862.263 }
+}

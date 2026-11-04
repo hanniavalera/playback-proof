@@ -37,13 +37,12 @@ export function firstLine(message: string): string {
 }
 
 /**
- * The signature of an error message. Equal causes give equal signatures whatever their ids, numbers, timestamps, ports and paths;
- * different causes give different ones as long as their first lines differ in words. Applying it to a signature changes nothing.
+ * One line with everything that changes from run to run replaced by a placeholder, not yet cut to `SIGNATURE_MAX_LENGTH`. It is the
+ * step `errorSignature` is made of, exposed so that failure triage (`triage/signature.ts`) can add its own steps on top of the same
+ * normalisation (collapsing a list, naming what the three engines word differently) before it cuts: one normalisation, not two.
  */
-export function errorSignature(message: string | null | undefined): string {
-  const line = firstLine(message ?? '');
-  if (line === '') return NO_MESSAGE_SIGNATURE;
-  const normalised = line
+export function normaliseLine(line: string): string {
+  return line
     .replace(URL_LIKE, '<url>')
     .replace(PATH_LIKE, (path) => `<path>/${path.split(/[\\/]/).pop() ?? ''}`)
     .replace(DATE_TIME, '<ts>')
@@ -55,9 +54,23 @@ export function errorSignature(message: string | null | undefined): string {
     .replace(NUMBER, '<n>')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/** The cut that makes a signature a name and not a message: `SIGNATURE_MAX_LENGTH` characters, the last one `…` when it was cut. */
+export function cutSignature(normalised: string): string {
   return normalised.length > SIGNATURE_MAX_LENGTH
     ? `${normalised.slice(0, SIGNATURE_MAX_LENGTH - 1)}…`
     : normalised;
+}
+
+/**
+ * The signature of an error message. Equal causes give equal signatures whatever their ids, numbers, timestamps, ports and paths;
+ * different causes give different ones as long as their first lines differ in words. Applying it to a signature changes nothing.
+ */
+export function errorSignature(message: string | null | undefined): string {
+  const line = firstLine(message ?? '');
+  if (line === '') return NO_MESSAGE_SIGNATURE;
+  return cutSignature(normaliseLine(line));
 }
 
 /** What Playwright's `TestError` gives: a message, or only a stack, or the value that was thrown when it was not an Error. */

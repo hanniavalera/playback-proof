@@ -1,0 +1,13 @@
+diff --git a/src/player/index.html b/src/player/index.html
+index 1715c41..548fe1a 100644
+--- a/src/player/index.html
++++ b/src/player/index.html
+@@ -5,7 +5,7 @@
+     <!-- Same-origin scripts and requests only: the page makes no network request of its own. media-src needs blob: for MSE. -->
+     <meta
+       http-equiv="Content-Security-Policy"
+-      content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; media-src 'self' blob:; img-src 'self' data:"
++      content="default-src 'none'; script-src 'none'; style-src 'self'; connect-src 'self'; media-src 'self' blob:; img-src 'self' data:"
+     />
+     <meta name="viewport" content="width=device-width, initial-scale=1" />
+     <title>Playback Proof player</title>

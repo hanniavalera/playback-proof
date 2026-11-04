@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  cutSignature,
   errorSignature,
   firstLine,
   NO_MESSAGE_SIGNATURE,
+  normaliseLine,
   SIGNATURE_MAX_LENGTH,
   signatureOfError,
 } from '../../../src/lab/signature.ts';
@@ -171,5 +173,24 @@ describe('PB-LAB-005 error signatures: edges', () => {
       'Error: from the stack <n>',
     );
     expect(signatureOfError({ value: 'a string was thrown' })).toBe('a string was thrown');
+  });
+});
+
+describe('PB-LAB-005 error signatures: the steps triage builds on', () => {
+  it('is the first line, normalised, then cut: the same two steps triage extends', () => {
+    for (const message of [
+      'waited 15000 ms for a request of session 1a2b3c4d5e6f matching x\nsecond line 7',
+      `Error: ${'a very long explanation '.repeat(30)}`,
+      'at 2026-11-03T22:19:10.045Z via http://127.0.0.1:4731/a',
+    ]) {
+      expect(cutSignature(normaliseLine(firstLine(message)))).toBe(errorSignature(message));
+    }
+  });
+
+  it('normalises without cutting, so a caller can change the line before it is cut', () => {
+    const long = `Error: ${'saw 12 totalling 345 ms; '.repeat(20)}`;
+    expect(normaliseLine(long).length).toBeGreaterThan(SIGNATURE_MAX_LENGTH);
+    expect(cutSignature(normaliseLine(long))).toHaveLength(SIGNATURE_MAX_LENGTH);
+    expect(cutSignature('short')).toBe('short');
   });
 });

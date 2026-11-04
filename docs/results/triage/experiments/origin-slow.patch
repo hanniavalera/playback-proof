@@ -1,0 +1,16 @@
+diff --git a/src/server/pipeline.ts b/src/server/pipeline.ts
+index dff029d..b06c191 100644
+--- a/src/server/pipeline.ts
++++ b/src/server/pipeline.ts
+@@ -261,7 +261,10 @@ export async function serveMedia(
+   }
+ 
+   // A `status` answer has no body for the other faults to act on (CONTRACTS section 5).
+-  const delivery: DeliverPlan = { latencyMs: plan.latencyMs };
++  // Experiment origin-slow: every media segment is held back 2.5 s before its first byte, with no fault rule on it (a 2 s segment).
++  const delivery: DeliverPlan = {
++    latencyMs: plan.latencyMs + (parsed.kind === 'segment' ? 2500 : 0),
++  };
+   if (plan.status === undefined) {
+     if (plan.throttle.length > 0)
+       delivery.buckets = plan.throttle.map((rule) => bucketFor(session, rule.ruleId, rule.kbps));
