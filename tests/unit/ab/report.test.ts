@@ -6,11 +6,28 @@ import type { Preregistration } from '../../../ab/prereg.ts';
 import { renderReport } from '../../../ab/report.ts';
 import type { RawResult } from '../../../ab/results.ts';
 import { settingNames } from '../../../ab/settings.ts';
+import { assessValidity } from '../../../ab/validity.ts';
 import { profile } from '../../../src/shared/profiles.ts';
 import { gaussian, generator } from './helpers.ts';
-import { aaPrereg, rebufferPrereg, startupPrereg } from './fixtures.ts';
+import {
+  AA_SOURCE,
+  AA_SOURCE_REBUFFER,
+  aaPrereg,
+  passingAaReport,
+  rebufferPrereg,
+  startupPrereg,
+} from './fixtures.ts';
 import type { Json } from './fixtures.ts';
-import { aaPool, buildRaw, interleaved, plan, shareMetric, startupMetric, startupOnly } from './synthetic.ts';
+import {
+  aaPool,
+  buildRaw,
+  interleaved,
+  plan,
+  scheduled,
+  shareMetric,
+  startupMetric,
+  startupOnly,
+} from './synthetic.ts';
 
 // The report, from raw results made up for the purpose: what each kind of experiment prints, in what order, and what it refuses to say.
 
@@ -19,36 +36,76 @@ const normal = (seed: number, n: number, mean: number, sd: number): number[] =>
 
 function build(
   raw: Json,
-  sessions = interleaved(startupOnly(normal(1, 30, 1000, 80)), startupOnly(normal(2, 30, 800, 80))),
+  sessions?: ReturnType<typeof interleaved>,
   over: Parameters<typeof buildRaw>[2] = {},
 ): { raw: RawResult; prereg: Preregistration } {
   const text = `${JSON.stringify(raw, null, 2)}\n`;
   const validated = validatePreregistration(JSON.parse(text));
   if (!validated.ok) throw new Error(validated.problems.join('; '));
   const condition = validated.prereg.conditions[0] as Preregistration['conditions'][number];
+  // By default the sessions the runner would have scheduled: the warm-up first, and one configuration in both arms of an A/A run.
+  const same = validated.prereg.arms.B === 'A' ? ({ config: 'A' } as const) : {};
+  const defaults = scheduled(startupOnly(normal(1, 30, 1000, 80)), startupOnly(normal(2, 30, 800, 80)), {
+    warmup: validated.prereg.warmupSessionsPerArm,
+    ...same,
+  });
   return {
-    raw: buildRaw({ text, conditionId: condition.id, rules: condition.rules }, sessions, over),
+    raw: buildRaw({ text, conditionId: condition.id, rules: condition.rules }, sessions ?? defaults, over),
     prereg: validated.prereg,
   };
 }
 
+/** The committed reports of the A/A runs that the experiments of these tests rely on. */
+const AA_REPORTS: Record<string, string> = {
+  [AA_SOURCE]: passingAaReport(),
+  [AA_SOURCE_REBUFFER]: passingAaReport({}, 'bandwidth-drop-finite'),
+};
+
 function report(raw: RawResult, options = {}) {
-  return renderReport(raw, analyzeResult(raw), { rawFile: 'docs/results/ab/PB-AB-002.raw.json', ...options });
+  const analysis = analyzeResult(raw);
+  const validity = assessValidity(raw, analysis, { readReference: (path) => AA_REPORTS[path] ?? null });
+  return renderReport(raw, analysis, { rawFile: 'docs/results/ab/PB-AB-002.raw.json', validity, ...options });
 }
 
 describe('PB-AB report: a pre-registered experiment in which B is better', () => {
   const { raw } = build(startupPrereg());
   const { markdown, json } = report(raw);
 
-  it('opens with the catalog row, the verdict and what kind of document this is', () => {
-    expect(markdown.split('\n').slice(0, 6)).toStrictEqual([
+  it('opens with the catalog row, the verdict, what kind of document this is, and whether the run was valid', () => {
+    expect(markdown.split('\n').slice(0, 8)).toStrictEqual([
       '# PB-AB-002: Startup time of configuration B against configuration A under high latency',
       '',
       '**B better (ship B)**',
       '',
       '> Pre-registered A/B experiment: the verdict below is the decision rule applied to the pre-registered metrics. The lab passes it when it is valid (see Validity), whatever the direction of the result: the direction drives the decision.',
       '',
+      '**Validity:** VALID: the experiment was run as pre-registered, on data that pass all 7 gates. The direction of the result does not enter: it drives the decision named for the row.',
+      '',
     ]);
+  });
+
+  it('has a validity section with every gate and its result, before the verdict sections', () => {
+    const at = markdown.indexOf(
+      '## Validity: was the experiment run as pre-registered, on data that can be trusted?',
+    );
+    expect(at).toBeGreaterThan(0);
+    expect(at).toBeLessThan(markdown.indexOf('## Verdict'));
+    const section = markdown.slice(at, markdown.indexOf('## Verdict'));
+    for (const title of [
+      'Pre-registration fixed first',
+      'Design followed',
+      'Configuration proved',
+      'Condition applied, the same in both arms',
+      'Failures few and even',
+      'Machine quiet at the start',
+      'A/A check passed (PB-AB-001)',
+    ])
+      expect(section).toContain(`| ${title} | PASS |`);
+    expect(section).toContain(
+      'The lab passes an experiment when it is valid, not by the direction of its result',
+    );
+    expect(json.validity).toMatchObject({ valid: true, evidence: true });
+    expect(json.validity.gates).toHaveLength(7);
   });
 
   it('gives the verdict with its reason, and the decision rule applied step by step', () => {

@@ -50,7 +50,7 @@ export function loadedFrom(raw: Json, path = 'plan.json'): LoadedPreregistration
 
 /** A small experiment: 4 sessions per arm and one warm-up each (the validator wants 30 for a real one, so this is a pipeline check). */
 export function smallJson(over: Json = {}): Json {
-  return {
+  const plan: Json = {
     ...startupPrereg(),
     kind: 'pipeline-check',
     catalogId: null,
@@ -59,6 +59,9 @@ export function smallJson(over: Json = {}): Json {
     bootstrapResamples: 100,
     ...over,
   };
+  // A pipeline check relies on no A/A run.
+  if (!('aaCheck' in over)) delete plan.aaCheck;
+  return plan;
 }
 
 export function smallPlan(over: Json = {}): Preregistration {
@@ -291,7 +294,7 @@ export function world(
     } as SessionDriver;
   };
 
-  let clock = Date.parse('2026-11-05T09:00:00.000Z');
+  let clock = Date.parse('2099-11-05T09:00:00.000Z');
   return {
     log,
     sessions,

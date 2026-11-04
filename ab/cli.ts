@@ -1,8 +1,9 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { HarnessError } from '../src/lab/measure/runner.ts';
 import { calibrate, evaluateAa, poolFromResult, renderCalibration } from './aa.ts';
 import { analyzeResult } from './analyze.ts';
+import type { ResultAnalysis } from './analyze.ts';
 import { AB_USAGE, AbUsageError, parseAbArgs } from './args.ts';
 import type { AbOptions } from './args.ts';
 import { executeExperiment } from './execute.ts';
@@ -24,10 +25,17 @@ import type { Engine } from './prereg.ts';
 import { renderReport } from './report.ts';
 import { ResultFileError } from './results.ts';
 import type { RawResult } from './results.ts';
+import { assessValidity, checkAaReport } from './validity.ts';
+import type { Validity } from './validity.ts';
 
 // `npm run ab -- ...`: the command line of the A/B harness. Everything but the machine is here and is unit-tested: the modes that need no
-// browser (--report, --calibrate, --power) and the checks that come before a run (the plan is valid, the plan is committed). What starts a
-// service and a browser is ab/harness.ts, loaded only when a run really happens (and replaced by a fake in the tests).
+// browser (--report, --calibrate, --power) and the checks that come before a run (the plan is valid, the plan is committed, the A/A check it
+// relies on has passed). What starts a service and a browser is ab/harness.ts, loaded only when a run really happens (and replaced by a
+// fake in the tests).
+//
+// EXIT CODES. 0: the run is valid (whatever the verdict: A better, B better, equivalent and inconclusive are all results; the lab passes an
+// experiment when it is valid, and the direction drives the decision, not the exit code). 1: an A/A check that the harness failed. 2: the
+// run could not be trusted or started (an invalid, uncommitted or unsupported plan, a harness defect, a gate of validity that failed).
 
 export interface Io {
   /** The checkout: where relative paths, the results directory and git are looked up. */
@@ -50,13 +58,43 @@ function resultsDir(options: AbOptions, io: Io): string {
 
 const repoRelative = (path: string, io: Io): string => relative(io.root, resolve(io.root, path));
 
-function summaryLines(raw: RawResult): string[] {
-  const analysis = analyzeResult(raw, { exploratory: false });
-  return analysis.conditions.map(({ result, analysis: condition }) => {
-    const verdict = condition.decision ? condition.decision.headline : 'no verdict';
-    const reason = condition.decision ? ` ${condition.decision.reason}` : '';
-    return `${analysis.prereg.id} ${result.id}: ${verdict}.${reason}`;
+/** A committed file by its path from the repository (the A/A report an experiment relies on), or null. */
+const readReference =
+  (io: Io) =>
+  (path: string): string | null => {
+    const file = resolve(io.root, path);
+    return existsSync(file) ? readFileSync(file, 'utf8') : null;
+  };
+
+/** One line per condition with its verdict, and one for validity: what a person or a pipeline reads from the output. */
+function summaryLines(analysis: ResultAnalysis, validity: Validity): string[] {
+  const lines = analysis.conditions.map(({ result, analysis: condition }) => {
+    if (condition.decision)
+      return `${analysis.prereg.id} ${result.id}: ${condition.decision.headline}. ${condition.decision.reason}`;
+    return `${analysis.prereg.id} ${result.id}: no verdict${analysis.prereg.kind === 'pipeline-check' ? ' (pipeline check, plumbing only, not evidence)' : ''}.`;
   });
+  lines.push(`${analysis.prereg.id} validity: ${validity.summary}`);
+  return lines;
+}
+
+/** The exit code of a run or of a report (see the top of the file), and the problem to print when it is not 0. */
+function exitFor(
+  analysis: ResultAnalysis,
+  validity: Validity,
+  calibrations: readonly CalibrationEntry[],
+): { code: number; problem: string | null } {
+  if (!validity.valid) return { code: 2, problem: validity.summary };
+  if (analysis.prereg.kind === 'aa') {
+    const failedAa = analysis.conditions.some((entry) => !evaluateAa(entry.analysis).acceptable);
+    const failedCalibration = calibrations.some((entry) => !entry.result.pass);
+    if (failedAa || failedCalibration)
+      return {
+        code: 1,
+        problem:
+          'the A/A check failed: the harness declared a difference between identical configurations (see the report). No A/B verdict is published until it is understood.',
+      };
+  }
+  return { code: 0, problem: null };
 }
 
 /** `--report`: the report of a raw results file, again, next to it (with the A/A calibrations that were written next to the raw results). */
@@ -66,11 +104,15 @@ function modeReport(options: AbOptions, io: Io): number {
   const dir = options.outDir === null ? dirname(rawPath) : resultsDir(options, io);
   const stem = stemOfRawFile(rawPath);
   const calibrations = readCalibrations(dirname(rawPath), stem);
-  const report = renderReport(raw, analyzeResult(raw), { rawFile: repoRelative(rawPath, io), calibrations });
+  const analysis = analyzeResult(raw);
+  const validity = assessValidity(raw, analysis, { readReference: readReference(io) });
+  const report = renderReport(raw, analysis, { rawFile: repoRelative(rawPath, io), calibrations, validity });
   const written = writeReport(dir, stem, report);
   io.err(`wrote ${repoRelative(written.markdown, io)} and ${repoRelative(written.json, io)}`);
-  for (const line of summaryLines(raw)) io.out(line);
-  return 0;
+  for (const line of summaryLines(analysis, validity)) io.out(line);
+  const outcome = exitFor(analysis, validity, calibrations);
+  if (outcome.problem !== null) io.err(`PROBLEM: ${outcome.problem}`);
+  return outcome.code;
 }
 
 /** `--calibrate`: the A/A calibration of the pool of sessions of a results file. */
@@ -177,6 +219,23 @@ async function modeRun(
     return 2;
   }
 
+  // An experiment relies on the harness having passed its own check here: refuse before a single session, not after an hour of them.
+  if (prereg.aaCheck !== null) {
+    const check = checkAaReport(
+      readReference(io)(prereg.aaCheck.source),
+      prereg.aaCheck.source,
+      prereg,
+      machine.envId,
+    );
+    if (!check.passed) {
+      await machine.stop();
+      io.err(
+        `PROBLEM: ${check.detail}\n\nNo A/B verdict is published until the harness has passed its own check in this environment (TEST_STRATEGY.md section 12).`,
+      );
+      return 2;
+    }
+  }
+
   let raw: RawResult;
   try {
     raw = await executeExperiment(
@@ -228,6 +287,7 @@ async function modeRun(
   io.err(`wrote ${repoRelative(rawFile, io)}`);
 
   const analysis = analyzeResult(raw);
+  const validity = assessValidity(raw, analysis, { readReference: readReference(io) });
   const calibrations: CalibrationEntry[] = [];
   let calibrationProblem = false;
   if (prereg.kind === 'aa' && !options.noCalibration) {
@@ -252,30 +312,24 @@ async function modeRun(
       }
     }
   }
-  const report = renderReport(raw, analysis, { rawFile: repoRelative(rawFile, io), calibrations });
+  const report = renderReport(raw, analysis, {
+    rawFile: repoRelative(rawFile, io),
+    calibrations,
+    validity,
+  });
   const written = writeReport(dir, stem, report);
   io.err(`wrote ${repoRelative(written.markdown, io)} and ${repoRelative(written.json, io)}`);
-  for (const line of summaryLines(raw)) io.out(line);
+  for (const line of summaryLines(analysis, validity)) io.out(line);
 
   const stopped = raw.conditions.filter((condition) => condition.aborted !== null);
-  if (stopped.length > 0 || calibrationProblem) {
-    if (stopped.length > 0)
-      io.err(
-        `PROBLEM: ${stopped.map((condition) => `${condition.id} stopped early: ${condition.aborted}`).join('; ')}`,
-      );
-    return 2;
-  }
-  if (prereg.kind === 'aa') {
-    const failedAa = analysis.conditions.some((entry) => !evaluateAa(entry.analysis).acceptable);
-    const failedCalibration = calibrations.some((entry) => !entry.result.pass);
-    if (failedAa || failedCalibration) {
-      io.err(
-        'the A/A check failed: the harness declared a difference between identical configurations (see the report). No A/B verdict is published until it is understood.',
-      );
-      return 1;
-    }
-  }
-  return 0;
+  if (stopped.length > 0)
+    io.err(
+      `PROBLEM: ${stopped.map((condition) => `${condition.id} stopped early: ${condition.aborted}`).join('; ')}`,
+    );
+  if (calibrationProblem) return 2;
+  const outcome = exitFor(analysis, validity, calibrations);
+  if (outcome.problem !== null) io.err(`PROBLEM: ${outcome.problem}`);
+  return outcome.code;
 }
 
 /** The command: returns the exit code. */

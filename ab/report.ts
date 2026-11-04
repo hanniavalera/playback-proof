@@ -7,6 +7,8 @@ import { METRICS, formatDifference, formatThreshold, formatValue } from './metri
 import type { Preregistration } from './prereg.ts';
 import type { RawResult } from './results.ts';
 import type { SessionRecord } from './types.ts';
+import { assessValidity } from './validity.ts';
+import type { Validity } from './validity.ts';
 import { BUSY_LOAD_SHARE } from '../src/lab/measure/report.ts';
 import { configFor, flattenPatch } from '../src/player/configs.ts';
 
@@ -19,8 +21,34 @@ const fmtP = (p: number | null): string => (p === null ? 'n/a' : p < 0.001 ? '< 
 const fmtPercent = (share: number): string => `${(share * 100).toFixed(1)} %`;
 
 function table(headers: readonly string[], rows: readonly (readonly string[])[]): string {
-  const line = (cells: readonly string[]): string => `| ${cells.join(' | ')} |`;
+  const line = (cells: readonly string[]): string =>
+    `| ${cells.map((cell) => cell.replace(/\|/g, '\\|')).join(' | ')} |`;
   return [line(headers), line(headers.map(() => '---')), ...rows.map(line)].join('\n');
+}
+
+/** The gates of the run, as a table, and the reminder of what passing means. */
+function validitySection(prereg: Preregistration, validity: Validity): string[] {
+  const heading =
+    prereg.kind === 'pipeline-check'
+      ? '## Plumbing checks (pipeline check, plumbing only, not evidence)'
+      : '## Validity: was the experiment run as pre-registered, on data that can be trusted?';
+  return [
+    heading,
+    '',
+    table(
+      ['Gate', 'Result', 'What was checked'],
+      validity.gates.map((gate) => [
+        gate.title,
+        gate.passed ? 'PASS' : gate.enforced === false ? 'FAIL, not enforced' : 'FAIL',
+        gate.detail,
+      ]),
+    ),
+    '',
+    prereg.kind === 'pipeline-check'
+      ? 'A pipeline check proves that the pieces run together. It is not evidence about the player, and nothing is tuned from it.'
+      : 'The lab passes an experiment when it is valid, not by the direction of its result. Whether A is better, B is better, they are equivalent within the margin, or the data cannot tell is the verdict below, and the verdict drives the decision the test catalog names for the row (ship B, do not ship B, keep A).',
+    '',
+  ];
 }
 
 function armSummary(metric: MetricComparison, arm: 'A' | 'B'): string {
@@ -140,6 +168,8 @@ export interface ReportOptions {
   rawFile?: string;
   /** The A/A calibration of the pool of each condition of this run, if it was computed. */
   calibrations?: ReadonlyArray<{ condition: string; result: CalibrationResult }>;
+  /** What makes the run valid (ab/validity.ts). Without it the report computes the gates itself, with no A/A report to read. */
+  validity?: Validity;
 }
 
 export interface ConditionReport {
@@ -165,6 +195,8 @@ export interface ReportJson {
     interleaving: string;
   };
   warnings: string[];
+  /** Whether the run was valid evidence: the gates and their results. The lab passes an experiment when it is valid, whatever the verdict. */
+  validity: Validity;
   conditions: ConditionReport[];
   calibrations: Array<{ condition: string; result: CalibrationResult }>;
 }
@@ -380,6 +412,7 @@ export function renderReport(
 ): { markdown: string; json: ReportJson } {
   const { prereg } = analysis;
   const provenance = describeProvenance(raw.preregistration.committed, raw.run.startedAt);
+  const validity = options.validity ?? assessValidity(raw, analysis);
   const aaEvaluations = analysis.conditions.map((entry) =>
     prereg.kind === 'aa' ? evaluateAa(entry.analysis) : null,
   );
@@ -399,6 +432,9 @@ export function renderReport(
     '',
     `> ${bannerOf(prereg)}`,
     '',
+    `**Validity:** ${validity.summary}`,
+    '',
+    ...validitySection(prereg, validity),
   );
   analysis.conditions.forEach((entry, index) =>
     md.push(conditionSection(prereg, raw, entry, aaEvaluations[index] ?? null)),
@@ -553,6 +589,7 @@ export function renderReport(
       interleaving: 'blocks of two, the arm that goes first alternates',
     },
     warnings: analysis.warnings,
+    validity,
     conditions: analysis.conditions.map((entry, index) => ({
       id: entry.result.id,
       analysis: entry.analysis,

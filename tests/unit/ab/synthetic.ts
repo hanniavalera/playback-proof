@@ -55,7 +55,11 @@ export function buildRaw(
         startedAt: '2026-11-05T09:00:00.000Z',
         finishedAt: '2026-11-05T09:31:00.000Z',
         loadAverage: { before: 1.1, after: 1.4 },
-        sessions,
+        sessions: sessions.map((session) =>
+          session.status === 'ok' && session.applied === undefined
+            ? { ...session, applied: { rulesMatch: true, requests: 12, fired: prereg.rules.map(() => 12) } }
+            : session,
+        ),
         aborted: null,
       },
     ],
@@ -116,6 +120,29 @@ export function interleaved(
 
 export const startupOnly = (values: readonly number[]): Record<string, number | null>[] =>
   values.map((startupMs) => ({ startupMs }));
+
+/**
+ * The sessions of an experiment as the runner schedules them: `warmup` blocks of slow sessions first (flagged, left out of every statistic),
+ * then the measured ones, the arm that goes first alternating. `extra` is given the arm and the index of the MEASURED block; `config`
+ * puts one configuration in both arms (an A/A run).
+ */
+export function scheduled(
+  a: readonly Record<string, number | null>[],
+  b: readonly Record<string, number | null>[],
+  options: {
+    warmup?: number;
+    config?: SessionRecord['config'];
+    extra?: (arm: ArmId, i: number) => Partial<SessionRecord>;
+  } = {},
+): SessionRecord[] {
+  const warmup = options.warmup ?? 2;
+  const slow = Array.from({ length: warmup }, () => ({ startupMs: 3000 }));
+  const same = options.config === undefined ? {} : { config: options.config };
+  return interleaved([...slow, ...a], [...slow, ...b], (arm, block) => ({
+    ...same,
+    ...(block < warmup ? { warmup: true } : (options.extra?.(arm, block - warmup) ?? {})),
+  }));
+}
 
 export const startupMetric = (over: Partial<MetricPlan> = {}): MetricPlan => ({
   id: 'startupMs',

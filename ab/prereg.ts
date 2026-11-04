@@ -107,6 +107,12 @@ export interface Preregistration {
   metrics: MetricPlan[];
   decisionRule: { id: DecisionRuleId; text: string };
   exclusionRule: { text: string; maxFailedShare: number; abortAfterConsecutiveFailures: number };
+  /**
+   * The committed report of the real A/A run (PB-AB-001) this experiment relies on: the harness must have passed its own check, in this
+   * environment, for this engine and this condition, before an A/B verdict means anything. Required for an experiment; the run refuses
+   * to start, and the report calls itself not valid, when that report is missing or says the harness failed (ab/validity.ts).
+   */
+  aaCheck: { source: string } | null;
   seed: number;
 }
 
@@ -137,6 +143,8 @@ export function canonicalJson(value: unknown): string {
 }
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{2,63}$/;
 const CONDITION_ID_PATTERN = /^[a-z0-9][a-z0-9-]{1,40}$/;
+/** The committed report of an A/A run: docs/results/ab/<experiment id>.<environment id>.<stamp>.report.json (ab/files.ts). */
+const AA_REPORT_PATTERN = /^docs\/results\/ab\/[A-Za-z0-9][A-Za-z0-9._-]*\.report\.json$/;
 const MIN_TEXT = 20;
 
 /** Reports every key of `object` that is not in `allowed`: a misspelt field is a problem, never a silently ignored one. */
@@ -407,6 +415,7 @@ export function validatePreregistration(raw: unknown): PreregistrationResult {
       'metrics',
       'decisionRule',
       'exclusionRule',
+      'aaCheck',
       'seed',
     ],
     '$',
@@ -545,8 +554,26 @@ export function validatePreregistration(raw: unknown): PreregistrationResult {
       maxFailedShare: AB_POLICY.defaultMaxFailedShare,
       abortAfterConsecutiveFailures: 5,
     },
+    aaCheck: null,
     seed,
   };
+
+  if (raw.aaCheck !== undefined && raw.aaCheck !== null) {
+    if (!isRecord(raw.aaCheck)) problems.push('$.aaCheck must be null or an object { source }');
+    else {
+      onlyKeys(raw.aaCheck, ['source'], '$.aaCheck', problems);
+      const source = raw.aaCheck.source;
+      if (typeof source !== 'string' || !AA_REPORT_PATTERN.test(source))
+        problems.push(
+          `$.aaCheck.source must name the committed report of the A/A run under docs/results/ab/ (<id>.<environment>.<stamp>.report.json), got ${JSON.stringify(source)}`,
+        );
+      else plan.aaCheck = { source };
+    }
+  }
+  if (kind === 'experiment' && (raw.aaCheck === undefined || raw.aaCheck === null))
+    problems.push(
+      '$.aaCheck is required for an experiment: the harness must have passed the real A/A run (PB-AB-001) in this environment, and the plan names its committed report',
+    );
 
   if (!Array.isArray(raw.conditions) || raw.conditions.length === 0)
     problems.push('$.conditions must be a non-empty array');

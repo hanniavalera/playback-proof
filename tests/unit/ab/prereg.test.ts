@@ -18,7 +18,7 @@ import {
 } from '../../../ab/prereg.ts';
 import { PROFILE_NAMES, profile } from '../../../src/shared/profiles.ts';
 import { mentionedSettings, settingNames } from '../../../ab/settings.ts';
-import { rebufferPrereg, startupPrereg } from './fixtures.ts';
+import { AA_SOURCE, aaPrereg, rebufferPrereg, startupPrereg } from './fixtures.ts';
 import type { Json } from './fixtures.ts';
 
 // The pre-registration: what makes a plan valid, every way it can be invalid, and the hash that proves it was fixed first.
@@ -106,6 +106,18 @@ describe('PB-AB pre-registration: a valid plan', () => {
       expect(result.prereg.conditions[0]?.profile).toBe('high-latency');
       expect(result.prereg.metrics[0]?.practicalThreshold).toBe(100);
       expect(result.prereg.seed).toBe(20261104);
+      expect(result.prereg.aaCheck).toStrictEqual({ source: AA_SOURCE });
+    }
+  });
+
+  it('needs no A/A check for the kinds that decide nothing or are the check: an A/A run and a pipeline check', () => {
+    for (const make of [
+      aaPrereg,
+      () => changed((p) => ((p.kind = 'pipeline-check'), (p.catalogId = null), delete p.aaCheck)),
+    ]) {
+      const result = validatePreregistration(make());
+      expect(result.ok).toBe(true);
+      if (result.ok) expect(result.prereg.aaCheck).toBeNull();
     }
   });
 
@@ -231,6 +243,31 @@ describe('PB-AB pre-registration: a valid plan', () => {
 describe('PB-AB pre-registration: what is refused', () => {
   const refused: Array<[string, unknown, RegExp]> = [
     ['something that is not an object', [], /must be a JSON object/],
+    [
+      'an experiment that names no A/A check: the harness must have passed its own check first',
+      changed((p) => delete p.aaCheck),
+      /\$\.aaCheck is required for an experiment/,
+    ],
+    [
+      'an experiment whose A/A check is null',
+      changed((p) => (p.aaCheck = null)),
+      /\$\.aaCheck is required for an experiment/,
+    ],
+    [
+      'an A/A check that is not the committed report of an A/A run',
+      changed((p) => (p.aaCheck = { source: 'docs/results/ab/pilot.json' })),
+      /\$\.aaCheck\.source must name the committed report of the A\/A run under docs\/results\/ab\//,
+    ],
+    [
+      'an A/A check outside docs/results/ab',
+      changed((p) => (p.aaCheck = { source: '../elsewhere/x.report.json' })),
+      /\$\.aaCheck\.source must name/,
+    ],
+    [
+      'an A/A check with a field it does not know',
+      changed((p) => (p.aaCheck = { source: (p.aaCheck as Json).source, passed: true })),
+      /\$\.aaCheck\.passed is not a field/,
+    ],
     [
       'a field it does not know (a typo in a threshold must not become no threshold)',
       changed((p) => (p.alfa = 0.05)),

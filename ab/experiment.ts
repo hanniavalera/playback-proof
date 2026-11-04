@@ -14,7 +14,9 @@ import type { PerfProfile } from '../src/lab/measure/types.ts';
 import { canonicalJson } from './prereg.ts';
 import type { ConditionPlan, Preregistration } from './prereg.ts';
 import type { ConditionResult } from './results.ts';
-import type { ArmId, ConditionEvidence, ConfigLetter, FailureKind, SessionRecord } from './types.ts';
+import { blockSchedule } from './schedule.ts';
+import type { ScheduledSession } from './schedule.ts';
+import type { ConditionEvidence, ConfigLetter, FailureKind, SessionRecord } from './types.ts';
 import type { RequestLogEntry, SessionDetail } from '../src/shared/api.ts';
 import type { FaultRule } from '../src/shared/faults.ts';
 
@@ -28,40 +30,8 @@ export interface SessionDriver extends Driver {
   info(): Promise<QAInfo>;
 }
 
-export interface ScheduledSession {
-  /** 0-based position in the condition, warm-up included. */
-  index: number;
-  /** 0-based pair of sessions. */
-  block: number;
-  arm: ArmId;
-  config: ConfigLetter;
-  warmup: boolean;
-}
-
-/**
- * The order of the sessions: blocks of two, one session of each arm, and the arm that goes first ALTERNATES from block to block (A B, B A,
- * A B, B A, ...). A drift of the machine over the run (a thermal throttle, a background job starting, a cache warming) then falls on both
- * arms alike: with an even number of measured blocks the two arms have exactly the same average position in time, so a linear drift
- * cancels in the comparison. The first `warmupPerArm` blocks are the warm-up: executed like the rest, recorded, and left out.
- */
-export function blockSchedule(
-  sessionsPerArm: number,
-  warmupPerArm: number,
-  arms: { A: ConfigLetter; B: ConfigLetter },
-): ScheduledSession[] {
-  if (!Number.isInteger(sessionsPerArm) || sessionsPerArm < 1)
-    throw new RangeError(`sessionsPerArm must be a positive integer, got ${String(sessionsPerArm)}`);
-  if (!Number.isInteger(warmupPerArm) || warmupPerArm < 0)
-    throw new RangeError(`warmupPerArm must be a non-negative integer, got ${String(warmupPerArm)}`);
-  const schedule: ScheduledSession[] = [];
-  for (let block = 0; block < warmupPerArm + sessionsPerArm; block++) {
-    const order: ArmId[] = block % 2 === 0 ? ['A', 'B'] : ['B', 'A'];
-    for (const arm of order) {
-      schedule.push({ index: schedule.length, block, arm, config: arms[arm], warmup: block < warmupPerArm });
-    }
-  }
-  return schedule;
-}
+export { blockSchedule } from './schedule.ts';
+export type { ScheduledSession } from './schedule.ts';
 
 export type ExperimentProgress =
   | { kind: 'condition'; condition: string; sessions: number; warmup: number }

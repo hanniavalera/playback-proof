@@ -58,8 +58,29 @@ export function startupPrereg(): Json {
       maxFailedShare: 0.1,
       abortAfterConsecutiveFailures: 5,
     },
+    aaCheck: { source: AA_SOURCE },
     seed: 20261104,
   }) as Json;
+}
+
+/** The committed report of the real A/A run (PB-AB-001) that the experiments of these tests rely on. */
+export const AA_SOURCE =
+  'docs/results/ab/PB-AB-001-high-latency.local-darwin-arm64.20261101T090000Z.report.json';
+export const AA_SOURCE_REBUFFER =
+  'docs/results/ab/PB-AB-001-bandwidth-drop-finite.local-darwin-arm64.20261101T100000Z.report.json';
+
+/** What the report JSON of an A/A run that passed says, as far as an experiment reads it (ab/validity.ts `checkAaReport`). */
+export function passingAaReport(over: Json = {}, condition = 'high-latency'): string {
+  return JSON.stringify({
+    kind: 'ab-report',
+    experiment: { id: 'PB-AB-001-x', kind: 'aa' },
+    environment: { envId: 'local-darwin-arm64' },
+    design: { engine: 'chromium' },
+    validity: { valid: true },
+    conditions: [{ id: condition, aa: { acceptable: true, ideal: true } }],
+    calibrations: [{ condition, result: { pass: true } }],
+    ...over,
+  });
 }
 
 /** The rebuffering experiment: its primary metric under the finite variant of the bandwidth-drop profile (see the condition). */
@@ -89,6 +110,7 @@ export function rebufferPrereg(): Json {
       },
     ],
     observation: { mediaSecondsAfterFirstFrame: 18, sessionTimeoutMs: 120000 },
+    aaCheck: { source: AA_SOURCE_REBUFFER },
     metrics: [
       {
         id: 'rebufferShare',
@@ -112,7 +134,7 @@ export function rebufferPrereg(): Json {
 /** The real interleaved A/A run (PB-AB-001): configuration A in both arms, startup under high latency. */
 export function aaPrereg(): Json {
   const base = startupPrereg();
-  return {
+  const plan: Json = {
     ...base,
     id: 'PB-AB-001-high-latency',
     kind: 'aa',
@@ -121,9 +143,11 @@ export function aaPrereg(): Json {
     hypotheses: [
       {
         metric: 'startupMs',
-        text: 'Both arms run configuration A, so the harness must find no difference between them.',
+        text: 'Both arms run configuration A, so the harness must not call either arm better.',
       },
     ],
     arms: { A: 'A', B: 'A' },
   };
+  delete plan.aaCheck;
+  return plan;
 }
