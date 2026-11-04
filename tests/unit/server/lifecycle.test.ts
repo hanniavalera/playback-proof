@@ -355,6 +355,28 @@ describe('failures inside the media pipeline', () => {
     expect(h.lines.some((line) => line.includes('invalid value for header Content-Type'))).toBe(true);
     expect((await logOf(h, s.id))[0]).toMatchObject({ status: 500, pending: false });
   });
+
+  it('lists a response that could not be written as aborted with the reason "error": the service, not the client, ended it', async () => {
+    // assertDeliverable() rejects what it can foresee (a CR or LF in a header value); a character that Node refuses on a header
+    // still reaches deliver(), the last line of defence, which drops the connection and reports 'error'.
+    h = await startHarness({
+      decorate: (media) => ({
+        ...media,
+        streams: () =>
+          media.streams().map((info) => ({
+            ...info,
+            reps: info.reps.map((rep) => ({ ...rep, mimeType: 'video/mp4; \u20ac' as typeof rep.mimeType })),
+          })),
+      }),
+    });
+    const s = await createSession(h, { stream: FAKE_VOD });
+    const got = await download(h.port, segmentPath(s.id, s.stream, FAKE_VIDEO, 1, 'm4s'));
+    expect(got.complete).toBe(false);
+    const [entry] = await waitForLog(h, s.id, (entries) => entries[0]?.pending === false);
+    expect(entry).toMatchObject({ aborted: true, abortReason: 'error', status: 0, bytes: 0, pending: false });
+    expect(h.lines.some((line) => line.includes('delivery:'))).toBe(true);
+    expect((await call(h.origin, 'GET', '/health')).status).toBe(200);
+  });
 });
 
 describe('the access log (PB_LOG)', () => {

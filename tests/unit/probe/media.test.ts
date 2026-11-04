@@ -66,14 +66,19 @@ describe('the ffmpeg recipes', () => {
     expect(valueOf(FFMPEG_RECIPES['a-opus.mp4'], '-frag_duration')).toBe('2000000');
   });
 
-  it('encodes VP9 for speed and for reproducibility', () => {
-    for (const id of ['v-vp9.mp4', 'v-vp9.webm'] as const) {
+  it('encodes VP8 and VP9 reproducibly: a fixed speed, no look-ahead, one thread, and no real-time mode', () => {
+    for (const id of ['v-vp9.mp4', 'v-vp9.webm', 'v-vp8.webm'] as const) {
       const args = FFMPEG_RECIPES[id];
-      expect(valueOf(args, '-c:v')).toBe('libvpx-vp9');
-      expect(valueOf(args, '-deadline')).toBe('realtime');
-      expect(valueOf(args, '-cpu-used')).toBe('8');
-      expect(valueOf(args, '-threads')).toBe('1');
+      expect(valueOf(args, '-c:v'), id).toBe(id === 'v-vp8.webm' ? 'libvpx' : 'libvpx-vp9');
+      // `realtime` adapts to the load of the machine, so the same input gave different bytes on a busy host
+      expect(valueOf(args, '-deadline'), id).toBe('good');
+      expect(valueOf(args, '-cpu-used'), id).toBe('4');
+      expect(valueOf(args, '-lag-in-frames'), id).toBe('0');
+      expect(valueOf(args, '-auto-alt-ref'), id).toBe('0');
+      expect(valueOf(args, '-threads'), id).toBe('1');
     }
+    for (const id of ['v-vp9.mp4', 'v-vp9.webm'] as const)
+      expect(valueOf(FFMPEG_RECIPES[id], '-row-mt'), id).toBe('0');
   });
 
   it('builds the full command line: global flags first, the output path last', () => {

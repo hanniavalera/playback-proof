@@ -121,6 +121,11 @@ function thrownName(error: unknown): string | undefined {
   return error instanceof Error && error.name !== '' && error.name !== 'Error' ? error.name : undefined;
 }
 
+/** A JSON.stringify replacer: the ClearKey pair of a configuration is a public test key, but it stays out of the timeline. */
+function hideClearKeys(key: string, value: unknown): unknown {
+  return key === 'clearKeys' ? '[not shown]' : value;
+}
+
 export class PlayerHook implements QAHook {
   readonly version = 1 as const;
   readonly ready: Promise<void>;
@@ -203,7 +208,7 @@ export class PlayerHook implements QAHook {
       this.env = env;
       this.configDefaults = valuesAtShape(env.player.getConfiguration(), bootPatch);
       if (Object.keys(bootPatch).length > 0 && !env.player.configure(bootPatch)) {
-        throw new Error(`Shaka rejected the boot configuration ${JSON.stringify(bootPatch)}`);
+        throw new Error(`Shaka rejected the boot configuration ${JSON.stringify(bootPatch, hideClearKeys)}`);
       }
       this.configOverrides = structuredClone(bootPatch) as Record<string, unknown>;
       this.listenPlayer(env.player);
@@ -503,6 +508,7 @@ export class PlayerHook implements QAHook {
         start: this.params.start,
         abr: this.params.abr,
         hud: this.params.hud,
+        ...(this.params.clearKey ? { clearKey: { ...this.params.clearKey } } : {}),
       },
       paramProblems: [...this.paramProblems],
     };

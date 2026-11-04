@@ -169,6 +169,7 @@ describe('faults on the VOD pipeline', () => {
         status: 200,
         bytes: 100,
         aborted: true,
+        abortReason: 'fault-abort',
         pending: false,
         faults: ['f1'],
       });
@@ -185,6 +186,12 @@ describe('faults on the VOD pipeline', () => {
       expect(ok.complete).toBe(true);
       expect(ok.bytes).toBe(600);
       expect((await call(h.origin, 'GET', '/health')).status).toBe(200);
+      // the request the abort did not touch carries no reason: the reason says who cut it, and nobody cut this one
+      const entries = await waitForLog(h, s.id, (e) => e.length === 2 && e.every((entry) => !entry.pending));
+      expect(entries.map((e) => [e.number, e.aborted, e.abortReason])).toEqual([
+        [1, true, 'fault-abort'],
+        [2, undefined, undefined],
+      ]);
     });
 
     it('sends the whole body when afterBytes is beyond it, then closes: a complete response on a connection that dies', async () => {
@@ -192,7 +199,7 @@ describe('faults on the VOD pipeline', () => {
       const reply = await download(h.port, seg(s, 1));
       expect(reply.bytes).toBe(600);
       const entries = await waitForLog(h, s.id, (e) => e.length === 1 && e[0]?.pending === false);
-      expect(entries[0]).toMatchObject({ bytes: 600, aborted: true });
+      expect(entries[0]).toMatchObject({ bytes: 600, aborted: true, abortReason: 'fault-abort' });
     });
   });
 

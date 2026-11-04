@@ -1,0 +1,50 @@
+{
+  "what": "The one failure of the ABR suite in the stability runs: PB-ABR-006 in Firefox in the Playwright image, one run of three. Condensed from the attachments of the failed attempt (qa-events.json, qa-metrics.json, request-log.json); nothing was edited.",
+  "environment": {
+    "envId": "docker-linux-arm64",
+    "engine": "Firefox 157.0 in mcr.microsoft.com/playwright:v1.64.1-noble, 3 CPUs, 2 Playwright workers",
+    "host": "Apple M2 Pro, 12 cores, shared with other agents (load average 15 to 21 during the run)",
+    "command": "PB_PORT=4670 npm run docker:pw -- --cpus 3 npx playwright test tests/e2e/abr.spec.ts --project=firefox --workers=2 --repeat-each=3",
+    "specAtCommit": "740a434",
+    "date": "2026-11-04T05:22Z"
+  },
+  "failure": "rebuffers in the first 10 s of playback (metrics.rebuffer.events): at most one, saw 2: at media time 8.01 s for 24 ms; at media time 9.97 s for 358 ms",
+  "readThisWay": [
+    "The link is 600 kbps and carries only the 240p rung. The player started on 360p (index 4), was cut off after 133 kB and stepped down to 240p 2.0 s after the load was requested (index 6), as in every other run: the first frame came at 3.1 s. The `t` of the events is the page clock, ms, and the first event, load-requested, is at 354.",
+    "4.2 s after the load was requested (index 10, media time 0.52 s), 2.2 s after the step down and well inside Shaka's 8 s switch interval, the player moved UP to 360p, reason abr. The request log agrees (the 240p segment 3 was cut off at once, 360p segment 3 asked for): the rung is a real one, not an artefact of the hook.",
+    "360p needs 764 kbps and the link gives 600: each 360p segment took 2.3 to 2.5 s for 2 s of video, and the player rebuffered at media times 8.01 s, 9.97 s and 11.99 s.",
+    "13 of 366 decoded frames were dropped in the load (3.6 %); the hook does not say when. Shaka disables the variant that is playing for 30 s when 15 % of the frames of a 2 s window are dropped (abr.droppedFrames, on by default); Player.disableStream then chooses a variant again at once (chooseVariantAndSwitch_, a `variantchanged` that the hook records as abr), and nothing in that path is held back by the switch interval. A ban of 240p leaves only 360p and 720p, and the player takes the lower. This is the one explanation found that fits the evidence; it was NOT reproduced (Chromium under a 4x and 8x CPU throttle did not drop frames at 240p), and ten more Firefox runs of the same test passed with 0 dropped frames each."
+  ],
+  "frames": { "decoded": 366, "dropped": 13, "droppedRatio": 0.0355, "presented": 374 },
+  "rebuffer": {
+    "count": 3,
+    "totalMs": 780,
+    "events": [
+      { "startMs": 11939, "durationMs": 24, "mediaTime": 8.01 },
+      { "startMs": 13935, "durationMs": 358, "mediaTime": 9.97 },
+      { "startMs": 16320, "durationMs": 398, "mediaTime": 11.99 }
+    ]
+  },
+  "events": [
+    { "index": 0, "t": 354, "name": "load-requested" },
+    { "index": 3, "t": 481, "name": "buffering-start" },
+    { "index": 4, "t": 481, "name": "variant-changed", "detail": { "height": 360, "reason": "start" } },
+    { "index": 6, "t": 2337, "name": "variant-changed", "detail": { "height": 240, "reason": "abr" } },
+    { "index": 7, "t": 3430, "name": "firstframe" },
+    { "index": 10, "t": 4528, "mediaTime": 0.52, "name": "variant-changed", "detail": { "height": 360, "reason": "abr" } },
+    { "index": 11, "t": 11939, "mediaTime": 8.01, "name": "buffering-start" },
+    { "index": 14, "t": 13935, "mediaTime": 9.97, "name": "buffering-start" },
+    { "index": 17, "t": 16320, "mediaTime": 11.99, "name": "buffering-start" }
+  ],
+  "videoSegmentRequests": [
+    { "seq": 5, "msSinceStart": 562, "rep": "v360", "number": 1, "bytes": 133473, "totalMs": 1812, "cutOffByTheClient": true },
+    { "seq": 8, "msSinceStart": 2407, "rep": "v240", "number": 1, "bytes": 74747, "totalMs": 975 },
+    { "seq": 9, "msSinceStart": 3477, "rep": "v240", "number": 2, "bytes": 74487, "totalMs": 906 },
+    { "seq": 10, "msSinceStart": 4570, "rep": "v240", "number": 3, "bytes": 0, "totalMs": 11, "cutOffByTheClient": true },
+    { "seq": 12, "msSinceStart": 4612, "rep": "v360", "number": 3, "bytes": 172247, "totalMs": 2384 },
+    { "seq": 14, "msSinceStart": 7005, "rep": "v360", "number": 4, "bytes": 173857, "totalMs": 2541 },
+    { "seq": 17, "msSinceStart": 9577, "rep": "v360", "number": 5, "bytes": 173161, "totalMs": 2398 },
+    { "seq": 19, "msSinceStart": 11999, "rep": "v360", "number": 6, "bytes": 175015, "totalMs": 2309 },
+    { "seq": 20, "msSinceStart": 14330, "rep": "v360", "number": 7, "bytes": 174184, "totalMs": 2414 }
+  ]
+}

@@ -30,6 +30,7 @@ import {
   renderGateBudgets,
   renderLiveCriteria,
   renderMergeBudget,
+  renderPerfPolicy,
   renderRiskTiers,
 } from './policy-tables.ts';
 
@@ -89,6 +90,7 @@ export function strategyBlocks(rows?: readonly CatalogRow[]): GeneratedBlock[] {
     { name: 'RISK_TIERS', render: renderRiskTiers },
     { name: 'AREA_LEGEND', render: renderAreaLegend },
     { name: 'GATE_BUDGETS', render: renderGateBudgets },
+    { name: 'PERF_POLICY', render: renderPerfPolicy },
     { name: 'FLAKE_POLICY', render: renderFlakePolicy },
     { name: 'LIVE_CRITERIA', render: renderLiveCriteria },
     { name: 'FAULT_PROFILES', render: renderFaultProfiles },

@@ -33,10 +33,9 @@ The definitions above are implemented as pure functions of the event timeline (`
 
 ## Summaries
 
-- Repeated runs report **median and p90** (and the run count). The mean hides the tail: a title that sometimes takes four times as long is what members complain about.
+- Repeated runs report **median and p90** (and the run count). The mean hides the tail: a title that sometimes takes four times as long is what members complain about. The percentile is **Hyndman and Fan type 7** (linear interpolation between order statistics, the default of R, NumPy and spreadsheets); where lower is worse (the effective fps) the tail is the **p10**, since the p90 of a frame rate is its best runs. A summary also carries the min, the max, the median absolute deviation and the coefficient of variation ([ADR-121](decisions/perf.md)).
 - Baselines are per environment (`detectEnvId()`), per profile (`chromium`, `chromium-cpu4x`, `firefox`, `webkit`) and per scenario.
-- Regression rule (see ADR-004): a metric regresses when its median is worse than the baseline's by more than the relative threshold **and** the absolute floor,
-  or when its p90 is worse by more than the (wider) p90 threshold. A first failure is re-measured with fresh runs and the build fails only if the regression reproduces.
+- Regression rule (see ADR-004 and [ADR-123 to ADR-125](decisions/perf.md)): a metric regresses when its median is worse than the baseline's by more than the relative threshold **and** the absolute floor, or when its tail (p90, or p10 for the frame rate) is worse by more than the (wider) tail threshold and the same floor; rebuffer count, duration and ratio and the dropped-frame ratio use absolute budgets. A first failure is re-measured in a fresh batch and the build fails only if the regression reproduces.
 
 ## What the numbers do not claim
 

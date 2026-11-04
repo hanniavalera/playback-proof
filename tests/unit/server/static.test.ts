@@ -3,6 +3,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {
   appendFileSync,
   existsSync,
+  fstatSync,
   mkdirSync,
   readdirSync,
   realpathSync,
@@ -751,12 +752,23 @@ async function serveWith(otherRoot: string, target: string): Promise<RawResponse
   }
 }
 
-// Descriptors of this process (macOS and Linux both list them under /dev/fd): a file handle the server failed to release
-// is one more entry. The counter is calibrated below: with stalled downloads it must see every open file.
+// File descriptors of this process (macOS and Linux both list them under /dev/fd). A file handle the server failed to release is
+// one more entry that is neither a socket nor a pipe. Sockets are left out on purpose: how long the kernel and the event loop
+// take to let go of the sockets of an abandoned download says nothing about files, and it varies with the load of the machine.
+// The counter is calibrated below: with stalled downloads it must see every open file.
 const countsDescriptors = existsSync('/dev/fd');
 
-function openDescriptors(): number {
-  return readdirSync('/dev/fd').length;
+function openFiles(): number {
+  let files = 0;
+  for (const name of readdirSync('/dev/fd')) {
+    try {
+      const info = fstatSync(Number(name));
+      if (!info.isSocket() && !info.isFIFO()) files++;
+    } catch {
+      // Closed meanwhile: the descriptor of the directory listing itself, for one.
+    }
+  }
+  return files;
 }
 
 /** Waits `count` turns of the event loop (never a duration). */
@@ -764,25 +776,35 @@ async function nextTurns(count: number): Promise<void> {
   for (let i = 0; i < count; i++) await new Promise<void>((resolve) => setImmediate(resolve));
 }
 
-/** The descriptor count once it has stopped changing from one turn of the event loop to the next (bounded). */
-async function stableCount(): Promise<number> {
-  let previous = openDescriptors();
-  for (let turns = 0; turns < 500; turns++) {
-    await new Promise<void>((resolve) => setImmediate(resolve));
-    const current = openDescriptors();
-    if (current === previous) return current;
-    previous = current;
-  }
-  return previous;
+/** Whether the process is waiting for the result of a file operation: the `close` of a destroyed stream, for one, runs on the thread pool. */
+function fileOperationPending(): boolean {
+  return process.getActiveResourcesInfo().some((name) => name.startsWith('FSReq'));
 }
 
-/** Waits, in turns of the event loop and for at most 2 s, until the process holds no more than `limit` descriptors. */
+/**
+ * The number of open files once it has stopped changing from one turn of the event loop to the next and no file operation is
+ * pending (bounded at 2 s). A count that merely stopped changing for a turn can still be waiting for closes that the thread pool
+ * has not run yet, which on a busy machine inflated the baseline and made the calibration below fail.
+ */
+async function stableCount(): Promise<number> {
+  const deadline = Date.now() + 2000;
+  let previous = openFiles();
+  for (;;) {
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    const current = openFiles();
+    if (current === previous && !fileOperationPending()) return current;
+    if (Date.now() >= deadline) return current;
+    previous = current;
+  }
+}
+
+/** Waits, in turns of the event loop and for at most 2 s, until the process holds no more than `limit` open files. */
 async function settleTo(limit: number): Promise<number> {
   const deadline = Date.now() + 2000;
-  let count = openDescriptors();
+  let count = openFiles();
   while (count > limit && Date.now() < deadline) {
     await new Promise<void>((resolve) => setImmediate(resolve));
-    count = openDescriptors();
+    count = openFiles();
   }
   return count;
 }
@@ -860,9 +882,9 @@ describe.skipIf(!countsDescriptors)('file handles', () => {
     expect(collected, 'handles closed by the garbage collector during the file').toEqual([]);
   });
 
-  /** The process holds no more descriptors than `baseline`, and the garbage collector had no handle to close. */
+  /** The process holds no more open files than `baseline`, and the garbage collector had no handle to close. */
   async function expectNoLeak(baseline: number, when: string): Promise<void> {
-    expect(await settleTo(baseline), `descriptors ${when}`).toBeLessThanOrEqual(baseline);
+    expect(await settleTo(baseline), `open files ${when}`).toBeLessThanOrEqual(baseline);
     // The warning is emitted a turn after the collection that closed the handle.
     await nextTurns(2);
     expect(collected, `handles closed by the garbage collector ${when}`).toEqual([]);
@@ -875,10 +897,10 @@ describe.skipIf(!countsDescriptors)('file handles', () => {
     return stableCount();
   }
 
-  /** Starts `count` downloads that stall mid-body, then abandons them all. Returns the descriptors held while stalled. */
+  /** Starts `count` downloads that stall mid-body, then abandons them all. Returns the open files held while stalled. */
   async function abandonDownloads(count: number): Promise<number> {
     const downloads = await Promise.all(Array.from({ length: count }, () => stalledDownload()));
-    const held = openDescriptors();
+    const held = openFiles();
     for (const download of downloads) download.socket.destroy();
     await quiet();
     return held;
@@ -890,14 +912,20 @@ describe.skipIf(!countsDescriptors)('file handles', () => {
     // Warm-up: what the runtime allocates once and keeps (thread pool, buffers) is allocated before the baseline is taken.
     await abandonDownloads(downloads);
     const baseline = await stableCount();
+    const heldPerRound: number[] = [];
     let peak = 0;
     for (let round = 1; round <= 5; round++) {
-      peak = Math.max(peak, await abandonDownloads(downloads));
+      const held = await abandonDownloads(downloads);
+      heldPerRound.push(held);
+      peak = Math.max(peak, held);
       await expectNoLeak(baseline, `after round ${round}`);
     }
-    // Calibration: while stalled, every download holds a file and two sockets (client and server side) in this process,
-    // so the counter does see the files. Without it, "no growth" above could mean "the counter sees nothing".
-    expect(peak - baseline).toBeGreaterThanOrEqual(3 * downloads);
+    // Calibration: while stalled, every download holds one open file in this process, so the counter does see the files.
+    // Without it, "no growth" above could mean "the counter sees nothing".
+    expect(
+      peak - baseline,
+      `baseline ${baseline}, held in each round: ${heldPerRound.join(', ')}`,
+    ).toBeGreaterThanOrEqual(downloads);
   });
 
   it('does not keep a file open for HEAD, refusals or redirects either', async () => {

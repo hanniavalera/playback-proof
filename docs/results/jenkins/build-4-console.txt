@@ -1,0 +1,101 @@
+Console log of build 4 of playback-proof, cut down to the stage markers, the tool versions and the summary of each gate.
+The full log stays in Jenkins; 605 lines of progress output were left out. Credentials are redacted. Times are UTC.
+
+Started by user admin
+Obtained Jenkinsfile from git file:///repo
+[... 11 lines left out ...]
+[Pipeline] { (Checks)
+[2026-11-04T05:13:50.133Z] Running on playwright-1 in /home/jenkins/agent/workspace/playback-proof
+[Pipeline] { (Install)
+[... 12 lines left out ...]
+[2026-11-04T05:13:55.197Z] Checking out Revision 6e280049fbafe919691a3c273fa347017237782f (refs/remotes/origin/p4/jenkins)
+[... 9 lines left out ...]
+[2026-11-04T05:13:58.531Z] added 136 packages in 2s
+[... 7 lines left out ...]
+[2026-11-04T05:13:58.853Z] tool-version node v24.22.1
+[2026-11-04T05:13:58.853Z] tool-version npm 11.19.1
+[2026-11-04T05:13:58.853Z] tool-version ffmpeg ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers
+[2026-11-04T05:13:58.853Z] tool-version java openjdk version "21.0.12.1" 2026-08-18
+[2026-11-04T05:14:00.298Z] tool-version playwright Version 1.64.1
+[Pipeline] { (Static)
+[... 11 lines left out ...]
+[2026-11-04T05:14:14.687Z] All matched files use Prettier code style!
+[2026-11-04T05:14:14.687Z] docs:check ok (16 markdown files, 57 catalog rows, generated blocks up to date)
+[2026-11-04T05:14:14.947Z] codec matrix ok: docs/CODEC_MATRIX.md is what the committed results render to
+[Pipeline] { (Unit)
+[... 189 lines left out ...]
+[2026-11-04T05:16:15.099Z]  Test Files  68 passed (68)
+[2026-11-04T05:16:15.099Z]       Tests  1742 passed (1742)
+[2026-11-04T05:16:15.099Z]    Start at  05:14:15
+[2026-11-04T05:16:15.099Z]    Duration  111.61s (tests 96%, import 2%, transform 2%)
+[... 5 lines left out ...]
+[Pipeline] { (Streams)
+[... 9 lines left out ...]
+[2026-11-04T05:16:16.004Z] stream             status  files  size      duration  spec          content       time   verified
+[2026-11-04T05:16:16.004Z] vod-cmaf           cached  124    20.23 MB  60 s      5bb53cf6de1c  cac90e8344ae  0.0 s  no
+[2026-11-04T05:16:16.004Z] vod-cmaf-short     cached  28     3.99 MB   12 s      58250e347ebd  0757d6892b9e  0.0 s  no
+[2026-11-04T05:16:16.004Z] vod-webm           cached  64     10.16 MB  30 s      0645ada768c1  637a981739b5  0.0 s  no
+[2026-11-04T05:16:16.004Z] live-cmaf          cached  52     8.04 MB   24 s      def75afe5e30  7baf3de387ba  0.0 s  no
+[2026-11-04T05:16:16.004Z] vod-cmaf-clearkey  cached  14     1.04 MB   12 s      127237f6a6b2  d5fc537f25cd  0.0 s  no
+[2026-11-04T05:16:16.004Z] total: 282 files, 43.45 MB
+[... 6 lines left out ...]
+[2026-11-04T05:16:16.714Z] Archiving artifacts
+[... 18 lines left out ...]
+[Pipeline] { (Merge gate)
+[... 6 lines left out ...]
+[Pipeline] { (chromium)
+[Pipeline] { (firefox)
+[Pipeline] { (chromium-cpu4x)
+[Pipeline] { (webkit)
+[2026-11-04T05:16:20.882Z] Running on playwright-1 in /home/jenkins/agent/workspace/playback-proof
+[... 18 lines left out ...]
+[2026-11-04T05:16:23.526Z] Checking out Revision 6e280049fbafe919691a3c273fa347017237782f (refs/remotes/origin/p4/jenkins)
+[... 8 lines left out ...]
+[2026-11-04T05:16:27.263Z] added 136 packages in 3s
+[... 26 lines left out ...]
+[2026-11-04T05:16:35.823Z]   ✓  1 [chromium] › tests/e2e/env.spec.ts:14:1 › PB-ENV-001 the engine plays the selected flavour through the player, or the engine and OS pair is a documented gap @merge (3.0s)
+[... 6 lines left out ...]
+[2026-11-04T05:16:37.537Z]   ✓  2 [chromium] › tests/e2e/vod-start.spec.ts:49:1 › PB-VOD-001 DASH VOD starts: first frame presented, 3 s of media time reached, no error @merge @cpu @dash (5.4s)
+[2026-11-04T05:16:40.111Z]   ✓  3 [chromium] › tests/e2e/vod-start.spec.ts:63:1 › PB-VOD-002 HLS VOD starts: first frame presented, 3 s of media time reached, no error @merge @hls (4.5s)
+[2026-11-04T05:16:40.111Z]   3 passed (12.0s)
+[... 4 lines left out ...]
+[2026-11-04T05:16:40.289Z] Archiving artifacts
+[... 13 lines left out ...]
+[2026-11-04T05:16:40.785Z] Running on playwright-1 in /home/jenkins/agent/workspace/playback-proof
+[... 20 lines left out ...]
+[2026-11-04T05:16:43.528Z] Checking out Revision 6e280049fbafe919691a3c273fa347017237782f (refs/remotes/origin/p4/jenkins)
+[... 8 lines left out ...]
+[2026-11-04T05:16:50.818Z] added 136 packages in 6s
+[... 26 lines left out ...]
+[2026-11-04T05:17:00.567Z]   ✓  1 [firefox] › tests/e2e/env.spec.ts:14:1 › PB-ENV-001 the engine plays the selected flavour through the player, or the engine and OS pair is a documented gap @merge (6.4s)
+[2026-11-04T05:17:04.131Z]   ✓  2 [firefox] › tests/e2e/vod-start.spec.ts:49:1 › PB-VOD-001 DASH VOD starts: first frame presented, 3 s of media time reached, no error @merge @cpu @dash (9.8s)
+[2026-11-04T05:17:07.693Z]   ✓  3 [firefox] › tests/e2e/vod-start.spec.ts:63:1 › PB-VOD-002 HLS VOD starts: first frame presented, 3 s of media time reached, no error @merge @hls (7.2s)
+[2026-11-04T05:17:08.316Z]   3 passed (16.6s)
+[... 4 lines left out ...]
+[2026-11-04T05:17:08.834Z] Archiving artifacts
+[... 13 lines left out ...]
+[2026-11-04T05:17:09.480Z] Running on playwright-1 in /home/jenkins/agent/workspace/playback-proof
+[... 20 lines left out ...]
+[2026-11-04T05:17:16.910Z] Checking out Revision 6e280049fbafe919691a3c273fa347017237782f (refs/remotes/origin/p4/jenkins)
+[... 8 lines left out ...]
+[2026-11-04T05:17:24.497Z] added 136 packages in 7s
+[... 26 lines left out ...]
+[2026-11-04T05:17:33.386Z]   ✓  1 [chromium-cpu4x] › tests/e2e/vod-start.spec.ts:49:1 › PB-VOD-001 DASH VOD starts: first frame presented, 3 s of media time reached, no error @merge @cpu @dash (5.7s)
+[2026-11-04T05:17:33.387Z]   1 passed (7.8s)
+[... 4 lines left out ...]
+[2026-11-04T05:17:33.764Z] Archiving artifacts
+[... 13 lines left out ...]
+[2026-11-04T05:17:34.112Z] Running on playwright-1 in /home/jenkins/agent/workspace/playback-proof
+[... 20 lines left out ...]
+[2026-11-04T05:17:41.358Z] Checking out Revision 6e280049fbafe919691a3c273fa347017237782f (refs/remotes/origin/p4/jenkins)
+[... 8 lines left out ...]
+[2026-11-04T05:17:47.273Z] added 136 packages in 6s
+[... 26 lines left out ...]
+[2026-11-04T05:18:00.212Z]   ✓  1 [webkit] › tests/e2e/env.spec.ts:14:1 › PB-ENV-001 the engine plays the selected flavour through the player, or the engine and OS pair is a documented gap @merge (7.0s)
+[2026-11-04T05:18:00.212Z]   ✓  2 [webkit] › tests/e2e/vod-start.spec.ts:49:1 › PB-VOD-001 DASH VOD starts: first frame presented, 3 s of media time reached, no error @merge @cpu @dash (7.5s)
+[2026-11-04T05:18:03.615Z]   ✓  3 [webkit] › tests/e2e/vod-start.spec.ts:63:1 › PB-VOD-002 HLS VOD starts: first frame presented, 3 s of media time reached, no error @merge @hls (5.0s)
+[2026-11-04T05:18:03.616Z]   3 passed (15.6s)
+[... 4 lines left out ...]
+[2026-11-04T05:18:04.098Z] Archiving artifacts
+[... 30 lines left out ...]
+Finished: SUCCESS

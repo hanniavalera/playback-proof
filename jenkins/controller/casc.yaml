@@ -1,0 +1,69 @@
+# Jenkins Configuration as Code for the merge-gate lab (ADR-117). The controller is built from this file: a change made in
+# the UI does not survive `docker compose up --build`, and the file is the only place to change it. Values in ${...} come from
+# the controller's environment (docker-compose.yml, which takes them from .env).
+jenkins:
+  systemMessage: >-
+    Playback Proof merge gate: a local lab. This controller is configured as code (jenkins/controller/casc.yaml)
+    and has no executors: builds run on the inbound agent.
+  # No executors on the controller (ADR-116): a build can only run on an agent, so a pipeline can never run user code
+  # next to the controller's secrets, and a missing agent shows up as a build waiting for a node, not as a green build.
+  numExecutors: 0
+  mode: EXCLUSIVE
+  quietPeriod: 0
+  noUsageStatistics: true
+  # Agents connect over WebSocket (the same port as the UI), so the TCP agent port stays closed.
+  slaveAgentPort: -1
+  disableRememberMe: true
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: '${JENKINS_ADMIN_ID:-admin}'
+          password: '${JENKINS_ADMIN_PASSWORD}'
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+  crumbIssuer: 'standard'
+  nodes:
+    - permanent:
+        name: 'playwright-1'
+        nodeDescription: 'Linux arm64 agent on the Playwright image (agent/Dockerfile): Chromium, Firefox, WebKit, ffmpeg, Node'
+        labelString: 'playwright linux'
+        # Two executors, four engines: they run two at a time (ADR-116 has the measurement).
+        numExecutors: '${AGENT_EXECUTORS:-2}'
+        remoteFS: '/home/jenkins/agent'
+        mode: EXCLUSIVE
+        retentionStrategy: 'always'
+        launcher:
+          inbound:
+            webSocket: true
+            workDirSettings:
+              disabled: false
+              failIfWorkDirIsMissing: false
+              internalDir: 'remoting'
+unclassified:
+  location:
+    url: 'http://localhost:4700/'
+security:
+  # The one job below is a Job DSL script that comes from this file, not from a user.
+  globalJobDslSecurityConfiguration:
+    useScriptSecurity: false
+jobs:
+  - script: |
+      pipelineJob('playback-proof') {
+        description('The merge gate of Playback Proof: the Jenkinsfile at the root of the repository mounted at /repo.')
+        definition {
+          cpsScm {
+            scm {
+              git {
+                remote {
+                  url('file:///repo')
+                }
+                branch('refs/heads/${PB_BRANCH:-main}')
+              }
+            }
+            scriptPath('Jenkinsfile')
+            lightweight(true)
+          }
+        }
+      }

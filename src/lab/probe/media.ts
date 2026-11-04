@@ -59,19 +59,12 @@ const FMP4_VIDEO = ['-movflags', FMP4_FLAGS, '-f', 'mp4'];
 const FMP4_AUDIO = ['-movflags', FMP4_FLAGS, '-frag_duration', String(GOP_SECONDS * 1_000_000), '-f', 'mp4'];
 const WEBM = ['-f', 'webm'];
 
-const VP9 = [
-  '-c:v',
-  'libvpx-vp9',
-  '-deadline',
-  'realtime',
-  '-cpu-used',
-  '8',
-  '-threads',
-  '1',
-  '-b:v',
-  '600k',
-];
-const VP8 = ['-c:v', 'libvpx', '-deadline', 'realtime', '-cpu-used', '8', '-threads', '1', '-b:v', '600k'];
+// libvpx in `-deadline realtime` trades quality for encode time, so its output depends on how busy the machine is (the same clip had four
+// different hashes in four runs under load); `good` with a fixed speed, no look-ahead and no alt-ref frames is the recipe the lab's
+// own streams use (src/server/media/specs.ts, ADR-045) and gives the same bytes every time.
+const LIBVPX_FIXED = ['-deadline', 'good', '-cpu-used', '4', '-auto-alt-ref', '0', '-lag-in-frames', '0'];
+const VP9 = ['-c:v', 'libvpx-vp9', ...LIBVPX_FIXED, '-row-mt', '0', '-threads', '1', '-b:v', '600k'];
+const VP8 = ['-c:v', 'libvpx', ...LIBVPX_FIXED, '-threads', '1', '-b:v', '600k'];
 const H264 = [
   '-c:v',
   'libx264',
