@@ -119,7 +119,7 @@ test(
     // Channel 2, the origin: how far behind the edge the OTHER side says the playhead is. The edge it has published is the end of segment
     // `edge`; a player that misreads the live clock can agree with itself and still be far from this number (or past it). The origin
     // publishes whole segments while Shaka's edge is continuous, so this reading differs from the player's by up to a segment either
-    // way (5.8 to 7.5 s against 6.2 to 7.1 s in the runs of ADR-100): it is held to the maximum limit, not to the p95 one.
+    // way (5.6 to 7.5 s against 6.2 to 7.2 s in the stability runs of ADR-100): it is held to the maximum limit, not to the p95 one.
     const publishedContext = `the origin had published segment ${edge}, which ends at ${publishedEndSec(live, edge)} s of the stream; the playhead was at ${joinedAt.toFixed(2)} s`;
     expect(
       behindPublishedMs,
