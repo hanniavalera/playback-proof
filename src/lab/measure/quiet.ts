@@ -1,7 +1,7 @@
 import { loadavg } from 'node:os';
 import { sleep } from './timeouts.ts';
 
-// Waiting for a quiet machine before a measurement (ADR-130). The numbers of this harness are only as quiet as the machine that took
+// Waiting for a quiet machine before a measurement (ADR-129). The numbers of this harness are only as quiet as the machine that took
 // them, so the command that records a baseline or runs the gate can be started through `perf/quiet.ts`, which waits until the 1-minute
 // load average is at or below a limit, and tells the harness (through the environment) how long it waited and what the load was when it
 // started: the baseline file then says so.

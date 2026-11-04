@@ -6,7 +6,7 @@ import { SCENARIOS } from './scenarios.ts';
 import { maximum, mean, median, minimum, p10, p90, robustCv, mad, stdDev } from './stats.ts';
 import type { MetricUnit, PerfProfile } from './types.ts';
 
-// Thresholds from measured variation (ADR-131). A baseline holds the raw values of N runs of every metric; from them this file estimates
+// Thresholds from measured variation (ADR-123). A baseline holds the raw values of N runs of every metric; from them this file estimates
 // how far two independent batches of the same metric are apart by noise alone, and what the thresholds of the policy have to be to sit
 // above that. Nothing here measures: it reads baselines, so the derivation can be repeated by anyone who has the files.
 //

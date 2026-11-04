@@ -3,7 +3,7 @@ import type { GateReport } from './report.ts';
 import { stdDev } from './stats.ts';
 import type { MetricUnit } from './types.ts';
 
-// The A/A check (ADR-131): the gate run against its OWN baseline, repeatedly, on the same build and the same machine. Nothing changed, so
+// The A/A check (ADR-123): the gate run against its OWN baseline, repeatedly, on the same build and the same machine. Nothing changed, so
 // every alarm is a false alarm; what the check measures is how often the gate cries wolf and how close the honest noise gets to the
 // thresholds. Two numbers matter. A FALSE POSITIVE is a pass that ended in exit code 1 (a regression that reproduced): that is what
 // fails a merge. A FIRST-BATCH ALARM is a gated metric that failed in the first batch only: it cost a fresh batch and was then not
