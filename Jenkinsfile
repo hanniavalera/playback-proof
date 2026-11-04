@@ -49,8 +49,15 @@ pipeline {
                     steps {
                         checkout scm
                         sh 'npm ci --no-audit --no-fund'
-                        // The tools this agent really has, in the log of every build.
-                        sh 'node --version && npm --version && ffmpeg -version | head -n 1 && java -version 2>&1 | head -n 1 && npx playwright --version'
+                        // The tools this agent really has: labelled lines, so that the evidence of a build reads them from its log.
+                        sh '''
+                            set +x
+                            echo "tool-version node $(node --version)"
+                            echo "tool-version npm $(npm --version)"
+                            echo "tool-version ffmpeg $(ffmpeg -version | head -n 1)"
+                            echo "tool-version java $(java -version 2>&1 | head -n 1)"
+                            echo "tool-version playwright $(npx playwright --version)"
+                        '''
                     }
                 }
                 stage('Static') {
