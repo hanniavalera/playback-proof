@@ -348,7 +348,7 @@ describe('PB-LAB-006 README: the prose against the files it stands on', () => {
     for (const leg of legs) expect(leg.command).toContain('--paired');
     expect(real.text('Jenkinsfile')).toMatch(/stage\('Perf'\)[\s\S]*gate:perf -- --paired/);
     expect(readme).toContain(
-      'In progress: the runner and its measurements are being finished and are not on `main`',
+      'In progress: the runner and its measurements are in review (pull request #23) and are not on `main`',
     );
   });
 
@@ -565,10 +565,33 @@ describe('PB-LAB-006 README: the prose against the files it stands on', () => {
       'tests/unit/server/static.test.ts (84 open descriptors where 120 were expected while 40 downloads stalled)',
     );
     expect(readme).toContain('84 open descriptors where 120 were expected while 40 downloads stalled');
+    const hevc = read('docs/results/flake/README.md');
+    expect(hevc).toContain('encoded the same clip 12 times idle and 12 times with eight busy loops');
+    expect(hevc).toContain('every series produced one hash (the committed one) in 12 of 12');
+    expect(readme).toContain(
+      'encoded the clip 12 times idle and 12 times under load and got the committed hash every time',
+    );
     expect(existsSync(join(ROOT, '.github/actions/setup/apt-mirror.sh'))).toBe(true);
     expect(read('docs/decisions/ci.md')).toContain(
       '## ADR-180: The setup action measures the apt mirror before it uses it',
     );
     expect(readme).toContain('is not a limit of the lab');
+  });
+
+  // The file-handle calibration (static.test.ts) was fixed in pull request #22: the helper that waits for pending file operations
+  // names CloseReq next to FSReq. The README says 'in review' until that change is in this tree, and 'fixed' from then on.
+  it('says the file-handle calibration flake is fixed only once the fix is in the repository (Limitations)', () => {
+    const fixed = read('tests/unit/server/static.test.ts').includes('CloseReq');
+    if (fixed) {
+      expect(
+        readme,
+        'the fix of pull request #22 is in this tree: Limitations must say "cause found and fixed in pull request #22"',
+      ).toContain('cause found and fixed in pull request #22');
+      expect(readme).not.toContain('its fix is in review');
+    } else {
+      expect(readme).toContain('has a cause and its fix is in review');
+      expect(readme).toContain('is in review as pull request #22, not on `main`');
+      expect(readme).not.toContain('cause found and fixed');
+    }
   });
 });
