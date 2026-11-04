@@ -22,7 +22,7 @@ pull_request  |  push to main  |  manual run                     (ci.yml)
 
   The jobs run in parallel. Only the five legs wait, and only for `streams`.
 
-every night 04:41 UTC  |  manual run                            (nightly.yml)
+every night 04:41 UTC  |  manual run  |  a pull request that changes nightly.yml       (nightly.yml)
 
   streams ---- the same workflow, the same cache
   |
@@ -43,7 +43,7 @@ Budgets are the design numbers of [TEST_STRATEGY.md section 6.3](../TEST_STRATEG
 | `streams` (restore or generate) | same, and the nightly | `ubuntu-24.04` | none in the strategy; about 1 min on a cache hit, 3 to 4 on a miss (generation is about 2 min on 4 cores: expected, not measured on a runner) | 15 min | `streams` (`.cache/streams`, 43 MB, 3 days) | `npm run generate:streams`, or `gh run download <run-id> --name streams --dir .cache/streams` |
 | `merge-gate (chromium)`, `(firefox)`, `(chromium-cpu4x)`, `(webkit-linux, experimental)` | same | `ubuntu-24.04` | 8 min | 15 min | `reports-<leg>` (`reports/`, `test-results/`, 14 days) | `CI=true npm run docker:pw -- npm run gate:merge -- --project=<project>` (the streams must be in `.cache/streams`) |
 | `merge-gate (webkit-macos)` | same | `macos-15` | 8 min (a slow 3-CPU runner: unmeasured) | 30 min | `reports-webkit-macos` | on a macOS host: `npx playwright install webkit`, then `CI=true npm run gate:merge -- --project=webkit` |
-| `streams`, `release (<leg>)` of the nightly | `schedule` (04:41 UTC) and manual | as the gate | 15 min per engine (the release budget) | 30 min; 45 on macOS | `reports-<leg>` (30 days) | `CI=true npm run docker:pw -- npm run test:e2e -- --grep "@merge\|@release" --project=<project>` |
+| `streams`, `release (<leg>)` of the nightly | `schedule` (04:41 UTC), manual, and a pull request that changes `nightly.yml` (a schedule and a manual run exist only for a file on the default branch, so a change would otherwise be seen the night after the merge) | as the gate | 15 min per engine (the release budget) | 30 min; 45 on macOS | `reports-<leg>` (30 days) | `CI=true npm run docker:pw -- npm run test:e2e -- --grep "@merge\|@release" --project=<project>` |
 
 The legs and what each one is for:
 

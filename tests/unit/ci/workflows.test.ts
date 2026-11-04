@@ -132,9 +132,16 @@ describe('the policies of every workflow', () => {
     }
   });
 
-  it('cancels a superseded pull request run, and nothing else', () => {
-    expect(ci).toMatch(/cancel-in-progress: \$\{\{ github\.event_name == 'pull_request' \}\}/);
-    expect(nightly).toMatch(/cancel-in-progress: false/);
+  it('cancels a superseded pull request run, and nothing else, in the gate and in the nightly alike', () => {
+    for (const workflow of [ci, nightly]) {
+      expect(workflow).toMatch(
+        /^concurrency:\n {2}group: [a-z]+-\$\{\{ github\.event_name == 'pull_request' && github\.ref \|\| github\.run_id \}\}\n {2}cancel-in-progress: \$\{\{ github\.event_name == 'pull_request' \}\}\n/m,
+      );
+    }
+  });
+
+  it('runs the nightly on a pull request only when the pull request changes the nightly itself', () => {
+    expect(nightly).toMatch(/^ {2}pull_request:\n {4}paths:\n {6}- \.github\/workflows\/nightly\.yml\n/m);
   });
 });
 

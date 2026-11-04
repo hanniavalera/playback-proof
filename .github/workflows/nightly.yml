@@ -13,14 +13,19 @@ on:
     # 04:41 UTC, off-peak. Not on the hour: that is when most scheduled workflows start and runs are delayed the most.
     - cron: '41 4 * * *'
   workflow_dispatch:
+  # A schedule and a manual run only exist for a file on the default branch, so a change to this one would be seen to work (or
+  # not) the night after it merges. A pull request that changes the file runs it once, before the merge.
+  pull_request:
+    paths:
+      - .github/workflows/nightly.yml
 
 permissions:
   contents: read
 
-# A run that is still going is never cancelled by the next one: the next waits. A night's verdict is not superseded.
+# As in ci.yml: a pull request run is superseded by the next push, every other run keeps its own.
 concurrency:
-  group: nightly-${{ github.ref }}
-  cancel-in-progress: false
+  group: nightly-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   streams:
