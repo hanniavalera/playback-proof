@@ -21,7 +21,18 @@ export const TARGETS: ReadonlyArray<{ file: string; blocks: readonly EvidenceBlo
   { file: 'docs/results/readiness/README.md', blocks: ['EVIDENCE_MANIFEST'] },
   {
     file: 'docs/READINESS.md',
-    blocks: ['READINESS_VERDICTS', 'READINESS_RESTORE', 'READINESS_SOAKS', 'READINESS_MARGINS'],
+    blocks: [
+      'READINESS_VERDICTS',
+      'READINESS_RESTORE',
+      'READINESS_SOAKS',
+      'READINESS_MARGINS',
+      'EXTRA_STALE_RECOVERY',
+      'EXTRA_STALE_STALLS',
+      'EXTRA_SOAKS',
+      'EXTRA_VERDICTS',
+      'EXTRA_RESTORE',
+      'EXTRA_MARGINS',
+    ],
   },
 ];
 

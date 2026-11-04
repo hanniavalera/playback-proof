@@ -1,0 +1,18 @@
+measure: soak, engine firefox, runner ubuntu-24.04
+label: stale-firefox-ls
+started: 2026-11-04T18:59:21Z
+commit: e0a5be30c3d62243a89a36acf765efc424c8c977 (main)
+environment id: gha-linux-x64
+runner: Linux X64, github-hosted, image ubuntu24 20261101.360.1
+uname: Linux runnervm7aw5e 7.0.0-1017-azure #17~24.04.1-Ubuntu SMP PREEMPT Thu Sep 24 18:46:57 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+cpus: 4
+cpu: AMD EPYC 9V45 96-Core Processor
+memory: 15983 MiB
+os: Ubuntu 24.04.5 LTS
+uptime:  18:59:22 up 0 min,  0 user,  load average: 1.25, 0.35, 0.12
+node: v22.23.4, npm: 10.9.9
+playwright: Version 1.64.1
+ffmpeg: not installed (the streams come from the streams job)
+
+finished: 2026-11-04T19:07:25Z
+uptime:  19:07:25 up 8 min,  0 user,  load average: 0.50, 0.44, 0.25
