@@ -3,7 +3,7 @@ import { compareHistoryWithLog, rungRuns } from './abr/agreement.ts';
 import { banEvidence, banNote, upshiftBound, upshiftWaitMs } from './abr/bans.ts';
 import { SHAKA_SWITCH_INTERVAL_S, settleWindowSeconds, throttleOf } from './abr/conditions.ts';
 import { orExplain, withExplanation } from './abr/explain.ts';
-import { skipIfForcedClimb } from './abr/invalid-run.ts';
+import { skipIfForcedClimb, skipIfForcedDownshift } from './abr/invalid-run.ts';
 import { bestRungCarriedBy, ladderOf, rungOf } from './abr/ladder.ts';
 import { describeSegments, fromFirstOf, videoSegmentRequests } from './abr/log.ts';
 import { startupBound } from './abr/startup.ts';
@@ -101,6 +101,23 @@ test(
         bandwidth: rungOf(ladder, { height: change.height }).variantBandwidth,
       })),
     );
+    // An attempt in which the player left the top rung of a link that carries it, within the first poll of Shaka's dropped-frame
+    // protection after the playhead entered it, with the mark of a forced switch in the origin's log (an audio segment asked for
+    // twice), on a load that dropped frames and failed no request, has not seen the adaptation hold or lose the rung (ADR-106,
+    // amendment 3). On the GitHub macOS runner it ends most attempts of this test; the engines that drop no frame never reach it. It
+    // ends here, skipped, with its numbers, and is counted as an invalid run; a downshift that does not show all of that (the
+    // adaptation's own, a failed request, no frame dropped, a later poll) is not found, and fails below as it always did.
+    await skipIfForcedDownshift(testInfo, {
+      changes,
+      afterIndex: top.index,
+      carriedHeight: ladder.top.height,
+      carriedRep: ladder.top.rep,
+      frames: metrics.frames,
+      playerErrors: metrics.errors.length,
+      segmentDurationSec: stream.segmentDurationSec,
+      linkKbps: UNCONSTRAINED_LINK_KBPS,
+      log: () => session.service.log(session.id),
+    });
     expect(
       describeVariantChanges(variantChanges(await qa.events(top.index + 1))),
       `rung changes in the ${window} s after reaching ${ladder.top.height}p (qa.events()): none. ${banNote(metrics.frames, changes)}`,

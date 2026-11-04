@@ -243,3 +243,116 @@ export function invalidRunReason(facts: InvalidRunFacts): string {
     `whether the player flaps (ADR-106). The climb is at media time ${change.mediaTime.toFixed(2)} s${entered}.`
   );
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// A downshift from the top rung that the adaptation cannot have decided (ADR-106, amendment 3). PB-ABR-001 claims that on a link that
+// carries the top rung the player climbs to it and stays. The proof of `forcedClimb` does not reach it: on the GitHub macOS runner the
+// downshift comes 9.2 to 9.4 s after the climb, which is longer than the switch interval, so the interval cannot say that it was not a
+// decision. What can say it is the origin's log and the timing against the playhead.
+
+/**
+ * How long after the playhead enters the first segment of a rung the first poll of the dropped-frame protection can come: its period
+ * and the jitter of the clocks that `DECISION_JITTER_S` allows elsewhere. The measurement: 1.88 to 2.02 s in 100 of 100 attempts of
+ * PB-ABR-001 on the macOS runner (the first 720p segment starts at media time 8 s) and 1.91 and 1.92 s in two nightly attempts, one of
+ * them with the first 720p segment at 4 s: what is constant is the time since the entry and not the media time.
+ */
+export const FIRST_POLL_WINDOW_S = DROPPED_FRAME_PROTECTION.checkSeconds + DECISION_JITTER_S;
+
+export interface DownshiftEvidence {
+  /** Every rung change of the load, in order (`variantChanges(await qa.events())`). */
+  changes: readonly VariantChange[];
+  /** The timeline index of the change that reached the rung the link carries: only what came after it is looked at. */
+  afterIndex: number;
+  /** The height of the best rung the link carries: the top rung, on a link that is unconstrained. */
+  carriedHeight: number;
+  frames: { decoded: number; dropped: number };
+  /** The media time at which the first segment of the carried rung starts (`firstSegmentStart`), or null when none was asked for. */
+  boundaryMedia: number | null;
+  /** `originFailures(log).length`. */
+  originFailures: number;
+  /** `metrics.errors.length`: the other callers of `Player.disableStream` are error paths, and an error is raised for each. */
+  playerErrors: number;
+  /** `repeatedAudioSegments(log)`. */
+  repeatedAudio: readonly string[];
+}
+
+export interface ForcedDownshift extends ForcedChange {
+  /** The media time at which the playhead entered the first segment of the carried rung. */
+  boundaryMedia: number;
+  /** Seconds of media time between that entry and the downshift. */
+  secondsAfterEntry: number;
+  /** The audio segments the origin was asked for twice. */
+  repeatedAudio: readonly string[];
+}
+
+/**
+ * The first change after the player reached the rung the link carries, when it is a downshift that the adaptation cannot have decided
+ * (a ban by the dropped-frame protection fits it): all of
+ *  - it is the FIRST change after the player reached that rung: the first thing that contradicts the claim decides, so a real flap that
+ *    comes first is never hidden by a forced change that follows it;
+ *  - it is a change Shaka made itself (`abr`), from the rung the link carries to one BELOW it: on a link that carries the top rung
+ *    nothing about the link justifies leaving it (a throttled link, whose carried rung is lower, is not this claim);
+ *  - it came within the first poll of the protection after the playhead entered the first segment of that rung
+ *    (`FIRST_POLL_WINDOW_S`), and not before the entry;
+ *  - the load dropped frames: the protection has nothing to act on without them (how few suffice is not explained: ADR-106);
+ *  - no response of the origin failed and the player raised no error: the other callers of `Player.disableStream` are error paths;
+ *  - the origin was asked twice for an audio segment: the mark of a switch made with `force`, which the adaptation does not make. The
+ *    interval cannot say it here, and the timing alone cannot either: on this link the next download after the climb plus the switch
+ *    interval is the one for the segment that falls due at the same moment as the poll, so a decision of the estimate (a real
+ *    regression, the very thing the test exists to catch) would sit in the same window. A gated switch leaves the audio stream
+ *    alone, and it is the repeat that tells the two apart.
+ * A proof of exclusion and not of cause, as `forcedClimb` is: a forced downshift that does not show all of it (no audio request in
+ * flight at the change, a later poll, no frame dropped) is not found, and the test fails as it always did.
+ */
+export function forcedDownshift(evidence: DownshiftEvidence): ForcedDownshift | null {
+  const position = evidence.changes.findIndex((change) => change.index > evidence.afterIndex);
+  if (position < 1) return null;
+  const change = evidence.changes[position];
+  const previous = evidence.changes[position - 1];
+  if (!change || !previous) return null;
+  if (change.reason !== 'abr' || previous.reason === 'manual') return null;
+  if (previous.height !== evidence.carriedHeight || change.height >= evidence.carriedHeight) return null;
+  if (evidence.boundaryMedia === null) return null;
+  const secondsAfterEntry = change.mediaTime - evidence.boundaryMedia;
+  if (secondsAfterEntry < 0 || secondsAfterEntry > FIRST_POLL_WINDOW_S) return null;
+  if (evidence.frames.dropped <= 0) return null;
+  if (evidence.originFailures > 0) return null;
+  if (evidence.playerErrors > 0) return null;
+  if (evidence.repeatedAudio.length === 0) return null;
+  return {
+    change,
+    after: previous,
+    gapSeconds: (change.t - previous.t) / 1000,
+    boundaryMedia: evidence.boundaryMedia,
+    secondsAfterEntry,
+    repeatedAudio: evidence.repeatedAudio,
+  };
+}
+
+export interface InvalidDownshiftFacts {
+  downshift: ForcedDownshift;
+  frames: { decoded: number; dropped: number };
+  carriedHeight: number;
+  /** The rate of the link the spec set up. */
+  linkKbps: number;
+}
+
+/**
+ * The reason of an invalid run that ended on a forced downshift, for the `skip` and `invalid-run` annotations. It starts with
+ * `INVALID_RUN_PREFIX`, and its numbers come first and fit in the 90 characters of a report cell: the rung, how long after the playhead
+ * entered the first segment of the carried rung the player left it, and the frames. The sentences after them say what they mean and
+ * what is not known.
+ */
+export function invalidDownshiftReason(facts: InvalidDownshiftFacts): string {
+  const { downshift, frames, carriedHeight, linkKbps } = facts;
+  const { change, gapSeconds, secondsAfterEntry, boundaryMedia, repeatedAudio } = downshift;
+  const head = `${INVALID_RUN_PREFIX} forced downshift to ${change.height}p ${secondsAfterEntry.toFixed(1)} s after entering ${carriedHeight}p, ${frames.dropped} of ${frames.decoded} frames dropped`;
+  return (
+    `${head}. The playhead entered the first ${carriedHeight}p segment at media time ${boundaryMedia.toFixed(1)} s and the player left ` +
+    `${carriedHeight}p at ${change.mediaTime.toFixed(2)} s, ${gapSeconds.toFixed(1)} s after it reached it, on a ${linkKbps} kbps link that carries it. ` +
+    `The origin was asked twice for ${repeatedAudio.join(', ')}: Shaka switches the unchanged audio stream again only for a forced switch, ` +
+    `which it makes when it disables a rung. No request failed and the player raised no error, and the load dropped frames: Shaka's ` +
+    `dropped-frame protection, which disables the rung that plays for ${DROPPED_FRAME_PROTECTION.banSeconds} s, fits, so this attempt cannot say ` +
+    `whether the player holds ${carriedHeight}p on an unconstrained link (ADR-106, amendment 3).`
+  );
+}
