@@ -18,7 +18,7 @@ import { expect, test } from './support/fixtures.ts';
 import { streamInfoOf } from './support/session.ts';
 import { requestLogCursor, requestsFor, waitForRequest } from './support/waiting.ts';
 
-// The seven ABR specs (PB-ABR-001 to PB-ABR-007). Their decisions are ADR-095 to ADR-097 (docs/decisions/e2e-abr.md): a condition is
+// The seven ABR specs (PB-ABR-001 to PB-ABR-007). Their decisions are ADR-095 to ADR-097 and ADR-106 (docs/decisions/e2e-abr.md): a condition is
 // a finite link derived from the ladder (a recovery replaces the throttle, it does not remove it), every claim about a rung is made
 // twice, in the player's events and in the origin's log, and no spec asserts the rung an engine starts on (Shaka's defaults start on
 // a different one in each).
@@ -174,6 +174,10 @@ test(
     const metrics = await qa.metrics();
     const changes = variantChanges(await qa.events());
     const log = await session.service.log(session.id);
+    testInfo.annotations.push({
+      type: 'measured',
+      description: `rungs: ${describeVariantChanges(changes)}; rebuffers ${metrics.rebuffer.count}; dropped frames ${metrics.frames.dropped} of ${metrics.frames.decoded}`,
+    });
     // An attempt in which the player climbed to a rung the link cannot carry, sooner than the adaptation can decide and on a load that
     // dropped frames, has not seen the adaptation decide anything (Shaka's dropped-frame protection fits it, and ADR-106 has the
     // evidence): on the GitHub macOS runner it was about one attempt in ten, always about 1.9 s after the playhead entered the first
@@ -195,10 +199,6 @@ test(
       describeVariantChanges(variantChanges(afterDown)),
       `rung changes in the ${window} s after the step down to ${settle.height}p (qa.events()): none. ${banNote(metrics.frames, changes)}`,
     ).toBe('none');
-    testInfo.annotations.push({
-      type: 'measured',
-      description: `rungs: ${describeVariantChanges(changes)}; rebuffers ${metrics.rebuffer.count}`,
-    });
     expect(metrics.bitrate.current?.height, 'active rung (metrics.bitrate.current) at the end').toBe(
       settle.height,
     );
