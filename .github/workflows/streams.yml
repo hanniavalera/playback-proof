@@ -2,7 +2,7 @@ name: streams
 
 # The lab's streams, generated at most once per cache key and shared with every browser job of the run as the `streams`
 # artifact. Called by ci.yml (the merge gate) and nightly.yml, so that both use the same cache key and the same bytes.
-# The browser jobs never run ffmpeg: macOS installs none (ADR-112), and Playwright's Linux image ships none.
+# The browser jobs never run ffmpeg: they play this artifact, and macOS installs none (ADR-112).
 # Decisions: docs/decisions/ci.md (ADR-112); the cache layout: docs/decisions/media.md (ADR-047).
 
 on:
