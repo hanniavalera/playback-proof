@@ -25,7 +25,7 @@ The summaries made by the repository's own A/A tool over the raw reports: [`chro
 
 ## What it shows
 
-1. **36 passes, 0 false positives.** Every exit code was 0. The machines are the ones that failed the committed baselines (two of the twelve jobs ran on the AMD EPYC 7763: 12 of the passes above), and they pass here.
+1. **36 passes, 0 false positives.** Every exit code was 0. The machines are the ones that failed the committed baselines (four of the twelve jobs ran on the AMD EPYC 7763: 12 of the 36 passes above), and they pass here.
 2. **The machine effect cancels.** The control medians of the low-end profile range from 167 to 256 ms across these jobs (a spread of about 45 % between machines of one runner label), and the head against the control stays within -2 % and +4 %. For `chromium` the control medians range from 55 to 79 ms and the head stays within -10 % and +15 % (the +15 % pass is 68 to 78 ms: 10 ms, with a threshold of 30 % and more than 5 ms).
 3. **No ordering bias that this size of experiment can see.** The control is measured first (a known weakness, ADR-179). The mean difference of the head from the control over the passes is -1.0 % for `chromium` and +0.3 % for the low-end profile; a drift of the machine that counted against the head would make it positive.
 
