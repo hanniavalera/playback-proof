@@ -6,7 +6,9 @@
 //   npm run results:docs               check that every generated block is up to date (exit 1 otherwise)
 //   npm run results:docs -- --write    rewrite the blocks first, then check
 //
-// docs:check (tools/check-docs.ts) does not know these blocks; tests/unit/readiness/evidence.test.ts keeps them fresh in the unit suite.
+// docs:check (tools/check-docs.ts) calls `resultsDocsProblems` below as well, so that the one command that checks every generated block of the
+// repository covers these too, and tests/unit/readiness/evidence.test.ts keeps them fresh in the unit suite. The README's readiness and soak
+// tables (tools/results/readiness.ts) are rendered through the same module, so the two documents read one verified join of the files.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { buildEvidence, renderEvidenceBlocks } from '../src/lab/readiness/evidence.ts';

@@ -134,9 +134,10 @@ Three things these builds found that are not about the pipeline. **Two unit test
 in `tests/unit/probe/media.test.ts` ("generates the same bytes every time": the first of two generations of the probe media produced a
 different VP8 file), and build 5 failed in `tests/unit/server/static.test.ts` ("releases the file of every download that the client
 abandons": 84 open descriptors counted where 120 were expected). Both passed alone on an idle agent and in builds 3, 4 and 6; the host
-had a load average of about 18 on 12 cores while they failed. The second one had a cause, found afterwards and fixed in pull request #22:
-the helper that waits for pending file operations did not count the close of a file handle, so the baseline was taken while
-closes were still queued ([`docs/results/flake/README.md`](../docs/results/flake/README.md), section 5). The first has none that is
+had a load average of about 18 on 12 cores while they failed. The second one is likely the helper defect fixed in pull request #22 (the
+helper that waits for pending file operations did not count the close of a file handle, so the baseline was taken while closes were
+still queued); that was not checked for build 5, whose message (84 descriptors where 120 were expected) is not the one of the failures
+on GitHub ([`docs/results/flake/README.md`](../docs/results/flake/README.md), section 5). The first has no cause that is
 known: it failed once on a GitHub runner too, and a diagnostic could not make it fail again (same section). **Two more unit tests
 depended on the environment of the agent, not on its load.** Build 7 failed in `tests/unit/measure/paired-real.test.ts`, which expects
 the control of the paired gate to get the checkout's own stream cache while the agent sets `PB_CACHE_DIR`, which the control honours
@@ -170,9 +171,10 @@ its evidence, not a second failure. **Build 8**, the same pipeline on `main` at 
 
 **Build 9**, on a throwaway branch of a copy of the repository ([the negative run](#the-negative-run), below), showed what a red build
 does to the stages after it. `Merge gate` went red in `chromium`, `firefox` and `webkit`; then `Perf` ran anyway and passed (the
-control of a branch other than `main` is its own `HEAD`: an A/A); `Flake` judged the four runs of the build with the eight now in the
-history, passed (a failed test is the business of the merge gate, and every verdict is still `not-enough-data`) and **recorded
-nothing**: the file still had the four lines of build 8. `Triage` ran, because the build was red, and read the Playwright reports of
+control of a branch other than `main` is its own `HEAD`: an A/A); `Flake` judged the four runs of the build together with the four of
+build 8 in the history (`4 runs in this build, 8 runs judged`), passed (a failed test is the business of the merge gate, and every
+verdict is still `not-enough-data`) and **recorded nothing**: the file still had the four lines of build 8. `Triage` ran, because the
+build was red, and read the Playwright reports of
 the four engines: **3 failures in 4 reports became 1 cluster** (PB-VOD-002, in three engines), category `unknown`, rule
 `no-rule-matched`, class "Needs a person": the rule table has no rule for a false assertion about the request log, and it says so
 instead of guessing.
