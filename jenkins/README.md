@@ -130,15 +130,20 @@ Build 4, one executor: 19.7, 28.7, 24.5 and 30.1, each after the one before it. 
 test in each, PB-VOD-002), `chromium-cpu4x` green. Build 10: `chromium` 88.3, `firefox` 91.0, `chromium-cpu4x` 19.7 (88.5 waited),
 `webkit` 88.9 (91.2 waited), the same tests, all passed, none flaky.
 
-Three things these builds found that are not about the pipeline. **Two unit tests depended on how busy the machine is.** Build 2 failed
+Three things these builds found that are not about the pipeline. **Two unit tests failed while the machine was loaded.** Build 2 failed
 in `tests/unit/probe/media.test.ts` ("generates the same bytes every time": the first of two generations of the probe media produced a
 different VP8 file), and build 5 failed in `tests/unit/server/static.test.ts` ("releases the file of every download that the client
-abandons": 84 open descriptors counted where 120 were expected). Both passed alone on an idle agent and in builds 3, 4 and 6; the host
-had a load average of about 18 on 12 cores while they failed. The second one is likely the helper defect fixed in pull request #22 (the
+abandons": 84 open descriptors counted where 120 were expected). Both passed in builds 3, 4 and 6. Build 2 ran four Vitest workers on an
+agent with a quota of three CPUs, and its file passed three times alone on the idle agent and failed again under eight busy loops
+([ADR-119](../docs/decisions/ci-jenkins.md)); build 5 failed while the host had a load average of about 18 on 12 cores. The second one is
+likely the helper defect fixed in pull request #22 (the
 helper that waits for pending file operations did not count the close of a file handle, so the baseline was taken while closes were
 still queued); that was not checked for build 5, whose message (84 descriptors where 120 were expected) is not the one of the failures
-on GitHub ([`docs/results/flake/README.md`](../docs/results/flake/README.md), section 5). The first has no cause that is
-known: it failed once on a GitHub runner too, and a diagnostic could not make it fail again (same section). **Two more unit tests
+on GitHub ([`docs/results/flake/README.md`](../docs/results/flake/README.md), section 5). The first has a likely cause: that
+commit still encoded VP8 with libvpx's `-deadline realtime`, whose output depends on how busy the machine is (four different hashes in
+four runs at a load average of about 20), and the recipe was replaced the same evening ([ADR-037](../docs/decisions/codecs.md), the
+amendment under its Consequences), though this was not traced into libvpx. A later mismatch of the same test, on an HEVC clip on a GitHub
+runner, has no known cause (same section 5). **Two more unit tests
 depended on the environment of the agent, not on its load.** Build 7 failed in `tests/unit/measure/paired-real.test.ts`, which expects
 the control of the paired gate to get the checkout's own stream cache while the agent sets `PB_CACHE_DIR`, which the control honours
 on purpose, and in `tests/unit/triage/committed-files.test.ts`, which looks for the name of the machine's user in the committed files
