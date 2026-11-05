@@ -3,13 +3,22 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { checkReadmeFile } from '../../../tools/check-docs.ts';
-import { parseCatalog } from '../../../tools/catalog.ts';
+import { expandEngines, parseCatalog } from '../../../tools/catalog.ts';
+import { runGateMerge } from '../../../tools/gate-merge.ts';
 import { RESULT_BLOCKS, loadResultFiles } from '../../../tools/results-tables.ts';
 import { readCollections } from '../../../tools/results/flake.ts';
 import { fixed as digits, seconds } from '../../../tools/results/format.ts';
 import { parseLegs, parsePerfLegs } from '../../../tools/results/suites.ts';
 import { DEFAULT_LIMITS } from '../../../flake/stats.ts';
 import { parseCliArgs } from '../../../flake/cli.ts';
+import { evaluateGate } from '../../../flake/gate.ts';
+import {
+  addDays,
+  assessQuarantine,
+  catalogFacts,
+  findQuarantine,
+  parseQuarantineText,
+} from '../../../flake/quarantine.ts';
 import { REPORT_USAGE } from '../../../flake/report.ts';
 import { FLAKE_LIMITS } from '../../../src/shared/criteria.ts';
 import { configFor, flattenPatch } from '../../../src/player/configs.ts';
@@ -833,15 +842,10 @@ describe('PB-LAB-006 README: the prose against the files it stands on', () => {
         'none in 121 executions',
         'A test is judged from 20 executions in its window, and an invalid run is not an execution: PB-ABR-002 has 18, so its rate of 33.3 % has the verdict `not-enough-data`',
         'All of this is a count of one day',
-        '**PB-ABR-002 still flakes on macOS WebKit after its classifier.**',
         '6 flaky and 1 failed in 18 executions, and 5 more scheduled executions ended as invalid runs',
         'Of the 14 builds that have the classifier of [ADR-106](docs/decisions/e2e-abr.md), 3 still ended in a flake',
-        'the test has no verdict of its own below 20 executions (it has 18)',
-        'the required `flake` check turns red when that suite rate goes above 2.0 %, or when the test reaches 20 executions with more than 1 flaky among them (it has 6; the trigger is 5.0 %), unless the test is quarantined',
-        'fix the test, quarantine it on that leg with an owner and an expiry within 7 days (it keeps running, non-blocking), or declare a documented gap there',
-        '**The flake history of real builds is one day old, and macOS WebKit is close to its budget.**',
+        '**The flake history of real builds is one day old.**',
         'Linux shows no flaky execution in 1,104, which one day cannot turn into a rate of zero',
-        'macOS WebKit sits at 1.8 % against its budget of 2.0 % because of one test, PB-ABR-002, which still flakes after its classifier (3 of 14 builds)',
         'in real builds of `main` the test still flakes (3 of the 14 builds that have the classifier)',
       ]) {
         expect(readme, quoted).toContain(quoted);
@@ -852,6 +856,182 @@ describe('PB-LAB-006 README: the prose against the files it stands on', () => {
       expect(readme).toContain(
         'in the dedicated collections, 29 of 150 attempts of PB-ABR-002 on the macOS runner were skipped that way after the fix, and none of the 121',
       );
+    });
+  });
+
+  // The quarantine is read from the committed file, so that the README cannot drift from it: its owner, project and dates are the
+  // file's, the line it quotes is the one that the real gate prints for that file, and the day after the expiry is a day on which the
+  // real flake gate fails. The three runs that showed it (a workstation, an emulation, the first CI run) are scratch runs or are on
+  // GitHub: their numbers are text pins, with the arithmetic between them checked.
+  describe('the quarantine of PB-ABR-002: the committed entry, its dates and the gates (Flake tracking, Findings, Limitations, Open items)', () => {
+    const file = parseQuarantineText(read('flake/quarantine.json'));
+    const facts = catalogFacts(catalog);
+    const entry = (): (typeof file.entries)[number] => {
+      const first = file.entries[0];
+      if (first === undefined) {
+        throw new Error(
+          'flake/quarantine.json holds no entry: update the README, which says that PB-ABR-002 is quarantined',
+        );
+      }
+      return first;
+    };
+
+    it('says what the committed entry says: one entry, its owner, project and dates, and its evidence', () => {
+      expect(file.problems).toStrictEqual([]);
+      expect(file.entries).toHaveLength(1);
+      const { id, project, owner, since, expires, evidence } = entry();
+      expect([id, project, owner, since, expires]).toStrictEqual([
+        'PB-ABR-002',
+        'webkit',
+        '@hanniavalera',
+        '2026-11-04',
+        '2026-11-11',
+      ]);
+      expect(evidence).toBe(
+        'https://github.com/hanniavalera/playback-proof/actions/runs/41934174353/job/126938450472',
+      );
+      const over = addDays(expires, 1);
+      for (const quoted of [
+        `**${id} is quarantined on \`${project}\` until ${expires}.**`,
+        `(owner \`${owner}\`, since ${since}, expires ${expires}, the 7 days that a merge-tier test may have; evidence: that job)`,
+        'in the pull request of run 41934174353',
+        `**The consequence: the entry expires on ${expires}, a merge-tier test cannot be renewed, and from ${over} the gate fails while the entry is there.**`,
+        `**${id} still flakes on macOS WebKit after its classifier, and is quarantined until ${expires}.**`,
+        `owner \`${owner}\`, until ${expires}, the 7 days that a merge-tier test may have, with no renewal`,
+        `**From ${over} the gate fails while the entry is there**`,
+        `and on macOS WebKit one test, ${id}, still flaked after its classifier (3 of 14 builds) and is quarantined on \`${project}\` until ${expires} (it still runs, non-blocking, out of the suite rate; no renewal)`,
+        `**${id} is quarantined on \`${project}\` until ${expires}, and a quarantine is a hole in the merge gate.**`,
+        `and from ${over} the gate fails while it is there`,
+        `**Quarantine expiry, ${expires}:** ${id} on \`${project}\` is fixed or retired on that leg as a documented gap; from ${over} the gate fails while the entry is there`,
+      ]) {
+        expect(readme, quoted).toContain(quoted);
+      }
+      // no other date is given for the quarantine anywhere in the README
+      const untils = [...readme.matchAll(/until (\d{4}-\d{2}-\d{2})/g)].map((m) => m[1]);
+      expect(untils.length).toBeGreaterThanOrEqual(6);
+      expect([...new Set(untils)]).toStrictEqual([expires]);
+      const froms = [...readme.matchAll(/from (\d{4}-\d{2}-\d{2}) the gate/gi)].map((m) => m[1]);
+      expect(froms.length).toBeGreaterThanOrEqual(3);
+      expect([...new Set(froms)]).toStrictEqual([over]);
+    });
+
+    it('follows the policy and the real gates: 7 days, the project both WebKit legs run, a merge-tier test of risk 16, a flake gate that fails the day after', () => {
+      const { id, project, since, expires } = entry();
+      expect(addDays(since, FLAKE_LIMITS.mergeQuarantineMaxAgeDays)).toBe(expires);
+      expect(assessQuarantine(file, { catalog: facts, today: since }).problems).toStrictEqual([]);
+      expect(findQuarantine(file.entries, id, project ?? '', expires)).not.toBeNull();
+      expect(findQuarantine(file.entries, id, project ?? '', addDays(expires, 1))).toBeNull();
+      // the entry names one engine: Chromium and Firefox still block on the test
+      expect(
+        ['chromium', 'firefox'].map((other) => findQuarantine(file.entries, id, other, since)),
+      ).toStrictEqual([null, null]);
+      const legs = parseLegs(real.text('.github/workflows/ci.yml'), 'ci.yml', 'merge-gate');
+      expect(
+        legs
+          .filter((leg) => leg.project === project)
+          .map((leg) => leg.leg)
+          .sort(),
+      ).toStrictEqual(['webkit-linux', 'webkit-macos']);
+      const row = catalog.find((r) => r.id === id);
+      expect([row?.tier, row?.risk.text]).toStrictEqual(['merge', '4x4=16']);
+      expect(expandEngines(row?.engines ?? [])).toEqual(
+        expect.arrayContaining(['chromium', 'firefox', 'webkit']),
+      );
+      expect(readme).toContain('a risk of 4 x 4 = 16 in the catalog');
+      const failures = (today: string): string[] =>
+        evaluateGate({ history: [], current: [], today, quarantine: file, catalog: facts }).failures.map(
+          (failure) => failure.kind,
+        );
+      expect(failures(expires)).not.toContain('merge-quarantine-expired');
+      expect(failures(addDays(expires, 1))).toContain('merge-quarantine-expired');
+    });
+
+    it('prints, for the committed list, the line that the README quotes, runs the quarantined test second, and lets it fail without failing the gate', async () => {
+      const { id, project, owner, since, expires } = entry();
+      const logs: string[] = [];
+      const ran: string[] = [];
+      const result = await runGateMerge(
+        {
+          extraArgs: ['--project=webkit'],
+          quarantineFile: join(ROOT, 'flake/quarantine.json'),
+          strategyFile: join(ROOT, 'TEST_STRATEGY.md'),
+          today: since,
+          dryRun: false,
+        },
+        (invocation) => {
+          ran.push(invocation.label);
+          return Promise.resolve(invocation.label === 'merge gate' ? 0 : 1);
+        },
+        (line) => logs.push(line),
+        'readme-test',
+      );
+      const printed = `quarantined (non-blocking, still running): ${id} on ${project} until ${expires} (${owner})`;
+      expect(logs).toContain(printed);
+      expect(readme).toContain(`\`${printed}\``);
+      expect(ran).toStrictEqual(['merge gate', 'quarantined tests (non-blocking)']);
+      expect([result.exitCode, result.quarantinedExitCode]).toStrictEqual([0, 1]);
+      expect(result.plan.blocking.args).toContain('--grep-invert');
+    });
+
+    it('says what the three runs showed, with numbers that agree (text pins: one run is on GitHub, two were scratch runs)', () => {
+      // 25 builds of the 15 merge tests of the WebKit leg: the executions the judge counted, those it set aside, and the invalid runs
+      const mergeOnWebkit = catalog.filter(
+        (r) => r.tier === 'merge' && r.runsIn === 'e2e' && expandEngines(r.engines).includes('webkit'),
+      );
+      expect(mergeOnWebkit).toHaveLength(15);
+      expect(25 * mergeOnWebkit.length).toBe(350 + 19 + 6);
+      expect(19 + 6).toBe(25);
+      expect(((100 * 6) / 19).toFixed(1)).toBe('31.6');
+      expect(19).toBeLessThan(FLAKE_LIMITS.minRunsToJudge);
+      // the emulation: 8 flaky of 20 executions is over the trigger of a test
+      expect(8 / 20).toBeGreaterThan(FLAKE_LIMITS.quarantineTriggerRate);
+      const printed =
+        'quarantined (non-blocking, still running): PB-ABR-002 on webkit until 2026-11-11 (@hanniavalera)';
+      for (const quoted of [
+        "Later the same day it flaked a seventh time, in the pull request of run 41934174353 (attempt 1 failed 'at most one rebuffer', 2 rebuffers totalling 762 ms, the player having left 720p at 18.05 s; the retry passed)",
+        'With 19 executions in its window and 7 flaky, the next recorded execution would make 20, the number from which the gate judges a test, and it would then have failed pull requests that did nothing to the test: a test over the 5.0 % trigger must be fixed or quarantined, and there is no fix.',
+        'The entry names the Playwright project, so it also covers Linux WebKit, where the test had no flaky execution in 25.',
+        'The test still runs, in a second invocation of `gate:merge`, and cannot block a merge; and it is out of the suite rate.',
+        "On this workstation's native macOS WebKit the blocking invocation passed 14 tests without PB-ABR-002 and the second ran it alone, exit 0, its run file flagged as quarantined.",
+        "with that pull request's macOS run and one duplicate of it to reach 20 executions (an emulation, not a measurement), failed without the entry (`over-trigger`, 8 flaky of 20, and the suite budget, 2.1 % against 2.0 %) and passed with it.",
+        '([run 41936991070](https://github.com/hanniavalera/playback-proof/actions/runs/41936991070))',
+        `both WebKit legs printed \`${printed}\`, ran 14 tests blocking and the test alone (exit 0), and the \`flake\` judge passed for macOS (2 runs in this build, 26 runs judged): 25 builds, 350 executions, 0 flaky (0.0 % against 2.0 %), 19 quarantined executions set aside; PB-ABR-002 itself had 19 executions, 6 flaky and 1 failed (31.6 %), and the verdict \`not-enough-data\`.`,
+        'When it flaked a seventh time, in a pull request, the policy applied (a test over the 5.0 % trigger from 20 executions is fixed or quarantined, and there is no fix)',
+        '(in the first CI run with the entry, macOS WebKit had 0 flaky in 350 executions, with 19 quarantined executions set aside)',
+        "What remains is the owner's decision: a fix (or a cheaper, deterministic replacement, as the gate says), or retiring the test on that leg as a documented gap",
+      ]) {
+        expect(readme, quoted).toContain(quoted);
+      }
+    });
+
+    it('ends the limitations with three open items, one line each, and nothing in the workflows could call the live model service', () => {
+      const start = readme.indexOf('\n### Open items\n');
+      const end = readme.indexOf('\n## Repository layout\n');
+      expect(readme.indexOf('\n## Limitations and honesty notes\n')).toBeLessThan(start);
+      expect(end).toBeGreaterThan(start);
+      const lines = readme
+        .slice(start, end)
+        .split('\n')
+        .filter((line) => line.trim() !== '');
+      expect(lines[0]).toBe('### Open items');
+      expect(lines.slice(1)).toHaveLength(3);
+      for (const line of lines.slice(1)) expect(line.startsWith('- **')).toBe(true);
+      const items = lines.slice(1).join('\n');
+      const issue = (n: number): string =>
+        `[https://github.com/hanniavalera/playback-proof/issues/${n}](https://github.com/hanniavalera/playback-proof/issues/${n})`;
+      for (const quoted of [
+        `is fixed or retired on that leg as a documented gap; from ${addDays(entry().expires, 1)} the gate fails while the entry is there (${issue(30)}, [\`flake/quarantine.json\`](flake/quarantine.json))`,
+        `**PB-ABR-001 on the macOS WebKit leg of the nightly:** \`over-invalid-budget\` is expected once the leg has 20 scheduled executions of it (about three weeks of nightlies, one a day), and a documented gap, retiring the test on that leg or a bigger runner is the owner's decision (${issue(31)}, [flake results, section 4](docs/results/flake/README.md#4-pb-abr-006-and-pb-abr-001-the-release-tier))`,
+        '**Triage model summaries are unverified against the live service:** no `ANTHROPIC_API_KEY` is set, so only the local mock has run',
+      ]) {
+        expect(items, quoted).toContain(quoted);
+      }
+      // "one a day": the nightly has one schedule, daily, and a test is judged from 20 scheduled executions (about three weeks)
+      expect(read('.github/workflows/nightly.yml').match(/^\s*- cron: '\d+ \d+ \* \* \*'/gm)).toHaveLength(1);
+      expect(Math.round(FLAKE_LIMITS.minRunsToJudge / 7)).toBe(3);
+      for (const workflow of ['ci.yml', 'nightly.yml', 'measure.yml', 'streams.yml']) {
+        expect(read(`.github/workflows/${workflow}`), workflow).not.toContain('ANTHROPIC');
+      }
     });
   });
 
