@@ -16,7 +16,7 @@ A flaky test is one that fails and then passes on a retry with nobody having cha
 | History | The runs of an environment, JSON lines, the last 200. A file locally, the orphan branch `ci-data` in CI. | `flake/history/<env>.jsonl`; `ci-data:history/<env>.jsonl` |
 | Report | Per test and per engine job: runs, flaky, failed, rate, verdict, last failure; the invalid runs against their budget; the quarantine; the skips. | `npm run flake:report` (stdout, `$GITHUB_STEP_SUMMARY`, `reports/flake/report.md` and `.json`) |
 | Collector | Repeats an invocation N times and records each repetition: how the real data of the suite is gathered. | `tsx tools/flake-collect.ts --project chromium --runs 30 --grep @merge` |
-| Quarantine list | Who is quarantined, why, until when. | [`flake/quarantine.json`](../flake/quarantine.json) (starts empty) |
+| Quarantine list | Who is quarantined, why, until when. | [`flake/quarantine.json`](../flake/quarantine.json) (it started empty; it holds one entry since 4 November 2026: PB-ABR-002 on `webkit`, until 2026-11-11, see [the flake results](results/flake/README.md), section 7) |
 
 The error signature that the reporter gives each failed attempt (the first line of the message with its numbers, ids, timestamps, urls and paths normalised, so that the same cause reads the same) is [`src/lab/signature.ts`](../src/lab/signature.ts): failure triage reuses it.
 
